@@ -45,6 +45,9 @@
 | D-CRON | 2026-10-09 | Complemento: agendamento **ligado no staging** (pg_cron `creatorclub-worker` a cada minuto; segredo `jobs_secret` no Vault; `JOBS_SECRET` na Vercel). Primeira chamada às 19:00 UTC respondeu 200. | Pedro |
 | D-REALSTORE | 2026-10-09 | O staging (que é o mesmo banco que vai ao ar no corte) é ligado **já à loja real da Botanika** (`p01bpt-x2.myshopify.com`), na marca `botanika`, porque a conta da Gestão Alliance não consegue criar loja de desenvolvimento. Segurança: o app começa **só com leitura** (`read_orders`, `read_all_orders`); permissões de cupom só na E4. O app é criado no Dev Dashboard **da organização da Botanika** (exigência do Shopify para app e loja na mesma organização): exceção necessária ao D-ACCT. A marca "Loja de teste" (`teste`), criada antes, fica desligada e sem uso. A carga histórica na loja real espera a data de D-HIST (depende de D-CLASS). | Pedro |
 | D-PREVIEW | 2026-10-09 | **Prévias da Vercel desligadas** para os ramos `claude/**` (`vercel.json`): não têm banco (D-MIGRATE) e gastavam metade do limite de 100 deploys/dia do plano grátis, que estourou em 2026-10-09. Deploy só da `main` (produção). O CI do GitHub continua rodando build e testes em todo PR. | Pedro |
+| D-IMPORT | 2026-10-09 | Importação da E4: **só as 28 creators da Botanika** (as 24 da VermeFree entram quando a marca for ligada), a partir da **exportação do `creator-hub` de 2026-10-09** (D-E0SRC); antes do corte (E9) uma exportação nova mostra o que mudou. Dados pessoais da exportação nunca entram no repositório (D-PUBLIC). | Pedro |
+| D-RATEIMPORT | 2026-10-09 | A taxa de cada creator vem do app antigo (15%; uma com 20%) e entra **"a confirmar"**: não vale para cálculo até a Ana confirmar. O mesmo vale para a dona de cada cupom e para o tipo CREATOR/PROMO (D-CLASS). | Pedro |
+| D-ADMINUI | 2026-10-09 | Telas internas da equipe (sync, cupons, fichas) ficam **simples e funcionais** até as telas do portal (E7); o visual *liquid glass* entra lá. Amplia D-SYNCUI. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -57,7 +60,7 @@
 | ~~D-HIST~~ | ~~Desde quando importar pedidos~~ — **decidida** em 2026-10-09 | E3 |
 | ~~D-TAX~~ | ~~Loja usa preço com imposto incluso?~~ — **decidida** em 2026-10-09 (não usa) | E3 |
 | D-RATE | Comissão padrão por marca (15% ou 10%) | 15% na Botanika | E4 |
-| D-CLASS | Quem classifica cupons CREATOR/PROMO e confirma a dona | Ana | E4 |
+| D-CLASS | Quem classifica cupons CREATOR/PROMO e confirma a dona | Ana (papel GESTAO; tela da E4.3) | E4 |
 | D-PAY | Quem tem papel Pagamento | Juci e Pâmela | E2 |
 | D-NF | Código de serviço e descrição da NF | — | E8 |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
