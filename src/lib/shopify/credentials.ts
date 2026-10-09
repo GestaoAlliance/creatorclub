@@ -15,7 +15,7 @@ const key = () => parseKey(process.env.INTEGRATION_ENC_KEY);
 
 export async function saveShopifyCredentials(
   prisma: PrismaClient,
-  input: { brandId: string; shop: string; scopes?: string; apiVersion?: string } & ShopifyCredentials,
+  input: { brandId: string; shop: string; scopes?: string; apiVersion?: string; status?: "CONNECTED" | "DISCONNECTED" } & ShopifyCredentials,
   encKey: Buffer = key(),
 ): Promise<void> {
   if (!input.clientId || !input.clientSecret) throw new Error("Client ID e Client secret são obrigatórios.");
@@ -26,7 +26,7 @@ export async function saveShopifyCredentials(
     context(input.brandId),
   );
   const data = {
-    status: "CONNECTED" as const,
+    status: input.status ?? ("CONNECTED" as const),
     externalId: shop,
     secretEncrypted,
     scopes: input.scopes ?? null,
@@ -56,4 +56,19 @@ export async function loadShopifyConnection(
     clientId: secrets.clientId,
     clientSecret: secrets.clientSecret,
   };
+}
+
+/**
+ * Credenciais guardadas, mesmo com a loja desconectada: "Reconectar" (ex.: depois de mudar as permissões do app)
+ * reaproveita o Client ID/secret sem digitar de novo.
+ */
+export async function loadStoredShopifyCredentials(
+  prisma: PrismaClient,
+  brandId: string,
+  encKey: Buffer = key(),
+): Promise<(ShopifyCredentials & { shop: string }) | null> {
+  const row = await prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "SHOPIFY" } } });
+  if (!row?.externalId || !row.secretEncrypted) return null;
+  const secrets = JSON.parse(decryptSecret(row.secretEncrypted, encKey, context(brandId))) as ShopifyCredentials;
+  return { shop: row.externalId, clientId: secrets.clientId, clientSecret: secrets.clientSecret };
 }

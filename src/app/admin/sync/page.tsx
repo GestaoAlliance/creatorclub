@@ -29,7 +29,7 @@ export default async function SyncPage() {
           <h2 className="text-lg font-semibold">{h.brand.name}</h2>
 
           <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <div><div className="text-stone-500">Shopify</div>{h.shopify?.status === "CONNECTED" ? h.shopify.externalId : "não conectado"}</div>
+            <div><div className="text-stone-500">Shopify</div>{h.shopify?.status === "CONNECTED" ? h.shopify.externalId : h.shopify?.externalId ? `${h.shopify.externalId} (desconectada)` : "não conectado"}</div>
             <div><div className="text-stone-500">Última reconciliação</div>{fmt(h.shopify?.lastSyncAt)}</div>
             <div><div className="text-stone-500">Pedidos no banco</div>{h.orders}</div>
             <div><div className="text-stone-500">Tarefas na fila</div>{h.jobs.pending}</div>

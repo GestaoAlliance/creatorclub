@@ -20,11 +20,12 @@ export function ConnectForm({ brandId, shop }: { brandId: string; shop: string |
       <label className="flex flex-col gap-1 text-sm">Loja (domínio .myshopify.com)
         <input className={input} name="shop" defaultValue={shop ?? ""} placeholder="minha-loja.myshopify.com" required />
       </label>
+      {shop && <p className="text-xs text-stone-500">Deixe Client ID e Client secret em branco para usar os já guardados (ex.: depois de mudar as permissões do app).</p>}
       <label className="flex flex-col gap-1 text-sm">Client ID
-        <input className={input} name="clientId" required />
+        <input className={input} name="clientId" required={!shop} />
       </label>
       <label className="flex flex-col gap-1 text-sm">Client secret
-        <input className={input} name="clientSecret" type="password" required />
+        <input className={input} name="clientSecret" type="password" required={!shop} />
       </label>
       <Status state={state} />
       <button className={button} disabled={pending}>{pending ? "Conectando…" : shop ? "Reconectar loja" : "Conectar loja"}</button>

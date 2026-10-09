@@ -29,6 +29,7 @@ export async function requestAccessToken(
   }
   const text = await res.text();
   if (!res.ok) {
+    if (text.includes("app_not_installed")) throw new ShopifyError("O app ainda não está instalado nesta loja (app_not_installed).", false);
     if (text.includes("shop_not_permitted")) {
       throw new ShopifyError("O app e a loja não estão na mesma organização do Shopify (shop_not_permitted).", false);
     }

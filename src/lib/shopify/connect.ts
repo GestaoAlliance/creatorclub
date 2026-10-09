@@ -2,7 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { createShopifyClient, type ShopifyClient } from "./client";
-import { saveShopifyCredentials } from "./credentials";
+import { loadStoredShopifyCredentials, saveShopifyCredentials } from "./credentials";
 import { requestAccessToken } from "./token";
 import { ORDER_TOPICS } from "./webhook";
 
@@ -40,21 +40,28 @@ export type ConnectResult = { shop: string; scopes: string[]; missingRecommended
 export async function connectShopifyStore(
   prisma: PrismaClient,
   actor: Actor | null,
-  input: { brandId: string; shop: string; clientId: string; clientSecret: string; appUrl: string },
+  /** Client ID/secret em branco = reaproveitar os já guardados para a marca. */
+  input: { brandId: string; shop: string; clientId?: string; clientSecret?: string; appUrl: string },
   deps: { fetch?: typeof fetch; client?: (shop: string, token: string) => ShopifyClient; encKey?: Buffer } = {},
 ): Promise<ConnectResult> {
   if (!actor || !can(actor.grants, "integrations.manage", input.brandId)) throw new ConnectError("Sem permissão.");
   const brand = await prisma.brand.findUnique({ where: { id: input.brandId }, select: { id: true, slug: true } });
   if (!brand) throw new ConnectError("Marca não encontrada.");
-  const clientId = input.clientId.trim();
-  const clientSecret = input.clientSecret.trim();
+  let clientId = (input.clientId ?? "").trim();
+  let clientSecret = (input.clientSecret ?? "").trim();
+  if (!clientId && !clientSecret) {
+    const stored = await loadStoredShopifyCredentials(prisma, brand.id, ...(deps.encKey ? [deps.encKey] : []));
+    if (!stored) throw new ConnectError("Informe o Client ID e o Client secret.");
+    ({ clientId, clientSecret } = stored);
+  }
   if (!clientId || !clientSecret) throw new ConnectError("Informe o Client ID e o Client secret.");
 
   let token;
   try {
     token = await requestAccessToken({ shop: input.shop, clientId, clientSecret }, deps.fetch ? { fetch: deps.fetch } : {});
   } catch (error) {
-    throw new ConnectError(error instanceof Error ? error.message : "Não foi possível falar com o Shopify.");
+    const message = error instanceof Error ? error.message : "Não foi possível falar com o Shopify.";
+    throw new ConnectError(/app_not_installed/.test(message) ? "O app ainda não está instalado nesta loja." : message);
   }
   const missing = REQUIRED_SCOPES.filter((s) => !token.scopes.includes(s));
   if (missing.length) throw new ConnectError(`O app não tem a permissão: ${missing.join(", ")}.`);

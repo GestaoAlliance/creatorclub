@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { connectShopifyStore } from "@/lib/shopify/connect";
-import { loadShopifyConnection } from "@/lib/shopify/credentials";
+import { loadShopifyConnection, saveShopifyCredentials } from "@/lib/shopify/credentials";
 import { syncHealth } from "@/lib/shopify/health";
 import { seedBrand, testClient } from "./fixtures";
 
@@ -52,6 +52,42 @@ describe("conectar loja (banco real)", () => {
     expect(created[0]!.uri).toBe(`https://app.test/api/webhooks/shopify/${brand.slug}`);
     expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid", clientSecret: "csec", scopes: "read_orders" });
     expect(await prisma.auditLog.count({ where: { action: "integration.connect", entityId: brand.id } })).toBe(1);
+  });
+
+  it("reconectar com Client ID/secret em branco reaproveita os guardados (mesmo com a loja desconectada)", async () => {
+    const admin = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    await saveShopifyCredentials(prisma, { brandId: brand.id, shop: "loja-dev.myshopify.com", clientId: "cid-salvo", clientSecret: "csec-salvo", status: "DISCONNECTED" }, encKey);
+    expect(await loadShopifyConnection(prisma, brand.id, encKey)).toBeNull();
+    let sent = "";
+    const fetchSpy = (async (_url: string, init: RequestInit) => {
+      sent = String(init.body);
+      return new Response(JSON.stringify({ access_token: "tok", scope: "read_orders,read_all_orders", expires_in: 86399 }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const r = await connectShopifyStore(
+      prisma,
+      admin,
+      { brandId: brand.id, shop: "loja-dev.myshopify.com", clientId: "", clientSecret: " ", appUrl: "https://app.test" },
+      { fetch: fetchSpy, client: fakeClient().client, encKey },
+    );
+    expect(new URLSearchParams(sent).get("client_secret")).toBe("csec-salvo");
+    expect(r.missingRecommended).toEqual([]);
+    expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid-salvo", scopes: "read_orders,read_all_orders" });
+
+    const { brand: empty } = await seedBrand(prisma);
+    await expect(
+      connectShopifyStore(prisma, admin, { brandId: empty.id, shop: "x.myshopify.com", appUrl: "https://app.test" }, { fetch: fetchSpy, client: fakeClient().client, encKey }),
+    ).rejects.toThrow(/Informe o Client ID/);
+  });
+
+  it("app não instalado na loja dá mensagem clara", async () => {
+    const admin = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    const notInstalled = (async () =>
+      new Response('{"error":"app_not_installed","error_description":"The application is not installed on this shop."}', { status: 400 })) as unknown as typeof fetch;
+    await expect(
+      connectShopifyStore(prisma, admin, { brandId: brand.id, shop: "x.myshopify.com", clientId: "c", clientSecret: "s", appUrl: "https://a" }, { fetch: notInstalled, client: fakeClient().client, encKey }),
+    ).rejects.toThrow("O app ainda não está instalado nesta loja.");
   });
 
   it("sem read_orders ou sem ser super admin não conecta nada", async () => {
