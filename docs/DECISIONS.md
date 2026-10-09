@@ -77,6 +77,10 @@
 | D-E7ORDER | 2026-10-09 | Ordem do portal: Vendas → Cupom/link → Extrato → Saque (com NF em PDF) → Envios. | Pedro |
 | D-PERKS | 2026-10-09 | Bônus por metas, gamificação e competições de vendas: ideias anotadas; benefícios a levantar com a Ana antes de desenhar. | Pedro |
 | D-LINKFALLBACK | 2026-10-09 | Link rastreado de cupom desconhecido, promocional ou de creator desligada leva à página inicial da loja, sem cupom e sem contar clique (o link da bio nunca quebra). O IP do clique nunca é gravado: só um hash que muda a cada dia. | Técnica (aplicação de D-LINK) |
+| D-WDTAB | 2026-10-09 | O extrato não tem aba própria: a aba chama **Saque** e reúne saldo (disponível, a liberar, em saque), botão "Solicitar saque", meus saques e as movimentações mês a mês. | Pedro |
+| D-WDLOCK | 2026-10-09 | Saque travado por creator até o Pagamento aprovar o saldo de abertura (E6, D-OPEN): o saldo de hoje não desconta o que já foi pago por fora. | Pedro |
+| D-WDRULES | 2026-10-09 | Pedido de saque: janela do dia 10 ao 15, mínimo R$ 500 por pedido, valor parcial permitido, um pedido em aberto por vez, nota fiscal em PDF obrigatória (até 10 MB), pagamento por Pix. | Pedro |
+| D-WDFLOW | 2026-10-09 | Passo a passo do saque: valor → dados para emitir a NF (CNPJ do tomador, valor, descrição) → enviar o PDF → confirmar (com a chave Pix). | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -91,7 +95,7 @@
 | D-RATE | Comissão padrão por marca (15% ou 10%) | 15% na Botanika | E4 |
 | D-CLASS | Quem classifica cupons CREATOR/PROMO e confirma a dona | Ana (papel GESTAO; tela da E4.3) | E4 |
 | D-PAY | Quem tem papel Pagamento | Juci e Pâmela | E2 |
-| D-NF | Código de serviço e descrição da NF | — | E8 |
+| D-NF | Código de serviço e descrição da NF (CNPJ do tomador já decidido: 65.100.830/0001-36, Botanika; pode virar o da Alliance) | — | Primeiro saque liberado |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
 | ~~D-ADMIN~~ | ~~E-mail do primeiro SUPER_ADMIN~~ — **decidida** em 2026-10-09 | E2.3 |
 | D-SMTP | Remetente dos e-mails do Auth (convite, senha): Resend com qual domínio e conta? O e-mail padrão do Supabase só serve para teste (poucos envios por hora) | Resend, conta da Gestão Alliance, domínio a definir | E2.4 |

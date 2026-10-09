@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsLeft, House, ShoppingBag, Ticket, type LucideIcon } from "lucide-react";
+import { ChevronsLeft, House, ShoppingBag, Ticket, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "", label: "Início", Icon: House },
   { href: "/vendas", label: "Vendas", Icon: ShoppingBag },
   { href: "/cupom", label: "Cupom", Icon: Ticket },
+  { href: "/saque", label: "Saque", Icon: Wallet },
 ];
 
 function useActive(base: string) {

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.4 — Extrato no portal (ordem D-E7ORDER: Extrato → Saque → Envios).
+- **Próxima tarefa:** E7.8 — Envios (detalhar antes de começar). Saques pagos/recusados pelo Pagamento: E8.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -130,10 +130,10 @@ só mostra dados da própria creator, decidido no servidor.
 - [x] **E7.1b** "Ver como creator" (D-VIEWAS): super admin abre o portal de uma creator a partir da ficha, só
   leitura, com aviso e registro na auditoria. Para o responsável acompanhar as telas com dados reais.
 - [x] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
-- [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
+- [x] **E7.4** Extrato (virou a aba **Saque**, D-WDTAB): o mesmo `creatorStatement` da E5.4 com o acesso da creator.
 - [x] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
   aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
-- [ ] **E7.7** Saque no portal (adiantado da E8 por pedido do responsável, D-E7ORDER): pedir saque com a nota
+- [x] **E7.7** Saque no portal (adiantado da E8 por pedido do responsável, D-E7ORDER): pedir saque com a nota
   fiscal em PDF (upload), na janela e com o mínimo da marca; o painel do Pagamento continua na E8.
 - [ ] **E7.8** Envios (D-SHIPMENTS): a equipe (papel Envio) registra cada envio de produtos à creator (data,
   produtos/kit, endereço, rastreio, situação: preparando, enviado, entregue); a creator vê "Meus envios"; o admin
@@ -159,6 +159,27 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-51 — 2026-10-09 — Aba Saque com saldo, movimentações e pedido de saque com NF em PDF (E7.4 + E7.7)
+- **Decidido:** D-WDTAB (o extrato não tem aba própria: a aba chama **Saque** e reúne saldo, botão, meus saques e
+  movimentações por mês), D-WDLOCK (saque travado por creator até o Pagamento aprovar o saldo de abertura, E6; hoje
+  todas travadas), D-WDRULES (janela 10–15, mínimo R$ 500 por pedido, parcial, um em aberto, NF em PDF até 10 MB,
+  Pix), D-NF parcial (CNPJ do tomador 65.100.830/0001-36 da Botanika; descrição/código do serviço ainda em aberto),
+  D-WDFLOW (valor → dados da NF → enviar PDF → confirmar).
+- **Feito:** migração `withdrawals_unlock` (`Creator.withdrawalsUnlockedAt/ById` com a trava
+  `Creator_unlock_has_author`; `Brand.nfTakerDocument`). `src/lib/portal/withdrawals.ts` (aba: saldo, próxima
+  liberação, motivos que travam o botão, meus saques, extrato do mês). `src/lib/withdrawals/request.ts`
+  (`requestWithdrawal`: transação com `FOR UPDATE` na creator, saldo recalculado, regras do domínio, chave Pix exigida
+  se faltar, PDF conferido pelos bytes `%PDF-`, `File` + `Withdrawal` + auditoria `withdrawal.request`, mesmo pedido
+  nunca duplica, corrida entre dois pedidos: só um passa). PDF sobe do navegador direto para o bucket privado `nf`
+  do Supabase por link assinado (a Vercel limita o corpo a 4,5 MB); o servidor baixa e confere. Bucket `nf` criado no
+  staging (privado, só PDF, 10 MB). Telas `/portal/[marca]/saque` e `/saque/novo`; item "Saque" no menu.
+- **Não testado ponta a ponta:** o envio real do PDF ao Supabase (o ambiente de desenvolvimento não alcança a rede);
+  conferir no primeiro saque liberado.
+- **Observado:** uma vez, dois testes de atribuição falharam rodando a suíte inteira e passaram nas 4 execuções
+  seguintes; causa não encontrada, acompanhar.
+- **Verificado:** 104 unitários (2 novos); 116 de integração (8 novos, incluindo a trava pelo nome e a corrida);
+  migração × schema sem divergência; typecheck; build. Capturas para o OK do responsável.
 
 ### CP-50 — 2026-10-09 — Cupom e link no portal (E7.5)
 - **Decidido:** D-LINKFALLBACK (link de cupom desconhecido, promocional ou de creator desligada leva à página inicial

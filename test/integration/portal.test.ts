@@ -228,3 +228,36 @@ describe("Cupom e link (banco real)", () => {
     expect(await portalCoupons(prisma, { ...ctx, status: "DEACTIVATED" }, now)).toEqual([]);
   });
 });
+
+describe("Aba Saque (banco real)", () => {
+  it("botão travado até liberar a creator; regras de janela, mínimo, pedido aberto e visualização da equipe", async () => {
+    const { portalWithdrawalTab } = await import("@/lib/portal/withdrawals");
+    const { commissionEntry } = await import("./fixtures");
+    const T = (iso: string) => new Date(iso);
+    const a = await seedBrand(prisma);
+    const ctx = await portalContext(prisma, await loginFor(a.account.id), a.brand.slug);
+    const inWindow = T("2026-10-12T15:00:00Z"); // dia 12, janela 10–15
+    await prisma.ledgerEntry.create({ data: commissionEntry({ brandId: a.brand.id, creatorId: a.creator.id, orderId: a.order.id }, { amountCents: 80_000, availableAt: T("2026-09-08T12:00:00Z") }) });
+
+    let tab = await portalWithdrawalTab(prisma, ctx, { now: inWindow });
+    expect(tab.balance.availableCents).toBe(80_000);
+    expect(tab.blocks).toEqual(["LOCKED"]);
+
+    await prisma.creator.update({ where: { id: a.creator.id }, data: { withdrawalsUnlockedAt: inWindow, withdrawalsUnlockedById: "pagamento" } });
+    expect((await portalWithdrawalTab(prisma, ctx, { now: inWindow })).blocks).toEqual([]);
+    expect((await portalWithdrawalTab(prisma, ctx, { now: T("2026-10-20T15:00:00Z") })).blocks).toEqual(["OUTSIDE_WINDOW"]);
+    expect((await portalWithdrawalTab(prisma, { ...ctx, viewAs: { userId: "sa" } }, { now: inWindow })).blocks).toEqual(["VIEW_ONLY"]);
+
+    await prisma.withdrawal.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, amountCents: 50_000, idempotencyKey: randomUUID() } });
+    tab = await portalWithdrawalTab(prisma, ctx, { now: inWindow });
+    expect(tab.balance).toMatchObject({ reservedCents: 50_000, availableCents: 30_000 });
+    expect(tab.blocks).toEqual(["BELOW_MIN", "OPEN_REQUEST"]);
+    expect(tab.withdrawals.map((w) => [w.amountCents, w.status])).toEqual([[50_000, "REQUESTED"]]);
+    expect(tab.statement.lines).toHaveLength(1);
+  });
+
+  it("o banco exige quem liberou o saque", async () => {
+    const { creator } = await seedBrand(prisma);
+    await expectDbError(prisma.creator.update({ where: { id: creator.id }, data: { withdrawalsUnlockedAt: new Date() } }), /Creator_unlock_has_author/);
+  });
+});
