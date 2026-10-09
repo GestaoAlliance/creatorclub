@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.6 — Aceite com 2 ou 3 creators piloto (escolher as piloto). Saques pagos/recusados pelo
-  Pagamento: E8.
+- **Próxima tarefa:** escolher com o responsável entre P1 (backup), P2 (Resend), P4 (termo de aceite) e E6 (saldo de
+  abertura, espera o Pagamento). Saque já funciona de ponta a ponta, mas segue travado por creator até a E6.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -139,9 +139,12 @@ só mostra dados da própria creator, decidido no servidor.
 - [x] **E7.8** Envios (D-SHIPMENTS, D-SHIPADDR, D-SHIPSTATUS, D-SHIPWHO): a creator mantém o endereço na aba
   Envios; a equipe (Envio, Gestão, super admin) registra o envio com produtos da loja em `/admin/envios`, marca
   enviado (transportadora + rastreio) e entregue, ou cancela; a creator vê "Meus envios" com rastreio e "Recebi".
-  Falta só carregar o catálogo da loja na tabela `Product` depois do deploy (D-SHIPPRODUCTS).
-- [ ] **E7.6** Aceite: 2 ou 3 creators piloto conferem os próprios números. *Depende de:* escolher as piloto, e da
-  conferência da Ana (E4.5) para haver comissão lançada.
+  Catálogo da loja (21 produtos) carregado em `Product` pelo conector em 2026-10-09 (D-SHIPPRODUCTS).
+- [-] **E7.6** Aceite com creators piloto: trocado por "a Ana confere os números antes de liberar o portal para as
+  creators" (D-ACCEPTANA). *Depende de:* conferência da Ana (E4.5).
+- [x] **E8** Saques no painel do Pagamento (D-WDDECIDE): `/admin/saques` com a fila (Pix, CPF/CNPJ, disponível
+  antes do pedido, NF em PDF por link assinado), marcar pago (lança o saque no extrato) ou recusar com motivo; a
+  creator cancela o próprio pedido em análise.
 
 ### Para conversar com a Ana (D-PERKS, depois do lançamento 1)
 Bônus por metas (benefícios desbloqueados), gamificação, competições de vendas. Levantar com a Ana quais benefícios
@@ -157,10 +160,24 @@ já existem antes de desenhar.
   Texto e regras a definir com o responsável.
 
 ### Depois (detalhar quando chegar lá)
-E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
+E6 Saldo de abertura e conferência (espera E0.2) · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-53 — 2026-10-09 — Saques no painel do Pagamento (E8)
+- **Decidido:** D-WDDECIDE (recusa com motivo obrigatório, que a creator vê; pago no dia do clique, sem comprovante;
+  a creator pode cancelar o próprio pedido em análise; decidem Pagamento e super admin, Gestão não vê a fila),
+  D-ACCEPTANA (sem piloto com creators: a Ana confere antes de liberar). Catálogo da loja carregado (E7.8).
+- **Feito:** migração `withdrawal_decisions` (travas `Withdrawal_decided_has_author`, `Withdrawal_rejected_has_note`
+  e índice `LedgerEntry_one_payment_per_withdrawal`). `src/lib/withdrawals/decide.ts` (pagar: lançamento WITHDRAWAL
+  negativo na mesma transação; recusar; cancelar pela creator; fila com disponível antes do pedido e aviso de valor
+  acima do saldo; tudo só a partir de "Em análise", à prova de dois cliques, e auditado). Telas `/admin/saques`
+  (link em `/conta`), `/admin/saques/nf/[id]` (abre a NF por link assinado de 5 minutos) e "Cancelar pedido" na
+  aba Saque; o motivo da recusa aparece como "motivo: …".
+- **Não testado ponta a ponta:** abrir a NF real do Supabase (o ambiente de desenvolvimento não alcança a rede).
+- **Verificado:** 108 unitários; 124 de integração (5 novos: pagar com corrida, recusar, cancelar, permissões,
+  travas pelo nome; 1 ajustado à nova trava de autor); migração × schema sem divergência; typecheck; build.
 
 ### CP-52 — 2026-10-09 — Envios de produtos às creators (E7.8)
 - **Decidido:** D-SHIPMENTS completada com D-SHIPADDR (endereço na ficha, mantido pela creator no portal; cada envio

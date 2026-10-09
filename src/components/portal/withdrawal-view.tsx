@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight, Clock, FileText, Receipt, Wallet } from "l
 import Link from "next/link";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
+import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { CopyButton } from "./copy-button";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
@@ -104,10 +105,13 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
                   <p className="text-xs text-stone-500">
                     pedido em {day(w.requestedAt)}
                     {w.decidedAt && ` · concluído em ${day(w.decidedAt)}`}
-                    {w.status === "REJECTED" && w.note && ` · ${w.note}`}
+                    {w.status === "REJECTED" && w.note && ` · motivo: ${w.note}`}
                   </p>
                 </div>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[w.status]}`}>{WITHDRAWAL_STATUS_LABEL[w.status]}</span>
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[w.status]}`}>{WITHDRAWAL_STATUS_LABEL[w.status]}</span>
+                  {w.status === "REQUESTED" && !tab.blocks.includes("VIEW_ONLY") && <CancelWithdrawalButton marca={base.split("/")[2]!} withdrawalId={w.id} />}
+                </div>
               </li>
             ))}
           </ul>

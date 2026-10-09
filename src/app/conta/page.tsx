@@ -53,6 +53,9 @@ export default async function ContaPage() {
       {actor && canEditCreators(actor.grants) && (
         <Link href="/admin/cupons" className="text-sm underline">Conferência de cupons</Link>
       )}
+      {actor && (brandsWith(actor.grants, "withdrawals.manage") === "ALL" || brandsWith(actor.grants, "withdrawals.manage").length > 0) && (
+        <Link href="/admin/saques" className="text-sm underline">Saques</Link>
+      )}
       {actor && (brandsWith(actor.grants, "shipping.view") === "ALL" || brandsWith(actor.grants, "shipping.view").length > 0) && (
         <Link href="/admin/envios" className="text-sm underline">Envios</Link>
       )}
