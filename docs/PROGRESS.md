@@ -5,8 +5,8 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; próxima E3
-- **Próxima tarefa:** E3 — Sync Shopify (detalhar no início da tarefa). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
+- **Próxima tarefa:** E3.1 — Fila no Postgres e worker. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -25,7 +25,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
 - [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
   Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
-  *Depende de acesso de admin ao Shopify.*
+  `taxesIncluded = false` lido no Shopify em 2026-10-09 (D-TAX). Scopes do app novo: D-SHOPAPP.
+  Falta: volume de pedidos com cupom (levantado na E3.5).
 - [ ] **E0.4** Formulário do Vitor: onde roda e como pode enviar cadastros. *Depende do Vitor.*
 
 > E0 foi definida no plano como primeira etapa, mas ficou fora desta fila até 2026-10-09 (corrigido).
@@ -59,12 +60,37 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
   dos e-mails reais (os importados do app antigo são falsos, `@import.creatorclub`).
 - [-] **E2.6** MFA para SUPER_ADMIN e PAGAMENTO: **adiado** (D-MFA). Fácil de ligar depois, no ponto central de acesso.
 
-### Depois de E2 (detalhar quando chegar lá)
-E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
+### E3 — Sync Shopify (detalhada em 2026-10-09, a partir do plano)
+Pedidos chegam por webhook, reconciliação e carga histórica; uma única função `processOrder` grava o pedido.
+Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o pedido é gravado).
+- [ ] **E3.1** Fila no Postgres e worker: pegar tarefas com `FOR UPDATE SKIP LOCKED`, trava com prazo, nova
+  tentativa com espera crescente, falha definitiva visível; `POST /api/jobs/run` protegido por segredo (D-CRON).
+- [ ] **E3.2** Credenciais e cliente do Shopify: token e segredo do webhook cifrados (AES-256-GCM, D-SHOPAPP);
+  cliente GraphQL Admin com versão fixa, limite de custo e nova tentativa; nunca loga token.
+- [ ] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
+  (`updatedAt`) for mais nova; guarda os códigos de cupom; avisa se `taxesIncluded` mudar (D-TAX). Testes com
+  pedidos de exemplo (pago, reembolso parcial, cancelado, teste, vários cupons).
+- [ ] **E3.4** Webhook `/api/webhooks/shopify/[marca]`: valida HMAC, grava `WebhookEvent` + `Job` na mesma
+  transação e responde 200; repetido não duplica; HMAC errado = 401 sem gravar.
+- [ ] **E3.5** Reconciliação a cada 15 min (janela com margem de 30 min) e "sincronizar agora" (super admin);
+  agendamento no pg_cron (D-CRON); `SyncRun` registra cada passada.
+- [ ] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST).
+- [ ] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
+  registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
+
+### Depois de E3 (detalhar quando chegar lá)
+E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
 E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-23 — 2026-10-09 — E3 detalhada
+- **Decidido:** D-DEVSTORE (staging numa loja de desenvolvimento), D-CRON (agendamento pelo pg_cron do Supabase),
+  D-SHOPAPP (app novo do Creator Club, token cifrado), D-HIST (desde o primeiro cupom de creator).
+- **Verificado no Shopify (D-TAX):** loja Botanika Brasil com `taxesIncluded = false`, `taxShipping = false`, BRL,
+  fuso `America/Sao_Paulo`. A base da comissão (`currentSubtotalPriceSet`) não tem imposto a descontar.
+- **Feito:** E3 quebrada em E3.1–E3.7.
 
 ### CP-22 — 2026-10-09 — E2 concluída (MFA adiado)
 - **Decidido:** D-MFA (adiado; veio da auditoria feita por IA, não da equipe nem do plano).
