@@ -8,6 +8,9 @@ import { normalizeCouponCode, type CouponKind } from "./coupon";
  *  2. Manter só os que eram cupom CREATOR da marca na data do pedido.
  *     Cupom PROMO (ex.: BOTANIKA) nunca atribui.
  *  3. O primeiro que sobrar leva o pedido inteiro.
+ *  4. D-RATEIMPORT: se antes dele aparecer um cupom ainda não classificado, desconhecido ou com dona
+ *     "a confirmar", o pedido fica PENDENTE (não é gravado e é decidido de novo depois da confirmação).
+ *     Pular esse cupom poderia dar o pedido para a creator errada.
  *
  * A ordem devolvida pelo Shopify é uma convenção, não prova de qual cupom foi
  * aplicado primeiro; por isso a lista usada fica gravada como evidência.
@@ -21,9 +24,12 @@ export type CouponAssignment = {
   couponId: string;
   brandId: string;
   code: string;
-  kind: CouponKind;
+  /** null = ainda não classificado (D-CLASS). */
+  kind: CouponKind | null;
   /** Dona do cupom; obrigatória para CREATOR, nula para PROMO. */
   creatorId: string | null;
+  /** Dona confirmada pela Ana (D-RATEIMPORT). PROMO não tem dona e conta como confirmado. */
+  confirmed: boolean;
   validFrom: Date;
   validTo: Date | null;
 };
@@ -43,24 +49,42 @@ export type Attribution = {
   evidenceCodes: string[];
 };
 
+export type PendingAttribution = {
+  pending: true;
+  code: string;
+  reason: "unknown_coupon" | "unclassified" | "owner_unconfirmed";
+  evidenceCodes: string[];
+};
+
 function isValidAt(a: CouponAssignment, at: Date): boolean {
   return a.validFrom <= at && (a.validTo === null || at < a.validTo);
+}
+
+export function isPending(r: Attribution | PendingAttribution | null): r is PendingAttribution {
+  return r !== null && "pending" in r;
 }
 
 export function attributeOrder(
   order: AttributionInput,
   assignments: readonly CouponAssignment[],
-): Attribution | null {
+): Attribution | PendingAttribution | null {
   const evidenceCodes = order.discountCodes.map(normalizeCouponCode);
+  const pending = (code: string, reason: PendingAttribution["reason"]): PendingAttribution => ({
+    pending: true,
+    code,
+    reason,
+    evidenceCodes,
+  });
 
   for (const code of evidenceCodes) {
-    const assignment = assignments.find(
-      (a) =>
-        a.brandId === order.brandId &&
-        normalizeCouponCode(a.code) === code &&
-        isValidAt(a, order.orderCreatedAt),
-    );
-    if (!assignment || assignment.kind !== "CREATOR") continue;
+    const ofCode = assignments.filter((a) => a.brandId === order.brandId && normalizeCouponCode(a.code) === code);
+    if (ofCode.length === 0) return pending(code, "unknown_coupon");
+    if (ofCode.some((a) => a.kind === null)) return pending(code, "unclassified");
+    if (ofCode.every((a) => a.kind === "PROMO")) continue;
+    const assignment = ofCode.find((a) => isValidAt(a, order.orderCreatedAt));
+    if (!assignment) continue; // CREATOR sem dona nessa data: não atribui (cupom de outra época).
+    if (assignment.kind !== "CREATOR") continue;
+    if (!assignment.confirmed) return pending(code, "owner_unconfirmed");
     if (!assignment.creatorId) {
       throw new Error(`cupom CREATOR ${assignment.code} sem dona definida`);
     }

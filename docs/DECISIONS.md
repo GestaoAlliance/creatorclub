@@ -48,6 +48,7 @@
 | D-IMPORT | 2026-10-09 | Importação da E4: **só as 28 creators da Botanika** (as 24 da VermeFree entram quando a marca for ligada), a partir da **exportação do `creator-hub` de 2026-10-09** (D-E0SRC); antes do corte (E9) uma exportação nova mostra o que mudou. Dados pessoais da exportação nunca entram no repositório (D-PUBLIC). | Pedro |
 | D-RATEIMPORT | 2026-10-09 | A taxa de cada creator vem do app antigo (15%; uma com 20%) e entra **"a confirmar"**: não vale para cálculo até a Ana confirmar. O mesmo vale para a dona de cada cupom e para o tipo CREATOR/PROMO (D-CLASS). | Pedro |
 | D-ADMINUI | 2026-10-09 | Telas internas da equipe (sync, cupons, fichas) ficam **simples e funcionais** até as telas do portal (E7); o visual *liquid glass* entra lá. Amplia D-SYNCUI. | Pedro |
+| D-PENDING | 2026-10-09 | Pedido cujo primeiro cupom relevante está "a confirmar" (cupom sem tipo, cupom desconhecido ou dona não confirmada) fica **pendente**: não é atribuído nem gravado, e é decidido de novo depois da confirmação. Pular esse cupom poderia dar o pedido à creator errada. Taxa "a confirmar" nunca vira número (erro). Detalha D-RATEIMPORT. | Técnica |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

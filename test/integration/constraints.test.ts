@@ -135,15 +135,15 @@ describe("cupons", () => {
     const a = await seedBrand(prisma);
     const b = await seedBrand(prisma);
     await expectDbError(
-      prisma.coupon.create({ data: { brandId: a.brand.id, code: a.coupon.code, kind: "PROMO" } }),
+      prisma.coupon.create({ data: { brandId: a.brand.id, code: a.coupon.code, kind: "PROMO", classifiedAt: new Date(), classifiedById: "seed" } }),
       /Coupon_brandId_code_key|brandId.*code/,
     );
     await expectDbError(
-      prisma.coupon.create({ data: { brandId: a.brand.id, code: "minusculo", kind: "PROMO" } }),
+      prisma.coupon.create({ data: { brandId: a.brand.id, code: "minusculo", kind: "PROMO", classifiedAt: new Date(), classifiedById: "seed" } }),
       /Coupon_code_uppercase/,
     );
     await expect(
-      prisma.coupon.create({ data: { brandId: b.brand.id, code: a.coupon.code, kind: "PROMO" } }),
+      prisma.coupon.create({ data: { brandId: b.brand.id, code: a.coupon.code, kind: "PROMO", classifiedAt: new Date(), classifiedById: "seed" } }),
     ).resolves.toBeTruthy();
   });
 
@@ -192,5 +192,36 @@ describe("auditoria", () => {
       data: { actorType: "SYSTEM", action: "teste", entity: "Brand", entityId: "x" },
     });
     await expectDbError(prisma.auditLog.delete({ where: { id: log.id } }), /somente inserção: DELETE/);
+  });
+});
+
+describe("a confirmar (D-CLASS / D-RATEIMPORT)", () => {
+  it("cupom sem tipo é aceito; tipo sem autor/data, ou autor sem tipo, é recusado", async () => {
+    const { brand } = await seedBrand(prisma);
+    await expect(prisma.coupon.create({ data: { brandId: brand.id, code: "SEMTIPO" } })).resolves.toMatchObject({ kind: null });
+    await expectDbError(prisma.coupon.create({ data: { brandId: brand.id, code: "SOTIPO", kind: "PROMO" } }), /Coupon_classified_consistent/);
+    await expectDbError(
+      prisma.coupon.create({ data: { brandId: brand.id, code: "SOAUTOR", classifiedAt: new Date(), classifiedById: "ana" } }),
+      /Coupon_classified_consistent/,
+    );
+  });
+
+  it("dona e taxa confirmadas sempre com autor", async () => {
+    const { brand, creator, coupon } = await seedBrand(prisma);
+    await expectDbError(
+      prisma.couponAssignment.create({
+        data: { brandId: brand.id, couponId: coupon.id, creatorId: creator.id, validFrom: new Date("2026-01-01T00:00:00Z"), confirmedAt: new Date() },
+      }),
+      /CouponAssignment_confirmed_has_author/,
+    );
+    await expectDbError(
+      prisma.commissionPolicy.create({
+        data: { brandId: brand.id, creatorId: creator.id, rateBps: 1500, validFrom: new Date("2026-01-01T00:00:00Z"), confirmedById: "ana" },
+      }),
+      /CommissionPolicy_confirmed_has_author/,
+    );
+    await expect(
+      prisma.commissionPolicy.create({ data: { brandId: brand.id, creatorId: creator.id, rateBps: 1500, validFrom: new Date("2026-01-01T00:00:00Z") } }),
+    ).resolves.toMatchObject({ confirmedAt: null });
   });
 });
