@@ -138,3 +138,54 @@ describe("ver como creator (D-VIEWAS, banco real)", () => {
     expect(ctx).toMatchObject({ creatorId: otherCreator.id, viewAs: null });
   });
 });
+
+describe("Vendas do portal (banco real)", () => {
+  it("só pedidos pagos da creator, por mês do pagamento, sem teste nem não pagos, com situação", async () => {
+    const { portalSales } = await import("@/lib/portal/sales");
+    const { commissionEntry } = await import("./fixtures");
+    const T = (iso: string) => new Date(iso);
+    const a = await seedBrand(prisma);
+    const ctx = await portalContext(prisma, await loginFor(a.account.id), a.brand.slug);
+    const mk = (name: string, paidAt: string | null, extra: Record<string, unknown> = {}) =>
+      prisma.order.create({
+        data: {
+          brandId: a.brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name, createdAtShop: T("2026-09-30T12:00:00Z"),
+          paidAt: paidAt ? T(paidAt) : null, financialStatus: paidAt ? "PAID" : "EXPIRED", subtotalCents: 10_000, totalCents: 11_000,
+          discountCodes: [a.coupon.code], shopifyUpdatedAt: T("2026-10-01T00:00:00Z"), ...extra,
+        },
+      });
+    const oct = await mk("#OUT", "2026-10-02T12:00:00Z");
+    const refunded = await mk("#EST", "2026-10-03T12:00:00Z", { financialStatus: "REFUNDED", subtotalCents: 0 });
+    const lateSep = await mk("#SET", "2026-10-01T01:00:00Z"); // ainda setembro em São Paulo
+    const unpaid = await mk("#PIX", null);
+    const test = await mk("#TST", "2026-10-04T12:00:00Z", { test: true });
+    for (const o of [oct, refunded, lateSep, unpaid, test]) {
+      await prisma.orderAttribution.create({ data: { brandId: a.brand.id, orderId: o.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] } });
+    }
+    const ids = { brandId: a.brand.id, creatorId: a.creator.id };
+    await prisma.ledgerEntry.createMany({
+      data: [
+        commissionEntry({ ...ids, orderId: oct.id }, { amountCents: 1_500, availableAt: T("2026-10-09T12:00:00Z") }),
+        commissionEntry({ ...ids, orderId: refunded.id }, { amountCents: 1_500, availableAt: T("2026-10-10T12:00:00Z") }),
+        commissionEntry({ ...ids, orderId: refunded.id }, { type: "REVERSAL", amountCents: -1_500, availableAt: T("2026-10-05T12:00:00Z") }),
+      ],
+    });
+
+    const page = await portalSales(prisma, ctx, { now: T("2026-10-06T12:00:00Z") });
+    expect(page.month).toBe("2026-10");
+    expect(page.months).toEqual(["2026-10", "2026-09"]);
+    expect(page.sales.map((s) => [s.orderName, s.status, s.commissionCents])).toEqual([
+      ["#EST", "REVERSED", 0],
+      ["#OUT", "HELD", 1_500],
+    ]);
+    expect(page.totals).toEqual({ count: 1, baseCents: 10_000, commissionCents: 1_500 });
+    expect((await portalSales(prisma, ctx, { month: "2026-09" })).sales.map((s) => s.orderName)).toEqual(["#SET"]);
+    await expect(portalSales(prisma, ctx, { month: "2026-13" })).rejects.toThrow(/Mês inválido/);
+
+    // Outra creator da mesma marca não vê essas vendas.
+    const other = await prisma.creatorAccount.create({ data: { name: "Outra", email: `${randomUUID()}@x.com` } });
+    await prisma.creator.create({ data: { brandId: a.brand.id, accountId: other.id, categories: [] } });
+    const otherPage = await portalSales(prisma, await portalContext(prisma, await loginFor(other.id), a.brand.slug));
+    expect(otherPage.sales).toEqual([]);
+  });
+});

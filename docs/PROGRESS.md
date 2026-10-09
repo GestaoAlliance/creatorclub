@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.3 — Vendas no portal (pedidos atribuídos, sem dados do cliente).
+- **Próxima tarefa:** E7.4 — Extrato no portal.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -129,7 +129,7 @@ só mostra dados da própria creator, decidido no servidor.
   atividade recente.
 - [x] **E7.1b** "Ver como creator" (D-VIEWAS): super admin abre o portal de uma creator a partir da ficha, só
   leitura, com aviso e registro na auditoria. Para o responsável acompanhar as telas com dados reais.
-- [ ] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
+- [x] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
 - [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
 - [ ] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
   aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
@@ -150,6 +150,15 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-49 — 2026-10-09 — Vendas no portal (E7.3)
+- **Feito:** `src/lib/portal/sales.ts` (`portalSales`: pedidos pagos atribuídos à creator, por mês do pagamento no fuso
+  da marca, sem teste nem pedido nunca pago; por pedido só número, data do pagamento, base, taxa, comissão líquida e
+  situação: a liberar com a data, liberada, estorno parcial, estornada, em conferência; totais do mês). Tela
+  `/portal/[marca]/vendas` (`SalesView`): meses em pílulas, tabela no computador, lista no celular; no celular os
+  totais ficam num cartão com uma linha por número (valores altos não cabem em três colunas). Item "Vendas" no menu.
+- **Verificado:** 94 unitários (1 novo: situações); 107 de integração (1 novo: mês no fuso, estornada, teste e não
+  pago fora, outra creator não vê); typecheck; build. Capturas enviadas para o OK do responsável (D-REVIEW).
 
 ### CP-48 — 2026-10-09 — Histórico completo da loja e classificação dos cupons (no staging, pelo responsável)
 - **Carga histórica:** exportação em lote pedida pelo conector da Shopify (só leitura; a loja começou em junho de
