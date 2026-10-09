@@ -137,4 +137,6 @@ mínimo de R$ 500 por solicitação — D-MIN; o app antigo media outra coisa), 
 `timestamp without time zone`. Na carga para o v2, converter para centavos/pontos-base com arredondamento
 explícito e conferir.
 
-**Backup** — não conferido ainda (página Database → Backups); organização no plano Free.
+**Backup** — **nenhum** (página Database → Backups vazia, plano Free; conferido em 2026-10-09). Os dados do
+`creator-hub` existem só no banco ativo: se o projeto for pausado ou apagado antes da migração (E4/E6), eles se perdem.
+Recomendação: quem tem acesso guardar uma cópia (dump) em local seguro e privado, fora deste repositório.

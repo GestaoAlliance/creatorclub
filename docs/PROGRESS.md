@@ -8,7 +8,7 @@
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
 - **Próxima tarefa:** E0.2 — saques já pagos a cada creator (o app antigo não registrou nenhum). Depois E0.3, E0.4 e E1.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
-  Backup do `creator-hub` ainda não conferido (página Database → Backups).
+  `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
   E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
@@ -20,7 +20,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
   contagens (creators, cupons, saques, termos) sem alterar nada; conferir se há backup; registrar.
   Fonte: consultas de leitura rodadas por quem tem acesso (D-E0SRC). Resultado em `docs/CONTEXTO.md`.
-  *Pendente: confirmar se há backup.*
+  Backup: nenhum (plano Free).
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
 - [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
   Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
@@ -43,6 +43,11 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-09 — 2026-10-09 — Backup do app antigo (fecha a pendência da E0.1)
+- **Feito:** registrado que o `creator-hub` não tem backup (página Database → Backups vazia, plano Free),
+  conforme conferido pelo responsável. Recomendado guardar um dump privado, fora do repositório.
+- **Verificado:** CI verde na `main` após o merge do CP-08 (run 37950378777, commit `f66b809`).
 
 ### CP-08 — 2026-10-09 — Projeto Vercel do Creator Club
 - **Feito:** registrado que o repositório está ligado ao projeto Vercel `creatorclub` (time GestaoAlliance).
