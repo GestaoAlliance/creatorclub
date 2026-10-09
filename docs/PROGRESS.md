@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.5 — Cupom e link no portal (ordem D-E7ORDER: Vendas → Cupom/link → Extrato → Saque → Envios).
+- **Próxima tarefa:** E7.4 — Extrato no portal (ordem D-E7ORDER: Extrato → Saque → Envios).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -131,7 +131,7 @@ só mostra dados da própria creator, decidido no servidor.
   leitura, com aviso e registro na auditoria. Para o responsável acompanhar as telas com dados reais.
 - [x] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
 - [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
-- [ ] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
+- [x] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
   aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
 - [ ] **E7.7** Saque no portal (adiantado da E8 por pedido do responsável, D-E7ORDER): pedir saque com a nota
   fiscal em PDF (upload), na janela e com o mínimo da marca; o painel do Pagamento continua na E8.
@@ -159,6 +159,19 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-50 — 2026-10-09 — Cupom e link no portal (E7.5)
+- **Decidido:** D-LINKFALLBACK (link de cupom desconhecido, promocional ou de creator desligada leva à página inicial
+  da loja, sem cupom e sem contar clique; o link na bio nunca quebra). IP nunca gravado: hash diário.
+- **Feito:** rota `/r/[marca]/[código]` (mesma do app antigo): grava o clique (`Click`, hash do IP que muda por dia,
+  navegador, origem) antes de responder e redireciona para `<loja>/discount/<CÓDIGO>?redirect=<caminho>` (só
+  caminhos da própria loja); fora do `proxy`. `src/lib/links/tracked.ts`. Aba Cupom (`/portal/[marca]/cupom`):
+  código e link para copiar, compartilhar pelo celular, cliques no mês e no total; o link usa o endereço por onde o
+  portal foi aberto (vale no domínio novo sem mudar nada). Item "Cupom" no menu; atalho no Início.
+- **Atenção:** o link mostrado hoje é do endereço `creatorclub-six.vercel.app`; com o domínio próprio (P3) muda
+  sozinho. Os links antigos nas bios apontam para o domínio do app antigo: redirecionar no corte (P3).
+- **Verificado:** 102 unitários (3 novos); 108 de integração (1 novo: clique gravado sem IP, promocional e
+  desconhecido vão à home, marca inexistente 404, desligada não conta, contagem do mês no fuso); typecheck; build.
 
 ### CP-49 — 2026-10-09 — Vendas no portal com período e gráfico por dia (E7.3)
 - **Decidido:** D-PERIOD (seletor Hoje · Ontem · 7 dias · Este mês · Personalizado, em dias da marca; gráfico de
