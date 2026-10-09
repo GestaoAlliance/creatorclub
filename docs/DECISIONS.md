@@ -43,5 +43,8 @@
 | D-PAY | Quem tem papel Pagamento | Juci e Pâmela | E2 |
 | D-NF | Código de serviço e descrição da NF | — | E8 |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
+| D-ADMIN | E-mail do primeiro SUPER_ADMIN (Pedro) | — | E2.3 |
+| D-SMTP | Remetente dos e-mails do Auth (convite, senha): Resend com qual domínio e conta? O e-mail padrão do Supabase só serve para teste (poucos envios por hora) | Resend, conta da Gestão Alliance, domínio a definir | E2.4 |
+| D-LOGIN | Forma de entrar: e-mail e senha (mín. 10) com "esqueci a senha"; link mágico também? | Senha + esqueci a senha; link mágico depois, se pedirem | E2.1 |
 | ~~D-ACCT~~ | ~~Donos das contas Supabase/Vercel~~ | ~~Contas da empresa, Pedro dono~~ — **substituída** em 2026-10-09 (ver D-ACCT em Decididas) | E1.4 |
 | ~~D-INFRA~~ | ~~Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início?~~ — **decidida** em 2026-10-09 (ver D-INFRA em Decididas) | Ver CONTEXTO.md (contas existentes). A organização "Creator Club" (Gestão Alliance) é Free: pausa após 7 dias sem uso; produção nunca em Free | E1.4 |
