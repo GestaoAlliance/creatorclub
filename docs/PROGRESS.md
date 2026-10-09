@@ -92,9 +92,11 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
 - [x] **E4.1** Estado "a confirmar" no banco: cupom sem tipo até ser classificado; dona (`CouponAssignment`) e taxa
   (`CommissionPolicy`) com quem confirmou e quando; o que não está confirmado nunca entra em cálculo (travas e
   testes).
-- [ ] **E4.2** Importação das 28 creators da Botanika (D-IMPORT): conta, participação, cupom, dona e taxa "a
+- [x] **E4.2** Importação das 28 creators da Botanika (D-IMPORT): conta, participação, cupom, dona e taxa "a
   confirmar", preservando os IDs antigos (`legacyId`); idempotente; e-mails falsos (`@import.creatorclub`)
   marcados para revisão. Cupons vistos nos pedidos sincronizados e ausentes do import entram sem tipo.
+  Pela tela `/admin/importar` (super admin envia o `Creator_rows.csv`, D-IMPORT); rodar no staging quando o deploy
+  com a migração `pending_confirmation` entrar no ar.
 - [ ] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
   classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
 - [ ] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
@@ -107,6 +109,18 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-35 — 2026-10-09 — Importação das creators do app antigo (E4.2)
+- **Decidido:** importação por tela, com o arquivo enviado pelo super admin (os dados pessoais não passam pelo chat).
+- **Feito:** `src/lib/import/csv.ts` (CSV RFC 4180 sem dependência nova); `src/lib/import/legacy.ts` (só as linhas da
+  marca pelo `legacyId`; conta, participação ACTIVE/INACTIVE, cupom sem tipo, dona e taxa a confirmar, datas do
+  app antigo em UTC, taxa em pontos-base sem Float; e-mail repetido em outra conta é erro da linha; rodar de novo
+  não cria nem sobrescreve e lista as diferenças; auditoria `import.legacy`); tela `/admin/importar` (super
+  admin) e link em `/conta`. `processOrder` passa a registrar como cupom (sem tipo) todo código visto num pedido.
+- **Ensaio com o arquivo real (banco local descartável, só totais):** 52 linhas, 28 da Botanika; criadas 28 contas,
+  28 creators, 28 cupons, 28 donas e 28 taxas (27 × 15%, 1 × 20%), nenhum erro; 16 e-mails falsos
+  (`@import.creatorclub`) a revisar; segunda rodada: nada criado, 28 sem mudança, 0 diferenças.
+- **Verificado:** 84 unitários (3 novos); 75 de integração (3 novos); typecheck; build.
 
 ### CP-34 — 2026-10-09 — Estado "a confirmar" (E4.1)
 - **Decidido:** D-PENDING (pedido com cupom a confirmar antes do de creator fica pendente; taxa a confirmar é erro).

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { parseDecimalToCents } from "@/domain";
+import { normalizeCouponCode, parseDecimalToCents } from "@/domain";
 import type { ShopifyClient } from "./client";
 
 /**
@@ -111,6 +111,9 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
       outcome = "created";
     }
     const { id: orderId } = await tx.order.findUniqueOrThrow({ where: { brandId_shopifyId: key }, select: { id: true } });
+    // Todo código visto num pedido vira cupom da marca; sem tipo até a Ana classificar (D-CLASS).
+    const codes = [...new Set(order.discountCodes.map(normalizeCouponCode).filter(Boolean))];
+    if (codes.length) await tx.coupon.createMany({ data: codes.map((code) => ({ brandId, code })), skipDuplicates: true });
     for (const line of lines) {
       await tx.orderLine.upsert({
         where: { orderId_shopifyId: { orderId, shopifyId: line.shopifyId } },
