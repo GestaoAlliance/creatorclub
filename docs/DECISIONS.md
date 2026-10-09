@@ -67,6 +67,10 @@
 | D-VIEWAS | 2026-10-09 | Super admin pode **ver o portal de uma creator** a partir da ficha: só leitura (nenhuma ação em nome dela), aviso visível, registro `portal.view_as` na auditoria, vale 1 hora. Substitui, só para isso, a regra "Entrar como fora do escopo". | Pedro |
 | D-REVIEW | 2026-10-09 | Mudança visual só vai ao ar com o OK do responsável sobre capturas (celular, computador, claro/escuro) no PR. Código sem tela e regra já decidida seguem direto após o CI. Prévias da Vercel continuam desligadas (sem banco próprio); depois do merge, conferir no site ao vivo. | Pedro |
 | D-GAPS | 2026-10-09 | Entram na fila antes do corte: backup dos bancos, e-mail pelo Resend, domínio próprio (o responsável compra) com redirecionamento dos links `/r/` antigos, termo de aceite da creator. | Pedro |
+| D-HISTMCP | 2026-10-09 | Histórico de pedidos trazido por exportação em lote pedida pelo conector da Shopify (só leitura) e importada pelo worker do app, enquanto o app não tem `read_all_orders`. Webhook e reconciliação seguem pelo app. | Pedro |
+| D-CLASSPEDRO | 2026-10-09 | O responsável classifica cupons e confirma donas quando souber; a Ana só recebe o que ele não souber. BOTANIKA é o cupom de 1º pedido (PROMO); ANOVA é PROMO; VICTORIA e JULIACOLARES são creators; cupom "DR…" é de prescritor (vende para pacientes, não precisa produzir conteúdo). | Pedro |
+| D-RATEPROV | 2026-10-09 | Taxas do app antigo (15%; Raquel Cembranelli 20%) confirmadas como provisórias para as comissões rodarem; a Ana confirma cada uma depois. Cupom de creator sem cadastro vira creator nova com 15%. | Pedro |
+| D-SINCEFIRST | 2026-10-09 | Vendas antes do cadastro da creator no app antigo contam: dona e taxa valem desde o 1º uso (01/06/2026). O que já foi pago por fora entra como abatimento no saldo de abertura (D-OPEN). | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
