@@ -6,6 +6,7 @@ import { creatorProfile, ProfileError, STATUS_LABEL } from "@/lib/creators/profi
 import { randomUUID } from "node:crypto";
 import { formatBRL } from "@/domain";
 import { creatorStatement, LEDGER_LABEL, StatementError } from "@/lib/commission/statement";
+import { viewAsAction } from "@/app/portal/actions";
 import { AdjustForm, ContactForm, InviteButton, RateChangeForm, StatusForm } from "./forms";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,12 @@ export default async function CreatorPage({
           {STATUS_LABEL[p.status]} · {p.hasLogin ? "já entrou no portal" : "ainda sem acesso ao portal"}
           {p.contact.fakeEmail && <span className="text-amber-700"> · e-mail a confirmar</span>}
         </p>
+        {p.canViewAs && (
+          <form action={viewAsAction} className="mt-3">
+            <input type="hidden" name="creatorId" value={p.id} />
+            <button className="rounded border border-stone-300 px-3 py-2 text-sm">Ver o portal como esta creator (só leitura)</button>
+          </form>
+        )}
       </div>
 
       <section className="flex flex-col gap-3">

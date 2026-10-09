@@ -64,6 +64,9 @@
 | D-PORTALURL | 2026-10-09 | Portal em `/portal/[marca]/...`; trocar de marca é trocar o endereço. Depois de entrar, a creator cai na sua marca. | Pedro |
 | D-PORTALACCESS | 2026-10-09 | Ativa, Pausada e Desligada entram no portal (saldo e extrato são delas); a Desligada vê um aviso e o cupom/link não aparecem como ativos. | Pedro |
 | D-HOMEKPI | 2026-10-09 | Início do portal: 4 cartões (disponível para saque; a liberar, com a data da próxima liberação; vendas do mês em valor e quantidade de pedidos; comissão do mês), mês pela data do pagamento; abaixo, as 8 últimas movimentações do extrato e, ao lado, o cupom para copiar. | Pedro |
+| D-VIEWAS | 2026-10-09 | Super admin pode **ver o portal de uma creator** a partir da ficha: só leitura (nenhuma ação em nome dela), aviso visível, registro `portal.view_as` na auditoria, vale 1 hora. Substitui, só para isso, a regra "Entrar como fora do escopo". | Pedro |
+| D-REVIEW | 2026-10-09 | Mudança visual só vai ao ar com o OK do responsável sobre capturas (celular, computador, claro/escuro) no PR. Código sem tela e regra já decidida seguem direto após o CI. Prévias da Vercel continuam desligadas (sem banco próprio); depois do merge, conferir no site ao vivo. | Pedro |
+| D-GAPS | 2026-10-09 | Entram na fila antes do corte: backup dos bancos, e-mail pelo Resend, domínio próprio (o responsável compra) com redirecionamento dos links `/r/` antigos, termo de aceite da creator. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

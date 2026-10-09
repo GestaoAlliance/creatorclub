@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { portalContext, portalHome } from "@/lib/portal/context";
+import { portalContext, portalHome, startViewAs } from "@/lib/portal/context";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -102,5 +102,39 @@ describe("Início do portal (banco real)", () => {
     const otherCtx = await portalContext(prisma, await loginFor(other.id), a.brand.slug);
     const empty = await portalSummary(prisma, otherCtx, T("2026-10-07T12:00:00Z"));
     expect(empty).toMatchObject({ salesCount: 0, commissionCents: 0, recent: [], coupons: [], balance: { totalCents: 0 } });
+  });
+});
+
+describe("ver como creator (D-VIEWAS, banco real)", () => {
+  async function staff(role: "SUPER_ADMIN" | "GESTAO", brandId: string | null) {
+    const id = randomUUID();
+    await prisma.user.create({ data: { id, email: `${id}@x.com`, name: role, roleGrants: { create: { role, brandId } } } });
+    return (await loadActor(prisma, id))!;
+  }
+
+  it("super admin vê o portal da creator só para leitura, com registro na auditoria", async () => {
+    const a = await seedBrand(prisma);
+    const admin = await staff("SUPER_ADMIN", null);
+    expect(await startViewAs(prisma, admin, a.creator.id)).toBe(a.brand.slug);
+    expect(await prisma.auditLog.count({ where: { action: "portal.view_as", entityId: a.creator.id, actorId: admin.userId } })).toBe(1);
+    const ctx = await portalContext(prisma, admin, a.brand.slug, a.creator.id);
+    expect(ctx).toMatchObject({ creatorId: a.creator.id, viewAs: { userId: admin.userId } });
+    expect(ctx.brands.map((b) => b.slug)).toEqual([a.brand.slug]);
+    // Cookie com creator de outra marca que a do endereço não vale.
+    const b = await seedBrand(prisma);
+    await expect(portalContext(prisma, admin, b.brand.slug, a.creator.id)).rejects.toThrow(/Sem acesso/);
+  });
+
+  it("Gestão não usa a visualização; cookie forjado por creator é ignorado", async () => {
+    const a = await seedBrand(prisma);
+    const gestao = await staff("GESTAO", a.brand.id);
+    await expect(startViewAs(prisma, gestao, a.creator.id)).rejects.toThrow(/Só super admin/);
+    await expect(portalContext(prisma, gestao, a.brand.slug, a.creator.id)).rejects.toThrow(/Sem acesso/);
+
+    // Outra creator da mesma marca põe o id da colega no cookie: continua vendo só o próprio portal.
+    const other = await prisma.creatorAccount.create({ data: { name: "Outra", email: `${randomUUID()}@x.com` } });
+    const otherCreator = await prisma.creator.create({ data: { brandId: a.brand.id, accountId: other.id, categories: [] } });
+    const ctx = await portalContext(prisma, await loginFor(other.id), a.brand.slug, a.creator.id);
+    expect(ctx).toMatchObject({ creatorId: otherCreator.id, viewAs: null });
   });
 });
