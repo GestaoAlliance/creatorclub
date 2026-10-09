@@ -151,6 +151,23 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-48 — 2026-10-09 — Histórico completo da loja e classificação dos cupons (no staging, pelo responsável)
+- **Carga histórica:** exportação em lote pedida pelo conector da Shopify (só leitura; a loja começou em junho de
+  2026) e importada pelo próprio worker (`shopify.backfill.import`, mesma `processOrder`): **4.592 pedidos** (igual
+  ao total da loja), 2.925 com cupom. Contorna, só para o histórico, a falta de `read_all_orders` no app (D-HISTMCP).
+- **Classificação (D-CLASSPEDRO):** o responsável decidiu no chat, gravado em nome dele com auditoria:
+  BOTANIKA (1º pedido), ANOVA e os cupons de campanha/recuperação/frete são PROMO; VICTORIA, JULIACOLARES e os
+  cupons com dona conhecida são CREATOR; cupons "DR…" são de prescritores (categoria PRESCRITOR).
+  Cupons de creator sem cadastro (LUCCA, LARILESSA, LUDI, BRAUHER, DRALORENA, CRISCRUZ, CLEYARBS) viraram creators
+  novas com o nome do código e e-mail a confirmar. Cadastros falsos do app antigo (BOTANIKA, ANOVA10, ANOVA7,
+  BRASIL10, FRETEGRATIS, PALPITE12, VOLTEI10) ficaram Desligada.
+- **Taxas (D-RATEPROV):** 15% para todas e 20% para a Raquel Cembranelli, confirmadas como provisórias para as
+  comissões rodarem; a Ana revisa cada uma (há exceções). Taxa é congelada na atribuição: corrigir depois é por
+  ajuste manual ou mudança de taxa para a frente.
+- **Desde o 1º uso (D-SINCEFIRST):** dona e taxa valem desde 01/06/2026; vendas antes do cadastro no app antigo
+  contam. O que já foi pago por fora abate no saldo de abertura (D-OPEN, E6).
+- **Falta:** cupom `XGFA2YM4DGSE` sem tipo (parece código automático); e-mails reais das creators.
+
 ### CP-47 — 2026-10-09 — "Ver como creator" e novo jeito de revisar
 - **Decidido:** D-VIEWAS ("ver como creator" só para super admin, só leitura, auditado; muda a regra "Entrar como
   fora do escopo" do `CLAUDE.md`), D-REVIEW (tela nova só com OK sobre capturas; prévias da Vercel continuam
