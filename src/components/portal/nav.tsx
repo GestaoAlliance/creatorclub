@@ -1,12 +1,15 @@
 "use client";
 
-import { ChevronsLeft, House, type LucideIcon } from "lucide-react";
+import { ChevronsLeft, House, ShoppingBag, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 /** Itens do portal. Cada etapa da E7 acrescenta o seu (Vendas, Extrato, Cupom e link). */
-const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [{ href: "", label: "Início", Icon: House }];
+const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
+  { href: "", label: "Início", Icon: House },
+  { href: "/vendas", label: "Vendas", Icon: ShoppingBag },
+];
 
 function useActive(base: string) {
   const path = usePathname();

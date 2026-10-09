@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.3 — Vendas no portal (pedidos atribuídos, sem dados do cliente).
+- **Próxima tarefa:** E7.5 — Cupom e link no portal (ordem D-E7ORDER: Vendas → Cupom/link → Extrato → Saque → Envios).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -129,12 +129,21 @@ só mostra dados da própria creator, decidido no servidor.
   atividade recente.
 - [x] **E7.1b** "Ver como creator" (D-VIEWAS): super admin abre o portal de uma creator a partir da ficha, só
   leitura, com aviso e registro na auditoria. Para o responsável acompanhar as telas com dados reais.
-- [ ] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
+- [x] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
 - [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
 - [ ] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
   aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
+- [ ] **E7.7** Saque no portal (adiantado da E8 por pedido do responsável, D-E7ORDER): pedir saque com a nota
+  fiscal em PDF (upload), na janela e com o mínimo da marca; o painel do Pagamento continua na E8.
+- [ ] **E7.8** Envios (D-SHIPMENTS): a equipe (papel Envio) registra cada envio de produtos à creator (data,
+  produtos/kit, endereço, rastreio, situação: preparando, enviado, entregue); a creator vê "Meus envios"; o admin
+  vê todos. Detalhar antes de começar.
 - [ ] **E7.6** Aceite: 2 ou 3 creators piloto conferem os próprios números. *Depende de:* escolher as piloto, e da
   conferência da Ana (E4.5) para haver comissão lançada.
+
+### Para conversar com a Ana (D-PERKS, depois do lançamento 1)
+Bônus por metas (benefícios desbloqueados), gamificação, competições de vendas. Levantar com a Ana quais benefícios
+já existem antes de desenhar.
 
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
 - [ ] **P1** Backup dos bancos: cópia diária privada do Supabase do v2 (fora do repositório) e uma cópia do
@@ -150,6 +159,25 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-49 — 2026-10-09 — Vendas no portal com período e gráfico por dia (E7.3)
+- **Decidido:** D-PERIOD (seletor Hoje · Ontem · 7 dias · Este mês · Personalizado, em dias da marca; gráfico de
+  vendas por dia com a comissão e os pedidos na ficha ao passar o dedo; cartões Pedidos, Vendas, Comissão e Ticket
+  médio), D-SHIPMENTS (envios de produtos à creator), D-E7ORDER (ordem das próximas telas), D-PERKS (bônus, metas,
+  gamificação e competições anotados para conversar com a Ana). Pedidos do responsável a partir de um print do
+  painel da Botanika.
+- **Feito:** `dayKey`, `startOfLocalDay` (funciona com horário de verão), `addDaysKey`/`nextDayKey` no domínio;
+  `src/lib/portal/period.ts` (`resolvePeriod`: presets, personalizado até 366 dias, nunca depois de hoje, inválido
+  volta para Este mês); `portalSales` por período (pedidos pagos atribuídos, sem teste nem nunca pago, sem dados do
+  cliente; série por dia; totais com ticket médio). Tela `/portal/[marca]/vendas`: seletor numa linha acima de tudo,
+  cartões (no celular, um cartão com uma linha por número), gráfico de uma série (área + linha 2px na cor da
+  marca, cruz e ficha, setas do teclado, tabela para leitor de tela), lista de pedidos (tabela no computador, lista no
+  celular). Item "Vendas" no menu.
+- **Corrigido:** tema escuro. O React refazia o `<html>` no navegador e apagava `data-theme`; agora o CSS segue o
+  aparelho sozinho e só a escolha do botão vira atributo, reaplicada ao montar (`ThemeSync`).
+- **Verificado:** 99 unitários (5 novos: dias no fuso, período, situação); 107 de integração (período, dia do
+  pagamento no fuso, estornada, teste e não pago fora, outra creator não vê); typecheck; build. Capturas
+  (computador e celular, claro e escuro, personalizado) para o OK do responsável.
 
 ### CP-48 — 2026-10-09 — Histórico completo da loja e classificação dos cupons (no staging, pelo responsável)
 - **Carga histórica:** exportação em lote pedida pelo conector da Shopify (só leitura; a loja começou em junho de

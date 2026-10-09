@@ -2,10 +2,12 @@
 
 import { Moon, Sun } from "lucide-react";
 
-// Troca claro/escuro e guarda a escolha neste navegador. O ícone certo aparece via CSS (sem piscar).
+// Troca claro/escuro e guarda a escolha neste navegador. O ícone certo aparece via CSS (sem piscar). D-THEME.
 export function ThemeToggle() {
   function toggle() {
-    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    const set = document.documentElement.getAttribute("data-theme");
+    const current = set === "dark" || set === "light" ? set : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const next = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try {
       localStorage.setItem("theme", next);
