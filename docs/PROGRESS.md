@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.3 — `processOrder` (pedido do Shopify → `Order`/`OrderLine`). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.4 — Webhook `/api/webhooks/shopify/[marca]`. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -68,7 +68,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
   O agendamento no pg_cron e o `JOBS_SECRET` na Vercel entram na E3.5, quando houver tarefa de verdade.
 - [x] **E3.2** Credenciais e cliente do Shopify: token e segredo do webhook cifrados (AES-256-GCM, D-SHOPAPP);
   cliente GraphQL Admin com versão fixa, limite de custo e nova tentativa; nunca loga token.
-- [ ] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
+- [x] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
   (`updatedAt`) for mais nova; guarda os códigos de cupom; avisa se `taxesIncluded` mudar (D-TAX). Testes com
   pedidos de exemplo (pago, reembolso parcial, cancelado, teste, vários cupons).
 - [ ] **E3.4** Webhook `/api/webhooks/shopify/[marca]`: valida HMAC, grava `WebhookEvent` + `Job` na mesma
@@ -85,6 +85,18 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-26 — 2026-10-09 — Gravação dos pedidos (E3.3)
+- **Decidido:** D-PAIDAT (data do pagamento = primeira `SALE`/`CAPTURE` com sucesso), conferido em 5 pedidos
+  reais da Botanika (leitura).
+- **Feito:** `src/lib/shopify/orders.ts`: consulta do pedido (com todas as páginas de itens), conversão para
+  centavos sem Float, cupons na ordem do Shopify, `processOrder` (cria; atualiza só se `updatedAt` for mais novo;
+  igual ou antigo é ignorado, decidido pelo banco sem corrida; itens por `upsert`; avisa `taxes_included` e
+  `currency_not_brl`). Tarefa `shopify.order.sync` (`src/lib/shopify/jobs.ts`) registrada no worker: busca o
+  pedido, grava, e registra aviso na auditoria (`order.warning`) para a tela de saúde e para a E5.
+- **Verificado:** 65 unitários (5 novos: conversão, reembolso/cancelado/teste, data do pagamento, paginação de
+  itens, pedido inexistente); 48 de integração (6 novos: cria/atualiza/ignora versão antiga, marcas separadas,
+  avisos, itens pela metade não grava, tarefa grava e audita aviso, pedido apagado e payload inválido); typecheck.
 
 ### CP-25 — 2026-10-09 — Credenciais e cliente do Shopify (E3.2)
 - **Feito:** `src/lib/crypto/secret-box.ts` (AES-256-GCM, chave `INTEGRATION_ENC_KEY` de 32 bytes; a marca entra
