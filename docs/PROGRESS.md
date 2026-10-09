@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** terminar a E2.1 (configuração do Auth e teste no staging). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E2.2 — papéis e checagem central. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -40,10 +40,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
   `Creator Club` com as migrações aplicadas pelo deploy da `main`.
 
 ### E2 — Login e papéis (detalhada em 2026-10-09, a partir do plano)
-- [~] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, clientes do servidor e do navegador, `proxy.ts` renovando a
-  sessão, tela `/entrar` (e-mail e senha, mínimo 10 caracteres), sair, "esqueci a senha". `User.id` já é o id do
-  usuário do Auth (schema da E1.2). **Falta:** variáveis públicas do Supabase na Vercel, configuração do Auth
-  (URL do site, links de retorno, cadastro aberto desligado, senha mínima 10) e teste ponta a ponta no staging.
+- [x] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, `proxy.ts` renovando a sessão, `/entrar` (e-mail e senha,
+  mínimo 10), sair, "esqueci a senha" e `/auth/callback`. `User.id` é o id do usuário do Auth (schema da E1.2).
+  Login testado no staging. **"Esqueci a senha" só funciona de verdade depois do remetente de e-mail (D-SMTP, E2.4).**
 - [ ] **E2.2** Papéis e checagem central: quem é o usuário, papéis por marca (`RoleGrant`), negar por padrão,
   escopo de marca em toda consulta. Teste prova que cada papel só vê o que pode.
 - [ ] **E2.3** Primeiro super admin: comando único que cria o acesso e nunca regrava senha no deploy. *Precisa de D-ADMIN.*
@@ -58,6 +57,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-16 — 2026-10-09 — Login no ar (E2.1 concluída)
+- **Configurado (pelo responsável):** na Vercel, `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  (Production e Preview). No Supabase Auth: cadastro aberto desligado, senha mínima 10, Site URL
+  `https://creatorclub-six.vercel.app`, links de retorno `https://creatorclub-six.vercel.app/**` e
+  `https://*-gestaoalliance.vercel.app/**` (prévias do time). Primeiro usuário criado no painel (sem e-mail).
+- **Verificado:** login em `https://creatorclub-six.vercel.app/entrar` leva a `/conta` mostrando o e-mail; no banco,
+  1 usuário confirmado com login às 17:42 UTC.
+- **Design:** cor oficial da Botanika `#323C91` lida do tema da loja (D-BRANDCOLOR); VermeFree pendente.
+- **Pendente:** e-mails do Auth (nova senha, convites) dependem de D-SMTP.
 
 ### CP-15 — 2026-10-09 — Direção de design registrada
 - **Feito:** `docs/design/DESIGN.md` com a linha visual (*liquid glass*, monocromático, cor de destaque por marca,
