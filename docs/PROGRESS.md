@@ -99,8 +99,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   `creator-club-v2-1` ativa, escopo `read_orders`, webhooks 2026-10. `read_all_orders` foi recusado na criação
   ("escopo inválido"): fica para a carga histórica (pedidos com mais de 60 dias).
 - **Conferido:** pedido da chave de acesso feito pelo banco (pg_net) respondeu `app_not_installed`: credenciais
-  aceitas, falta instalar o app na loja. Resposta apagada não foi possível (a consulta expirou); o registro do pg_net
-  não contém chave, só o erro.
+  aceitas, falta instalar o app na loja. A resposta guardada pelo pg_net tem só o erro, nenhuma chave.
 - **No staging:** Client ID/secret cifrados com a `INTEGRATION_ENC_KEY` e gravados em `BrandIntegration` da marca
   `botanika` como DESCONECTADA (sem sync até conectar), com auditoria `integration.credentials`. Nada disso vai para o
   repositório (D-PUBLIC).
