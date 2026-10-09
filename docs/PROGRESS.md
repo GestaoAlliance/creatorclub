@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
-- **Próxima tarefa:** terminar a E1.4 (staging): variáveis de banco na Vercel e primeiro deploy verificado.
+- **Próxima tarefa:** fechar a E1.4: conferir `/api/ready` e a região `gru1` no app publicado. Depois E2.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -36,9 +36,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E1.2** Schema Prisma do núcleo (Brand, BrandIntegration, User, RoleGrant, CreatorAccount, Creator, CommissionPolicy, Coupon, Order, OrderLine, OrderAttribution, LedgerEntry, Withdrawal, File, WebhookEvent, Job, SyncRun, AuditLog, Click) com migração inicial e restrições (únicos, FKs `Restrict`, índice parcial de saque aberto). Testes de integração contra Postgres local.
 - [x] **E1.3** CI no GitHub Actions: instalar, typecheck, testes (com Postgres de serviço), build.
 - [~] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`.
-  Pronto no código: `vercel.json` (gru1), migração no build de produção (D-MIGRATE), RLS em todas as tabelas (D-RLS),
-  `GET /api/ready`. **Falta:** `DATABASE_URL` e `DIRECT_URL` no ambiente Production do projeto Vercel `creatorclub`,
-  deploy da `main` e conferência (`/api/ready` ok; tabelas e RLS no Supabase).
+  Feito: variáveis na Vercel, migrações aplicadas pelo deploy da `main` (21 tabelas, todas com RLS).
+  **Falta:** conferir no navegador `/api/ready` (`{"ok":true,"db":"ok"}`) e a região das funções (`gru1`).
 
 ### Depois de E1 (detalhar quando chegar lá)
 E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -46,6 +45,20 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-12 — 2026-10-09 — Staging com banco migrado (E1.4)
+- **Causa do travamento (CP-11):** a `DIRECT_URL` salva na Vercel estava com a porta **6543** (transaction
+  pooler); `prisma migrate deploy` trava nesse pooler. Corrigida para 5432 e feito redeploy.
+- **Verificado no Supabase (projeto `Creator Club`):** `_prisma_migrations` com `core` e `rls_lockdown` aplicadas
+  em 2026-10-09 16:59 UTC, sem rollback; 21 tabelas em `public`, **todas com RLS**.
+- **Verificador de segurança do Supabase:** "RLS sem políticas" (21) é o esperado (D-RLS); `rls_auto_enable` é
+  função do próprio Supabase (gatilho de evento, não chamável pela API); `forbid_update_delete` sem `search_path`
+  fixo → corrigido na migração `db_hardening`; `btree_gist` no `public` → risco aceito (mover exige ser dono dos
+  tipos da extensão, o papel `postgres` não é; testado localmente, a migração falharia).
+- **Feito no código:** `vercel-build` recusa `DIRECT_URL` na porta 6543 com mensagem clara; migração
+  `db_hardening`.
+- **Verificado localmente:** 33 unitários; 16 de integração em banco comum e em banco com schema `extensions`
+  (como o Supabase); migração × schema sem divergência; typecheck.
 
 ### CP-11 — 2026-10-09 — Primeiro deploy do staging travou na migração (E1.4)
 - **Aconteceu:** com `DATABASE_URL` e `DIRECT_URL` na Vercel, o deploy da `main` (`4548e29`) conectou no banco
