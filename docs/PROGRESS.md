@@ -5,12 +5,14 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.7 (parte 2) — app no Dev Dashboard da Botanika (responsável), conectar a loja real em `/admin/sync` (só leitura) e conferir pedidos chegando por webhook e reconciliação. E0.2–E0.4 seguem quando as pessoas responderem.
-  Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
-- **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
-  `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
-  E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
+- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
+  (aceite bloqueado); E5 em andamento.
+- **Próxima tarefa:** E5.3 — ajuste manual (só super admin, com motivo).
+- **Aguardando pessoas:** E4.5 (importar o `Creator_rows.csv` em `/admin/importar` e conferência da Ana em
+  `/admin/cupons`); E0.2 (Pagamento: Juci/Pâmela), E0.4 (Vitor).
+- **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
+  `read_all_orders` ainda não concedido ao app (carga histórica de pedidos com mais de 60 dias); `creator-hub` sem
+  backup (guardar um dump privado).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ## Fila de tarefas (uma por vez, nesta ordem)
@@ -79,7 +81,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST). A **data** de início
   depende de saber quais cupons são de creator (D-CLASS, E4): a lista do app antigo mistura cupons promocionais
   (ex.: BOTANIKA, FRETEGRATIS, 20OFF). A carga na loja real roda quando ela for ligada; o botão fica na tela de saúde.
-- [~] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
+- [x] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
   Parte 1 feita (CP-30): agendamento ligado, credenciais no modelo do Dev Dashboard, conexão da loja e tela
   `/admin/sync`. Mudou para a loja real (D-REALSTORE): `INTEGRATION_ENC_KEY` salva na Vercel e marca `botanika`
@@ -110,6 +112,25 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-41 — 2026-10-09 — Loja Botanika ligada e sync no ar (E3.7 concluída)
+- **No staging:** o deploy liberou às ~20:00 UTC; loja `p01bpt-x2.myshopify.com` marcada como conectada (só
+  `read_orders`) e os 5 webhooks cadastrados pelo conector do Supabase (pg_net com a chave de 24 h, sem trazê-la ao
+  chat), auditoria `integration.connect`. A primeira reconciliação (20:01 UTC) gravou 10 pedidos reais, todos pagos,
+  sem erro. Migrações `pending_confirmation` e `hold_7_days` aplicadas pelo deploy seguinte.
+- **Corrigido:** `processOrder` passa a registrar os códigos dos pedidos como cupom (sem tipo) também quando a
+  versão é repetida (os 10 pedidos foram gravados pela versão anterior, que não registrava).
+
+### CP-40 — 2026-10-09 — Lançamentos de comissão (E5.2)
+- **Feito:** `src/lib/commission/ledger.ts`: `postCommission` (devido − lançado por versão do pedido; COMMISSION ou
+  REVERSAL; chave de idempotência com a versão; trava por pedido na transação contra lançamento em dobro; crédito
+  disponível 7 dias depois do pagamento, débito na hora; não lança sem atribuição, sem taxa congelada, com imposto
+  incluso ou moeda diferente) e `settleOrder` (atribuição + lançamento), usados por webhook, reconciliação e carga
+  histórica; a reavaliação da marca também lança. `processOrder` passa a devolver o pedido mesmo quando a versão é
+  repetida (a liquidação é refeita se algo falhou antes); o aviso de imposto só é registrado em versão nova.
+- **Verificado:** 86 unitários; 95 de integração (5 novos: pago com retenção e repetição, reembolso parcial e
+  cancelamento somando zero, 5 processos simultâneos lançando uma vez, casos que não lançam, pendente lançado pela
+  reavaliação); typecheck; build.
 
 ### CP-39 — 2026-10-09 — Atribuição no banco (E5.1)
 - **Feito:** `src/lib/commission/attribution.ts`: `decideAttribution` (decide uma vez, com os códigos como evidência;

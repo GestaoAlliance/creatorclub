@@ -96,8 +96,12 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
   if (order.taxesIncluded) warnings.push("taxes_included");
   if (order.currency !== "BRL") warnings.push("currency_not_brl");
 
+  // Todo código visto num pedido vira cupom da marca; sem tipo até a Ana classificar (D-CLASS).
+  const codes = [...new Set(order.discountCodes.map(normalizeCouponCode).filter(Boolean))];
+
   return prisma.$transaction(async (tx) => {
     const key = { brandId, shopifyId: order.shopifyId };
+    if (codes.length) await tx.coupon.createMany({ data: codes.map((code) => ({ brandId, code })), skipDuplicates: true });
     // Atualiza só se a foto recebida for mais nova; senão cria (se ainda não existe). Sem corrida: o banco decide.
     const { brandId: _b, shopifyId: _s, ...fields } = order;
     const updated = await tx.order.updateMany({
@@ -107,13 +111,14 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
     let outcome: ProcessOrderResult["outcome"] = "updated";
     if (updated.count === 0) {
       const created = await tx.order.createMany({ data: [order], skipDuplicates: true });
-      if (created.count === 0) return { outcome: "stale" as const, orderId: null, warnings };
+      if (created.count === 0) {
+        // Versão igual ou antiga: nada muda, mas devolve o pedido para a liquidação ser refeita se algo falhou antes.
+        const existing = await tx.order.findUnique({ where: { brandId_shopifyId: key }, select: { id: true } });
+        return { outcome: "stale" as const, orderId: existing?.id ?? null, warnings };
+      }
       outcome = "created";
     }
     const { id: orderId } = await tx.order.findUniqueOrThrow({ where: { brandId_shopifyId: key }, select: { id: true } });
-    // Todo código visto num pedido vira cupom da marca; sem tipo até a Ana classificar (D-CLASS).
-    const codes = [...new Set(order.discountCodes.map(normalizeCouponCode).filter(Boolean))];
-    if (codes.length) await tx.coupon.createMany({ data: codes.map((code) => ({ brandId, code })), skipDuplicates: true });
     for (const line of lines) {
       await tx.orderLine.upsert({
         where: { orderId_shopifyId: { orderId, shopifyId: line.shopifyId } },

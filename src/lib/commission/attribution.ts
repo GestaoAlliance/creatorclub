@@ -101,8 +101,10 @@ export async function decideAttribution(prisma: PrismaClient, orderId: string, a
 
 export type RecheckResult = { checked: number; attributed: number; frozen: number; pending: number };
 
+type PostFn = (prisma: PrismaClient, orderId: string) => Promise<unknown>;
+
 /** Reavalia pedidos sem atribuição (com cupom) e atribuições pagas sem taxa congelada. */
-export async function recheckBrand(prisma: PrismaClient, brandId: string): Promise<RecheckResult> {
+export async function recheckBrand(prisma: PrismaClient, brandId: string, post?: PostFn): Promise<RecheckResult> {
   const assignments = await brandAssignments(prisma, brandId);
   const orders = await prisma.order.findMany({
     where: {
@@ -116,6 +118,7 @@ export async function recheckBrand(prisma: PrismaClient, brandId: string): Promi
     const r = await decideAttribution(prisma, id, assignments);
     if (r.status === "attributed") result.attributed++;
     else if (r.status === "rate_frozen") result.frozen++;
+    if ((r.status === "attributed" || r.status === "rate_frozen") && post) await post(prisma, id);
     else if (r.status === "pending") result.pending++;
   }
   return result;
