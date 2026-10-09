@@ -87,12 +87,35 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
   recusado como escopo inválido) e credenciais guardadas cifradas (CP-32). Falta: instalar o app na loja, conectar
   em `/admin/sync` (sem redigitar) e conferir pedidos reais chegando.
 
-### Depois de E3 (detalhar quando chegar lá)
-E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
+### E4 — Cupons e creators atuais (detalhada em 2026-10-09, a partir do plano)
+Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa confirmados pela Ana (D-CLASS).
+- [ ] **E4.1** Estado "a confirmar" no banco: cupom sem tipo até ser classificado; dona (`CouponAssignment`) e taxa
+  (`CommissionPolicy`) com quem confirmou e quando; o que não está confirmado nunca entra em cálculo (travas e
+  testes).
+- [ ] **E4.2** Importação das 28 creators da Botanika (D-IMPORT): conta, participação, cupom, dona e taxa "a
+  confirmar", preservando os IDs antigos (`legacyId`); idempotente; e-mails falsos (`@import.creatorclub`)
+  marcados para revisão. Cupons vistos nos pedidos sincronizados e ausentes do import entram sem tipo.
+- [ ] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
+  classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
+- [ ] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
+- [ ] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
+  histórica disparada (depende de `read_all_orders` para pedidos com mais de 60 dias).
+
+### Depois de E4 (detalhar quando chegar lá)
+E5 Atribuição e extrato no banco ·
 E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-33 — 2026-10-09 — E4 detalhada
+- **Decidido:** D-IMPORT (só as 28 da Botanika, exportação de hoje e conferência no corte), D-RATEIMPORT (taxa,
+  dona e tipo "a confirmar" até a Ana), D-ADMINUI (telas internas simples até a E7).
+- **Feito:** E4 quebrada em E4.1–E4.5. App "Creator Club - v2" instalado na loja pelo responsável; chave de acesso
+  obtida pelo banco (`read_orders`). A loja segue **desligada** até o deploy com o código novo entrar no ar (o que
+  está no ar não lê as credenciais novas e faria o Shopify desligar os webhooks por falha).
+- **Risco anotado (plano):** webhooks de pedido podem exigir liberação de "protected customer data" no app; a
+  reconciliação cobre enquanto isso.
 
 ### CP-32 — 2026-10-09 — App da Botanika criado e credenciais guardadas
 - **No Shopify (pelo responsável):** app "Creator Club - v2" no Dev Dashboard da organização Botanika Brasil, versão
