@@ -5,12 +5,14 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.7 (parte 2) — app no Dev Dashboard da Botanika (responsável), conectar a loja real em `/admin/sync` (só leitura) e conferir pedidos chegando por webhook e reconciliação. E0.2–E0.4 seguem quando as pessoas responderem.
-  Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
-- **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
-  `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
-  E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
+- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
+  (aceite bloqueado); E5 em andamento.
+- **Próxima tarefa:** E5.3 — ajuste manual (só super admin, com motivo).
+- **Aguardando pessoas:** E4.5 (importar o `Creator_rows.csv` em `/admin/importar` e conferência da Ana em
+  `/admin/cupons`); E0.2 (Pagamento: Juci/Pâmela), E0.4 (Vitor).
+- **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
+  `read_all_orders` ainda não concedido ao app (carga histórica de pedidos com mais de 60 dias); `creator-hub` sem
+  backup (guardar um dump privado).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ## Fila de tarefas (uma por vez, nesta ordem)
