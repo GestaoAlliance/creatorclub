@@ -1,0 +1,51 @@
+"use server";
+
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { currentActor } from "@/lib/auth/current";
+import { db } from "@/lib/db";
+import { percentToBps, ReviewError } from "@/lib/coupons/review";
+import { changeRate, ProfileError, setCreatorStatus, updateContact, type CreatorStatusValue } from "@/lib/creators/profile";
+import { createCreatorInvite } from "@/lib/team/creator-invites";
+import { TeamError } from "@/lib/team/invites";
+
+export type State = { error?: string; ok?: string; link?: string } | undefined;
+
+async function run(id: string, fn: () => Promise<State | void>, ok: string): Promise<State> {
+  try {
+    const r = await fn();
+    revalidatePath(`/admin/creators/${id}`);
+    return r ?? { ok };
+  } catch (error) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError) return { error: error.message };
+    throw error;
+  }
+}
+
+export async function contactAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => updateContact(db(), await currentActor(), id, {
+    name: String(form.get("name") ?? ""),
+    email: String(form.get("email") ?? ""),
+    phone: String(form.get("phone") ?? ""),
+  }), "Contato salvo.");
+}
+
+export async function statusAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => setCreatorStatus(db(), await currentActor(), id, String(form.get("status")) as CreatorStatusValue), "Situação salva.");
+}
+
+export async function rateAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => changeRate(db(), await currentActor(), id, percentToBps(String(form.get("rate") ?? ""))), "Taxa nova vale a partir de agora.");
+}
+
+export async function inviteAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => {
+    const { token } = await createCreatorInvite(db(), await currentActor(), String(form.get("accountId")));
+    const origin = (await headers()).get("origin") ?? "";
+    return { link: `${origin}/convite/${token}` };
+  }, "");
+}

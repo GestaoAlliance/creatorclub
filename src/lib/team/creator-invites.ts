@@ -1,3 +1,4 @@
+import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith } from "@/lib/auth/permissions";
@@ -20,7 +21,9 @@ export async function createCreatorInvite(prisma: PrismaClient, actor: Actor | n
   const canInvite = allowed === "ALL" || account.creators.some((c) => allowed.includes(c.brandId));
   if (!canInvite) throw new TeamError("Sem permissão.");
   if (account.userId) throw new TeamError("Esta creator já tem acesso ao portal.");
-  if (!normalizeEmail(account.email)) throw new TeamError("Confirme o e-mail da creator antes de convidar.");
+  if (!normalizeEmail(account.email) || account.email.endsWith(FAKE_EMAIL_DOMAIN)) {
+    throw new TeamError("Confirme o e-mail da creator antes de convidar.");
+  }
 
   const { token, tokenHash } = newInviteToken();
   const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);

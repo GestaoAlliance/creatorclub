@@ -99,7 +99,7 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
   com a migração `pending_confirmation` entrar no ar.
 - [x] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
   classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
-- [ ] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
+- [x] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
 - [ ] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
   histórica disparada (depende de `read_all_orders` para pedidos com mais de 60 dias).
 
@@ -109,6 +109,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-37 — 2026-10-09 — Ficha da creator (E4.4)
+- **Decidido:** D-STATUS (Ativa, Pausada, Desligada).
+- **Feito:** `src/lib/creators/profile.ts`: lista e ficha (`creators.view`; CPF/CNPJ/Pix só com `personal.fiscal`);
+  `updateContact` (nome, e-mail real, telefone; recusa e-mail falso, inválido ou de outra creator; quem já entrou no
+  portal não troca o e-mail de login por aqui); `setCreatorStatus` (datas de ativação/desligamento); `changeRate`
+  (só com a taxa atual confirmada: fecha a vigente agora e abre a nova confirmada, D-RATECHG); tudo auditado.
+  Convite (E2.5) passa a recusar e-mail falso da importação. Telas `/admin/creators` e `/admin/creators/[id]`
+  (contato, situação, cupons, taxas, "Gerar link de convite"); links em `/conta` e na conferência.
+- **Verificado:** 86 unitários; 84 de integração (5 novos: e-mail falso → real → convite, e-mail repetido e login
+  já criado, situação, mudança de taxa com vigência, permissões por papel); typecheck; build.
 
 ### CP-36 — 2026-10-09 — Tela de conferência da Ana (E4.3)
 - **Feito:** `src/lib/coupons/review.ts` (só quem edita creators da marca: Gestão ou super admin): lista de cupons

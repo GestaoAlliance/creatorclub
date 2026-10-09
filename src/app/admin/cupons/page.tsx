@@ -26,7 +26,7 @@ export default async function CuponsPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold">Cupons e creators</h1>
+      <h1 className="text-2xl font-bold">Conferência de cupons</h1>
       {brands.length > 1 && (
         <nav className="flex gap-3 text-sm">
           {brands.map((b) => (
@@ -62,7 +62,7 @@ export default async function CuponsPage({ searchParams }: { searchParams: Promi
                 {r.kind !== "CREATOR" ? (
                   <span className="text-xs text-stone-500">{r.owner ? `${r.owner.name} (do app antigo; ignorada)` : "—"}</span>
                 ) : r.owner?.confirmed ? (
-                  <span>{r.owner.name} <span className="text-xs text-green-800">confirmada</span></span>
+                  <span><Link href={`/admin/creators/${r.owner.creatorId}`} className="underline">{r.owner.name}</Link> <span className="text-xs text-green-800">confirmada</span></span>
                 ) : (
                   <>
                     {r.owner && <div className="mb-1 text-xs text-amber-700">a confirmar: {r.owner.name}</div>}
