@@ -66,7 +66,7 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
 | 21 | Falha do Shopify vira saldo zero | Mostrar último dado do banco e hora da sync |
 | 22 | OAuth com `state` reaproveitável e sem conferir a loja | Nonce de uso único, loja esperada |
 | 23 | Trocar tipo de cupom apaga antes de recriar | Criar o novo antes de apagar o antigo |
-| 24 | Login sem limite de tentativas; sessão de 30 dias sem revogação | Supabase Auth; MFA para super admin e pagamento |
+| 24 | Login sem limite de tentativas; sessão de 30 dias sem revogação | Supabase Auth (limite de tentativas); MFA adiado (D-MFA) |
 | 25 | Só 50 itens por pedido lidos | Paginar itens |
 
 ## O que existe hoje nas contas (levantado em 2026-10-09, só leitura)
