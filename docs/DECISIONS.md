@@ -49,6 +49,7 @@
 | D-RATEIMPORT | 2026-10-09 | A taxa de cada creator vem do app antigo (15%; uma com 20%) e entra **"a confirmar"**: não vale para cálculo até a Ana confirmar. O mesmo vale para a dona de cada cupom e para o tipo CREATOR/PROMO (D-CLASS). | Pedro |
 | D-ADMINUI | 2026-10-09 | Telas internas da equipe (sync, cupons, fichas) ficam **simples e funcionais** até as telas do portal (E7); o visual *liquid glass* entra lá. Amplia D-SYNCUI. | Pedro |
 | D-PENDING | 2026-10-09 | Pedido cujo primeiro cupom relevante está "a confirmar" (cupom sem tipo, cupom desconhecido ou dona não confirmada) fica **pendente**: não é atribuído nem gravado, e é decidido de novo depois da confirmação. Pular esse cupom poderia dar o pedido à creator errada. Taxa "a confirmar" nunca vira número (erro). Detalha D-RATEIMPORT. | Técnica |
+| D-STATUS | 2026-10-09 | Situação da creator na tela: **Ativa** (`ACTIVE`, participa e recebe), **Pausada** (`INACTIVE`, parou por um tempo e pode voltar; futura regra dos 60 dias) e **Desligada** (`DEACTIVATED`, saiu do programa). Nada é apagado; cada mudança vai para a auditoria. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

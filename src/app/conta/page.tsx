@@ -16,6 +16,11 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 // Página mínima de quem entrou: e-mail e papéis. As telas de cada papel vêm depois.
+function canSeeCreators(grants: Parameters<typeof brandsWith>[0]): boolean {
+  const brands = brandsWith(grants, "creators.view");
+  return brands === "ALL" || brands.length > 0;
+}
+
 function canEditCreators(grants: Parameters<typeof brandsWith>[0]): boolean {
   const brands = brandsWith(grants, "creators.edit");
   return brands === "ALL" || brands.length > 0;
@@ -38,8 +43,11 @@ export default async function ContaPage() {
       {actor && brandsWith(actor.grants, "staff.manage") === "ALL" && (
         <Link href="/admin/equipe" className="text-sm underline">Equipe e convites</Link>
       )}
+      {actor && canSeeCreators(actor.grants) && (
+        <Link href="/admin/creators" className="text-sm underline">Creators</Link>
+      )}
       {actor && canEditCreators(actor.grants) && (
-        <Link href="/admin/cupons" className="text-sm underline">Cupons e creators</Link>
+        <Link href="/admin/cupons" className="text-sm underline">Conferência de cupons</Link>
       )}
       {actor && brandsWith(actor.grants, "integrations.manage") === "ALL" && (
         <Link href="/admin/sync" className="text-sm underline">Saúde do sync (Shopify)</Link>
