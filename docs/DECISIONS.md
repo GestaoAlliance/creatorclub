@@ -61,6 +61,7 @@
 | D-PORTALNAV | 2026-10-09 | Navegação do portal: no celular, barra de vidro fixa embaixo (tipo app); no computador, barra lateral recolhível da referência. | Pedro |
 | D-GLASS | 2026-10-09 | *Liquid glass* com desfoque, transparência e brilho na borda, **igual em todos os navegadores** (sem a refração SVG da referência, que só funciona no Chromium). | Pedro |
 | D-THEME | 2026-10-09 | Tema claro/escuro segue o aparelho; o botão do cabeçalho troca e a escolha fica guardada naquele navegador. Fora de marca (login, admin) a cor de destaque é um cinza neutro. | Pedro |
+| D-THEME | 2026-10-09 | Complemento técnico: o tema do aparelho é seguido pelo CSS (`prefers-color-scheme`); só a escolha do botão vira `data-theme` e é reaplicada ao montar a página, porque o React pode refazer o `<html>`. | Técnica |
 | D-PORTALURL | 2026-10-09 | Portal em `/portal/[marca]/...`; trocar de marca é trocar o endereço. Depois de entrar, a creator cai na sua marca. | Pedro |
 | D-PORTALACCESS | 2026-10-09 | Ativa, Pausada e Desligada entram no portal (saldo e extrato são delas); a Desligada vê um aviso e o cupom/link não aparecem como ativos. | Pedro |
 | D-HOMEKPI | 2026-10-09 | Início do portal: 4 cartões (disponível para saque; a liberar, com a data da próxima liberação; vendas do mês em valor e quantidade de pedidos; comissão do mês), mês pela data do pagamento; abaixo, as 8 últimas movimentações do extrato e, ao lado, o cupom para copiar. | Pedro |
@@ -71,6 +72,10 @@
 | D-CLASSPEDRO | 2026-10-09 | O responsável classifica cupons e confirma donas quando souber; a Ana só recebe o que ele não souber. BOTANIKA é o cupom de 1º pedido (PROMO); ANOVA é PROMO; VICTORIA e JULIACOLARES são creators; cupom "DR…" é de prescritor (vende para pacientes, não precisa produzir conteúdo). | Pedro |
 | D-RATEPROV | 2026-10-09 | Taxas do app antigo (15%; Raquel Cembranelli 20%) confirmadas como provisórias para as comissões rodarem; a Ana confirma cada uma depois. Cupom de creator sem cadastro vira creator nova com 15%. | Pedro |
 | D-SINCEFIRST | 2026-10-09 | Vendas antes do cadastro da creator no app antigo contam: dona e taxa valem desde o 1º uso (01/06/2026). O que já foi pago por fora entra como abatimento no saldo de abertura (D-OPEN). | Pedro |
+| D-PERIOD | 2026-10-09 | Vendas no portal no estilo do painel da Botanika: seletor Hoje · Ontem · 7 dias · Este mês · Personalizado (dias da marca, no máximo 366); cartões Pedidos, Vendas, Comissão e Ticket médio; gráfico de vendas por dia com vendas, comissão e pedidos na ficha; lista dos pedidos. Uma escala só no gráfico. | Pedro |
+| D-SHIPMENTS | 2026-10-09 | Aba de Envios: a equipe registra todo envio de produtos à creator (data, produtos/kit, endereço, rastreio, situação: preparando, enviado, entregue); a creator vê os dela; o admin vê todos. | Pedro |
+| D-E7ORDER | 2026-10-09 | Ordem do portal: Vendas → Cupom/link → Extrato → Saque (com NF em PDF) → Envios. | Pedro |
+| D-PERKS | 2026-10-09 | Bônus por metas, gamificação e competições de vendas: ideias anotadas; benefícios a levantar com a Ana antes de desenhar. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

@@ -1,11 +1,12 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { isMonthKey, monthKey } from "@/domain";
-import { PortalError, type PortalContext } from "./context";
+import { dayKey } from "@/domain";
+import type { PortalContext } from "./context";
+import { resolvePeriod, type Period } from "./period";
 
 /**
- * Vendas do portal (E7.3, D-SALESVIEW): pedidos pagos atribuídos à creator, por mês do pagamento (D-MONTH).
- * De cada pedido só número, data do pagamento, base, taxa, comissão e situação; **nenhum dado do cliente**.
- * Pedido de teste fica fora; pedido nunca pago (Pix/boleto expirado) também.
+ * Vendas do portal (E7.3, D-SALESVIEW, D-PERIOD): pedidos pagos atribuídos à creator no período escolhido, pelo dia
+ * do pagamento no fuso da marca. De cada pedido só número, data do pagamento, base, taxa, comissão e situação;
+ * **nenhum dado do cliente**. Pedido de teste fica fora; pedido nunca pago (Pix/boleto expirado) também.
  */
 
 export type SaleStatus = "HELD" | "RELEASED" | "PARTIAL_REFUND" | "REVERSED" | "PENDING_RATE";
@@ -29,12 +30,14 @@ export type Sale = {
   availableAt: Date | null;
 };
 
+export type SalesDay = { day: string; count: number; baseCents: number; commissionCents: number };
+
 export type SalesPage = {
-  month: string;
-  months: string[];
+  period: Omit<Period, "from" | "to">;
   holdDays: number;
   sales: Sale[];
-  totals: { count: number; baseCents: number; commissionCents: number };
+  days: SalesDay[];
+  totals: { count: number; baseCents: number; commissionCents: number; ticketCents: number };
 };
 
 export function saleStatus(entries: { amountCents: number; availableAt: Date }[], rateBps: number | null, now: Date): SaleStatus {
@@ -46,15 +49,19 @@ export function saleStatus(entries: { amountCents: number; availableAt: Date }[]
   return entries.some((e) => e.amountCents > 0 && e.availableAt > now) ? "HELD" : "RELEASED";
 }
 
-export async function portalSales(prisma: PrismaClient, ctx: PortalContext, opts: { month?: string; now?: Date } = {}): Promise<SalesPage> {
-  if (opts.month !== undefined && !isMonthKey(opts.month)) throw new PortalError("Mês inválido.");
-  const now = opts.now ?? new Date();
+export async function portalSales(
+  prisma: PrismaClient,
+  ctx: PortalContext,
+  input: { p?: string; de?: string; ate?: string } = {},
+  now = new Date(),
+): Promise<SalesPage> {
   const { timezone: tz, commissionHoldDays: holdDays } = await prisma.brand.findUniqueOrThrow({
     where: { id: ctx.brand.id },
     select: { timezone: true, commissionHoldDays: true },
   });
+  const { from, to, ...period } = resolvePeriod(input, now, tz);
   const rows = await prisma.orderAttribution.findMany({
-    where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, order: { paidAt: { not: null }, test: false } },
+    where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, order: { paidAt: { gte: from, lt: to }, test: false } },
     select: {
       rateBps: true,
       order: {
@@ -68,14 +75,9 @@ export async function portalSales(prisma: PrismaClient, ctx: PortalContext, opts
       },
     },
   });
-  const all = rows.map((r) => ({ ...r, month: monthKey(r.order.paidAt!, tz) }));
-  const months = [...new Set(all.map((r) => r.month))].sort().reverse();
-  const month = opts.month ?? months[0] ?? monthKey(now, tz);
-  const sales = all
-    .filter((r) => r.month === month)
+  const sales = rows
     .map((r): Sale => {
       const entries = r.order.ledgerEntries;
-      const status = saleStatus(entries, r.rateBps, now);
       const held = entries.filter((e) => e.amountCents > 0 && e.availableAt > now).map((e) => e.availableAt.getTime());
       return {
         orderId: r.order.id,
@@ -84,20 +86,32 @@ export async function portalSales(prisma: PrismaClient, ctx: PortalContext, opts
         baseCents: r.order.subtotalCents,
         rateBps: r.rateBps,
         commissionCents: entries.reduce((s, e) => s + e.amountCents, 0),
-        status,
+        status: saleStatus(entries, r.rateBps, now),
         availableAt: held.length ? new Date(Math.min(...held)) : null,
       };
     })
     .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime());
+
+  const byDay = new Map<string, SalesDay>(period.days.map((d) => [d, { day: d, count: 0, baseCents: 0, commissionCents: 0 }]));
+  for (const s of sales) {
+    const d = byDay.get(dayKey(s.paidAt, tz));
+    if (!d) continue;
+    if (s.status !== "REVERSED") d.count++;
+    d.baseCents += s.baseCents;
+    d.commissionCents += s.commissionCents;
+  }
+  const count = sales.filter((s) => s.status !== "REVERSED").length;
+  const baseCents = sales.reduce((s, x) => s + x.baseCents, 0);
   return {
-    month,
-    months,
+    period,
     holdDays,
     sales,
+    days: [...byDay.values()],
     totals: {
-      count: sales.filter((s) => s.status !== "REVERSED").length,
-      baseCents: sales.reduce((s, x) => s + x.baseCents, 0),
+      count,
+      baseCents,
       commissionCents: sales.reduce((s, x) => s + x.commissionCents, 0),
+      ticketCents: count ? Math.round(baseCents / count) : 0,
     },
   };
 }

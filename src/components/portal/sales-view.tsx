@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { formatBRL } from "@/domain";
+import { PERIOD_PRESETS } from "@/lib/portal/period";
 import { SALE_STATUS_LABEL, type SalesPage, type SaleStatus } from "@/lib/portal/sales";
+import { SalesChart } from "./sales-chart";
 
-const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 const pct = (bps: number | null) => (bps === null ? "—" : `${(bps / 100).toString().replace(".", ",")}%`);
 
@@ -31,25 +31,14 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
     ["Pedidos", String(totals.count)],
     ["Vendas", formatBRL(totals.baseCents)],
     ["Comissão", formatBRL(totals.commissionCents)],
+    ["Ticket médio", formatBRL(totals.ticketCents)],
   ];
   return (
     <div className="flex flex-col gap-4">
-      {page.months.length > 0 && (
-        <nav aria-label="Mês" className="flex gap-2 overflow-x-auto pb-1">
-          {page.months.map((m) => (
-            <Link
-              key={m}
-              href={`${base}/vendas?mes=${m}`}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm ${m === page.month ? "bg-brand font-semibold text-white" : "glass"}`}
-            >
-              {monthLabel(m)}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <PeriodPicker page={page} base={base} />
 
       {/* Computador: três cartões. Celular: um cartão com uma linha por número (valores altos não cabem em três colunas). */}
-      <section className="hidden grid-cols-3 gap-3 md:grid">
+      <section className="hidden grid-cols-4 gap-3 md:grid">
         {kpis.map(([label, value]) => (
           <div key={label} className="glass rounded-3xl p-4">
             <p className="text-xs text-stone-600 dark:text-stone-400">{label}</p>
@@ -66,9 +55,15 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
         ))}
       </section>
 
+      {page.days.length > 1 && (
+        <section className="glass rounded-3xl p-4 md:p-5">
+          <SalesChart days={page.days} />
+        </section>
+      )}
+
       <section className="glass rounded-3xl p-2 md:p-4">
         {page.sales.length === 0 ? (
-          <p className="py-10 text-center text-sm text-stone-500">Nenhuma venda paga com seu cupom neste mês.</p>
+          <p className="py-10 text-center text-sm text-stone-500">Nenhuma venda paga com seu cupom neste período.</p>
         ) : (
           <>
             <table className="hidden w-full text-sm md:table">
@@ -117,9 +112,48 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
         )}
       </section>
       <p className="px-1 text-xs text-stone-500">
-        Base = valor dos produtos com desconto, sem frete. A venda conta no mês em que o pedido foi pago. Comissão fica a
+        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago. Comissão fica a
         liberar por {page.holdDays} dias depois do pagamento.
       </p>
+    </div>
+  );
+}
+
+const fullDay = (key: string) => `${key.slice(8, 10)}/${key.slice(5, 7)}/${key.slice(0, 4)}`;
+
+/** Hoje · Ontem · 7 dias · Este mês · Personalizado (D-PERIOD). Uma linha, acima de tudo o que ela filtra. */
+function PeriodPicker({ page, base }: { page: SalesPage; base: string }) {
+  const { period } = page;
+  const pill = (on: boolean) => `shrink-0 rounded-full px-4 py-1.5 text-sm ${on ? "bg-brand font-semibold text-white" : "glass"}`;
+  return (
+    <div className="flex flex-col gap-2">
+      <nav aria-label="Período" className="flex flex-wrap gap-2">
+        {PERIOD_PRESETS.map((p) => (
+          <Link key={p.key} href={`${base}/vendas?p=${p.key}`} className={pill(period.preset === p.key)} aria-current={period.preset === p.key ? "page" : undefined}>
+            {p.label}
+          </Link>
+        ))}
+        <Link href={`${base}/vendas?p=custom&de=${period.firstDay}&ate=${period.lastDay}`} className={pill(period.preset === "custom")}>
+          Personalizado
+        </Link>
+      </nav>
+      {period.preset === "custom" && (
+      <form method="get" action={`${base}/vendas`} className="glass flex flex-wrap items-end gap-3 rounded-2xl px-4 py-3 text-sm">
+        <input type="hidden" name="p" value="custom" />
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-stone-500">De</span>
+          <input type="date" name="de" defaultValue={period.firstDay} className="rounded-xl border border-stone-300/70 bg-white/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/5" />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-stone-500">Até</span>
+          <input type="date" name="ate" defaultValue={period.lastDay} className="rounded-xl border border-stone-300/70 bg-white/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/5" />
+        </label>
+        <button className="rounded-full bg-brand px-4 py-1.5 font-semibold text-white">Ver</button>
+        <span className="ml-auto text-xs text-stone-500">
+          {fullDay(period.firstDay)}{period.lastDay !== period.firstDay && ` a ${fullDay(period.lastDay)}`}
+        </span>
+      </form>
+      )}
     </div>
   );
 }

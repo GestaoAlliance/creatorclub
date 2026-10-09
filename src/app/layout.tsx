@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { ThemeSync } from "@/components/theme-sync";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,16 +9,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Antes da pintura: tema salvo neste navegador, senão o do aparelho (sem piscar ao carregar).
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;
+// Antes da pintura: só a escolha feita no botão (o tema do aparelho o CSS já segue sozinho). D-THEME.
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="min-h-screen font-sans antialiased">{children}</body>
+      <body className="min-h-screen font-sans antialiased">
+        <ThemeSync />
+        {children}
+      </body>
     </html>
   );
 }

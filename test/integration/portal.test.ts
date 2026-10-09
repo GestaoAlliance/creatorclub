@@ -140,7 +140,7 @@ describe("ver como creator (D-VIEWAS, banco real)", () => {
 });
 
 describe("Vendas do portal (banco real)", () => {
-  it("só pedidos pagos da creator, por mês do pagamento, sem teste nem não pagos, com situação", async () => {
+  it("só pedidos pagos da creator, por dia do pagamento no período, sem teste nem não pagos, com situação", async () => {
     const { portalSales } = await import("@/lib/portal/sales");
     const { commissionEntry } = await import("./fixtures");
     const T = (iso: string) => new Date(iso);
@@ -171,21 +171,26 @@ describe("Vendas do portal (banco real)", () => {
       ],
     });
 
-    const page = await portalSales(prisma, ctx, { now: T("2026-10-06T12:00:00Z") });
-    expect(page.month).toBe("2026-10");
-    expect(page.months).toEqual(["2026-10", "2026-09"]);
+    const now = T("2026-10-06T12:00:00Z");
+    const page = await portalSales(prisma, ctx, {}, now); // Este mês
+    expect([page.period.preset, page.period.firstDay, page.period.lastDay]).toEqual(["mes", "2026-10-01", "2026-10-06"]);
     expect(page.sales.map((s) => [s.orderName, s.status, s.commissionCents])).toEqual([
       ["#EST", "REVERSED", 0],
       ["#OUT", "HELD", 1_500],
     ]);
-    expect(page.totals).toEqual({ count: 1, baseCents: 10_000, commissionCents: 1_500 });
-    expect((await portalSales(prisma, ctx, { month: "2026-09" })).sales.map((s) => s.orderName)).toEqual(["#SET"]);
-    await expect(portalSales(prisma, ctx, { month: "2026-13" })).rejects.toThrow(/Mês inválido/);
+    expect(page.totals).toEqual({ count: 1, baseCents: 10_000, commissionCents: 1_500, ticketCents: 10_000 });
+    expect(page.days.map((d) => [d.day, d.count, d.baseCents])).toEqual([
+      ["2026-10-01", 0, 0], ["2026-10-02", 1, 10_000], ["2026-10-03", 0, 0], ["2026-10-04", 0, 0], ["2026-10-05", 0, 0], ["2026-10-06", 0, 0],
+    ]);
+    // 01/10 01:00 UTC ainda é 30/09 em São Paulo.
+    const sep = await portalSales(prisma, ctx, { p: "custom", de: "2026-09-30", ate: "2026-09-30" }, now);
+    expect(sep.sales.map((s) => s.orderName)).toEqual(["#SET"]);
+    expect((await portalSales(prisma, ctx, { p: "custom", de: "lixo", ate: "2026-09-30" }, now)).period.preset).toBe("mes");
 
     // Outra creator da mesma marca não vê essas vendas.
     const other = await prisma.creatorAccount.create({ data: { name: "Outra", email: `${randomUUID()}@x.com` } });
     await prisma.creator.create({ data: { brandId: a.brand.id, accountId: other.id, categories: [] } });
-    const otherPage = await portalSales(prisma, await portalContext(prisma, await loginFor(other.id), a.brand.slug));
+    const otherPage = await portalSales(prisma, await portalContext(prisma, await loginFor(other.id), a.brand.slug), {}, T("2026-10-06T12:00:00Z"));
     expect(otherPage.sales).toEqual([]);
   });
 });
