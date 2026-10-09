@@ -34,6 +34,11 @@
 | D-INVITE-LINK | 2026-10-09 | Enquanto não houver remetente de e-mail (D-SMTP), o convite da equipe é um **link de uso único** gerado em `/admin/equipe`, copiado e enviado pelo WhatsApp. O link aparece uma vez; o banco guarda só o hash. Remover da equipe = desativar o acesso (não apaga), com auditoria; ninguém remove o próprio super admin e sempre sobra um. | Pedro |
 | D-MFA | 2026-10-09 | MFA (verificação em duas etapas) **adiado**: para uso interno não é necessário agora. Não veio da equipe nem do plano; foi sugestão da auditoria feita por IA (`CONTEXTO.md`, item 24). Para ligar no futuro: Supabase Auth já tem MFA por app autenticador (TOTP); exigir nível `aal2` no ponto central de acesso (`src/lib/auth/`) e criar a tela do QR code. Limite de tentativas de login já vem do Supabase Auth. | Pedro |
 | D-ADMIN | 2026-10-09 | Complemento: `pgustavo723@gmail.com` (outro e-mail do Pedro) é SUPER_ADMIN de reserva, entrou pelo convite de teste da E2.4. | Pedro |
+| D-TAX | 2026-10-09 | A loja da Botanika **não** usa preço com imposto incluso (`taxesIncluded = false`, `taxShipping = false`, moeda BRL, fuso `America/Sao_Paulo`), lido no Shopify em 2026-10-09. A base da comissão é o `currentSubtotalPriceSet` como vem, sem descontar imposto. Cada pedido guarda o próprio `taxesIncluded`; se a loja mudar, o sync avisa em vez de calcular. | Verificado no Shopify |
+| D-HIST | 2026-10-09 | Carga histórica de pedidos **desde o primeiro uso de cupom de creator** na loja (data levantada no Shopify antes de importar e registrada no checkpoint). | Pedro |
+| D-DEVSTORE | 2026-10-09 | O staging testa o sync numa **loja de desenvolvimento do Shopify** (conta Shopify Partners da Gestão Alliance). A loja real da Botanika só é ligada quando a creator for usar de verdade; nenhum teste cria ou edita cupom na loja real. | Pedro |
+| D-CRON | 2026-10-09 | Agendamento pelo **Supabase pg_cron** (com `pg_net`): o banco chama endereços protegidos do app (fila a cada minuto, reconciliação a cada 15 min). O segredo da chamada fica no Supabase Vault e na Vercel, nunca no repositório. Sem plano pago da Vercel para isso. | Pedro |
+| D-SHOPAPP | 2026-10-09 | **App novo e próprio do Creator Club** em cada loja (criado pelo responsável no painel do Shopify), com `read_orders`, `read_all_orders`, `read_discounts` e `write_discounts`. Token e segredo do webhook guardados **cifrados** no banco (`BrandIntegration.secretEncrypted`, AES-256-GCM, chave só na Vercel). O app antigo do creator-hub é desligado depois do corte (E9). | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -43,8 +48,8 @@
 | D-NEG | Estorno depois de saque pago | Saldo negativo abate do próximo | E5 |
 | D-MONTH | Comissão conta pela data do pedido ou do pagamento | Data do pagamento | E5 |
 | D-OPEN | Saldo inicial: reconstrução ou abertura | Abertura aprovada pelo Pagamento | E6 |
-| D-HIST | Desde quando importar pedidos | Desde o primeiro cupom de creator | E3 |
-| D-TAX | Loja usa preço com imposto incluso (`taxesIncluded`)? | Verificar num pedido real | E3 |
+| ~~D-HIST~~ | ~~Desde quando importar pedidos~~ — **decidida** em 2026-10-09 | E3 |
+| ~~D-TAX~~ | ~~Loja usa preço com imposto incluso?~~ — **decidida** em 2026-10-09 (não usa) | E3 |
 | D-RATE | Comissão padrão por marca (15% ou 10%) | 15% na Botanika | E4 |
 | D-CLASS | Quem classifica cupons CREATOR/PROMO e confirma a dona | Ana | E4 |
 | D-PAY | Quem tem papel Pagamento | Juci e Pâmela | E2 |
