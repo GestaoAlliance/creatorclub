@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.7 (parte 2) — criar a loja de desenvolvimento e o app (responsável), conectar em `/admin/sync` e testar ponta a ponta. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.7 (parte 2) — app no Dev Dashboard da Botanika (responsável), conectar a loja real em `/admin/sync` (só leitura) e conferir pedidos chegando por webhook e reconciliação. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -82,7 +82,8 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [~] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
   Parte 1 feita (CP-30): agendamento ligado, credenciais no modelo do Dev Dashboard, conexão da loja e tela
-  `/admin/sync`. Falta: `INTEGRATION_ENC_KEY` na Vercel, marca para a loja de teste, loja + app, teste ponta a ponta.
+  `/admin/sync`. Mudou para a loja real (D-REALSTORE): `INTEGRATION_ENC_KEY` salva na Vercel e marca `botanika`
+  criada. Falta: app no Dev Dashboard da Botanika, conectar, conferir pedidos reais chegando.
 
 ### Depois de E3 (detalhar quando chegar lá)
 E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -90,6 +91,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-31 — 2026-10-09 — Loja real da Botanika no lugar da loja de teste
+- **Decidido:** D-REALSTORE (substitui D-DEVSTORE: a conta não cria loja de desenvolvimento; app só leitura até a
+  E4, criado na organização da Botanika no Shopify) e D-PREVIEW (prévias da Vercel desligadas para `claude/**`).
+- **Aconteceu:** a Vercel recusou deploys por limite do plano grátis (100/dia) a partir da prévia do PR #23.
+- **No staging:** `INTEGRATION_ENC_KEY` salva na Vercel pelo responsável; marcas criadas pelo conector do Supabase,
+  com auditoria `brand.create`: `teste` ("Loja de teste", desligada, sem uso) e `botanika` (Botanika, cor
+  `#323C91`, `storeUrl` https://botanikabrasil.com.br, `legacyId` do app antigo, desligada para creators).
+- **Feito no código:** `vercel.json` sem deploy para `claude/**`; permissões recomendadas na conexão passam a ser só
+  `read_all_orders` (cupons ficam para a E4).
+- **Verificado:** 75 unitários; 68 de integração; typecheck.
 
 ### CP-30 — 2026-10-09 — Agendamento no ar, conexão da loja e tela de saúde (E3.7, parte 1)
 - **Decidido:** D-SYNCUI (tela simples). Complementos: D-SHOPAPP (Dev Dashboard, Client ID/secret, chave de 24 h,

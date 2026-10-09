@@ -12,9 +12,12 @@ import { ORDER_TOPICS } from "./webhook";
  * webhooks de pedido apontando para `/api/webhooks/shopify/<marca>`.
  */
 
-/** Permissões que o sync precisa (D-SHOPAPP). `read_all_orders` só é exigida para pedidos com mais de 60 dias. */
+/**
+ * Permissões que o sync precisa (D-SHOPAPP). `read_all_orders` é para pedidos com mais de 60 dias (carga histórica).
+ * Cupons (`read_discounts`/`write_discounts`) só entram na E4: até lá o app é só leitura (D-REALSTORE).
+ */
 export const REQUIRED_SCOPES = ["read_orders"];
-export const RECOMMENDED_SCOPES = ["read_all_orders", "read_discounts", "write_discounts"];
+export const RECOMMENDED_SCOPES = ["read_all_orders"];
 
 const TOPIC_ENUM: Record<string, string> = {
   "orders/create": "ORDERS_CREATE",
