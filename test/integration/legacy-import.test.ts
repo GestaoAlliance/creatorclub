@@ -70,5 +70,9 @@ describe("importação do app antigo (banco real)", () => {
     await processOrder(prisma, brand.id, shopifyOrder({ discountCodes: ["promo10", "MARIA"] }));
     const coupons = await prisma.coupon.findMany({ where: { brandId: brand.id }, orderBy: { code: "asc" } });
     expect(coupons.map((c) => [c.code, c.kind])).toEqual([["MARIA", null], ["PROMO10", null]]);
+    // Pedido já gravado por versão antiga (sem cupons registrados): a repetição registra.
+    await prisma.coupon.deleteMany({ where: { brandId: brand.id } });
+    expect((await processOrder(prisma, brand.id, shopifyOrder({ discountCodes: ["promo10", "MARIA"] }))).outcome).toBe("stale");
+    expect(await prisma.coupon.count({ where: { brandId: brand.id } })).toBe(2);
   });
 });

@@ -79,7 +79,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST). A **data** de início
   depende de saber quais cupons são de creator (D-CLASS, E4): a lista do app antigo mistura cupons promocionais
   (ex.: BOTANIKA, FRETEGRATIS, 20OFF). A carga na loja real roda quando ela for ligada; o botão fica na tela de saúde.
-- [~] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
+- [x] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
   Parte 1 feita (CP-30): agendamento ligado, credenciais no modelo do Dev Dashboard, conexão da loja e tela
   `/admin/sync`. Mudou para a loja real (D-REALSTORE): `INTEGRATION_ENC_KEY` salva na Vercel e marca `botanika`
@@ -110,6 +110,14 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-41 — 2026-10-09 — Loja Botanika ligada e sync no ar (E3.7 concluída)
+- **No staging:** o deploy liberou às ~20:00 UTC; loja `p01bpt-x2.myshopify.com` marcada como conectada (só
+  `read_orders`) e os 5 webhooks cadastrados pelo conector do Supabase (pg_net com a chave de 24 h, sem trazê-la ao
+  chat), auditoria `integration.connect`. A primeira reconciliação (20:01 UTC) gravou 10 pedidos reais, todos pagos,
+  sem erro. Migrações `pending_confirmation` e `hold_7_days` aplicadas pelo deploy seguinte.
+- **Corrigido:** `processOrder` passa a registrar os códigos dos pedidos como cupom (sem tipo) também quando a
+  versão é repetida (os 10 pedidos foram gravados pela versão anterior, que não registrava).
 
 ### CP-40 — 2026-10-09 — Lançamentos de comissão (E5.2)
 - **Feito:** `src/lib/commission/ledger.ts`: `postCommission` (devido − lançado por versão do pedido; COMMISSION ou
