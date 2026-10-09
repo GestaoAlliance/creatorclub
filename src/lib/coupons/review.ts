@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { assertBps } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { enqueueRecheck } from "@/lib/commission/attribution";
 
 /**
  * Conferência da Ana (E4.3, D-CLASS / D-RATEIMPORT): classificar cada cupom em CREATOR ou PROMO e confirmar a dona
@@ -77,9 +78,9 @@ export async function classifyCoupon(prisma: PrismaClient, actor: Actor | null, 
   if (coupon.kind && coupon._count.attributions > 0) {
     throw new ReviewError("Este cupom já levou pedidos; mudar o tipo agora mudaria o passado.");
   }
-  await prisma.$transaction([
-    prisma.coupon.update({ where: { id: couponId }, data: { kind, classifiedAt: new Date(), classifiedById: actor.userId } }),
-    prisma.auditLog.create({
+  await prisma.$transaction(async (tx) => {
+    await tx.coupon.update({ where: { id: couponId }, data: { kind, classifiedAt: new Date(), classifiedById: actor.userId } });
+    await tx.auditLog.create({
       data: {
         brandId: coupon.brandId,
         actorType: "USER",
@@ -90,8 +91,9 @@ export async function classifyCoupon(prisma: PrismaClient, actor: Actor | null, 
         before: { kind: coupon.kind },
         after: { kind, code: coupon.code },
       },
-    }),
-  ]);
+    });
+    await enqueueRecheck(tx, coupon.brandId);
+  });
 }
 
 /**
@@ -148,6 +150,7 @@ export async function confirmOwner(
         after: { creatorId: creator.id, code: coupon.code },
       },
     });
+    await enqueueRecheck(tx, coupon.brandId);
   });
 }
 
@@ -162,12 +165,12 @@ export async function confirmRate(prisma: PrismaClient, actor: Actor | null, inp
   } catch {
     throw new ReviewError("Taxa inválida.");
   }
-  await prisma.$transaction([
-    prisma.commissionPolicy.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.commissionPolicy.update({
       where: { id: policy.id },
       data: { rateBps: input.rateBps, confirmedAt: new Date(), confirmedById: actor.userId },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       data: {
         brandId: policy.brandId,
         actorType: "USER",
@@ -178,8 +181,9 @@ export async function confirmRate(prisma: PrismaClient, actor: Actor | null, inp
         before: { rateBps: policy.rateBps },
         after: { rateBps: input.rateBps, creatorId: policy.creatorId },
       },
-    }),
-  ]);
+    });
+    await enqueueRecheck(tx, policy.brandId);
+  });
 }
 
 /** "15" ou "15,5" (por cento) → pontos-base, sem Float. */

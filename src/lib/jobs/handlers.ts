@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { RECHECK_JOB, recheckBrand } from "@/lib/commission/attribution";
 import { backfillHandlers } from "@/lib/shopify/backfill";
 import { ORDER_SYNC_JOB, orderSyncHandler } from "@/lib/shopify/jobs";
 import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
@@ -11,5 +12,9 @@ export function jobHandlers(): JobHandlers {
     [ORDER_SYNC_JOB]: orderSyncHandler(prisma),
     [RECONCILE_JOB]: reconcileHandler(prisma),
     ...backfillHandlers(prisma),
+    [RECHECK_JOB]: async (job) => {
+      if (!job.brandId) throw new Error("Tarefa sem marca.");
+      await recheckBrand(prisma, job.brandId);
+    },
   };
 }

@@ -3,6 +3,7 @@ import type { ClaimedJob, JobHandler } from "@/lib/jobs/queue";
 import { createShopifyClient, type ShopifyClient } from "./client";
 import { loadShopifyConnection } from "./credentials";
 import { accessTokenFor } from "./token";
+import { decideAttribution } from "@/lib/commission/attribution";
 import { fetchOrder, processOrder, type ProcessOrderResult } from "./orders";
 
 /** Tarefa que busca um pedido no Shopify e grava com `processOrder`. Payload: `{ orderGid }`. */
@@ -29,6 +30,7 @@ export function orderSyncHandler(prisma: PrismaClient, clientFor: ClientFactory 
     const node = await fetchOrder(await clientFor(prisma, job.brandId), orderGid);
     if (!node) return markWebhook(); // Pedido apagado no Shopify: nada a gravar.
     const result = await processOrder(prisma, job.brandId, node);
+    if (result.orderId) await decideAttribution(prisma, result.orderId);
     await markWebhook();
     await recordOrderWarnings(prisma, job.brandId, job.id, result, node.name);
   };

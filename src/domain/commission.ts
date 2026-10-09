@@ -54,7 +54,7 @@ export type CommissionInput = {
   /** Soma dos lançamentos já feitos para este pedido. */
   postedCents: Cents;
   /** Dias de retenção antes do crédito ficar disponível para saque. */
-  // DECISÃO-ABERTA: D-HOLD — padrão 0 até a decisão.
+  // D-HOLD: 7 dias por padrão (Brand.commissionHoldDays).
   holdDays: number;
   /** Instante do processamento (para débitos, que valem na hora). */
   now: Date;
