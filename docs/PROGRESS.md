@@ -6,8 +6,9 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
-- **Próxima tarefa:** E0.1 — inventário do app antigo a partir da exportação do `creator-hub` (D-E0SRC). Depois E1.4 (aguarda D-INFRA).
-- **Bloqueios:** E0.1 aguarda a exportação das tabelas do `creator-hub` (CSV ou dump), enviada por quem tem acesso à Botanika.
+- **Próxima tarefa:** E0.2 — saques já pagos a cada creator (o app antigo não registrou nenhum). Depois E0.3, E0.4 e E1.4.
+- **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
+  Backup do `creator-hub` ainda não conferido (página Database → Backups).
   E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
@@ -16,11 +17,13 @@
 Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 
 ### E0 — Inventário (só leitura; nada muda em produção)
-- [!] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
+- [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
   contagens (creators, cupons, saques, termos) sem alterar nada; conferir se há backup; registrar.
-  Fonte: exportação das tabelas (D-E0SRC), sem conectar a conta da Botanika. *Bloqueado: exportação.*
+  Fonte: consultas de leitura rodadas por quem tem acesso (D-E0SRC). Resultado em `docs/CONTEXTO.md`.
+  *Pendente: confirmar se há backup.*
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
 - [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
+  Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
   *Depende de acesso de admin ao Shopify.*
 - [ ] **E0.4** Formulário do Vitor: onde roda e como pode enviar cadastros. *Depende do Vitor.*
 
@@ -39,6 +42,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-07 — 2026-10-09 — Inventário do app antigo (E0.1)
+- **Feito:** tabelas, colunas, contagens, creators por status, marcas e migrações do `creator-hub` registradas
+  em `docs/CONTEXTO.md`. Leitura feita por consultas `select` rodadas no SQL Editor por quem tem acesso;
+  nada foi alterado e nenhuma conta da Botanika foi conectada.
+- **Principais achados:** 52 creators, todas `APPROVED` com cupom, cadastradas em lote (21–30/07); só 1 aceitou
+  termo e só 1 tem login. **Nenhum saque** registrado no app. Duas lojas (Botanika e VermeFree) sem
+  `read_all_orders`. Dinheiro em `double precision`.
+- **Segurança:** um achado sobre o app antigo foi passado ao responsável e fica fora deste repositório, que é
+  público (D-PUBLIC).
+- **Pendente:** confirmar se há backup do `creator-hub`.
 
 ### CP-06 — 2026-10-09 — Separação das contas e fonte do inventário (D-ACCT, D-E0SRC)
 - **Feito:** D-ACCT complementada (só o Claude fica na Botanika; todas as ferramentas na Gestão Alliance).

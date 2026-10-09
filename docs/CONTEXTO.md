@@ -93,3 +93,43 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
   não aparecem mais** nos conectores.
 - Nada foi criado nem alterado em nenhuma conta. Só o Claude fica na conta da Botanika; nenhuma conta da
   Botanika é conectada às ferramentas do projeto. O E0.1 lê uma exportação do `creator-hub` (D-E0SRC).
+
+## Inventário do app antigo `creator-hub` (E0.1, 2026-10-09, só leitura)
+
+Fonte: consultas `select` rodadas no SQL Editor por quem tem acesso à Botanika (D-E0SRC). Nada foi alterado.
+Um achado de segurança foi passado ao responsável e não é descrito aqui (D-PUBLIC).
+
+**Tabelas (schema `public`) e linhas**
+
+| Tabela | Linhas | Conteúdo |
+| --- | --- | --- |
+| `Brand` | 2 | Marca, conexão Shopify, taxas padrão, termo, meta, campanha e briefing |
+| `Creator` | 52 | Cadastro, cupom, taxa, aceite do termo, endereço de envio, CPF, Pix, contrato |
+| `CreatorAccount` | 2 | Login da creator (e-mail + senha) |
+| `Admin` | 2 | Login de admin, opcionalmente preso a uma marca |
+| `Click` | 1.223 | Clique no link rastreado (IP, user agent, referrer, landing) |
+| `Withdrawal` | **0** | Saque, com NF gravada no banco (`nfData bytea`) |
+| `BrandAsset` | 0 | Arquivos da marca gravados no banco (`bytea`) |
+
+Migrações Prisma: 11, de `20260717000000_init` a `20260824020000_briefings` (última aplicada em 2026-08-24).
+
+**Creators** — todas as 52 com status `APPROVED` e cupom; criadas entre 2026-07-21 e 2026-07-30 (cara de
+importação em lote, não de formulário). Aceitaram o termo: 1. Com login (`accountId`): 1. Reivindicadas
+(`claimed`): 1. Ou seja, quase nenhuma creator usou o portal antigo, e as 52 precisam ser classificadas
+(CREATOR/PROMO e dona) na E4 (D-CLASS) — ver item 20 da auditoria.
+
+**Termos** — não há tabela própria: texto e versão em `Brand` (`termTitle`, `termBody`, `termVersion` = 1);
+aceite em `Creator` (`termsAcceptedAt`, `termsVersion`, `termsName`, `termsCpf`, `termsIp`).
+
+**Saques** — nenhum registrado. Tudo o que já foi pago saiu por fora do app: a E0.2 (Pagamento) é a única fonte.
+
+**Marcas** — `botanika` (Botanika) e `vermfree` (VermeFree), ambas com app Shopify instalado em 2026-07-22,
+escopos `read_orders,write_discounts,read_products` (**sem `read_all_orders`**: só 60 dias de pedidos — item 18).
+Valores gravados: comissão padrão 0,15, desconto padrão 0,05, `withdrawalMinSales` 1000 (o combinado é saque
+mínimo de R$ 500 por solicitação — D-MIN; o app antigo media outra coisa), meta mensal.
+
+**Tipos** — taxas, metas, mínimo e valor de saque em `double precision` (item 13); datas em
+`timestamp without time zone`. Na carga para o v2, converter para centavos/pontos-base com arredondamento
+explícito e conferir.
+
+**Backup** — não conferido ainda (página Database → Backups); organização no plano Free.
