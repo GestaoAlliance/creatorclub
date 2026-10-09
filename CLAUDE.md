@@ -62,6 +62,13 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - `npm run dev` — app local em http://localhost:3000
 - `GET /api/health` (app no ar) e `GET /api/ready` (app alcança o banco)
 
+## Login (Supabase Auth)
+
+- Sessão em cookies via `@supabase/ssr`; `src/proxy.ts` só renova a sessão. Acesso é decidido no servidor,
+  em cada página e ação (nunca só no proxy).
+- Depois de entrar, redirecionar só com `safeNextPath` (`src/lib/auth/rules.ts`): nunca para outro site.
+- Mensagens de erro de login não revelam se a conta existe.
+
 ## Stack fixada
 
 Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9, Vitest 3. Versões exatas no
