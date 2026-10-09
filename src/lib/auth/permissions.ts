@@ -12,6 +12,7 @@ export type Permission =
   | "money.view" // vendas, comissões, saldos
   | "withdrawals.manage" // ver saques e NF, marcar como pago
   | "shipping.view" // lista de envio
+  | "shipping.manage" // registrar e atualizar envios de produtos (D-SHIPWHO)
   | "personal.address" // endereço da creator
   | "personal.fiscal" // CPF, CNPJ, chave Pix
   | "ledger.adjust" // ajuste manual de saldo
@@ -26,6 +27,7 @@ const ALL: readonly Permission[] = [
   "money.view",
   "withdrawals.manage",
   "shipping.view",
+  "shipping.manage",
   "personal.address",
   "personal.fiscal",
   "ledger.adjust",
@@ -37,8 +39,8 @@ const ALL: readonly Permission[] = [
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
-  GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal"],
-  ENVIO: ["shipping.view", "personal.address"],
+  GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
+  ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
   PAGAMENTO: ["creators.view", "money.view", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],

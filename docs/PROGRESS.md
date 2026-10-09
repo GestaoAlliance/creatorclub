@@ -7,7 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.8 — Envios (detalhar antes de começar). Saques pagos/recusados pelo Pagamento: E8.
+- **Próxima tarefa:** E7.6 — Aceite com 2 ou 3 creators piloto (escolher as piloto). Saques pagos/recusados pelo
+  Pagamento: E8.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -135,9 +136,10 @@ só mostra dados da própria creator, decidido no servidor.
   aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
 - [x] **E7.7** Saque no portal (adiantado da E8 por pedido do responsável, D-E7ORDER): pedir saque com a nota
   fiscal em PDF (upload), na janela e com o mínimo da marca; o painel do Pagamento continua na E8.
-- [ ] **E7.8** Envios (D-SHIPMENTS): a equipe (papel Envio) registra cada envio de produtos à creator (data,
-  produtos/kit, endereço, rastreio, situação: preparando, enviado, entregue); a creator vê "Meus envios"; o admin
-  vê todos. Detalhar antes de começar.
+- [x] **E7.8** Envios (D-SHIPMENTS, D-SHIPADDR, D-SHIPSTATUS, D-SHIPWHO): a creator mantém o endereço na aba
+  Envios; a equipe (Envio, Gestão, super admin) registra o envio com produtos da loja em `/admin/envios`, marca
+  enviado (transportadora + rastreio) e entregue, ou cancela; a creator vê "Meus envios" com rastreio e "Recebi".
+  Falta só carregar o catálogo da loja na tabela `Product` depois do deploy (D-SHIPPRODUCTS).
 - [ ] **E7.6** Aceite: 2 ou 3 creators piloto conferem os próprios números. *Depende de:* escolher as piloto, e da
   conferência da Ana (E4.5) para haver comissão lançada.
 
@@ -159,6 +161,24 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-52 — 2026-10-09 — Envios de produtos às creators (E7.8)
+- **Decidido:** D-SHIPMENTS completada com D-SHIPADDR (endereço na ficha, mantido pela creator no portal; cada envio
+  guarda a cópia do dia), D-SHIPSTATUS (Preparando → Enviado com transportadora e rastreio → Entregue pela equipe ou
+  pelo "Recebi" da creator; cancelar antes da entrega; link de rastreio dos Correios), D-SHIPWHO (registram: Envio,
+  Gestão e super admin; nova permissão `shipping.manage`), D-SHIPPRODUCTS (produtos da loja).
+- **Feito:** migração `shipments`: endereço em `CreatorAccount` (`addr*`, travas `CreatorAccount_addr_zip` e
+  `CreatorAccount_addr_state_uf`), tabelas `Product`, `Shipment` e `ShipmentItem` com RLS, travas
+  `Shipment_status_dates` (cada situação com as suas datas e autores; enviado exige rastreio) e
+  `ShipmentItem_quantity_positive`. `src/lib/shipments/` (endereço normalizado; registrar com produtos da mesma
+  marca e cópia do endereço e dos nomes; mudanças de situação só a partir da situação esperada, à prova de dois
+  cliques; tudo auditado; a visualização da equipe não altera nada). Telas `/portal/[marca]/envios` (item "Envios"
+  no menu; a barra do celular passou a dividir o espaço entre 5 itens) e `/admin/envios` (link em `/conta`).
+- **Falta:** carregar os 21 produtos da loja em `Product` depois do deploy (pelo conector, D-SHIPPRODUCTS); sem
+  isso o formulário "Novo envio" mostra "Nenhum produto carregado".
+- **Verificado:** 108 unitários (4 novos); 119 de integração (5 novos: fluxo completo, entregue/cancelado, corrida
+  de dois cliques, recusas, travas pelo nome); migração × schema sem divergência; typecheck; build. Capturas para o
+  OK do responsável.
 
 ### CP-51 — 2026-10-09 — Aba Saque com saldo, movimentações e pedido de saque com NF em PDF (E7.4 + E7.7)
 - **Decidido:** D-WDTAB (o extrato não tem aba própria: a aba chama **Saque** e reúne saldo, botão, meus saques e
