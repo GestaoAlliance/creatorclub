@@ -60,6 +60,7 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - `npm run typecheck` — gera os tipos de rota do Next e roda `tsc`
 - `npm run build` — build de produção do Next
 - `npm run dev` — app local em http://localhost:3000
+- `GET /api/health` (app no ar) e `GET /api/ready` (app alcança o banco)
 
 ## Stack fixada
 
@@ -72,6 +73,8 @@ Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9
 
 - Prisma 7.10.0 com `@prisma/adapter-pg`; cliente gerado em `src/generated/prisma` (fora do Git, gerado no
   `postinstall`). Conexão do app em `src/lib/db.ts`. Configuração em `prisma.config.ts` (URL vem de `DATABASE_URL`).
+- Na Vercel, `scripts/vercel-build.mjs` aplica as migrações só no deploy de produção, com `DIRECT_URL` (D-MIGRATE).
+- Toda tabela nova liga RLS na própria migração (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`), D-RLS.
 - Travas que o Prisma não expressa ficam em SQL no fim da migração (`CHECK`, `EXCLUDE` contra sobreposição de
   vigência, índices parciais, gatilhos de "somente inserção"). Toda trava nova ganha teste de integração que
   exige o **nome** da trava no erro (`expectDbError`).
