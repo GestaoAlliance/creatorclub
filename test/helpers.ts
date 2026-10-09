@@ -1,6 +1,7 @@
 import {
   attributeOrder,
   computeCommissionEntry,
+  isPending,
   rateAt,
   type Attribution,
   type CommissionPolicy,
@@ -34,7 +35,7 @@ export class InMemoryPipeline {
         { brandId: order.brandId, discountCodes: order.discountCodes, orderCreatedAt: order.createdAt },
         this.assignments,
       );
-      if (!decided) return null;
+      if (!decided || isPending(decided)) return null; // pendente: decide de novo depois da confirmação
       attribution = { ...decided, rateBps: null };
       this.attributions.set(order.id, attribution);
     }
@@ -71,15 +72,15 @@ export const T = (iso: string) => new Date(iso);
 export const BRAND = "botanika";
 
 export const assignments: CouponAssignment[] = [
-  { couponId: "c-ana", brandId: BRAND, code: "ANA", kind: "CREATOR", creatorId: "ana", validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
-  { couponId: "c-bia", brandId: BRAND, code: "BIA", kind: "CREATOR", creatorId: "bia", validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
-  { couponId: "c-promo", brandId: BRAND, code: "BOTANIKA", kind: "PROMO", creatorId: null, validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
+  { couponId: "c-ana", brandId: BRAND, code: "ANA", kind: "CREATOR", creatorId: "ana", confirmed: true, validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
+  { couponId: "c-bia", brandId: BRAND, code: "BIA", kind: "CREATOR", creatorId: "bia", confirmed: true, validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
+  { couponId: "c-promo", brandId: BRAND, code: "BOTANIKA", kind: "PROMO", creatorId: null, confirmed: true, validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
 ];
 
 export const policies: CommissionPolicy[] = [
-  { id: "p-ana", creatorId: "ana", rateBps: 1500, validFrom: T("2026-01-01T00:00:00Z"), validTo: null },
-  { id: "p-bia-1", creatorId: "bia", rateBps: 1000, validFrom: T("2026-01-01T00:00:00Z"), validTo: T("2026-09-15T03:00:00Z") },
-  { id: "p-bia-2", creatorId: "bia", rateBps: 1500, validFrom: T("2026-09-15T03:00:00Z"), validTo: null },
+  { id: "p-ana", creatorId: "ana", rateBps: 1500, validFrom: T("2026-01-01T00:00:00Z"), validTo: null, confirmed: true },
+  { id: "p-bia-1", creatorId: "bia", rateBps: 1000, validFrom: T("2026-01-01T00:00:00Z"), validTo: T("2026-09-15T03:00:00Z"), confirmed: true },
+  { id: "p-bia-2", creatorId: "bia", rateBps: 1500, validFrom: T("2026-09-15T03:00:00Z"), validTo: null, confirmed: true },
 ];
 
 export function order(overrides: Partial<Order> & { id: string }): Order {

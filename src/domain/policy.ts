@@ -10,6 +10,8 @@ export type CommissionPolicy = {
   rateBps: Bps;
   validFrom: Date;
   validTo: Date | null;
+  /** Taxa confirmada pela Ana (D-RATEIMPORT). Taxa "a confirmar" nunca entra em cálculo. */
+  confirmed: boolean;
 };
 
 export class PolicyError extends Error {
@@ -49,6 +51,9 @@ export function rateAt(policies: readonly CommissionPolicy[], creatorId: string,
   );
   if (!match) {
     throw new PolicyError(`sem taxa de comissão vigente para ${creatorId} em ${at.toISOString()}`);
+  }
+  if (!match.confirmed) {
+    throw new PolicyError(`taxa de ${creatorId} em ${at.toISOString()} ainda a confirmar`);
   }
   return match.rateBps;
 }

@@ -70,7 +70,7 @@ describe("políticas de comissão", () => {
     expect(() =>
       assertNoOverlap([
         ...policies,
-        { id: "p-ana-2", creatorId: "ana", rateBps: 1000, validFrom: T("2026-06-01T00:00:00Z"), validTo: null },
+        { id: "p-ana-2", creatorId: "ana", rateBps: 1000, validFrom: T("2026-06-01T00:00:00Z"), validTo: null, confirmed: true },
       ]),
     ).toThrow(/se sobrepõem/);
   });

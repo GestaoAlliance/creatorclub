@@ -89,7 +89,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 
 ### E4 — Cupons e creators atuais (detalhada em 2026-10-09, a partir do plano)
 Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa confirmados pela Ana (D-CLASS).
-- [ ] **E4.1** Estado "a confirmar" no banco: cupom sem tipo até ser classificado; dona (`CouponAssignment`) e taxa
+- [x] **E4.1** Estado "a confirmar" no banco: cupom sem tipo até ser classificado; dona (`CouponAssignment`) e taxa
   (`CommissionPolicy`) com quem confirmou e quando; o que não está confirmado nunca entra em cálculo (travas e
   testes).
 - [ ] **E4.2** Importação das 28 creators da Botanika (D-IMPORT): conta, participação, cupom, dona e taxa "a
@@ -107,6 +107,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-34 — 2026-10-09 — Estado "a confirmar" (E4.1)
+- **Decidido:** D-PENDING (pedido com cupom a confirmar antes do de creator fica pendente; taxa a confirmar é erro).
+- **Feito:** migração `pending_confirmation`: `Coupon.kind` passa a aceitar vazio (não classificado), com
+  `classifiedAt`/`classifiedById`; `CouponAssignment` e `CommissionPolicy` ganham `confirmedAt`/`confirmedById`;
+  travas `Coupon_classified_consistent`, `CouponAssignment_confirmed_has_author`,
+  `CommissionPolicy_confirmed_has_author`. Domínio: `attributeOrder` devolve pendente
+  (`unknown_coupon`/`unclassified`/`owner_unconfirmed`) e `rateAt` recusa taxa não confirmada.
+- **Verificado:** 81 unitários (6 novos); 72 de integração (2 novos, exigindo o nome de cada trava); migração ×
+  schema sem divergência; typecheck; build.
 
 ### CP-33 — 2026-10-09 — E4 detalhada
 - **Decidido:** D-IMPORT (só as 28 da Botanika, exportação de hoje e conferência no corte), D-RATEIMPORT (taxa,

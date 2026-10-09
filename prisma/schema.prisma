@@ -228,14 +228,17 @@ model Creator {
 
 /// Taxa de comissão com vigência [validFrom, validTo). Sem sobreposição por creator (EXCLUDE na migração).
 model CommissionPolicy {
-  id          String    @id @default(uuid())
-  brandId     String
-  creatorId   String
-  rateBps     Int
-  validFrom   DateTime
-  validTo     DateTime?
-  createdById String?
-  createdAt   DateTime  @default(now())
+  id            String    @id @default(uuid())
+  brandId       String
+  creatorId     String
+  rateBps       Int
+  validFrom     DateTime
+  validTo       DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  /// Taxa confirmada pela Ana (D-RATEIMPORT). Sem confirmação, nunca entra em cálculo.
+  confirmedAt   DateTime?
+  confirmedById String?
 
   brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
@@ -252,16 +255,19 @@ enum CouponKind {
 
 /// Todo cupom conhecido da marca. O código é único por marca; a dona muda por CouponAssignment.
 model Coupon {
-  id          String     @id @default(uuid())
-  brandId     String
-  code        String // sempre em maiúsculas
-  kind        CouponKind
-  shopifyId   String?
-  discountBps Int?
-  active      Boolean    @default(true)
-  legacyId    String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String      @id @default(uuid())
+  brandId        String
+  code           String // sempre em maiúsculas
+  /// null = ainda não classificado pela Ana (D-CLASS); nunca atribui enquanto for null.
+  kind           CouponKind?
+  classifiedAt   DateTime?
+  classifiedById String?
+  shopifyId      String?
+  discountBps    Int?
+  active         Boolean     @default(true)
+  legacyId       String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   brand        Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   assignments  CouponAssignment[]
@@ -274,14 +280,17 @@ model Coupon {
 
 /// De quem é um cupom CREATOR em cada período [validFrom, validTo). Sem sobreposição (EXCLUDE na migração).
 model CouponAssignment {
-  id          String    @id @default(uuid())
-  brandId     String
-  couponId    String
-  creatorId   String
-  validFrom   DateTime
-  validTo     DateTime?
-  createdById String?
-  createdAt   DateTime  @default(now())
+  id            String    @id @default(uuid())
+  brandId       String
+  couponId      String
+  creatorId     String
+  validFrom     DateTime
+  validTo       DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  /// Dona confirmada pela Ana (D-RATEIMPORT). Sem confirmação, o pedido fica pendente.
+  confirmedAt   DateTime?
+  confirmedById String?
 
   brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
   coupon  Coupon  @relation(fields: [couponId, brandId], references: [id, brandId], onDelete: Restrict)

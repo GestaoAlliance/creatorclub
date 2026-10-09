@@ -26,7 +26,7 @@ export async function seedBrand(prisma: PrismaClient) {
     data: { brandId: brand.id, accountId: account.id, categories: ["INFLUENCER"] },
   });
   const coupon = await prisma.coupon.create({
-    data: { brandId: brand.id, code: `C${s.replace(/\d/g, "X").toUpperCase()}`, kind: "CREATOR" },
+    data: { brandId: brand.id, code: `C${s.replace(/\d/g, "X").toUpperCase()}`, kind: "CREATOR", classifiedAt: new Date(), classifiedById: "seed" },
   });
   const order = await prisma.order.create({
     data: {
