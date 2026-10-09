@@ -100,8 +100,9 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
 - [x] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
   classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
 - [x] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
-- [ ] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
+- [!] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
   histórica disparada (depende de `read_all_orders` para pedidos com mais de 60 dias).
+  *Bloqueada por:* deploy (limite da Vercel), importação no staging pelo responsável, conferência da Ana.
 
 ### Depois de E4 (detalhar quando chegar lá)
 E5 Atribuição e extrato no banco ·
@@ -109,6 +110,11 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-38 — 2026-10-09 — E5 detalhada; D-HOLD, D-NEG, D-MONTH decididas
+- **Decidido:** D-HOLD (7 dias), D-NEG (saldo negativo abate das próximas comissões), D-MONTH (mês do pagamento).
+  `CLAUDE.md` atualizado.
+- **Feito:** E5 quebrada em E5.1–E5.5; E4.5 marcada como bloqueada (deploy, importação, conferência da Ana).
 
 ### CP-37 — 2026-10-09 — Ficha da creator (E4.4)
 - **Decidido:** D-STATUS (Ativa, Pausada, Desligada).

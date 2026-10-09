@@ -50,14 +50,17 @@
 | D-ADMINUI | 2026-10-09 | Telas internas da equipe (sync, cupons, fichas) ficam **simples e funcionais** até as telas do portal (E7); o visual *liquid glass* entra lá. Amplia D-SYNCUI. | Pedro |
 | D-PENDING | 2026-10-09 | Pedido cujo primeiro cupom relevante está "a confirmar" (cupom sem tipo, cupom desconhecido ou dona não confirmada) fica **pendente**: não é atribuído nem gravado, e é decidido de novo depois da confirmação. Pular esse cupom poderia dar o pedido à creator errada. Taxa "a confirmar" nunca vira número (erro). Detalha D-RATEIMPORT. | Técnica |
 | D-STATUS | 2026-10-09 | Situação da creator na tela: **Ativa** (`ACTIVE`, participa e recebe), **Pausada** (`INACTIVE`, parou por um tempo e pode voltar; futura regra dos 60 dias) e **Desligada** (`DEACTIVATED`, saiu do programa). Nada é apagado; cada mudança vai para a auditoria. | Pedro |
+| D-HOLD | 2026-10-09 | Comissão fica **disponível para saque 7 dias depois do pagamento** do pedido (proteção contra devolução e estorno). Vale por marca (`Brand.commissionHoldDays`). | Pedro |
+| D-NEG | 2026-10-09 | Estorno depois de saque pago: o lançamento negativo entra normalmente e o **saldo pode ficar negativo**, abatendo das próximas comissões. Nunca cortar em zero. | Pedro |
+| D-MONTH | 2026-10-09 | A venda conta no **mês da data do pagamento** (D-PAIDAT), no fuso `America/Sao_Paulo`; é a mesma data que define a taxa vigente. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
 | ID | Pergunta | Proposta em uso | Precisa antes de |
 | --- | --- | --- | --- |
-| D-HOLD | Dias de retenção da comissão | 0 dias | E5 |
-| D-NEG | Estorno depois de saque pago | Saldo negativo abate do próximo | E5 |
-| D-MONTH | Comissão conta pela data do pedido ou do pagamento | Data do pagamento | E5 |
+| ~~D-HOLD~~ | ~~Dias de retenção da comissão~~ — **decidida** em 2026-10-09 (7 dias) | E5 |
+| ~~D-NEG~~ | ~~Estorno depois de saque pago~~ — **decidida** em 2026-10-09 | E5 |
+| ~~D-MONTH~~ | ~~Data do pedido ou do pagamento~~ — **decidida** em 2026-10-09 (pagamento) | E5 |
 | D-OPEN | Saldo inicial: reconstrução ou abertura | Abertura aprovada pelo Pagamento | E6 |
 | ~~D-HIST~~ | ~~Desde quando importar pedidos~~ — **decidida** em 2026-10-09 | E3 |
 | ~~D-TAX~~ | ~~Loja usa preço com imposto incluso?~~ — **decidida** em 2026-10-09 (não usa) | E3 |

@@ -34,7 +34,8 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - Comissão incremental: `devido − lançado`; chave de idempotência inclui a versão do pedido.
 - Base: subtotal atual dos produtos (`currentSubtotalPriceSet`), só pedidos `PAID`/`PARTIALLY_REFUNDED`,
   não cancelados, não teste. Conferir `taxesIncluded` da loja antes de fechar a regra.
-- Saldo pode ficar negativo; nunca cortar em zero.
+- Saldo pode ficar negativo; nunca cortar em zero (D-NEG: abate das próximas comissões).
+- Comissão disponível 7 dias depois do pagamento (D-HOLD); a venda conta no mês do pagamento (D-MONTH).
 - Datas em UTC; "dia"/"mês"/janela de saque em `America/Sao_Paulo`.
 
 ## Arquitetura
@@ -47,9 +48,6 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 
 ## Decisões em aberto (marcar no código com `// DECISÃO-ABERTA: <id>`)
 
-- D-HOLD dias de retenção da comissão — padrão 0 até decidir.
-- D-NEG estorno depois de saque pago — proposta: saldo negativo abate do próximo.
-- D-MONTH mês da venda — proposta: data do pagamento.
 - D-OPEN saldo de abertura vs. reconstrução — proposta: abertura aprovada pelo Pagamento.
 
 ## Comandos
