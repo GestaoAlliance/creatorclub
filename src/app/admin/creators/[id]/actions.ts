@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { percentToBps, ReviewError } from "@/lib/coupons/review";
 import { changeRate, ProfileError, setCreatorStatus, updateContact, type CreatorStatusValue } from "@/lib/creators/profile";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
+import { AdjustError, brlToCents, createAdjustment } from "@/lib/commission/adjust";
 import { TeamError } from "@/lib/team/invites";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
@@ -17,7 +18,9 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError) return { error: error.message };
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError) {
+      return { error: error.message };
+    }
     throw error;
   }
 }
@@ -47,5 +50,18 @@ export async function inviteAction(_p: State, form: FormData): Promise<State> {
     const { token } = await createCreatorInvite(db(), await currentActor(), String(form.get("accountId")));
     const origin = (await headers()).get("origin") ?? "";
     return { link: `${origin}/convite/${token}` };
+  }, "");
+}
+
+export async function adjustAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => {
+    const r = await createAdjustment(db(), await currentActor(), {
+      creatorId: id,
+      amountCents: brlToCents(String(form.get("amount") ?? "")),
+      reason: String(form.get("reason") ?? ""),
+      requestId: String(form.get("requestId") ?? ""),
+    });
+    return { ok: r.created ? "Ajuste lançado no extrato." : "Este ajuste já tinha sido lançado." };
   }, "");
 }

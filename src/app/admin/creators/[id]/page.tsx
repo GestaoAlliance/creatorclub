@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { creatorProfile, ProfileError, STATUS_LABEL } from "@/lib/creators/profile";
-import { ContactForm, InviteButton, RateChangeForm, StatusForm } from "./forms";
+import { randomUUID } from "node:crypto";
+import { formatBRL } from "@/domain";
+import { AdjustForm, ContactForm, InviteButton, RateChangeForm, StatusForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +82,22 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
           </>
         )}
       </section>
+
+      {p.adjustments && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">Ajustes manuais</h2>
+          {p.adjustments.length === 0 && <p className="text-sm text-stone-500">Nenhum.</p>}
+          {p.adjustments.map((a, i) => (
+            <p key={i} className="text-sm">{date(a.at)} · {formatBRL(a.amountCents)} · {a.reason}</p>
+          ))}
+          {p.canAdjust && (
+            <>
+              <p className="text-xs text-stone-500">Só super admin. Cada ajuste é uma linha nova no extrato; para corrigir, lance outro.</p>
+              <AdjustForm creatorId={p.id} requestId={randomUUID()} />
+            </>
+          )}
+        </section>
+      )}
 
       {p.canEdit && !p.hasLogin && (
         <section className="flex flex-col gap-2">

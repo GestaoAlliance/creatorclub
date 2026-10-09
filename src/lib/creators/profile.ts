@@ -45,10 +45,14 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.view", creator.brandId)) throw new ProfileError("Sem permissão.");
   const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
-  const [assignments, policies, invites] = await Promise.all([
+  const money = can(actor.grants, "money.view", creator.brandId);
+  const [assignments, policies, invites, adjustments] = await Promise.all([
     prisma.couponAssignment.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" }, include: { coupon: true } }),
     prisma.commissionPolicy.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" } }),
     prisma.creatorInvite.findMany({ where: { accountId: creator.accountId }, orderBy: { createdAt: "desc" }, take: 3 }),
+    money
+      ? prisma.ledgerEntry.findMany({ where: { creatorId, type: "ADJUSTMENT" }, orderBy: { createdAt: "desc" }, take: 20 })
+      : Promise.resolve([]),
   ]);
   const a = creator.account;
   return {
@@ -57,6 +61,8 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     accountId: a.id,
     status: creator.status as CreatorStatusValue,
     canEdit: can(actor.grants, "creators.edit", creator.brandId),
+    canAdjust: can(actor.grants, "ledger.adjust", creator.brandId),
+    adjustments: money ? adjustments.map((e) => ({ at: e.createdAt, amountCents: e.amountCents, reason: e.note ?? "" })) : null,
     contact: { name: a.name, email: a.email, phone: a.phone, fakeEmail: a.email.endsWith(FAKE_EMAIL_DOMAIN) },
     fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey } : null,
     hasLogin: a.userId !== null,
