@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.1 — base visual do portal e acesso da creator.
+- **Próxima tarefa:** E7.2 — Início do portal: indicadores e atividade recente.
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
@@ -120,7 +120,7 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
 ### E7 — Portal da creator (detalhada em 2026-10-09; adiantada porque E5.5 e E6 esperam pessoas)
 Visual *liquid glass* (`docs/design/DESIGN.md`), cor de destaque da marca vinda do banco (D-BRANDCOLOR). Cada tela
 só mostra dados da própria creator, decidido no servidor.
-- [ ] **E7.1** Base visual e acesso: shell do portal (barra lateral recolhível, cabeçalho, tema claro/escuro), cor
+- [x] **E7.1** Base visual e acesso: shell do portal (barra lateral recolhível, cabeçalho, tema claro/escuro), cor
   da marca como variável CSS a partir de `Brand` (Botanika `#323C91` + `#C4D78A`), troca de marca para quem
   participa de mais de uma; creator logada só vê a própria participação.
 - [ ] **E7.2** Início: indicadores (disponível, a liberar, vendas e comissão do mês pelo mês do pagamento) e
@@ -137,6 +137,21 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-45 — 2026-10-09 — Base visual do portal e acesso da creator (E7.1)
+- **Decidido:** D-PORTALNAV (celular com barra inferior; computador com barra lateral recolhível), D-GLASS (desfoque
+  igual em todos os navegadores), D-THEME (segue o aparelho, botão troca e lembra), D-PORTALURL (`/portal/[marca]`),
+  D-PORTALACCESS (Ativa, Pausada e Desligada entram; Desligada com aviso).
+- **Feito:** migração `brand_colors` (`Brand.secondaryColor`; trava `Brand_colors_hex` só `#RRGGBB`, porque a cor vira
+  CSS; Botanika `#323C91` + `#C4D78A`; padrão neutro `#18181B` no lugar do verde antigo). `src/lib/portal/context.ts`
+  (`portalContext`: a creator só entra nas marcas em que participa; `portalHome`; `brandCssVars` com segunda trava).
+  Tema por `data-theme` definido antes da pintura (layout raiz); utilitários `glass` e `portal-bg`. Portal:
+  `/portal` leva à marca da creator; `/portal/[marca]` com moldura (menu lateral/inferior, troca de marca, tema,
+  sair, aviso de Desligada) e Início provisório. `/conta` manda creator sem papel na equipe direto ao portal.
+  `lucide-react` 1.54.0 (ícones). Conferido em capturas (claro, escuro, celular) numa página temporária.
+- **Verificado:** 93 unitários (2 novos); 103 de integração (3 novos, incluindo a trava pelo nome); migração × schema
+  sem divergência; typecheck; build.
+- **Atenção:** `next dev` acrescenta sozinho um bloco ao `CLAUDE.md`; não commitar esse bloco.
 
 ### CP-44 — 2026-10-09 — E7 detalhada; cor da Botanika, vendas sem cliente e destino do link decididos
 - **Decidido:** D-BRANDCOLOR (Botanika `#323C91` + `#C4D78A`), D-SALESVIEW, D-LINK; ordem: E7 antes de E6 (E5.5

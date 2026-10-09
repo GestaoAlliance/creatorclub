@@ -1,13 +1,28 @@
 @import "tailwindcss";
 
+/* Tema: `data-theme` no <html>, definido antes da pintura pelo script do layout raiz (segue o aparelho até a
+   pessoa escolher no botão; a escolha fica no navegador). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+}
+
 @theme {
-  --color-brand: #2f6b3f;
-  --color-brand-soft: #e8f1ea;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Cor de destaque da marca (D-BRANDCOLOR): o portal sobrescreve `--brand`/`--brand-2` com as cores do banco. */
 :root {
-  color-scheme: light dark;
+  /* Fora do portal (login, admin) não há marca: cinza neutro, legível no claro e no escuro. */
+  --brand: #57534e;
+  --brand-2: #a8a29e;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
@@ -15,9 +30,42 @@ body {
   color: #1c1917;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #0c0a09;
-    color: #f5f5f4;
+[data-theme="dark"] body {
+  background: #0c0a09;
+  color: #f5f5f4;
+}
+
+/* Liquid glass (DESIGN.md): desfoque, transparência e brilho na borda, igual em todos os navegadores
+   (sem refração SVG, que só funciona no Chromium). */
+@utility glass {
+  background: rgb(255 255 255 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    0 8px 32px rgb(0 0 0 / 0.08);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+
+  [data-theme="dark"] & {
+    background: rgb(28 25 23 / 0.5);
+    border-color: rgb(255 255 255 / 0.1);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 8px 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* Fundo do portal: base monocromática com um brilho suave da cor da marca, para o vidro ter o que desfocar. */
+@utility portal-bg {
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 60%),
+    radial-gradient(50rem 30rem at 110% 10%, color-mix(in srgb, var(--brand-2) 25%, transparent), transparent 60%),
+    #f5f5f4;
+
+  [data-theme="dark"] & {
+    background:
+      radial-gradient(60rem 40rem at 10% -10%, color-mix(in srgb, var(--brand) 35%, transparent), transparent 60%),
+      radial-gradient(50rem 30rem at 110% 10%, color-mix(in srgb, var(--brand-2) 15%, transparent), transparent 60%),
+      #0c0a09;
   }
 }
