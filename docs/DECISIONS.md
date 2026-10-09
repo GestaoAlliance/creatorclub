@@ -63,6 +63,7 @@
 | D-THEME | 2026-10-09 | Tema claro/escuro segue o aparelho; o botão do cabeçalho troca e a escolha fica guardada naquele navegador. Fora de marca (login, admin) a cor de destaque é um cinza neutro. | Pedro |
 | D-PORTALURL | 2026-10-09 | Portal em `/portal/[marca]/...`; trocar de marca é trocar o endereço. Depois de entrar, a creator cai na sua marca. | Pedro |
 | D-PORTALACCESS | 2026-10-09 | Ativa, Pausada e Desligada entram no portal (saldo e extrato são delas); a Desligada vê um aviso e o cupom/link não aparecem como ativos. | Pedro |
+| D-HOMEKPI | 2026-10-09 | Início do portal: 4 cartões (disponível para saque; a liberar, com a data da próxima liberação; vendas do mês em valor e quantidade de pedidos; comissão do mês), mês pela data do pagamento; abaixo, as 8 últimas movimentações do extrato e, ao lado, o cupom para copiar. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

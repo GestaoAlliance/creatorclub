@@ -43,6 +43,65 @@ export type Statement = {
   lines: StatementLine[];
 };
 
+export type StatementLineWithMonth = StatementLine & { month: string };
+
+/**
+ * Lê o extrato inteiro de uma participação, sem checar acesso: quem chama já decidiu que pode (equipe com
+ * `money.view` em `creatorStatement`; a própria creator no portal, E7).
+ */
+export async function readLedger(
+  prisma: PrismaClient,
+  creator: { id: string; brandId: string; brand: { timezone: string } },
+  now: Date,
+): Promise<{ balance: Balance; lines: StatementLineWithMonth[] }> {
+  const [entries, open] = await Promise.all([
+    prisma.ledgerEntry.findMany({
+      where: { creatorId: creator.id, brandId: creator.brandId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: { order: { select: { name: true, paidAt: true } } },
+    }),
+    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
+  ]);
+  const lines = entries.map((e) => ({
+    id: e.id,
+    type: e.type,
+    amountCents: e.amountCents,
+    createdAt: e.createdAt,
+    availableAt: e.availableAt,
+    held: e.amountCents > 0 && e.availableAt > now,
+    orderName: e.order?.name ?? null,
+    orderPaidAt: e.order?.paidAt ?? null,
+    baseCents: e.baseCents,
+    rateBps: e.rateBps,
+    note: e.note,
+    month: entryMonth({ createdAt: e.createdAt, orderPaidAt: e.order?.paidAt ?? null }, creator.brand.timezone),
+  }));
+  return { balance: computeBalance(entries, open, now), lines };
+}
+
+/** Extrato de um mês, com a lista de meses e o total líquido de cada um. */
+export function statementForMonth(
+  ledger: { balance: Balance; lines: StatementLineWithMonth[] },
+  holdDays: number,
+  month: string | undefined,
+  fallbackMonth: string,
+): Statement {
+  const totals = new Map<string, number>();
+  for (const l of ledger.lines) totals.set(l.month, (totals.get(l.month) ?? 0) + l.amountCents);
+  const months = [...totals.entries()].sort(([a], [b]) => (a < b ? 1 : -1)).map(([m, totalCents]) => ({ month: m, totalCents }));
+  const chosen = month ?? months[0]?.month ?? fallbackMonth;
+  return {
+    balance: ledger.balance,
+    holdDays,
+    months,
+    month: chosen,
+    lines: ledger.lines
+      .filter((l) => l.month === chosen)
+      .sort((a, b) => (b.orderPaidAt ?? b.createdAt).getTime() - (a.orderPaidAt ?? a.createdAt).getTime())
+      .map(({ month: _m, ...l }) => l),
+  };
+}
+
 export async function creatorStatement(
   prisma: PrismaClient,
   actor: Actor | null,
@@ -54,48 +113,6 @@ export async function creatorStatement(
   if (!actor || !can(actor.grants, "money.view", creator.brandId)) throw new StatementError("Sem permissão.");
   if (opts.month !== undefined && !isMonthKey(opts.month)) throw new StatementError("Mês inválido.");
   const now = opts.now ?? new Date();
-  const tz = creator.brand.timezone;
-
-  const [entries, open] = await Promise.all([
-    prisma.ledgerEntry.findMany({
-      where: { creatorId, brandId: creator.brandId },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      include: { order: { select: { name: true, paidAt: true } } },
-    }),
-    prisma.withdrawal.findMany({ where: { creatorId, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
-  ]);
-
-  const balance = computeBalance(entries, open, now);
-  const totals = new Map<string, number>();
-  const lines = entries.map((e) => {
-    const line: StatementLine & { month: string } = {
-      id: e.id,
-      type: e.type,
-      amountCents: e.amountCents,
-      createdAt: e.createdAt,
-      availableAt: e.availableAt,
-      held: e.amountCents > 0 && e.availableAt > now,
-      orderName: e.order?.name ?? null,
-      orderPaidAt: e.order?.paidAt ?? null,
-      baseCents: e.baseCents,
-      rateBps: e.rateBps,
-      note: e.note,
-      month: entryMonth({ createdAt: e.createdAt, orderPaidAt: e.order?.paidAt ?? null }, tz),
-    };
-    totals.set(line.month, (totals.get(line.month) ?? 0) + e.amountCents);
-    return line;
-  });
-
-  const months = [...totals.entries()].sort(([a], [b]) => (a < b ? 1 : -1)).map(([month, totalCents]) => ({ month, totalCents }));
-  const month = opts.month ?? months[0]?.month ?? monthKey(now, tz);
-  return {
-    balance,
-    holdDays: creator.brand.commissionHoldDays,
-    months,
-    month,
-    lines: lines
-      .filter((l) => l.month === month)
-      .sort((a, b) => (b.orderPaidAt ?? b.createdAt).getTime() - (a.orderPaidAt ?? a.createdAt).getTime())
-      .map(({ month: _m, ...l }) => l),
-  };
+  const ledger = await readLedger(prisma, creator, now);
+  return statementForMonth(ledger, creator.brand.commissionHoldDays, opts.month, monthKey(now, creator.brand.timezone));
 }

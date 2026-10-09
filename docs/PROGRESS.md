@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** E7.2 — Início do portal: indicadores e atividade recente.
+- **Próxima tarefa:** E7.3 — Vendas no portal (pedidos atribuídos, sem dados do cliente).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
@@ -123,7 +123,7 @@ só mostra dados da própria creator, decidido no servidor.
 - [x] **E7.1** Base visual e acesso: shell do portal (barra lateral recolhível, cabeçalho, tema claro/escuro), cor
   da marca como variável CSS a partir de `Brand` (Botanika `#323C91` + `#C4D78A`), troca de marca para quem
   participa de mais de uma; creator logada só vê a própria participação.
-- [ ] **E7.2** Início: indicadores (disponível, a liberar, vendas e comissão do mês pelo mês do pagamento) e
+- [x] **E7.2** Início: indicadores (disponível, a liberar, vendas e comissão do mês pelo mês do pagamento) e
   atividade recente.
 - [ ] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
 - [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
@@ -137,6 +137,17 @@ E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-46 — 2026-10-09 — Início do portal (E7.2)
+- **Decidido:** D-HOMEKPI (4 cartões: disponível, a liberar com a próxima liberação, vendas do mês, comissão do mês;
+  abaixo, as 8 últimas movimentações e o cartão do cupom).
+- **Feito:** `readLedger` e `statementForMonth` separados de `creatorStatement` (a leitura sem checagem de acesso
+  serve à equipe e à creator; quem chama decide o acesso). `src/lib/portal/home.ts` (`portalSummary`: vendas = pedidos
+  pagos atribuídos no mês do pagamento, sem cancelados e teste, soma da base; comissão = comissões − estornos dos
+  pedidos do mês; cupons em uso, nenhum para Desligada). Tela Início com os cartões, movimentações e botão de copiar
+  o cupom. O link "ver extrato" entra com a tela de extrato (E7.4).
+- **Verificado:** 93 unitários; 104 de integração (1 novo: saldo, próxima liberação, mês no fuso de São Paulo,
+  cancelado fora, estorno abatendo, outra creator não vê nada); typecheck; build.
 
 ### CP-45 — 2026-10-09 — Base visual do portal e acesso da creator (E7.1)
 - **Decidido:** D-PORTALNAV (celular com barra inferior; computador com barra lateral recolhível), D-GLASS (desfoque
