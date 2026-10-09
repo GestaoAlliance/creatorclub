@@ -10,12 +10,12 @@ import { seedBrand, testClient } from "./fixtures";
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 const key = randomBytes(32);
-const SECRET = "chave-do-app";
+const SECRET = "client-secret-do-app";
 
 async function connectedBrand() {
   const { brand } = await seedBrand(prisma);
   const shop = `${brand.slug}.myshopify.com`;
-  await saveShopifyCredentials(prisma, { brandId: brand.id, shop, accessToken: "shpat_x", webhookSecret: SECRET }, key);
+  await saveShopifyCredentials(prisma, { brandId: brand.id, shop, clientId: "cid", clientSecret: SECRET }, key);
   return { brand, shop };
 }
 

@@ -21,7 +21,7 @@ const NOW = new Date("2026-10-09T12:00:00Z");
 
 async function connectedBrand() {
   const { brand } = await seedBrand(prisma);
-  await saveShopifyCredentials(prisma, { brandId: brand.id, shop: `${brand.slug}.myshopify.com`, accessToken: "t", webhookSecret: "w" }, key);
+  await saveShopifyCredentials(prisma, { brandId: brand.id, shop: `${brand.slug}.myshopify.com`, clientId: "t", clientSecret: "w" }, key);
   return brand;
 }
 

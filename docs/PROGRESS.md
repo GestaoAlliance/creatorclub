@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.7 — Loja de desenvolvimento ligada ao staging e tela de saúde do sync. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.7 (parte 2) — criar a loja de desenvolvimento e o app (responsável), conectar em `/admin/sync` e testar ponta a ponta. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -79,8 +79,10 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST). A **data** de início
   depende de saber quais cupons são de creator (D-CLASS, E4): a lista do app antigo mistura cupons promocionais
   (ex.: BOTANIKA, FRETEGRATIS, 20OFF). A carga na loja real roda quando ela for ligada; o botão fica na tela de saúde.
-- [ ] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
+- [~] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
+  Parte 1 feita (CP-30): agendamento ligado, credenciais no modelo do Dev Dashboard, conexão da loja e tela
+  `/admin/sync`. Falta: `INTEGRATION_ENC_KEY` na Vercel, marca para a loja de teste, loja + app, teste ponta a ponta.
 
 ### Depois de E3 (detalhar quando chegar lá)
 E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -88,6 +90,21 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-30 — 2026-10-09 — Agendamento no ar, conexão da loja e tela de saúde (E3.7, parte 1)
+- **Decidido:** D-SYNCUI (tela simples). Complementos: D-SHOPAPP (Dev Dashboard, Client ID/secret, chave de 24 h,
+  mesma organização) e D-CRON (ligado).
+- **No staging:** `JOBS_SECRET` salva na Vercel pelo responsável; `pg_cron` e `pg_net` ligados, segredo no Vault,
+  agendamento `creatorclub-worker` a cada minuto; chamadas de 19:00 e 19:01 UTC responderam 200 (fila vazia).
+- **Feito:** `src/lib/shopify/token.ts` (troca Client ID/secret pela chave de 24 h, guarda em memória e renova
+  10 min antes; erro claro para loja fora da organização; nunca ecoa o segredo); credenciais passam a ser Client
+  ID + Client secret (o secret valida o HMAC do webhook); `src/lib/shopify/connect.ts` (só super admin: confere
+  credenciais e permissão `read_orders`, avisa permissões recomendadas faltando e imposto incluso, grava cifrado,
+  cadastra os 5 webhooks de pedido sem duplicar, audita `integration.connect`); `src/lib/shopify/health.ts` e a
+  tela `/admin/sync` (loja, última reconciliação, pedidos, fila, falhas, webhooks 24 h, passadas, avisos,
+  "Sincronizar agora", "Importar histórico", conectar/reconectar loja); link em `/conta`.
+- **Verificado:** 75 unitários (3 novos); 68 de integração (4 novos: conectar com webhooks e auditoria, sem
+  permissão não grava, aviso de imposto, tela de saúde por papel); typecheck; build.
 
 ### CP-29 — 2026-10-09 — Carga histórica (E3.6)
 - **Feito:** `src/lib/shopify/backfill.ts`: `startHistoricalImport` (só super admin, uma carga por vez por marca;

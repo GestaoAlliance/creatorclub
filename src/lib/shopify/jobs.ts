@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { ClaimedJob, JobHandler } from "@/lib/jobs/queue";
 import { createShopifyClient, type ShopifyClient } from "./client";
 import { loadShopifyConnection } from "./credentials";
+import { accessTokenFor } from "./token";
 import { fetchOrder, processOrder, type ProcessOrderResult } from "./orders";
 
 /** Tarefa que busca um pedido no Shopify e grava com `processOrder`. Payload: `{ orderGid }`. */
@@ -12,7 +13,8 @@ export type ClientFactory = (prisma: PrismaClient, brandId: string) => Promise<S
 export const defaultClientFactory: ClientFactory = async (prisma, brandId) => {
   const conn = await loadShopifyConnection(prisma, brandId);
   if (!conn) throw new Error("Marca sem Shopify conectado.");
-  return createShopifyClient({ shop: conn.shop, accessToken: conn.accessToken, apiVersion: conn.apiVersion });
+  const accessToken = await accessTokenFor(brandId, conn);
+  return createShopifyClient({ shop: conn.shop, accessToken, apiVersion: conn.apiVersion });
 };
 
 export function orderSyncHandler(prisma: PrismaClient, clientFor: ClientFactory = defaultClientFactory): JobHandler {
