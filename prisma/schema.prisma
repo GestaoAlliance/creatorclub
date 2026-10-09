@@ -37,6 +37,7 @@ model Brand {
   withdrawalWindowEndDay   Int      @default(15)
   commissionHoldDays       Int      @default(7) // D-HOLD: 7 dias depois do pagamento
   nfInstructions           String?
+  nfTakerDocument          String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legacyId                 String?  @unique
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
@@ -201,17 +202,20 @@ enum CreatorStatus {
 
 /// Participação de uma pessoa numa marca.
 model Creator {
-  id            String            @id @default(uuid())
-  brandId       String
-  accountId     String
-  categories    CreatorCategory[]
-  status        CreatorStatus     @default(ACTIVE)
-  activatedAt   DateTime?
-  deactivatedAt DateTime?
-  source        String? // hunter | site | instagram | legacy_import
-  legacyId      String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id                      String            @id @default(uuid())
+  brandId                 String
+  accountId               String
+  categories              CreatorCategory[]
+  status                  CreatorStatus     @default(ACTIVE)
+  activatedAt             DateTime?
+  deactivatedAt           DateTime?
+  /// D-WDLOCK: saque liberado depois do saldo de abertura aprovado (E6). Nulo = travado.
+  withdrawalsUnlockedAt   DateTime?
+  withdrawalsUnlockedById String?
+  source                  String? // hunter | site | instagram | legacy_import
+  legacyId                String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
 
   brand              Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   account            CreatorAccount     @relation(fields: [accountId], references: [id], onDelete: Restrict)

@@ -4,7 +4,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { importLegacyCreators } from "@/lib/import/legacy";
 import { processOrder } from "@/lib/shopify/orders";
 import { shopifyOrder } from "../shopify-order-fixture";
-import { testClient } from "./fixtures";
+import { testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -31,7 +31,7 @@ const rows = (legacy: string, s: string) => [
 describe("importação do app antigo (banco real)", () => {
   it("importa só a marca escolhida, tudo a confirmar; segunda vez não duplica nem sobrescreve e mostra diferenças", async () => {
     const { brand, legacy, admin } = await setup();
-    const s = randomUUID().slice(0, 4).replace(/\d/g, "X").toUpperCase();
+    const s = letters();
     const csv = [HEADER, ...rows(legacy, s)].join("\n");
 
     const first = await importLegacyCreators(prisma, admin, { brandId: brand.id, csv });

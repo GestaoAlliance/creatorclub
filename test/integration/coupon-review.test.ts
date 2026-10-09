@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { classifyCoupon, confirmOwner, confirmRate, couponReview } from "@/lib/coupons/review";
-import { seedBrand, testClient } from "./fixtures";
+import { seedBrand, testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -16,7 +16,7 @@ async function userWith(role: "GESTAO" | "PAGAMENTO" | "SUPER_ADMIN", brandId: s
 /** Marca com uma creator importada: cupom sem tipo, dona e taxa a confirmar. */
 async function imported() {
   const { brand, creator, account } = await seedBrand(prisma);
-  const coupon = await prisma.coupon.create({ data: { brandId: brand.id, code: `IMP${randomUUID().slice(0, 4).replace(/\d/g, "X").toUpperCase()}` } });
+  const coupon = await prisma.coupon.create({ data: { brandId: brand.id, code: `IMP${letters()}` } });
   const since = new Date("2026-07-21T00:45:04Z");
   const assignment = await prisma.couponAssignment.create({ data: { brandId: brand.id, couponId: coupon.id, creatorId: creator.id, validFrom: since } });
   const policy = await prisma.commissionPolicy.create({ data: { brandId: brand.id, creatorId: creator.id, rateBps: 1500, validFrom: since } });
@@ -57,7 +57,7 @@ describe("conferência da Ana (banco real)", () => {
     await confirmOwner(prisma, ana, { couponId: coupon.id, creatorId: outra.id });
     expect(await prisma.couponAssignment.findUniqueOrThrow({ where: { id: assignment.id } })).toMatchObject({ creatorId: outra.id, confirmedById: ana.userId });
 
-    const novo = await prisma.coupon.create({ data: { brandId: brand.id, code: `NV${randomUUID().slice(0, 4).replace(/\d/g, "X").toUpperCase()}` } });
+    const novo = await prisma.coupon.create({ data: { brandId: brand.id, code: `NV${letters()}` } });
     await classifyCoupon(prisma, ana, novo.id, "CREATOR");
     await expect(confirmOwner(prisma, ana, { couponId: novo.id, creatorId: outra.id })).rejects.toThrow(/desde quando/);
     await confirmOwner(prisma, ana, { couponId: novo.id, creatorId: outra.id, since: new Date("2026-08-01T03:00:00Z") });

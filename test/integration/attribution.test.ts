@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { decideAttribution, recheckBrand } from "@/lib/commission/attribution";
 import { classifyCoupon, confirmOwner, confirmRate } from "@/lib/coupons/review";
-import { testClient } from "./fixtures";
+import { testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -11,7 +11,7 @@ beforeEach(async () => {
   await prisma.job.deleteMany();
 });
 
-const u = () => randomUUID().slice(0, 6).replace(/\d/g, "X").toUpperCase();
+const u = () => letters();
 const SINCE = new Date("2026-07-21T00:00:00Z");
 
 /** Marca com duas creators importadas (tudo a confirmar) e um cupom promocional ainda sem tipo. */
