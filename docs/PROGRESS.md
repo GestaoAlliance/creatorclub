@@ -111,6 +111,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-40 — 2026-10-09 — Lançamentos de comissão (E5.2)
+- **Feito:** `src/lib/commission/ledger.ts`: `postCommission` (devido − lançado por versão do pedido; COMMISSION ou
+  REVERSAL; chave de idempotência com a versão; trava por pedido na transação contra lançamento em dobro; crédito
+  disponível 7 dias depois do pagamento, débito na hora; não lança sem atribuição, sem taxa congelada, com imposto
+  incluso ou moeda diferente) e `settleOrder` (atribuição + lançamento), usados por webhook, reconciliação e carga
+  histórica; a reavaliação da marca também lança. `processOrder` passa a devolver o pedido mesmo quando a versão é
+  repetida (a liquidação é refeita se algo falhou antes); o aviso de imposto só é registrado em versão nova.
+- **Verificado:** 86 unitários; 95 de integração (5 novos: pago com retenção e repetição, reembolso parcial e
+  cancelamento somando zero, 5 processos simultâneos lançando uma vez, casos que não lançam, pendente lançado pela
+  reavaliação); typecheck; build.
+
 ### CP-39 — 2026-10-09 — Atribuição no banco (E5.1)
 - **Feito:** `src/lib/commission/attribution.ts`: `decideAttribution` (decide uma vez, com os códigos como evidência;
   pendente não grava; taxa congelada só com pedido pago e política confirmada cobrindo o pagamento, nunca a atual

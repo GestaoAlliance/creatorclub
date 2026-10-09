@@ -107,7 +107,11 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
     let outcome: ProcessOrderResult["outcome"] = "updated";
     if (updated.count === 0) {
       const created = await tx.order.createMany({ data: [order], skipDuplicates: true });
-      if (created.count === 0) return { outcome: "stale" as const, orderId: null, warnings };
+      if (created.count === 0) {
+        // Versão igual ou antiga: nada muda, mas devolve o pedido para a liquidação ser refeita se algo falhou antes.
+        const existing = await tx.order.findUnique({ where: { brandId_shopifyId: key }, select: { id: true } });
+        return { outcome: "stale" as const, orderId: existing?.id ?? null, warnings };
+      }
       outcome = "created";
     }
     const { id: orderId } = await tx.order.findUniqueOrThrow({ where: { brandId_shopifyId: key }, select: { id: true } });
