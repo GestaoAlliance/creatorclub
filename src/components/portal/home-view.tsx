@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Clock, ShoppingBag, Wallet } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { formatBRL } from "@/domain";
@@ -8,7 +9,7 @@ const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "jul
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 
 /** Início do portal (E7.2, D-HOMEKPI). Só exibe o resumo já calculado. */
-export function HomeView({ s }: { s: PortalSummary }) {
+export function HomeView({ s, base }: { s: PortalSummary; base: string }) {
   const monthName = MONTHS[Number(s.month.slice(5)) - 1];
 
   const cards = [
@@ -74,6 +75,9 @@ export function HomeView({ s }: { s: PortalSummary }) {
               </div>
             ))}
             <p className="text-xs text-stone-500">Pedidos pagos com seu cupom geram comissão para você.</p>
+            <Link href={`${base}/cupom`} className="text-sm font-medium text-brand underline-offset-4 hover:underline dark:text-brand-2">
+              Ver meu link e os cliques →
+            </Link>
           </section>
         )}
       </div>

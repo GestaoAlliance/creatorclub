@@ -194,3 +194,37 @@ describe("Vendas do portal (banco real)", () => {
     expect(otherPage.sales).toEqual([]);
   });
 });
+
+describe("Cupom e link (banco real)", () => {
+  it("link do cupom de creator registra clique e leva com cupom; promocional, desconhecido ou de desligada vai à home sem contar", async () => {
+    const { resolveTrackedLink, recordClick } = await import("@/lib/links/tracked");
+    const { portalCoupons } = await import("@/lib/portal/coupons");
+    const T = (iso: string) => new Date(iso);
+    const a = await seedBrand(prisma);
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { storeUrl: "https://loja.example" } });
+    await prisma.couponAssignment.create({ data: { brandId: a.brand.id, couponId: a.coupon.id, creatorId: a.creator.id, validFrom: T("2026-01-01T00:00:00Z") } });
+    const now = T("2026-10-09T15:00:00Z");
+
+    const t = await resolveTrackedLink(prisma, a.brand.slug, a.coupon.code.toLowerCase(), "/", now);
+    expect(t?.url).toBe(`https://loja.example/discount/${a.coupon.code}?redirect=%2F`);
+    await recordClick(prisma, t!.click!, { ip: "9.9.9.9", userAgent: "UA", referrer: "https://instagram.com", landing: "/r/x" }, now);
+    await recordClick(prisma, t!.click!, { ip: null, userAgent: null, referrer: null, landing: "/r/x" }, T("2026-09-20T15:00:00Z"));
+    const clicks = await prisma.click.findMany({ where: { couponId: a.coupon.id } });
+    expect(clicks).toHaveLength(2);
+    expect(clicks.some((c) => c.ipHash?.includes("9.9.9.9"))).toBe(false);
+
+    const promo = await prisma.coupon.create({ data: { brandId: a.brand.id, code: `PROMO${randomUUID().slice(0, 4).replace(/\d/g, "X").toUpperCase()}`, kind: "PROMO", classifiedAt: now, classifiedById: "x" } });
+    expect(await resolveTrackedLink(prisma, a.brand.slug, promo.code, "/p", now)).toEqual({ url: "https://loja.example/p", click: null });
+    expect(await resolveTrackedLink(prisma, a.brand.slug, "NAOEXISTE", "/", now)).toEqual({ url: "https://loja.example/", click: null });
+    expect(await resolveTrackedLink(prisma, "marca-que-nao-existe", a.coupon.code, "/", now)).toBeNull();
+
+    const ctx = await portalContext(prisma, await loginFor(a.account.id), a.brand.slug);
+    expect(await portalCoupons(prisma, ctx, now)).toEqual([
+      { code: a.coupon.code, path: `/r/${a.brand.slug}/${a.coupon.code}`, clicksMonth: 1, clicksTotal: 2 },
+    ]);
+
+    await prisma.creator.update({ where: { id: a.creator.id }, data: { status: "DEACTIVATED" } });
+    expect((await resolveTrackedLink(prisma, a.brand.slug, a.coupon.code, "/", now))?.click).toBeNull();
+    expect(await portalCoupons(prisma, { ...ctx, status: "DEACTIVATED" }, now)).toEqual([]);
+  });
+});

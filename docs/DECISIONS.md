@@ -76,6 +76,7 @@
 | D-SHIPMENTS | 2026-10-09 | Aba de Envios: a equipe registra todo envio de produtos à creator (data, produtos/kit, endereço, rastreio, situação: preparando, enviado, entregue); a creator vê os dela; o admin vê todos. | Pedro |
 | D-E7ORDER | 2026-10-09 | Ordem do portal: Vendas → Cupom/link → Extrato → Saque (com NF em PDF) → Envios. | Pedro |
 | D-PERKS | 2026-10-09 | Bônus por metas, gamificação e competições de vendas: ideias anotadas; benefícios a levantar com a Ana antes de desenhar. | Pedro |
+| D-LINKFALLBACK | 2026-10-09 | Link rastreado de cupom desconhecido, promocional ou de creator desligada leva à página inicial da loja, sem cupom e sem contar clique (o link da bio nunca quebra). O IP do clique nunca é gravado: só um hash que muda a cada dia. | Técnica (aplicação de D-LINK) |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
