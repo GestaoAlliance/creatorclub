@@ -78,6 +78,8 @@
 | D-SHIPSTATUS | 2026-10-09 | Situações do envio: Preparando → Enviado (transportadora + código de rastreio) → Entregue (a equipe marca ou a creator clica "Recebi"); cancelar é possível antes da entrega. Código no formato dos Correios ganha link de rastreio. | Pedro |
 | D-SHIPWHO | 2026-10-09 | Registram e atualizam envios: Envio, Gestão e super admin (permissão `shipping.manage`). | Pedro |
 | D-SHIPPRODUCTS | 2026-10-09 | O conteúdo do envio são produtos da loja (catálogo do Shopify, tabela `Product`), com quantidade; o envio guarda o nome do produto do dia. Carga inicial pelo conector da Shopify; sincronização automática do catálogo fica para depois. | Pedro |
+| D-WDDECIDE | 2026-10-09 | Decisão do saque: Pagamento e super admin decidem (Gestão não vê a fila). Pago vale no dia do clique, sem comprovante, e lança o saque no extrato. Recusa exige motivo, que a creator vê. A creator pode cancelar o próprio pedido enquanto está em análise. | Pedro |
+| D-ACCEPTANA | 2026-10-09 | Sem aceite com creators piloto: a Ana confere os números antes de o portal ser liberado para as creators. | Pedro |
 | D-E7ORDER | 2026-10-09 | Ordem do portal: Vendas → Cupom/link → Extrato → Saque (com NF em PDF) → Envios. | Pedro |
 | D-PERKS | 2026-10-09 | Bônus por metas, gamificação e competições de vendas: ideias anotadas; benefícios a levantar com a Ana antes de desenhar. | Pedro |
 | D-LINKFALLBACK | 2026-10-09 | Link rastreado de cupom desconhecido, promocional ou de creator desligada leva à página inicial da loja, sem cupom e sem contar clique (o link da bio nunca quebra). O IP do clique nunca é gravado: só um hash que muda a cada dia. | Técnica (aplicação de D-LINK) |

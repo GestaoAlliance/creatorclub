@@ -1,11 +1,13 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { brlToCents } from "@/lib/commission/adjust";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentActor } from "@/lib/auth/current";
+import { cancelMyWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 import { assertCanStart, assertRequestId, MAX_NF_BYTES, NF_BUCKET, nfPath, requestWithdrawal, WithdrawalRequestError } from "@/lib/withdrawals/request";
 
 export type UploadTicket = { ok: true; signedUrl: string } | { ok: false; error: string };
@@ -53,4 +55,22 @@ export async function submitWithdrawal(_prev: SubmitState, form: FormData): Prom
     throw error;
   }
   redirect(`/portal/${marca}/saque?pedido=enviado`);
+}
+
+export type CancelState = { error?: string } | undefined;
+
+/** A creator cancela o próprio pedido enquanto está em análise (D-WDDECIDE). */
+export async function cancelWithdrawalAction(_prev: CancelState, form: FormData): Promise<CancelState> {
+  const marca = String(form.get("marca") ?? "");
+  try {
+    const ctx = await currentPortalContext(marca);
+    const actor = await currentActor();
+    if (!actor) return { error: "Sua sessão expirou. Entre de novo." };
+    await cancelMyWithdrawal(db(), ctx, actor.userId, String(form.get("withdrawalId") ?? ""));
+  } catch (error) {
+    if (error instanceof WithdrawalDecisionError) return { error: error.message };
+    throw error;
+  }
+  revalidatePath(`/portal/${marca}/saque`);
+  return undefined;
 }

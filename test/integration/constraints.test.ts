@@ -83,7 +83,7 @@ describe("saques", () => {
 
     await prisma.withdrawal.update({
       where: { id: first.id },
-      data: { status: "PAID", decidedAt: new Date() },
+      data: { status: "PAID", decidedAt: new Date(), decidedById: "pagamento" },
     });
     await expect(prisma.withdrawal.create({ data: withdrawal(brand.id, creator.id) })).resolves.toBeTruthy();
   });
