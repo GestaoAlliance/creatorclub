@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2.1 — sessão com Supabase Auth. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** terminar a E2.1 (configuração do Auth e teste no staging). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -40,9 +40,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
   `Creator Club` com as migrações aplicadas pelo deploy da `main`.
 
 ### E2 — Login e papéis (detalhada em 2026-10-09, a partir do plano)
-- [ ] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, clientes do servidor e do navegador, `proxy.ts` renovando a
-  sessão, tela `/entrar` (e-mail e senha, mínimo 10 caracteres), sair, "esqueci a senha". `User` ligado ao usuário
-  do Auth (`authUserId`, migração com RLS). Precisa de `NEXT_PUBLIC_SUPABASE_URL` e da chave publicável na Vercel.
+- [~] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, clientes do servidor e do navegador, `proxy.ts` renovando a
+  sessão, tela `/entrar` (e-mail e senha, mínimo 10 caracteres), sair, "esqueci a senha". `User.id` já é o id do
+  usuário do Auth (schema da E1.2). **Falta:** variáveis públicas do Supabase na Vercel, configuração do Auth
+  (URL do site, links de retorno, cadastro aberto desligado, senha mínima 10) e teste ponta a ponta no staging.
 - [ ] **E2.2** Papéis e checagem central: quem é o usuário, papéis por marca (`RoleGrant`), negar por padrão,
   escopo de marca em toda consulta. Teste prova que cada papel só vê o que pode.
 - [ ] **E2.3** Primeiro super admin: comando único que cria o acesso e nunca regrava senha no deploy. *Precisa de D-ADMIN.*
@@ -57,6 +58,24 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-15 — 2026-10-09 — Direção de design registrada
+- **Feito:** `docs/design/DESIGN.md` com a linha visual (*liquid glass*, monocromático, cor de destaque por marca,
+  dashboard com sidebar recolhível) e as 3 referências de código recebidas em `docs/design/referencias/`.
+  Só referência: não muda a fila. `CLAUDE.md` passa a exigir perguntar antes de executar qualquer dúvida e a ler
+  o `DESIGN.md` antes de construir telas.
+- **Em aberto:** D-BRANDCOLOR (cores oficiais; o app antigo tinha Botanika verde e VermeFree azul, o contrário do
+  que foi dito).
+
+### CP-14 — 2026-10-09 — Login com Supabase Auth no código (E2.1, parte 1)
+- **Feito:** `@supabase/ssr` 0.12.7 e `@supabase/supabase-js` 2.117.2 (versões exatas); `src/proxy.ts` renova a
+  sessão sem decidir acesso; `/entrar` (e-mail e senha, mensagem única que não revela se a conta existe),
+  `/entrar/esqueci`, `/entrar/nova-senha`, `/auth/callback` (troca o código do e-mail por sessão), `/conta` com
+  "Sair". Regras puras em `src/lib/auth/rules.ts`: senha mínima 10, e-mail normalizado e `safeNextPath`
+  (depois de entrar, só caminhos internos: bloqueia `//site`, `/\site`, `https://...`).
+- **Verificado:** 37 unitários (4 novos), typecheck, build; app local: `/entrar` 200, `/conta` sem sessão vai para
+  `/entrar?next=/conta`, `/auth/callback` com `next=//evil.com` e sem código vai para `/entrar?erro=link`.
+  Este ambiente não alcança o Supabase, então o login de verdade é testado no staging.
 
 ### CP-13 — 2026-10-09 — E2 detalhada
 - **Feito:** E2 quebrada em E2.1–E2.6 a partir da seção "Login, papéis e segurança" do plano. Decisões novas em

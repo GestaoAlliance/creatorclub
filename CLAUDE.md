@@ -14,7 +14,8 @@ até 2026-10-09 e não recebe mais commits). Contas do projeto: Gestão Alliance
 3. Toda tarefa termina com: testes e typecheck passando → `docs/PROGRESS.md` atualizado
    (marcar a tarefa, novo checkpoint `CP-NN` no topo da lista, próxima tarefa) → **um commit** → push.
 4. Decisão nova ou mudada vai para `docs/DECISIONS.md` no mesmo commit.
-5. Regra de negócio que não está nos documentos: perguntar, não inventar.
+5. Regra de negócio que não está nos documentos: perguntar, não inventar. **Qualquer dúvida** (negócio, design,
+   escolha que muda o que o usuário vê): perguntar antes de executar. Nunca decidir sozinho para evitar retrabalho.
 6. O repositório é a memória do projeto. O que não está aqui não aconteceu.
 
 ## Escopo atual (lançamento 1)
@@ -62,6 +63,13 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - `npm run dev` — app local em http://localhost:3000
 - `GET /api/health` (app no ar) e `GET /api/ready` (app alcança o banco)
 
+## Login (Supabase Auth)
+
+- Sessão em cookies via `@supabase/ssr`; `src/proxy.ts` só renova a sessão. Acesso é decidido no servidor,
+  em cada página e ação (nunca só no proxy).
+- Depois de entrar, redirecionar só com `safeNextPath` (`src/lib/auth/rules.ts`): nunca para outro site.
+- Mensagens de erro de login não revelam se a conta existe.
+
 ## Stack fixada
 
 Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9, Vitest 3. Versões exatas no
@@ -81,6 +89,11 @@ Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9
 - Depois de mudar o schema: `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`
   num banco recém-migrado precisa sair vazio (sem divergência).
 - `prisma migrate reset` é bloqueado quando roda pelo Claude. Para recomeçar do zero localmente, criar um banco novo.
+
+## Design
+
+Antes de construir qualquer tela, ler `docs/design/DESIGN.md`: *liquid glass*, base monocromática, cor de destaque
+da marca vinda do banco (troca conforme a marca). Referências de código em `docs/design/referencias/` (só referência).
 
 ## Convenções
 
