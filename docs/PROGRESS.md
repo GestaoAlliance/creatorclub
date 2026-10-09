@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.4 — Webhook `/api/webhooks/shopify/[marca]`. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.5 — Reconciliação a cada 15 min e "sincronizar agora". E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -71,7 +71,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
   (`updatedAt`) for mais nova; guarda os códigos de cupom; avisa se `taxesIncluded` mudar (D-TAX). Testes com
   pedidos de exemplo (pago, reembolso parcial, cancelado, teste, vários cupons).
-- [ ] **E3.4** Webhook `/api/webhooks/shopify/[marca]`: valida HMAC, grava `WebhookEvent` + `Job` na mesma
+- [x] **E3.4** Webhook `/api/webhooks/shopify/[marca]`: valida HMAC, grava `WebhookEvent` + `Job` na mesma
   transação e responde 200; repetido não duplica; HMAC errado = 401 sem gravar.
 - [ ] **E3.5** Reconciliação a cada 15 min (janela com margem de 30 min) e "sincronizar agora" (super admin);
   agendamento no pg_cron (D-CRON); `SyncRun` registra cada passada.
@@ -85,6 +85,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-27 — 2026-10-09 — Webhook do Shopify (E3.4)
+- **Feito:** `POST /api/webhooks/shopify/[marca]` (fora do `proxy`) e `src/lib/shopify/webhook.ts`: valida o HMAC
+  do corpo cru com a chave do app (tempo constante) e o domínio da loja; grava `WebhookEvent` + tarefa
+  `shopify.order.sync` na mesma transação e responde 200; aviso repetido (mesmo `Webhook-Id`) não duplica.
+  Tópicos que viram tarefa: `orders/create`, `orders/updated`, `orders/paid`, `orders/cancelled`,
+  `refunds/create`; os demais ficam gravados como IGNORED. Assinatura errada ou loja trocada = 401 sem gravar;
+  marca sem Shopify = 404; sem tópico/id = 400. A tarefa marca o evento como PROCESSED.
+  Testes de integração passam a rodar um arquivo por vez (a fila é global no schema de teste).
+- **Verificado:** 69 unitários (4 novos); 54 de integração (6 novos), duas execuções seguidas; typecheck.
 
 ### CP-26 — 2026-10-09 — Gravação dos pedidos (E3.3)
 - **Decidido:** D-PAIDAT (data do pagamento = primeira `SALE`/`CAPTURE` com sucesso), conferido em 5 pedidos
