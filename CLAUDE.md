@@ -3,6 +3,8 @@
 Plataforma própria de gestão de creators da Botanika (multi-marca; só Botanika ligada no início).
 Sistema separado do AllianceOS; depois compartilha dados com ele por eventos.
 Plano vivo: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
+Repositório: `GestaoAlliance/creatorclub` (substitui `Botanika-HUb/botanika-creator-club`, que guarda o mesmo histórico
+até 2026-10-09 e não recebe mais commits). Contas do projeto: Gestão Alliance (D-ACCT).
 
 ## Como trabalhar neste repositório (obrigatório)
 

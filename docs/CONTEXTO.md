@@ -77,3 +77,19 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
   podem ainda existir. Verificar no E0, sem alterar nada.
 - **Vercel**, time "BotanikaBrasil": projetos `central`, `operacional`, `planejador-tap` e `creator-club`
   (provavelmente o app antigo). Plano do time não informado pela API.
+
+## Contas da Gestão Alliance (D-ACCT, conferido em 2026-10-09, só leitura)
+
+- **GitHub:** conta `GestaoAlliance` ("Gestão Alliance"). Repositório do projeto: `GestaoAlliance/creatorclub`,
+  com a `main` idêntica à do antigo `Botanika-HUb/botanika-creator-club` (7 commits, até `ad79a40`, sem reescrita).
+  O repositório antigo deixa de receber commits.
+- **Supabase:** organização **"Creator Club"** (id `mytknzgmocxhrkfpxbut`), **plano Free**, com 1 projeto:
+  `Creator Club` (ref `svrntecpbdgudueqiosh`, `sa-east-1`, Postgres 17, criado 2026-10-09, ativo; schema `public`
+  vazio). Criado fora desta sessão; é o candidato ao staging da E1.4.
+- **Vercel:** time **"GestaoAlliance"** (slug `gestaoalliance`, id `team_NMkkIPjNnY1WbCVxBMbnpEEO`), com 1 projeto:
+  `alliance-os` (AllianceOS). Ainda não há projeto do Creator Club. Plano do time não informado pela API.
+- Primeira conferência (mesmo dia, antes da troca dos conectores): só apareciam as contas da Botanika
+  (seção anterior). Depois da troca, **a organização "Botanika" do Supabase e o time "BotanikaBrasil" da Vercel
+  não aparecem mais** nos conectores.
+- Nada foi criado nem alterado em nenhuma conta. O E0.1 (inventário do `creator-hub`, que fica na organização
+  "Botanika") precisa de acesso de leitura àquela organização de novo.
