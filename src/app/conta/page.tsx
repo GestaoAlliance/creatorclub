@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { supabaseServer } from "@/lib/supabase/server";
 import { signOut } from "../entrar/actions";
@@ -28,6 +30,9 @@ export default async function ContaPage() {
       {roles.length > 0 && <p className="text-sm">{roles.join(" · ")}</p>}
       {brands > 0 && <p className="text-sm">Creator em {brands} marca(s)</p>}
       {!actor && <p className="text-sm text-stone-500">Seu acesso ainda não foi liberado.</p>}
+      {actor && brandsWith(actor.grants, "staff.manage") === "ALL" && (
+        <Link href="/admin/equipe" className="text-sm underline">Equipe e convites</Link>
+      )}
       <form action={signOut}>
         <button className="rounded border border-stone-300 px-3 py-2">Sair</button>
       </form>
