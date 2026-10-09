@@ -14,6 +14,11 @@ if (process.env.VERCEL_ENV === "production") {
     console.error("DIRECT_URL e DATABASE_URL são obrigatórios no ambiente Production da Vercel.");
     process.exit(1);
   }
+  // O transaction pooler (6543) trava o `migrate deploy`; migração só pelo session pooler (5432).
+  if (new URL(process.env.DIRECT_URL).port === "6543") {
+    console.error("DIRECT_URL aponta para a porta 6543 (transaction pooler). Use o session pooler, porta 5432.");
+    process.exit(1);
+  }
   console.log("Aplicando migrações (prisma migrate deploy)...");
   try {
     run("npx", ["prisma", "migrate", "deploy"], {

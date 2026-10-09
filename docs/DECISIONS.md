@@ -26,6 +26,7 @@
 | D-INFRA | 2026-10-09 | Staging começa no **Supabase Free** (organização "Creator Club", projeto `Creator Club`) e no projeto Vercel `creatorclub` (time GestaoAlliance), para não travar. Antes de qualquer creator usar de verdade (E9), Supabase e Vercel passam para plano pago; produção nunca em Free. | Pedido de 2026-10-09 |
 | D-RLS | 2026-10-09 | Toda tabela do banco com **RLS ligado e sem políticas**: a Data API do Supabase (anon/authenticated) não lê nem grava nada; o app acessa só pelo servidor, como dono das tabelas. Teste de integração cobra RLS em toda tabela nova. | Técnica |
 | D-MIGRATE | 2026-10-09 | Migrações aplicadas pelo build da Vercel **só no deploy de produção** (a `main`), via `DIRECT_URL` (session pooler 5432); o app usa `DATABASE_URL` (transaction pooler 6543). Prévias de PR não têm variáveis de banco. | Técnica |
+| D-EXTPUBLIC | 2026-10-09 | A extensão `btree_gist` (EXCLUDE de vigência) fica no schema `public`: o aviso "Extension in Public" do Supabase é risco aceito. Mover exige ser dono dos tipos da extensão, o que o papel `postgres` do Supabase não é; a extensão só traz operadores de índice, sem dados. | Técnica |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

@@ -92,7 +92,10 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
   **dois** projetos no time GestaoAlliance, ambos publicando prévias dos PRs: `creatorclub`
   (`prj_rkJhwGQR6MfItmgsHDTxrUoDgXQz`) e `creatorclub-ksmg` (`prj_gYmxvtxuvMaUXVw235xnQRxnepxd`, duplicado).
   O `creatorclub-ksmg` foi **apagado** pelo responsável no painel; fica o **`creatorclub`**. O conector da
-  Vercel ainda não enxerga nenhum dos dois (404); para a E1.4 ele precisa ter acesso ao `creatorclub`.
+  Vercel ainda não enxerga nenhum dos dois (404).
+- **Staging no ar (E1.4, 2026-10-09):** https://creatorclub-six.vercel.app — funções em `gru1`, banco no projeto
+  Supabase `Creator Club` (`DATABASE_URL` pelo transaction pooler 6543; `DIRECT_URL` pelo session pooler 5432,
+  só no ambiente Production da Vercel).
 - Primeira conferência (mesmo dia, antes da troca dos conectores): só apareciam as contas da Botanika
   (seção anterior). Depois da troca, **a organização "Botanika" do Supabase e o time "BotanikaBrasil" da Vercel
   não aparecem mais** nos conectores.
