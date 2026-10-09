@@ -6,8 +6,8 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
-- **Próxima tarefa:** E0.1 — inventário do app antigo no Supabase (só leitura). Depois E1.4 (aguarda D-INFRA).
-- **Bloqueios:** E0.1 precisa de leitura na organização Supabase "Botanika" (o conector agora só vê a da Gestão Alliance).
+- **Próxima tarefa:** E0.1 — inventário do app antigo a partir da exportação do `creator-hub` (D-E0SRC). Depois E1.4 (aguarda D-INFRA).
+- **Bloqueios:** E0.1 aguarda a exportação das tabelas do `creator-hub` (CSV ou dump), enviada por quem tem acesso à Botanika.
   E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
@@ -16,8 +16,9 @@
 Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 
 ### E0 — Inventário (só leitura; nada muda em produção)
-- [ ] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
+- [!] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
   contagens (creators, cupons, saques, termos) sem alterar nada; conferir se há backup; registrar.
+  Fonte: exportação das tabelas (D-E0SRC), sem conectar a conta da Botanika. *Bloqueado: exportação.*
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
 - [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
   *Depende de acesso de admin ao Shopify.*
@@ -38,6 +39,12 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-06 — 2026-10-09 — Separação das contas e fonte do inventário (D-ACCT, D-E0SRC)
+- **Feito:** D-ACCT complementada (só o Claude fica na Botanika; todas as ferramentas na Gestão Alliance).
+  D-E0SRC: E0.1 usa exportação do `creator-hub`, sem conectar a conta da Botanika. E0.1 marcada como
+  bloqueada até a exportação chegar.
+- **Verificado:** CI verde na `main` após o merge do CP-05 (run 37947443371, commit `6db46e8`).
 
 ### CP-05 — 2026-10-09 — Migração para as contas da Gestão Alliance (D-ACCT)
 - **Feito:** histórico completo da `main` de `Botanika-HUb/botanika-creator-club` (7 commits, até `ad79a40`)

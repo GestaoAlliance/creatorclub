@@ -91,5 +91,5 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
 - Primeira conferência (mesmo dia, antes da troca dos conectores): só apareciam as contas da Botanika
   (seção anterior). Depois da troca, **a organização "Botanika" do Supabase e o time "BotanikaBrasil" da Vercel
   não aparecem mais** nos conectores.
-- Nada foi criado nem alterado em nenhuma conta. O E0.1 (inventário do `creator-hub`, que fica na organização
-  "Botanika") precisa de acesso de leitura àquela organização de novo.
+- Nada foi criado nem alterado em nenhuma conta. Só o Claude fica na conta da Botanika; nenhuma conta da
+  Botanika é conectada às ferramentas do projeto. O E0.1 lê uma exportação do `creator-hub` (D-E0SRC).
