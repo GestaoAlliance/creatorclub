@@ -44,7 +44,8 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - Webhook: valida HMAC, grava evento + tarefa na fila do Postgres na mesma transação, depois responde 200.
   Nada roda "depois da resposta".
 - Todo cupom gravado no Shopify (criar ou editar) leva `combinesWith` com order/product/shipping = true.
-- Login por convite; não existe "reivindicar cupom". "Entrar como" fora do escopo.
+- Login por convite; não existe "reivindicar cupom". "Entrar como" fora do escopo; exceção: super admin vê o portal
+  de uma creator só para leitura (D-VIEWAS).
 
 ## Decisões em aberto (marcar no código com `// DECISÃO-ABERTA: <id>`)
 
@@ -93,6 +94,8 @@ Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9
 - `prisma migrate reset` é bloqueado quando roda pelo Claude. Para recomeçar do zero localmente, criar um banco novo.
 
 ## Design
+
+Tela nova só vai ao ar com o OK do responsável sobre capturas no PR (D-REVIEW).
 
 Antes de construir qualquer tela, ler `docs/design/DESIGN.md`: *liquid glass*, base monocromática, cor de destaque
 da marca vinda do banco (troca conforme a marca). Referências de código em `docs/design/referencias/` (só referência).

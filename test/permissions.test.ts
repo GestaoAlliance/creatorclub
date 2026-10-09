@@ -9,6 +9,7 @@ describe("matriz de permissões (D-ROLES)", () => {
     SUPER_ADMIN: [
       "creators.view", "creators.edit", "money.view", "withdrawals.manage", "shipping.view",
       "personal.address", "personal.fiscal", "ledger.adjust", "prospects.own", "integrations.manage", "staff.manage",
+      "portal.viewAs",
     ],
     GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal"],
     ENVIO: ["shipping.view", "personal.address"],
@@ -29,7 +30,7 @@ describe("matriz de permissões (D-ROLES)", () => {
   });
 
   it("só super admin ajusta saldo, conecta loja e gerencia equipe (D-ADJUST)", () => {
-    for (const p of ["ledger.adjust", "integrations.manage", "staff.manage"] as Permission[]) {
+    for (const p of ["ledger.adjust", "integrations.manage", "staff.manage", "portal.viewAs"] as Permission[]) {
       const roles = (Object.keys(ROLE_PERMISSIONS) as StaffRole[]).filter((r) => ROLE_PERMISSIONS[r].includes(p));
       expect(roles).toEqual(["SUPER_ADMIN"]);
     }

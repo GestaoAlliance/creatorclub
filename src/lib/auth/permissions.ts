@@ -17,7 +17,8 @@ export type Permission =
   | "ledger.adjust" // ajuste manual de saldo
   | "prospects.own" // prospecções do próprio hunter
   | "integrations.manage" // conectar loja Shopify
-  | "staff.manage"; // convidar e remover pessoas da equipe
+  | "staff.manage" // convidar e remover pessoas da equipe
+  | "portal.viewAs"; // ver o portal de uma creator, só leitura (D-VIEWAS)
 
 const ALL: readonly Permission[] = [
   "creators.view",
@@ -31,6 +32,7 @@ const ALL: readonly Permission[] = [
   "prospects.own",
   "integrations.manage",
   "staff.manage",
+  "portal.viewAs",
 ];
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {

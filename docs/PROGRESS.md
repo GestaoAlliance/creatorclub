@@ -8,6 +8,8 @@
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
 - **Próxima tarefa:** E7.3 — Vendas no portal (pedidos atribuídos, sem dados do cliente).
+- **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
+  claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
@@ -125,6 +127,8 @@ só mostra dados da própria creator, decidido no servidor.
   participa de mais de uma; creator logada só vê a própria participação.
 - [x] **E7.2** Início: indicadores (disponível, a liberar, vendas e comissão do mês pelo mês do pagamento) e
   atividade recente.
+- [x] **E7.1b** "Ver como creator" (D-VIEWAS): super admin abre o portal de uma creator a partir da ficha, só
+  leitura, com aviso e registro na auditoria. Para o responsável acompanhar as telas com dados reais.
 - [ ] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
 - [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
 - [ ] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
@@ -132,11 +136,32 @@ só mostra dados da própria creator, decidido no servidor.
 - [ ] **E7.6** Aceite: 2 ou 3 creators piloto conferem os próprios números. *Depende de:* escolher as piloto, e da
   conferência da Ana (E4.5) para haver comissão lançada.
 
+### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
+- [ ] **P1** Backup dos bancos: cópia diária privada do Supabase do v2 (fora do repositório) e uma cópia do
+  `creator-hub` antigo; ou plano pago com backup. Decidir onde guardar.
+- [ ] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP), antes de convidar as creators.
+- [ ] **P3** Domínio do projeto (o responsável compra) e os links `/r/...` antigos: o domínio do app antigo precisa
+  redirecionar para o v2, senão os links nas bios quebram no corte.
+- [ ] **P4** Termo de aceite da creator no primeiro acesso ao portal (o app antigo tinha texto + aceite com CPF/IP).
+  Texto e regras a definir com o responsável.
+
 ### Depois (detalhar quando chegar lá)
 E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-47 — 2026-10-09 — "Ver como creator" e novo jeito de revisar
+- **Decidido:** D-VIEWAS ("ver como creator" só para super admin, só leitura, auditado; muda a regra "Entrar como
+  fora do escopo" do `CLAUDE.md`), D-REVIEW (tela nova só com OK sobre capturas; prévias da Vercel continuam
+  desligadas), D-GAPS (backup, Resend, domínio e termo entram antes do corte).
+- **Feito:** permissão `portal.viewAs` (só SUPER_ADMIN); `portalContext` aceita a visualização (cookie `cc_view_as`
+  com o id, permissão conferida a cada página; para quem não pode, o cookie é ignorado); `startViewAs` registra
+  `portal.view_as` na auditoria; ações para começar e sair; aviso âmbar no portal; botão na ficha da creator.
+  Moldura e Início viraram componentes de exibição (`PortalShell`, `HomeView`), o que permite capturas com dados de
+  exemplo sem login.
+- **Verificado:** 93 unitários; 106 de integração (2 novos: super admin vê e fica na auditoria, cookie de outra marca
+  não vale, Gestão não vê, cookie forjado por outra creator é ignorado); typecheck; build. Capturas no PR.
 
 ### CP-46 — 2026-10-09 — Início do portal (E7.2)
 - **Decidido:** D-HOMEKPI (4 cartões: disponível, a liberar com a próxima liberação, vendas do mês, comissão do mês;
