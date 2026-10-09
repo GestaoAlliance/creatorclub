@@ -88,6 +88,11 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
   vazio). Criado fora desta sessão; é o candidato ao staging da E1.4.
 - **Vercel:** time **"GestaoAlliance"** (slug `gestaoalliance`, id `team_NMkkIPjNnY1WbCVxBMbnpEEO`), com 1 projeto:
   `alliance-os` (AllianceOS). Ainda não há projeto do Creator Club. Plano do time não informado pela API.
+- **Vercel, projeto do Creator Club** (2026-10-09): o repositório foi ligado à Vercel fora desta sessão e gerou
+  **dois** projetos no time GestaoAlliance, ambos publicando prévias dos PRs: `creatorclub`
+  (`prj_rkJhwGQR6MfItmgsHDTxrUoDgXQz`) e `creatorclub-ksmg` (`prj_gYmxvtxuvMaUXVw235xnQRxnepxd`, duplicado).
+  O `creatorclub-ksmg` foi **apagado** pelo responsável no painel; fica o **`creatorclub`**. O conector da
+  Vercel ainda não enxerga nenhum dos dois (404); para a E1.4 ele precisa ter acesso ao `creatorclub`.
 - Primeira conferência (mesmo dia, antes da troca dos conectores): só apareciam as contas da Botanika
   (seção anterior). Depois da troca, **a organização "Botanika" do Supabase e o time "BotanikaBrasil" da Vercel
   não aparecem mais** nos conectores.
