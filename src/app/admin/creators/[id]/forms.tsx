@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { contactAction, inviteAction, rateAction, statusAction, type State } from "./actions";
+import { adjustAction, contactAction, inviteAction, rateAction, statusAction, type State } from "./actions";
 
 const input = "w-full rounded border border-stone-300 px-3 py-2";
 const btn = "rounded bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60";
@@ -75,5 +75,23 @@ export function InviteButton({ creatorId, accountId }: { creatorId: string; acco
         </div>
       )}
     </div>
+  );
+}
+
+export function AdjustForm({ creatorId, requestId }: { creatorId: string; requestId: string }) {
+  const [state, action, pending] = useActionState(adjustAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <label className="flex flex-col gap-1 text-sm">Valor (R$; negativo para descontar)
+        <input className={input} name="amount" placeholder="150,00 ou -20,50" inputMode="decimal" required />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">Motivo (aparece no extrato)
+        <input className={input} name="reason" minLength={5} required />
+      </label>
+      <Msg state={state} />
+      <button className={btn} disabled={pending}>Lançar ajuste</button>
+    </form>
   );
 }

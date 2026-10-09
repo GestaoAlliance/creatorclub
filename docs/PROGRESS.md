@@ -7,9 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 em andamento.
-- **Próxima tarefa:** E5.3 — ajuste manual (só super admin, com motivo).
-- **Aguardando pessoas:** E4.5 (importar o `Creator_rows.csv` em `/admin/importar` e conferência da Ana em
-  `/admin/cupons`); E0.2 (Pagamento: Juci/Pâmela), E0.4 (Vitor).
+- **Próxima tarefa:** E5.4 — saldo e extrato por creator.
+- **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
+  (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
   `read_all_orders` ainda não concedido ao app (carga histórica de pedidos com mais de 60 dias); `creator-hub` sem
   backup (guardar um dump privado).
@@ -112,6 +112,20 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-42 — 2026-10-09 — Ajuste manual (E5.3) e importação feita no staging
+- **No staging (a pedido do responsável, sem subir arquivo):** importação das 28 creators da Botanika com o
+  `Creator_rows.csv` já enviado, pela mesma lógica de `/admin/importar` (rodada num banco descartável com os IDs do
+  staging e gravada pelo conector do Supabase): 28 contas, 28 creators, 26 cupons novos + VICTORIA e BOTANIKA
+  reaproveitados (já vistos nos pedidos), 28 donas e 28 taxas a confirmar (27 × 15%, 1 × 20%); auditoria
+  `import.legacy`. Arquivos temporários com dados pessoais apagados deste ambiente. A tela de importação fica para
+  o corte (comparação com o app antigo), se for preciso.
+- **Feito (E5.3):** `src/lib/commission/adjust.ts` (só `ledger.adjust` = super admin; valor com sinal em reais
+  convertido sem Float; motivo obrigatório; `requestId` da tela contra clique duplo; auditoria `ledger.adjust`);
+  migração `adjustment_reason` com a trava `LedgerEntry_adjustment_has_reason` (motivo e autor obrigatórios). Na
+  ficha: lista de ajustes para quem vê valores e formulário só para super admin.
+- **Verificado:** 88 unitários (2 novos); 98 de integração (3 novos, incluindo a trava pelo nome); migração × schema
+  sem divergência; typecheck; build.
 
 ### CP-41 — 2026-10-09 — Loja Botanika ligada e sync no ar (E3.7 concluída)
 - **No staging:** o deploy liberou às ~20:00 UTC; loja `p01bpt-x2.myshopify.com` marcada como conectada (só

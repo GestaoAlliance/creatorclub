@@ -34,13 +34,13 @@ describe("extrato (LedgerEntry)", () => {
       /LedgerEntry_sign_by_type/,
     );
     await expectDbError(
-      prisma.ledgerEntry.create({ data: commissionEntry(ids, { type: "ADJUSTMENT", amountCents: 0 }) }),
+      prisma.ledgerEntry.create({ data: commissionEntry(ids, { type: "ADJUSTMENT", amountCents: 0, note: "motivo", createdById: "sa" }) }),
       /LedgerEntry_amount_nonzero/,
     );
     await expectDbError(prisma.ledgerEntry.create({ data: commissionEntry(ids, { orderId: null }) }), /LedgerEntry_order_required/);
     // Ajuste manual pode ser positivo ou negativo e não exige pedido.
     await prisma.ledgerEntry.create({
-      data: commissionEntry(ids, { type: "ADJUSTMENT", amountCents: -500, orderId: null }),
+      data: commissionEntry(ids, { type: "ADJUSTMENT", amountCents: -500, orderId: null, note: "correção", createdById: "sa" }),
     });
   });
 
