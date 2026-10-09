@@ -33,12 +33,16 @@ export default async function ContaPage() {
   const actor = await currentActor();
   const roles = actor?.grants.map((g) => `${ROLE_LABEL[g.role] ?? g.role}${g.brandId ? "" : " (todas as marcas)"}`) ?? [];
   const brands = Object.keys(actor?.creatorIds ?? {}).length;
+  // Creator sem papel na equipe vai direto para o portal.
+  if (actor && brands > 0 && actor.grants.length === 0) redirect("/portal");
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-6">
       <h1 className="text-2xl font-bold">Você entrou</h1>
       <p className="text-stone-600">{String(data.claims.email ?? "")}</p>
       {roles.length > 0 && <p className="text-sm">{roles.join(" · ")}</p>}
-      {brands > 0 && <p className="text-sm">Creator em {brands} marca(s)</p>}
+      {brands > 0 && (
+        <Link href="/portal" className="text-sm underline">Meu portal de creator ({brands} marca{brands > 1 ? "s" : ""})</Link>
+      )}
       {!actor && <p className="text-sm text-stone-500">Seu acesso ainda não foi liberado.</p>}
       {actor && brandsWith(actor.grants, "staff.manage") === "ALL" && (
         <Link href="/admin/equipe" className="text-sm underline">Equipe e convites</Link>

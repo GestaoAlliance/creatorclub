@@ -28,7 +28,8 @@ model Brand {
   timezone                 String   @default("America/Sao_Paulo")
   currency                 String   @default("BRL")
   storeUrl                 String?
-  primaryColor             String   @default("#2f6b3f")
+  primaryColor             String   @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
+  secondaryColor           String?
   defaultCommissionBps     Int      @default(1500) // DECISÃO-ABERTA: D-RATE
   defaultDiscountBps       Int      @default(500)
   withdrawalMinCents       Int      @default(50000)

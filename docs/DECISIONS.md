@@ -54,6 +54,15 @@
 | D-NEG | 2026-10-09 | Estorno depois de saque pago: o lançamento negativo entra normalmente e o **saldo pode ficar negativo**, abatendo das próximas comissões. Nunca cortar em zero. | Pedro |
 | D-MONTH | 2026-10-09 | A venda conta no **mês da data do pagamento** (D-PAIDAT), no fuso `America/Sao_Paulo`; é a mesma data que define a taxa vigente. | Pedro |
 | D-MONTH | 2026-10-09 | Complemento (extrato, E5.4): comissão **e estorno** de um pedido aparecem no mês do pagamento do pedido (o estorno de uma venda de setembro, mesmo lançado em outubro, fica em setembro); o que não vem de pedido (ajuste, saque, saldo de abertura) aparece no mês em que foi lançado. O saldo não depende do mês: é sempre a soma de tudo. | Técnica (aplicação de D-MONTH) |
+| D-BRANDCOLOR | 2026-10-09 | Botanika: destaque `#323C91` (azul), secundária `#C4D78A` (verde-claro), do tema publicado da loja. Gravadas em `Brand`; a interface lê do banco. VermeFree fica para quando a marca for ligada. | Pedro |
+| D-SALESVIEW | 2026-10-09 | Na tela de vendas a creator vê de cada pedido só: número, data do pagamento, base, taxa, comissão e situação (a liberar, liberada, estornada). **Nenhum dado do cliente** (nome, e-mail, endereço). | Pedro |
+| D-LINK | 2026-10-09 | Link rastreado `/r/[marca]/[código]` (mesma rota do app antigo): registra o clique (`Click`, IP só em hash) e redireciona para `https://<loja>/discount/<CÓDIGO>?redirect=/`, que já aplica o cupom no carrinho. | Pedro |
+| D-E7FIRST | 2026-10-09 | E7 (portal) feita antes de E6: E5.5 espera a conferência da Ana e E6 espera a lista de saques do Pagamento (E0.2). | Pedro |
+| D-PORTALNAV | 2026-10-09 | Navegação do portal: no celular, barra de vidro fixa embaixo (tipo app); no computador, barra lateral recolhível da referência. | Pedro |
+| D-GLASS | 2026-10-09 | *Liquid glass* com desfoque, transparência e brilho na borda, **igual em todos os navegadores** (sem a refração SVG da referência, que só funciona no Chromium). | Pedro |
+| D-THEME | 2026-10-09 | Tema claro/escuro segue o aparelho; o botão do cabeçalho troca e a escolha fica guardada naquele navegador. Fora de marca (login, admin) a cor de destaque é um cinza neutro. | Pedro |
+| D-PORTALURL | 2026-10-09 | Portal em `/portal/[marca]/...`; trocar de marca é trocar o endereço. Depois de entrar, a creator cai na sua marca. | Pedro |
+| D-PORTALACCESS | 2026-10-09 | Ativa, Pausada e Desligada entram no portal (saldo e extrato são delas); a Desligada vê um aviso e o cupom/link não aparecem como ativos. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
