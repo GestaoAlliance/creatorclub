@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2.3 — primeiros super admins (Pedro e Ana). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E2.4 — convite e remoção da equipe (o envio por e-mail depende de D-SMTP). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -46,8 +46,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E2.2** Papéis e checagem central: matriz de permissões (D-ROLES), `loadActor` (sem `User` ou desativado =
   sem acesso; nunca liga conta por e-mail), `staffBrandFilter` para toda consulta de marca. Testes provam que cada
   papel só vê o que pode (unitários e no banco real).
-- [ ] **E2.3** Primeiros super admins (Pedro e Ana, D-ADMIN): comando único que cria o acesso e nunca regrava senha
-  no deploy. *Precisa do e-mail de login da Ana.*
+- [x] **E2.3** Primeiros super admins: `scripts/grant-super-admin.mjs` (pega o usuário já criado no Supabase Auth,
+  cria o `User` com o mesmo id, concede SUPER_ADMIN global, registra na auditoria; nunca mexe em senha; idempotente).
+  Pedro e Ana concedidos no staging.
 - [ ] **E2.4** Convite e remoção da equipe: super admin convida com papel por marca e remove acesso; convite de uso único e com prazo; AuditLog.
   *Precisa de D-SMTP para enviar e-mail de verdade.*
 - [ ] **E2.5** Convite de creator (`CreatorInvite`): uso único, prazo, nenhuma conta ligada só porque o e-mail coincide.
@@ -59,6 +60,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-18 — 2026-10-09 — Super admins Pedro e Ana (E2.3)
+- **Decidido:** D-ADJUST (ajuste manual de saldo só SUPER_ADMIN; cada ajuste com motivo e autor). E-mail de login
+  da Ana confirmado: `contato@anamedeiros.com`.
+- **Feito:** `scripts/grant-super-admin.mjs` ("email:Nome", usa `DIRECT_URL`/`DATABASE_URL`); `/conta` mostra os
+  papéis de quem entrou ou "acesso ainda não liberado".
+- **No staging:** usuários do Auth criados no painel pelo responsável (Pedro às 17:42, Ana às 17:59, confirmados);
+  SUPER_ADMIN global concedido aos dois com o mesmo SQL do script (pelo conector do Supabase, já que este ambiente
+  não alcança o banco), 1 registro de auditoria cada.
+- **Verificado:** 44 unitários; 22 de integração (3 novos: concede e audita, rodar de novo não duplica, e-mail sem
+  usuário no Auth falha sem gravar); typecheck; build.
 
 ### CP-17 — 2026-10-09 — Papéis e checagem central (E2.2)
 - **Decidido:** D-ADMIN (Pedro e Ana super admins), D-LOGIN (e-mail e senha), D-ROLES (tabela de permissões).
