@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2.2 — papéis e checagem central. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E2.3 — primeiros super admins (Pedro e Ana). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -43,10 +43,12 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, `proxy.ts` renovando a sessão, `/entrar` (e-mail e senha,
   mínimo 10), sair, "esqueci a senha" e `/auth/callback`. `User.id` é o id do usuário do Auth (schema da E1.2).
   Login testado no staging. **"Esqueci a senha" só funciona de verdade depois do remetente de e-mail (D-SMTP, E2.4).**
-- [ ] **E2.2** Papéis e checagem central: quem é o usuário, papéis por marca (`RoleGrant`), negar por padrão,
-  escopo de marca em toda consulta. Teste prova que cada papel só vê o que pode.
-- [ ] **E2.3** Primeiro super admin: comando único que cria o acesso e nunca regrava senha no deploy. *Precisa de D-ADMIN.*
-- [ ] **E2.4** Convite da equipe: super admin convida com papel por marca; convite de uso único e com prazo; AuditLog.
+- [x] **E2.2** Papéis e checagem central: matriz de permissões (D-ROLES), `loadActor` (sem `User` ou desativado =
+  sem acesso; nunca liga conta por e-mail), `staffBrandFilter` para toda consulta de marca. Testes provam que cada
+  papel só vê o que pode (unitários e no banco real).
+- [ ] **E2.3** Primeiros super admins (Pedro e Ana, D-ADMIN): comando único que cria o acesso e nunca regrava senha
+  no deploy. *Precisa do e-mail de login da Ana.*
+- [ ] **E2.4** Convite e remoção da equipe: super admin convida com papel por marca e remove acesso; convite de uso único e com prazo; AuditLog.
   *Precisa de D-SMTP para enviar e-mail de verdade.*
 - [ ] **E2.5** Convite de creator (`CreatorInvite`): uso único, prazo, nenhuma conta ligada só porque o e-mail coincide.
 - [ ] **E2.6** MFA (app autenticador) obrigatório para SUPER_ADMIN e PAGAMENTO.
@@ -57,6 +59,15 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-17 — 2026-10-09 — Papéis e checagem central (E2.2)
+- **Decidido:** D-ADMIN (Pedro e Ana super admins), D-LOGIN (e-mail e senha), D-ROLES (tabela de permissões).
+  Em aberto: D-ADJUST (Pagamento pode ajustar saldo? por ora só super admin, marcado no código) e D-HUNTERSRC (L2).
+- **Feito:** `src/lib/auth/permissions.ts` (matriz, `brandsWith`, `can`; negar por padrão; papel global só vale para
+  SUPER_ADMIN), `src/lib/auth/actor.ts` (`loadActor`, `staffBrandFilter`), `src/lib/auth/current.ts` (Actor da sessão).
+- **Verificado:** 44 unitários (7 novos: matriz exata por papel, escopo por marca, negar por padrão); 19 de
+  integração (3 novos: cada papel vê só as creators das marcas permitidas, usuário desativado/inexistente sem
+  acesso, creator recebe só as próprias participações); typecheck.
 
 ### CP-16 — 2026-10-09 — Login no ar (E2.1 concluída)
 - **Configurado (pelo responsável):** na Vercel, `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
