@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 em andamento.
-- **Próxima tarefa:** E5.4 — saldo e extrato por creator.
+- **Próxima tarefa:** E5.5 — aceite do extrato: conferir 10 creators no último mês contra o Shopify.
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
@@ -106,12 +106,31 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
   histórica disparada (depende de `read_all_orders` para pedidos com mais de 60 dias).
   *Bloqueada por:* deploy (limite da Vercel), importação no staging pelo responsável, conferência da Ana.
 
-### Depois de E4 (detalhar quando chegar lá)
-E5 Atribuição e extrato no banco ·
+### E5 — Atribuição e extrato no banco (detalhada em 2026-10-09, CP-38)
+- [x] **E5.1** Atribuição gravada uma vez, com os códigos como evidência; pendente quando há dúvida (D-PENDING);
+  taxa congelada no pagamento só de política confirmada; reavaliação depois de cada confirmação da Ana.
+- [x] **E5.2** Lançamentos de comissão: devido − lançado por versão do pedido; estorno negativo (D-NEG); retenção de
+  7 dias (D-HOLD).
+- [x] **E5.3** Ajuste manual de saldo (só super admin, motivo obrigatório, auditoria).
+- [x] **E5.4** Saldo e extrato por creator (disponível × a liberar × em saque), extrato por mês do pagamento
+  (D-MONTH); na ficha da creator para quem vê valores.
+- [ ] **E5.5** Aceite: 10 creators no último mês conferidas contra o Shopify (pedidos com cupom × comissão lançada).
+  Depende da conferência da Ana (E4.5): sem dona e taxa confirmadas nada é lançado.
+
+### Depois de E5 (detalhar quando chegar lá)
 E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-43 — 2026-10-09 — Saldo e extrato por creator (E5.4)
+- **Feito:** `src/lib/commission/statement.ts` (`creatorStatement`: saldo = soma do extrato, separado em a liberar,
+  em saque e disponível, pode ficar negativo; meses com total líquido; lançamentos do mês com pedido, base e taxa;
+  só `money.view` da marca). `monthKey`, `entryMonth` e `isMonthKey` no domínio. Na ficha da creator, seção
+  "Saldo e extrato" com navegação por mês (`?mes=AAAA-MM`). Complemento de D-MONTH registrado.
+- **Corrigido:** a seção E5 (E5.1–E5.5) não tinha sido escrita na fila no CP-38; agora está.
+- **Verificado:** 91 unitários (3 novos); 100 de integração (2 novos: separação do saldo, mês do pagamento, estorno
+  em outro mês, saldo negativo, permissão e mês inválido); typecheck; build.
 
 ### CP-42 — 2026-10-09 — Ajuste manual (E5.3) e importação feita no staging
 - **No staging (a pedido do responsável, sem subir arquivo):** importação das 28 creators da Botanika com o
