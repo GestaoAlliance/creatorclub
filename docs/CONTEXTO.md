@@ -77,3 +77,15 @@ Leitura estática do código (sem acesso ao banco nem à loja). Cada item já te
   podem ainda existir. Verificar no E0, sem alterar nada.
 - **Vercel**, time "BotanikaBrasil": projetos `central`, `operacional`, `planejador-tap` e `creator-club`
   (provavelmente o app antigo). Plano do time não informado pela API.
+
+## Contas da Gestão Alliance (D-ACCT, conferido em 2026-10-09, só leitura)
+
+- **GitHub:** conta `GestaoAlliance` ("Gestão Alliance"). Repositório do projeto: `GestaoAlliance/creatorclub`,
+  com a `main` idêntica à do antigo `Botanika-HUb/botanika-creator-club` (7 commits, até `ad79a40`, sem reescrita).
+  O repositório antigo deixa de receber commits.
+- **Supabase:** o conector só enxerga a organização "Botanika" (plano Free) com os mesmos 2 projetos acima
+  (`creator-hub` e `Botanika`, ambos ativos em `sa-east-1`). **Nenhuma organização da Gestão Alliance visível.**
+- **Vercel:** o conector só enxerga o time "BotanikaBrasil" com os mesmos 4 projetos acima.
+  **Nenhum time da Gestão Alliance visível.**
+- Nada foi criado nem alterado em nenhuma conta. Para a E1.4, conectar (ou dar acesso a) as contas Supabase e
+  Vercel da Gestão Alliance; o E0.1 (inventário do `creator-hub`) continua lendo a organização "Botanika".

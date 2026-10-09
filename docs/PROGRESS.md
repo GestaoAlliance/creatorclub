@@ -7,7 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
 - **Próxima tarefa:** E0.1 — inventário do app antigo no Supabase (só leitura). Depois E1.4 (aguarda D-INFRA).
-- **Bloqueios:** contas Supabase e Vercel da empresa (só para E1.4 em diante)
+- **Bloqueios:** contas Supabase e Vercel da Gestão Alliance ainda não aparecem nos conectores (só para E1.4 em diante)
+- **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ## Fila de tarefas (uma por vez, nesta ordem)
 
@@ -28,7 +29,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E1.1** Esqueleto Next.js (App Router, TypeScript, Tailwind) junto do núcleo de domínio; `npm test`, `npm run typecheck` e `npm run build` passando.
 - [x] **E1.2** Schema Prisma do núcleo (Brand, BrandIntegration, User, RoleGrant, CreatorAccount, Creator, CommissionPolicy, Coupon, Order, OrderLine, OrderAttribution, LedgerEntry, Withdrawal, File, WebhookEvent, Job, SyncRun, AuditLog, Click) com migração inicial e restrições (únicos, FKs `Restrict`, índice parcial de saque aberto). Testes de integração contra Postgres local.
 - [x] **E1.3** CI no GitHub Actions: instalar, typecheck, testes (com Postgres de serviço), build.
-- [!] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da empresa; deploy automático da `main`. *Bloqueado: contas.*
+- [!] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`. *Bloqueado: contas.*
 
 ### Depois de E1 (detalhar quando chegar lá)
 E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -36,6 +37,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-05 — 2026-10-09 — Migração para as contas da Gestão Alliance (D-ACCT)
+- **Feito:** histórico completo da `main` de `Botanika-HUb/botanika-creator-club` (7 commits, até `ad79a40`)
+  enviado sem reescrita para `GestaoAlliance/creatorclub`. D-ACCT decidida (contas da Gestão Alliance);
+  endereço novo no `CLAUDE.md` e aqui; contas conferidas registradas em `docs/CONTEXTO.md`.
+- **Verificado (só leitura):** GitHub conectado como `GestaoAlliance`. Supabase e Vercel conectados ainda
+  mostram só as contas da Botanika (org "Botanika" Free; time "BotanikaBrasil") — nenhuma conta da Gestão
+  Alliance visível; nada foi criado nem alterado. CI no repositório novo: run 37946319707 (commit `ad79a40`),
+  primeira execução, **verde**.
+- **Pendente:** dar acesso às contas Supabase e Vercel da Gestão Alliance antes da E1.4.
 
 ### CP-04 — 2026-10-09 — CI no GitHub Actions (E1.3)
 - **Feito:** `.github/workflows/ci.yml` em todo push na `main` e em PR: `npm ci` (gera cliente Prisma),
@@ -79,6 +90,6 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 Cole isto no início do chat:
 
-> Projeto Creator Club v2, repositório `Botanika-HUb/botanika-creator-club`.
+> Projeto Creator Club v2, repositório `GestaoAlliance/creatorclub`.
 > Leia `CLAUDE.md`, `docs/PROGRESS.md` e `docs/DECISIONS.md` antes de qualquer coisa.
 > Faça só a "Próxima tarefa" de `docs/PROGRESS.md`, uma por vez, e atualize o arquivo ao terminar.
