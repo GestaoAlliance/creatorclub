@@ -47,7 +47,7 @@ describe("conectar loja (banco real)", () => {
       { fetch: tokenFetch("read_orders"), client, encKey },
     );
     expect(r).toMatchObject({ shop: "loja-dev.myshopify.com", webhooksCreated: 4, warnings: [] });
-    expect(r.missingRecommended).toEqual(["read_all_orders", "read_discounts", "write_discounts"]);
+    expect(r.missingRecommended).toEqual(["read_all_orders"]);
     expect(created.map((c) => c.topic)).toEqual(["ORDERS_CREATE", "ORDERS_UPDATED", "ORDERS_CANCELLED", "REFUNDS_CREATE"]);
     expect(created[0]!.uri).toBe(`https://app.test/api/webhooks/shopify/${brand.slug}`);
     expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid", clientSecret: "csec", scopes: "read_orders" });
