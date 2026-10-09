@@ -2,7 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { ClaimedJob, JobHandler } from "@/lib/jobs/queue";
 import { createShopifyClient, type ShopifyClient } from "./client";
 import { loadShopifyConnection } from "./credentials";
-import { fetchOrder, processOrder } from "./orders";
+import { fetchOrder, processOrder, type ProcessOrderResult } from "./orders";
 
 /** Tarefa que busca um pedido no Shopify e grava com `processOrder`. Payload: `{ orderGid }`. */
 export const ORDER_SYNC_JOB = "shopify.order.sync";
@@ -28,19 +28,22 @@ export function orderSyncHandler(prisma: PrismaClient, clientFor: ClientFactory 
     if (!node) return markWebhook(); // Pedido apagado no Shopify: nada a gravar.
     const result = await processOrder(prisma, job.brandId, node);
     await markWebhook();
-    if (result.warnings.length > 0 && result.orderId) {
-      // Fica registrado para a tela de saúde do sync (E3.7) e bloqueia o cálculo na E5.
-      await prisma.auditLog.create({
-        data: {
-          brandId: job.brandId,
-          actorType: "JOB",
-          actorId: job.id,
-          action: "order.warning",
-          entity: "Order",
-          entityId: result.orderId,
-          after: { warnings: result.warnings, name: node.name },
-        },
-      });
-    }
+    await recordOrderWarnings(prisma, job.brandId, job.id, result, node.name);
   };
+}
+
+/** Aviso do pedido (D-TAX) fica na auditoria: aparece na tela de saúde (E3.7) e bloqueia o cálculo na E5. */
+export async function recordOrderWarnings(prisma: PrismaClient, brandId: string, jobId: string, result: ProcessOrderResult, name: string) {
+  if (result.warnings.length === 0 || !result.orderId) return;
+  await prisma.auditLog.create({
+    data: {
+      brandId,
+      actorType: "JOB",
+      actorId: jobId,
+      action: "order.warning",
+      entity: "Order",
+      entityId: result.orderId,
+      after: { warnings: result.warnings, name },
+    },
+  });
 }
