@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2 — Login e papéis (detalhar no início da tarefa). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E2.1 — sessão com Supabase Auth. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -39,12 +39,30 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
   No ar em https://creatorclub-six.vercel.app (Vercel `creatorclub`, funções em `gru1`), banco no projeto Supabase
   `Creator Club` com as migrações aplicadas pelo deploy da `main`.
 
-### Depois de E1 (detalhar quando chegar lá)
-E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
+### E2 — Login e papéis (detalhada em 2026-10-09, a partir do plano)
+- [ ] **E2.1** Sessão com Supabase Auth: `@supabase/ssr`, clientes do servidor e do navegador, `proxy.ts` renovando a
+  sessão, tela `/entrar` (e-mail e senha, mínimo 10 caracteres), sair, "esqueci a senha". `User` ligado ao usuário
+  do Auth (`authUserId`, migração com RLS). Precisa de `NEXT_PUBLIC_SUPABASE_URL` e da chave publicável na Vercel.
+- [ ] **E2.2** Papéis e checagem central: quem é o usuário, papéis por marca (`RoleGrant`), negar por padrão,
+  escopo de marca em toda consulta. Teste prova que cada papel só vê o que pode.
+- [ ] **E2.3** Primeiro super admin: comando único que cria o acesso e nunca regrava senha no deploy. *Precisa de D-ADMIN.*
+- [ ] **E2.4** Convite da equipe: super admin convida com papel por marca; convite de uso único e com prazo; AuditLog.
+  *Precisa de D-SMTP para enviar e-mail de verdade.*
+- [ ] **E2.5** Convite de creator (`CreatorInvite`): uso único, prazo, nenhuma conta ligada só porque o e-mail coincide.
+- [ ] **E2.6** MFA (app autenticador) obrigatório para SUPER_ADMIN e PAGAMENTO.
+
+### Depois de E2 (detalhar quando chegar lá)
+E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
 E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-13 — 2026-10-09 — E2 detalhada
+- **Feito:** E2 quebrada em E2.1–E2.6 a partir da seção "Login, papéis e segurança" do plano. Decisões novas em
+  aberto: D-ADMIN (e-mail do primeiro super admin), D-SMTP (remetente dos e-mails de convite e senha), D-LOGIN.
+- **Verificado:** deploy da `main` aplicou sozinho a migração `db_hardening` no staging (3 migrações, nenhuma
+  tabela sem RLS, `search_path` da função fixo).
 
 ### CP-12 — 2026-10-09 — Staging com banco migrado (E1.4)
 - **Causa do travamento (CP-11):** a `DIRECT_URL` salva na Vercel estava com a porta **6543** (transaction
