@@ -5,14 +5,16 @@ import { passwordProblem } from "@/lib/auth/rules";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { acceptStaffInvite, inviteByToken, TeamError } from "@/lib/team/invites";
+import { acceptCreatorInvite } from "@/lib/team/creator-invites";
+import { acceptStaffInvite, TeamError } from "@/lib/team/invites";
+import { resolveInvite } from "./resolve";
 
 export type AcceptState = { error?: string } | undefined;
 
 export async function acceptInviteAction(_prev: AcceptState, form: FormData): Promise<AcceptState> {
   const token = String(form.get("token") ?? "");
-  const { invite, state } = await inviteByToken(db(), token);
-  if (!invite || state !== "valid") return { error: "Convite inválido, expirado ou já usado." };
+  const invite = await resolveInvite(token);
+  if (!invite || invite.state !== "valid") return { error: "Convite inválido, expirado ou já usado." };
 
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getClaims();
@@ -40,7 +42,9 @@ export async function acceptInviteAction(_prev: AcceptState, form: FormData): Pr
   }
 
   try {
-    await acceptStaffInvite(db(), token, { userId, email: email ?? "" });
+    const auth = { userId, email: email ?? "" };
+    if (invite.kind === "staff") await acceptStaffInvite(db(), token, auth);
+    else await acceptCreatorInvite(db(), token, auth);
   } catch (error) {
     if (error instanceof TeamError) return { error: error.message };
     throw error;
