@@ -178,7 +178,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   conferir no primeiro saque liberado.
 - **Observado:** uma vez, dois testes de atribuição falharam rodando a suíte inteira e passaram nas 4 execuções
   seguintes; causa não encontrada, acompanhar.
-- **Verificado:** 104 unitários (2 novos); 116 de integração (8 novos, incluindo a trava pelo nome e a corrida);
+- **Verificado:** 104 unitários (2 novos); 114 de integração (6 novos, incluindo a trava pelo nome e a corrida);
   migração × schema sem divergência; typecheck; build. Capturas para o OK do responsável.
 
 ### CP-50 — 2026-10-09 — Cupom e link no portal (E7.5)
