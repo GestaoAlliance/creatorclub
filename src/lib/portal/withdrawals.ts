@@ -25,6 +25,8 @@ export type WithdrawalTab = {
   balance: Balance;
   nextReleaseAt: Date | null;
   policy: { minCents: number; windowStartDay: number; windowEndDay: number };
+  /** Dados para emitir a nota antes de pedir (D-NF): CNPJ do tomador e a sugestão de descrição/código. */
+  nf: { takerDocument: string | null; instructions: string | null };
   blocks: WithdrawalBlock[];
   withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; decidedAt: Date | null; note: string | null }[];
   statement: Statement;
@@ -40,7 +42,15 @@ export async function portalWithdrawalTab(
   const [brand, creator, withdrawals] = await Promise.all([
     prisma.brand.findUniqueOrThrow({
       where: { id: ctx.brand.id },
-      select: { timezone: true, commissionHoldDays: true, withdrawalMinCents: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true },
+      select: {
+        timezone: true,
+        commissionHoldDays: true,
+        withdrawalMinCents: true,
+        withdrawalWindowStartDay: true,
+        withdrawalWindowEndDay: true,
+        nfTakerDocument: true,
+        nfInstructions: true,
+      },
     }),
     prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { withdrawalsUnlockedAt: true } }),
     prisma.withdrawal.findMany({
@@ -64,6 +74,7 @@ export async function portalWithdrawalTab(
     balance: ledger.balance,
     nextReleaseAt: held.length ? new Date(Math.min(...held)) : null,
     policy,
+    nf: { takerDocument: brand.nfTakerDocument, instructions: brand.nfInstructions },
     blocks,
     withdrawals,
     statement: statementForMonth(ledger, brand.commissionHoldDays, opts.month, monthKey(now, brand.timezone)),

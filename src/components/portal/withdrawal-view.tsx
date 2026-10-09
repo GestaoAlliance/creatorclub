@@ -1,7 +1,8 @@
-import { ArrowDownLeft, ArrowUpRight, Clock, FileText, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Clock, FileText, Receipt, Wallet } from "lucide-react";
 import Link from "next/link";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
+import { CopyButton } from "./copy-button";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -68,6 +69,26 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           Pedidos do dia {policy.windowStartDay} ao {policy.windowEndDay} de cada mês · mínimo {formatBRL(policy.minCents)} por pedido · pode pedir
           parte do saldo · nota fiscal em PDF · pagamento por Pix.
         </p>
+      </section>
+
+      <section className="glass flex flex-col gap-3 rounded-3xl p-5">
+        <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          O pedido só é feito com a nota já emitida, no mesmo valor que você vai sacar. Use estes dados:
+        </p>
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-3 dark:bg-white/5">
+          <div>
+            <p className="text-xs text-stone-500">CNPJ do tomador</p>
+            <p className="font-mono font-semibold">{tab.nf.takerDocument ?? "em breve"}</p>
+          </div>
+          {tab.nf.takerDocument && <CopyButton value={tab.nf.takerDocument} label="Copiar" />}
+        </div>
+        {tab.nf.instructions && (
+          <div className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
+            <p className="text-xs text-stone-500">Descrição e código do serviço</p>
+            <p className="mt-1 whitespace-pre-line">{tab.nf.instructions}</p>
+          </div>
+        )}
       </section>
 
       <section className="glass rounded-3xl p-5">

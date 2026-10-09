@@ -165,7 +165,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   movimentações por mês), D-WDLOCK (saque travado por creator até o Pagamento aprovar o saldo de abertura, E6; hoje
   todas travadas), D-WDRULES (janela 10–15, mínimo R$ 500 por pedido, parcial, um em aberto, NF em PDF até 10 MB,
   Pix), D-NF parcial (CNPJ do tomador 65.100.830/0001-36 da Botanika; descrição/código do serviço ainda em aberto),
-  D-WDFLOW (valor → dados da NF → enviar PDF → confirmar).
+  D-WDFLOW (valor → enviar a nota já emitida → confirmar; a aba mostra antes os dados para emitir), D-NF com
+  sugestão de descrição e do subitem 17.06 (propaganda e publicidade), a confirmar com contador.
 - **Feito:** migração `withdrawals_unlock` (`Creator.withdrawalsUnlockedAt/ById` com a trava
   `Creator_unlock_has_author`; `Brand.nfTakerDocument`). `src/lib/portal/withdrawals.ts` (aba: saldo, próxima
   liberação, motivos que travam o botão, meus saques, extrato do mês). `src/lib/withdrawals/request.ts`
