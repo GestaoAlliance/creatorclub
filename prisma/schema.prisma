@@ -42,6 +42,7 @@ model Brand {
 
   integrations       BrandIntegration[]
   roleGrants         RoleGrant[]
+  staffInvites       StaffInvite[]
   creators           Creator[]
   commissionPolicies CommissionPolicy[]
   coupons            Coupon[]
@@ -127,6 +128,26 @@ model RoleGrant {
 
   @@unique([userId, brandId, role])
   @@index([userId])
+}
+
+/// Convite de uso único para a equipe (E2.4). Só o hash do token fica no banco; o link é mostrado uma vez.
+model StaffInvite {
+  id             String    @id @default(uuid())
+  email          String
+  name           String
+  role           StaffRole
+  brandId        String? // nulo só para SUPER_ADMIN
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  createdById    String
+  acceptedAt     DateTime?
+  acceptedUserId String?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  brand Brand? @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@index([email])
 }
 
 /// Dados da pessoa creator, únicos para todas as marcas.

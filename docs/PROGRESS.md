@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2.4 — convite e remoção da equipe (o envio por e-mail depende de D-SMTP). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** terminar a E2.4 (chave secreta na Vercel e teste do convite no staging). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -49,8 +49,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E2.3** Primeiros super admins: `scripts/grant-super-admin.mjs` (pega o usuário já criado no Supabase Auth,
   cria o `User` com o mesmo id, concede SUPER_ADMIN global, registra na auditoria; nunca mexe em senha; idempotente).
   Pedro e Ana concedidos no staging.
-- [ ] **E2.4** Convite e remoção da equipe: super admin convida com papel por marca e remove acesso; convite de uso único e com prazo; AuditLog.
-  *Precisa de D-SMTP para enviar e-mail de verdade.*
+- [~] **E2.4** Convite e remoção da equipe: `/admin/equipe` (só super admin) gera link de convite de uso único
+  (D-INVITE-LINK, 7 dias), lista pessoas e convites, tira papel, remove pessoa e cancela convite; `/convite/[token]`
+  cria o login (e-mail do convite + senha escolhida) e concede o papel. Tabela `StaffInvite` com RLS e travas.
+  **Falta:** `SUPABASE_SECRET_KEY` na Vercel e teste no staging. Envio por e-mail depois de D-SMTP.
 - [ ] **E2.5** Convite de creator (`CreatorInvite`): uso único, prazo, nenhuma conta ligada só porque o e-mail coincide.
 - [ ] **E2.6** MFA (app autenticador) obrigatório para SUPER_ADMIN e PAGAMENTO.
 
@@ -60,6 +62,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-19 — 2026-10-09 — Convite e remoção da equipe no código (E2.4, parte 1)
+- **Decidido:** D-INVITE-LINK (link pelo WhatsApp até haver remetente). Em aberto: D-INVITE-TTL (7 dias em uso).
+- **Feito:** migração `staff_invites` (tabela `StaffInvite`, RLS, travas `StaffInvite_global_only_super_admin` e
+  `StaffInvite_accepted_has_user`); `src/lib/team/` (token com só o hash no banco; criar, aceitar uma única vez,
+  cancelar convite; tirar papel; desativar pessoa; tudo com auditoria); `/admin/equipe`, `/convite/[token]`,
+  link "Equipe e convites" em `/conta` para super admins; `src/lib/supabase/admin.ts` (chave secreta, só servidor).
+- **Verificado:** 46 unitários (2 novos); 27 de integração (5 novos: convite aceito uma vez e com papel na marca;
+  e-mail errado, vencido e cancelado recusados; só super admin convida; trava de convite global no banco; tirar
+  papel e remover pessoa com auditoria, sem tirar o próprio super admin); migração × schema sem divergência; build.
 
 ### CP-18 — 2026-10-09 — Super admins Pedro e Ana (E2.3)
 - **Decidido:** D-ADJUST (ajuste manual de saldo só SUPER_ADMIN; cada ajuste com motivo e autor). E-mail de login

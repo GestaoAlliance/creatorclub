@@ -70,6 +70,8 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
   em cada página e ação (nunca só no proxy).
 - Depois de entrar, redirecionar só com `safeNextPath` (`src/lib/auth/rules.ts`): nunca para outro site.
 - Mensagens de erro de login não revelam se a conta existe.
+- `SUPABASE_SECRET_KEY` só em código de servidor (`src/lib/supabase/admin.ts`, com `server-only`).
+- Convite: token aleatório mostrado uma vez; no banco só o hash (`src/lib/team/tokens.ts`).
 
 ## Stack fixada
 
