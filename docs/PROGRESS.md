@@ -97,7 +97,7 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
   marcados para revisão. Cupons vistos nos pedidos sincronizados e ausentes do import entram sem tipo.
   Pela tela `/admin/importar` (super admin envia o `Creator_rows.csv`, D-IMPORT); rodar no staging quando o deploy
   com a migração `pending_confirmation` entrar no ar.
-- [ ] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
+- [x] **E4.3** Tela da Ana (`/admin/cupons`, quem edita creators da marca): lista de cupons com uso nos pedidos,
   classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
 - [ ] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
 - [ ] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
@@ -109,6 +109,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-36 — 2026-10-09 — Tela de conferência da Ana (E4.3)
+- **Feito:** `src/lib/coupons/review.ts` (só quem edita creators da marca: Gestão ou super admin): lista de cupons
+  com pedidos que usaram cada código, tipo, dona e taxa vigentes; `classifyCoupon` (CREATOR/PROMO; cupom que já
+  levou pedido não muda de tipo); `confirmOwner` (troca a dona importada errada antes de confirmar; cupom sem dona
+  pede "desde quando"); `confirmRate` (corrige o valor e confirma; taxa digitada como 15 ou 12,5, sem Float);
+  progresso "X de Y creators ativas confirmadas"; auditoria `coupon.classify`, `coupon.owner.confirm`,
+  `commission.confirm`. Tela `/admin/cupons` (simples, D-ADMINUI) e link em `/conta`. Mudar taxa ou dona **já
+  confirmadas** (com vigência nova) fica para a ficha (E4.4).
+- **Verificado:** 86 unitários (2 novos); 79 de integração (4 novos: fluxo completo com auditoria e progresso, troca de
+  dona e data obrigatória, PROMO e cupom com pedido, permissões por papel e marca); typecheck; build.
 
 ### CP-35 — 2026-10-09 — Importação das creators do app antigo (E4.2)
 - **Decidido:** importação por tela, com o arquivo enviado pelo super admin (os dados pessoais não passam pelo chat).
