@@ -27,6 +27,9 @@
 | D-RLS | 2026-10-09 | Toda tabela do banco com **RLS ligado e sem políticas**: a Data API do Supabase (anon/authenticated) não lê nem grava nada; o app acessa só pelo servidor, como dono das tabelas. Teste de integração cobra RLS em toda tabela nova. | Técnica |
 | D-MIGRATE | 2026-10-09 | Migrações aplicadas pelo build da Vercel **só no deploy de produção** (a `main`), via `DIRECT_URL` (session pooler 5432); o app usa `DATABASE_URL` (transaction pooler 6543). Prévias de PR não têm variáveis de banco. | Técnica |
 | D-EXTPUBLIC | 2026-10-09 | A extensão `btree_gist` (EXCLUDE de vigência) fica no schema `public`: o aviso "Extension in Public" do Supabase é risco aceito. Mover exige ser dono dos tipos da extensão, o que o papel `postgres` do Supabase não é; a extensão só traz operadores de índice, sem dados. | Técnica |
+| D-ADMIN | 2026-10-09 | SUPER_ADMIN (vê e faz tudo, em todas as marcas): **Pedro** (`pedrogustavolage@gmail.com`) e **Ana**. Super admins adicionam e removem pessoas da equipe ao longo do tempo (E2.4). | Pedro |
+| D-LOGIN | 2026-10-09 | Entrada por **e-mail e senha** (mínimo 10) com "esqueci a senha"; link mágico só se pedirem depois. | Pedro |
+| D-ROLES | 2026-10-09 | Permissões por papel (`src/lib/auth/permissions.ts`): **Gestão** vê e edita creators e cupons, vê valores, endereço, CPF e Pix. **Envio** vê lista de envio e endereço, sem valores. **Pagamento** vê creators, valores, CPF e Pix; vê saques e NF e marca como pago. **Hunter** só as próprias prospecções. Ajuste manual de saldo, conexão de loja e gestão da equipe: só SUPER_ADMIN. Negar por padrão. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -43,8 +46,10 @@
 | D-PAY | Quem tem papel Pagamento | Juci e Pâmela | E2 |
 | D-NF | Código de serviço e descrição da NF | — | E8 |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
-| D-ADMIN | E-mail do primeiro SUPER_ADMIN (Pedro) | — | E2.3 |
+| ~~D-ADMIN~~ | ~~E-mail do primeiro SUPER_ADMIN~~ — **decidida** em 2026-10-09 | E2.3 |
 | D-SMTP | Remetente dos e-mails do Auth (convite, senha): Resend com qual domínio e conta? O e-mail padrão do Supabase só serve para teste (poucos envios por hora) | Resend, conta da Gestão Alliance, domínio a definir | E2.4 |
-| D-LOGIN | Forma de entrar: e-mail e senha (mín. 10) com "esqueci a senha"; link mágico também? | Senha + esqueci a senha; link mágico depois, se pedirem | E2.1 |
+| D-ADJUST | O Pagamento também pode lançar ajuste manual de saldo (crédito/débito de correção no extrato), ou só SUPER_ADMIN? | Só SUPER_ADMIN | E5 |
+| D-HUNTERSRC | Como saber de qual hunter veio cada creator? UTM não parece o melhor; ideia: pelo formulário que a hunter envia à creator | — | L2 (Hunter) |
+| ~~D-LOGIN~~ | ~~Forma de entrar~~ — **decidida** em 2026-10-09 | E2.1 |
 | ~~D-ACCT~~ | ~~Donos das contas Supabase/Vercel~~ | ~~Contas da empresa, Pedro dono~~ — **substituída** em 2026-10-09 (ver D-ACCT em Decididas) | E1.4 |
 | ~~D-INFRA~~ | ~~Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início?~~ — **decidida** em 2026-10-09 (ver D-INFRA em Decididas) | Ver CONTEXTO.md (contas existentes). A organização "Creator Club" (Gestão Alliance) é Free: pausa após 7 dias sem uso; produção nunca em Free | E1.4 |
