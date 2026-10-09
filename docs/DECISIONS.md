@@ -19,7 +19,7 @@
 | D-INTCENTS | 2026-10-09 | Valores em `Int` (32 bits) de centavos: até R$ 21,4 milhões por linha, suficiente para pedido, lançamento e saque. Somas são feitas em SQL. Rever se algum valor individual puder passar disso. | Técnica |
 | D-COUPONOWNER | 2026-10-09 | Cupom (código único por marca) separado de `CouponAssignment` (dona com vigência, sem sobreposição): troca de dona não reescreve o passado. | Técnica |
 | D-QUEUE | 2026-10-09 | Webhook grava evento + tarefa no Postgres na mesma transação antes de responder; worker processa. | Plano |
-| D-ACCT | 2026-10-09 | Contas do projeto passam a ser as da **Gestão Alliance** (substitui a proposta "contas da empresa, Pedro dono"). GitHub já migrado: repositório `GestaoAlliance/creatorclub` com todo o histórico de `Botanika-HUb/botanika-creator-club` (sem reescrever). Supabase e Vercel: projetos novos (E1.4) nascem em contas da Gestão Alliance; os conectores hoje só enxergam as contas da Botanika (ver CONTEXTO.md). | Pedido de 2026-10-09 |
+| D-ACCT | 2026-10-09 | Contas do projeto passam a ser as da **Gestão Alliance** (substitui a proposta "contas da empresa, Pedro dono"). GitHub já migrado: repositório `GestaoAlliance/creatorclub` com todo o histórico de `Botanika-HUb/botanika-creator-club` (sem reescrever). Supabase: organização "Creator Club" (Free, projeto `Creator Club` em sa-east-1). Vercel: time "GestaoAlliance". Projetos novos (E1.4) nascem nessas contas (ver CONTEXTO.md). | Pedido de 2026-10-09 |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -37,4 +37,4 @@
 | D-NF | Código de serviço e descrição da NF | — | E8 |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
 | ~~D-ACCT~~ | ~~Donos das contas Supabase/Vercel~~ | ~~Contas da empresa, Pedro dono~~ — **substituída** em 2026-10-09 (ver D-ACCT em Decididas) | E1.4 |
-| D-INFRA | Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início? | Ver CONTEXTO.md (contas existentes). Free tem limite de 2 projetos ativos (já usados) e pausa após 7 dias sem uso; produção nunca em Free | E1.4 |
+| D-INFRA | Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início? | Ver CONTEXTO.md (contas existentes). A organização "Creator Club" (Gestão Alliance) é Free: pausa após 7 dias sem uso; produção nunca em Free | E1.4 |
