@@ -60,6 +60,8 @@ model Brand {
   syncRuns           SyncRun[]
   auditLogs          AuditLog[]
   clicks             Click[]
+  products           Product[]
+  shipments          Shipment[]
 }
 
 enum IntegrationKind {
@@ -154,17 +156,25 @@ model StaffInvite {
 
 /// Dados da pessoa creator, únicos para todas as marcas.
 model CreatorAccount {
-  id        String   @id @default(uuid())
-  userId    String?  @unique // preenchido quando o convite é aceito
-  name      String
-  email     String   @unique
-  phone     String?
-  cpf       String?
-  cnpj      String?
-  pixKey    String?
-  legacyId  String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  userId         String?  @unique // preenchido quando o convite é aceito
+  name           String
+  email          String   @unique
+  phone          String?
+  cpf            String?
+  cnpj           String?
+  pixKey         String?
+  /// Endereço de entrega (D-SHIPADDR): a creator mantém no portal; cada envio guarda uma cópia.
+  addrZip        String?
+  addrStreet     String?
+  addrNumber     String?
+  addrComplement String?
+  addrDistrict   String?
+  addrCity       String?
+  addrState      String?
+  legacyId       String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user     User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
   creators Creator[]
@@ -224,6 +234,7 @@ model Creator {
   attributions       OrderAttribution[]
   ledgerEntries      LedgerEntry[]
   withdrawals        Withdrawal[]
+  shipments          Shipment[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -581,4 +592,75 @@ model Click {
   coupon Coupon @relation(fields: [couponId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([couponId, createdAt])
+}
+
+// ───────────────────────────── Envios de produtos à creator (E7.8) ─────────────────────────────
+
+/// Produto da loja (catálogo da Shopify), para escolher o que vai em cada envio.
+model Product {
+  id        String   @id @default(uuid())
+  brandId   String
+  shopifyId String
+  title     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  items ShipmentItem[]
+
+  @@unique([brandId, shopifyId])
+  @@unique([id, brandId])
+}
+
+enum ShipmentStatus {
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+/// Envio de produtos à creator (D-SHIPMENTS). Endereço copiado no momento do envio; situação com datas coerentes
+/// (travas na migração). Nada é apagado: cancelar é situação.
+model Shipment {
+  id            String         @id @default(uuid())
+  brandId       String
+  creatorId     String
+  status        ShipmentStatus @default(PREPARING)
+  note          String?
+  address       Json
+  carrier       String?
+  trackingCode  String?
+  createdById   String
+  shippedAt     DateTime?
+  shippedById   String?
+  deliveredAt   DateTime?
+  deliveredBy   String? // STAFF | CREATOR
+  deliveredById String?
+  cancelledAt   DateTime?
+  cancelledById String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  brand   Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  items   ShipmentItem[]
+
+  @@unique([id, brandId])
+  @@index([brandId, status, createdAt])
+  @@index([creatorId, createdAt])
+}
+
+model ShipmentItem {
+  id         String @id @default(uuid())
+  brandId    String
+  shipmentId String
+  productId  String
+  title      String // cópia do nome do produto no envio
+  quantity   Int
+
+  shipment Shipment @relation(fields: [shipmentId, brandId], references: [id, brandId], onDelete: Restrict)
+  product  Product  @relation(fields: [productId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([shipmentId])
 }

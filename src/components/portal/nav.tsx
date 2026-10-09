@@ -1,16 +1,17 @@
 "use client";
 
-import { ChevronsLeft, House, ShoppingBag, Ticket, Wallet, type LucideIcon } from "lucide-react";
+import { ChevronsLeft, House, Package, ShoppingBag, Ticket, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-/** Itens do portal. Cada etapa da E7 acrescenta o seu (Vendas, Extrato, Cupom e link). */
+/** Itens do portal. Cada etapa da E7 acrescenta o seu. */
 const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "", label: "Início", Icon: House },
   { href: "/vendas", label: "Vendas", Icon: ShoppingBag },
   { href: "/cupom", label: "Cupom", Icon: Ticket },
   { href: "/saque", label: "Saque", Icon: Wallet },
+  { href: "/envios", label: "Envios", Icon: Package },
 ];
 
 function useActive(base: string) {
@@ -80,12 +81,12 @@ export function SideNav({ base, brandName }: { base: string; brandName: string }
 export function BottomNav({ base }: { base: string }) {
   const isActive = useActive(base);
   return (
-    <nav aria-label="Menu do portal" className="glass fixed inset-x-3 bottom-3 z-20 flex justify-around rounded-3xl px-2 py-2 md:hidden">
+    <nav aria-label="Menu do portal" className="glass fixed inset-x-3 bottom-3 z-20 flex gap-1 rounded-3xl px-2 py-2 md:hidden">
       {ITEMS.map(({ href, label, Icon }) => (
         <Link
           key={href}
           href={`${base}${href}`}
-          className={`flex min-w-16 flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5 text-[11px] font-medium ${
+          className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-[11px] font-medium ${
             isActive(href) ? "bg-brand text-white" : "text-stone-600 dark:text-stone-300"
           }`}
         >
