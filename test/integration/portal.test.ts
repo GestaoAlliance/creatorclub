@@ -52,3 +52,55 @@ describe("acesso ao portal (banco real)", () => {
     await expectDbError(prisma.brand.update({ where: { id: brand.id }, data: { secondaryColor: "#12345" } }), /Brand_colors_hex/);
   });
 });
+
+describe("Início do portal (banco real)", () => {
+  it("saldo, próxima liberação, vendas e comissão do mês pelo pagamento, últimos lançamentos e cupom", async () => {
+    const { portalSummary } = await import("@/lib/portal/home");
+    const { commissionEntry } = await import("./fixtures");
+    const a = await seedBrand(prisma); // pedido pago em 2026-09-01
+    const actor = await loginFor(a.account.id);
+    const ctx = await portalContext(prisma, actor, a.brand.slug);
+    const T = (iso: string) => new Date(iso);
+    const mkOrder = (paidAt: string, extra: Record<string, unknown> = {}) =>
+      prisma.order.create({
+        data: {
+          brandId: a.brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: `#${randomUUID().slice(0, 4)}`, createdAtShop: T(paidAt),
+          paidAt: T(paidAt), financialStatus: "PAID", subtotalCents: 10_000, totalCents: 11_000, discountCodes: [a.coupon.code], shopifyUpdatedAt: T(paidAt), ...extra,
+        },
+      });
+    const oct1 = await mkOrder("2026-10-02T12:00:00Z");
+    const oct2 = await mkOrder("2026-10-05T12:00:00Z");
+    const cancelled = await mkOrder("2026-10-03T12:00:00Z", { cancelledAt: T("2026-10-04T00:00:00Z") });
+    // 1º de outubro às 01:00 UTC ainda é setembro em São Paulo: não conta no mês.
+    const lateSep = await mkOrder("2026-10-01T01:00:00Z");
+    for (const o of [a.order, oct1, oct2, cancelled, lateSep]) {
+      await prisma.orderAttribution.create({ data: { brandId: a.brand.id, orderId: o.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] } });
+    }
+    await prisma.couponAssignment.create({ data: { brandId: a.brand.id, couponId: a.coupon.id, creatorId: a.creator.id, validFrom: T("2026-01-01T00:00:00Z") } });
+    const ids = { brandId: a.brand.id, creatorId: a.creator.id };
+    await prisma.ledgerEntry.createMany({
+      data: [
+        commissionEntry({ ...ids, orderId: a.order.id }, { availableAt: T("2026-09-08T12:00:00Z"), createdAt: T("2026-09-01T12:05:00Z") }),
+        commissionEntry({ ...ids, orderId: oct1.id }, { amountCents: 1_500, availableAt: T("2026-10-09T12:00:00Z"), createdAt: T("2026-10-02T12:05:00Z") }),
+        commissionEntry({ ...ids, orderId: oct2.id }, { amountCents: 1_500, availableAt: T("2026-10-12T12:00:00Z"), createdAt: T("2026-10-05T12:05:00Z") }),
+        commissionEntry({ ...ids, orderId: oct1.id }, { type: "REVERSAL", amountCents: -500, availableAt: T("2026-10-06T10:00:00Z"), createdAt: T("2026-10-06T10:00:00Z") }),
+      ],
+    });
+
+    const s = await portalSummary(prisma, ctx, T("2026-10-07T12:00:00Z"));
+    expect(s.month).toBe("2026-10");
+    expect(s.balance).toEqual({ totalCents: 5_500, heldCents: 3_000, reservedCents: 0, availableCents: 2_500 });
+    expect(s.nextReleaseAt?.toISOString()).toBe("2026-10-09T12:00:00.000Z");
+    expect([s.salesCount, s.salesCents]).toEqual([2, 20_000]);
+    expect(s.commissionCents).toBe(2_500);
+    expect(s.recent.map((l) => l.amountCents)).toEqual([-500, 1_500, 1_500, 3_000]);
+    expect(s.coupons).toEqual([a.coupon.code]);
+
+    // Outra creator da mesma marca não vê nada disso.
+    const other = await prisma.creatorAccount.create({ data: { name: "Outra", email: `${randomUUID()}@x.com` } });
+    await prisma.creator.create({ data: { brandId: a.brand.id, accountId: other.id, categories: [] } });
+    const otherCtx = await portalContext(prisma, await loginFor(other.id), a.brand.slug);
+    const empty = await portalSummary(prisma, otherCtx, T("2026-10-07T12:00:00Z"));
+    expect(empty).toMatchObject({ salesCount: 0, commissionCents: 0, recent: [], coupons: [], balance: { totalCents: 0 } });
+  });
+});
