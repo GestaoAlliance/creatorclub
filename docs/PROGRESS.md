@@ -47,6 +47,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-11 — 2026-10-09 — Primeiro deploy do staging travou na migração (E1.4)
+- **Aconteceu:** com `DATABASE_URL` e `DIRECT_URL` na Vercel, o deploy da `main` (`4548e29`) conectou no banco
+  pelo session pooler (senha ok: a primeira consulta da Prisma aparece no Postgres) e parou logo depois, sem erro,
+  por mais de 5 minutos. Nenhuma tabela criada. Build cancelado.
+- **Feito:** a migração no build ganha limite de 3 minutos (falha clara em vez de travar a fila do Hobby) e
+  registro passo a passo do schema engine (`DEBUG=prisma:schemaEngine*`) para achar onde para.
+- **Verificado:** caminho de produção do script testado localmente (migra, registra os passos, build ok).
+- **Próximo:** novo deploy da `main` e leitura do registro.
+
 ### CP-10 — 2026-10-09 — Staging preparado no código (E1.4, parte 1)
 - **Feito:** D-INFRA decidida (staging no Free, pago antes da E9). `vercel.json` com região `gru1`;
   `scripts/vercel-build.mjs` aplica migrações só no deploy de produção, com `DIRECT_URL`; migração
