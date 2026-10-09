@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** terminar a E2.4 (chave secreta na Vercel e teste do convite no staging). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E2.6 — MFA para super admin e Pagamento. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -49,11 +49,14 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E2.3** Primeiros super admins: `scripts/grant-super-admin.mjs` (pega o usuário já criado no Supabase Auth,
   cria o `User` com o mesmo id, concede SUPER_ADMIN global, registra na auditoria; nunca mexe em senha; idempotente).
   Pedro e Ana concedidos no staging.
-- [~] **E2.4** Convite e remoção da equipe: `/admin/equipe` (só super admin) gera link de convite de uso único
+- [x] **E2.4** Convite e remoção da equipe: `/admin/equipe` (só super admin) gera link de convite de uso único
   (D-INVITE-LINK, 7 dias), lista pessoas e convites, tira papel, remove pessoa e cancela convite; `/convite/[token]`
-  cria o login (e-mail do convite + senha escolhida) e concede o papel. Tabela `StaffInvite` com RLS e travas.
-  **Falta:** `SUPABASE_SECRET_KEY` na Vercel e teste no staging. Envio por e-mail depois de D-SMTP.
-- [ ] **E2.5** Convite de creator (`CreatorInvite`): uso único, prazo, nenhuma conta ligada só porque o e-mail coincide.
+  cria o login (e-mail do convite + senha escolhida) e concede o papel. Testado no staging. Envio por e-mail depois
+  de D-SMTP.
+- [x] **E2.5** Convite de creator (`CreatorInvite`): ligado à conta (nunca ao e-mail solto), uso único, 7 dias; quem
+  edita creators da marca (ou super admin) convida; aceitar cria o login e liga à `CreatorAccount`. Mesmo link
+  `/convite/...` da equipe. **O botão "Convidar" na ficha da creator entra na E4**, junto com a ficha e a confirmação
+  dos e-mails reais (os importados do app antigo são falsos, `@import.creatorclub`).
 - [ ] **E2.6** MFA (app autenticador) obrigatório para SUPER_ADMIN e PAGAMENTO.
 
 ### Depois de E2 (detalhar quando chegar lá)
@@ -62,6 +65,24 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-21 — 2026-10-09 — Convite de creator (E2.5)
+- **Feito:** migração `creator_invites` (tabela `CreatorInvite`, RLS, trava `CreatorInvite_accepted_has_user`);
+  `src/lib/team/creator-invites.ts` (criar com permissão `creators.edit` numa das marcas da creator; aceitar uma vez,
+  e-mail da sessão = e-mail da conta, liga `CreatorAccount.userId`; auditoria); `/convite/[token]` passa a resolver
+  convite de equipe ou de creator.
+- **Verificado:** 46 unitários; 31 de integração (4 novos: Gestão convida e a creator aceita uma vez com o login
+  ligado às participações; quem não edita creators da marca não convida; e-mail diferente e convite vencido não
+  ligam a conta; trava no banco); migração × schema sem divergência; build.
+- **Fica para a E4:** botão "Convidar" na ficha e confirmação dos e-mails reais das creators.
+
+### CP-20 — 2026-10-09 — Convite da equipe no ar (E2.4 concluída)
+- **Configurado (pelo responsável):** `SUPABASE_SECRET_KEY` na Vercel (Production e Preview, Secret).
+- **Verificado no staging:** migração `staff_invites` aplicada pelo deploy (tabela com RLS; nenhuma tabela sem RLS).
+  `/conta` mostra "Super admin (todas as marcas)" e o link da equipe; convite gerado em `/admin/equipe` para
+  `pgustavo723@gmail.com`, aceito em janela anônima, login criado e papel concedido; auditoria com `invite.create` e
+  `invite.accept`. `pgustavo723@gmail.com` fica como super admin de reserva (D-ADMIN).
+- **Não testado ao vivo:** remover da equipe e tirar papel (cobertos pelos testes de integração).
 
 ### CP-19 — 2026-10-09 — Convite e remoção da equipe no código (E2.4, parte 1)
 - **Decidido:** D-INVITE-LINK (link pelo WhatsApp até haver remetente). Em aberto: D-INVITE-TTL (7 dias em uso).

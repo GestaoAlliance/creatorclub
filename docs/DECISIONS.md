@@ -32,6 +32,7 @@
 | D-ROLES | 2026-10-09 | Permissões por papel (`src/lib/auth/permissions.ts`): **Gestão** vê e edita creators e cupons, vê valores, endereço, CPF e Pix. **Envio** vê lista de envio e endereço, sem valores. **Pagamento** vê creators, valores, CPF e Pix; vê saques e NF e marca como pago. **Hunter** só as próprias prospecções. Ajuste manual de saldo, conexão de loja e gestão da equipe: só SUPER_ADMIN. Negar por padrão. | Pedro |
 | D-ADJUST | 2026-10-09 | Ajuste manual de saldo (lançamento `ADJUSTMENT` no extrato: bônus, correção) **só SUPER_ADMIN**. Cada ajuste é uma linha própria, com valor, motivo e quem lançou; nunca apagado (correção = novo ajuste). Motivo obrigatório na tela (E5). O saldo é a soma do extrato: o Shopify fornece só as vendas. | Pedro |
 | D-INVITE-LINK | 2026-10-09 | Enquanto não houver remetente de e-mail (D-SMTP), o convite da equipe é um **link de uso único** gerado em `/admin/equipe`, copiado e enviado pelo WhatsApp. O link aparece uma vez; o banco guarda só o hash. Remover da equipe = desativar o acesso (não apaga), com auditoria; ninguém remove o próprio super admin e sempre sobra um. | Pedro |
+| D-ADMIN | 2026-10-09 | Complemento: `pgustavo723@gmail.com` (outro e-mail do Pedro) é SUPER_ADMIN de reserva, entrou pelo convite de teste da E2.4. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

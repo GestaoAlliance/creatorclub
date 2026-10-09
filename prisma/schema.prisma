@@ -164,8 +164,26 @@ model CreatorAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user     User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
   creators Creator[]
+  invites  CreatorInvite[]
+}
+
+/// Convite de uso único para a creator entrar no portal (E2.5). Ligado à conta, nunca ao e-mail solto.
+model CreatorInvite {
+  id             String    @id @default(uuid())
+  accountId      String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  createdById    String
+  acceptedAt     DateTime?
+  acceptedUserId String?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  account CreatorAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId])
 }
 
 enum CreatorCategory {
