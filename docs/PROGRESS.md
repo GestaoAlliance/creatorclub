@@ -111,6 +111,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-39 — 2026-10-09 — Atribuição no banco (E5.1)
+- **Feito:** `src/lib/commission/attribution.ts`: `decideAttribution` (decide uma vez, com os códigos como evidência;
+  pendente não grava; taxa congelada só com pedido pago e política confirmada cobrindo o pagamento, nunca a atual
+  por omissão; gravação à prova de corrida), `recheckBrand` (pedidos sem atribuição e atribuições pagas sem taxa) e
+  tarefa `attribution.recheck`, pedida a cada confirmação da Ana (no máximo uma por minuto). Webhook, reconciliação
+  e carga histórica passam a decidir a atribuição logo depois de gravar o pedido. Migração `hold_7_days`: retenção
+  padrão de 7 dias (D-HOLD) e marcas existentes de 0 para 7.
+- **Verificado:** 86 unitários; 90 de integração (6 novos: pendente → confirmado → atribuído → taxa congelada,
+  decisão gravada não muda, taxa congela no pagamento, pago antes da vigência fica sem taxa, reavaliação em lote,
+  retenção padrão); migração × schema sem divergência; typecheck; build.
+
 ### CP-38 — 2026-10-09 — E5 detalhada; D-HOLD, D-NEG, D-MONTH decididas
 - **Decidido:** D-HOLD (7 dias), D-NEG (saldo negativo abate das próximas comissões), D-MONTH (mês do pagamento).
   `CLAUDE.md` atualizado.

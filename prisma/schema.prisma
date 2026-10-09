@@ -34,7 +34,7 @@ model Brand {
   withdrawalMinCents       Int      @default(50000)
   withdrawalWindowStartDay Int      @default(10)
   withdrawalWindowEndDay   Int      @default(15)
-  commissionHoldDays       Int      @default(0) // DECISÃO-ABERTA: D-HOLD
+  commissionHoldDays       Int      @default(7) // D-HOLD: 7 dias depois do pagamento
   nfInstructions           String?
   legacyId                 String?  @unique
   createdAt                DateTime @default(now())

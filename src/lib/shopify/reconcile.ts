@@ -3,6 +3,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { enqueueJob, type ClaimedJob, type JobHandler } from "@/lib/jobs/queue";
 import type { ShopifyClient } from "./client";
+import { decideAttribution } from "@/lib/commission/attribution";
 import { ORDER_SYNC_JOB, defaultClientFactory, recordOrderWarnings, type ClientFactory } from "./jobs";
 import { LINE_ITEMS, ORDER_FIELDS, processOrder, type ShopifyOrderNode } from "./orders";
 
@@ -69,6 +70,7 @@ export async function reconcileBrand(
         }
         const result = await processOrder(prisma, brandId, node);
         if (result.outcome !== "stale") counts.ordersFixed++;
+        if (result.orderId) await decideAttribution(prisma, result.orderId);
         await recordOrderWarnings(prisma, brandId, opts.jobId ?? run.id, result, node.name);
       }
       if (!data.orders.pageInfo.hasNextPage) break;

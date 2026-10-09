@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { enqueueJob, type ClaimedJob, type JobHandler } from "@/lib/jobs/queue";
+import { decideAttribution } from "@/lib/commission/attribution";
 import { defaultClientFactory, recordOrderWarnings, type ClientFactory } from "./jobs";
 import { processOrder, type ShopifyOrderNode } from "./orders";
 
@@ -157,6 +158,7 @@ export function backfillHandlers(prisma: PrismaClient, deps: BackfillDeps = {}):
     for (const node of batch) {
       const result = await processOrder(prisma, job.brandId!, node);
       if (result.outcome !== "stale") fixed++;
+      if (result.orderId) await decideAttribution(prisma, result.orderId);
       await recordOrderWarnings(prisma, job.brandId!, job.id, result, node.name);
     }
     await prisma.syncRun.update({
