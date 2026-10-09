@@ -36,6 +36,9 @@ export default async function ContaPage() {
       {actor && brandsWith(actor.grants, "integrations.manage") === "ALL" && (
         <Link href="/admin/sync" className="text-sm underline">Saúde do sync (Shopify)</Link>
       )}
+      {actor && brandsWith(actor.grants, "integrations.manage") === "ALL" && (
+        <Link href="/admin/importar" className="text-sm underline">Importar creators do app antigo</Link>
+      )}
       <form action={signOut}>
         <button className="rounded border border-stone-300 px-3 py-2">Sair</button>
       </form>
