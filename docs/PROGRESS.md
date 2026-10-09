@@ -5,8 +5,8 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
-- **Próxima tarefa:** E2.6 — MFA para super admin e Pagamento. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; próxima E3
+- **Próxima tarefa:** E3 — Sync Shopify (detalhar no início da tarefa). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -15,7 +15,7 @@
 
 ## Fila de tarefas (uma por vez, nesta ordem)
 
-Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
+Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado · `[-]` adiado
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -57,7 +57,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
   edita creators da marca (ou super admin) convida; aceitar cria o login e liga à `CreatorAccount`. Mesmo link
   `/convite/...` da equipe. **O botão "Convidar" na ficha da creator entra na E4**, junto com a ficha e a confirmação
   dos e-mails reais (os importados do app antigo são falsos, `@import.creatorclub`).
-- [ ] **E2.6** MFA (app autenticador) obrigatório para SUPER_ADMIN e PAGAMENTO.
+- [-] **E2.6** MFA para SUPER_ADMIN e PAGAMENTO: **adiado** (D-MFA). Fácil de ligar depois, no ponto central de acesso.
 
 ### Depois de E2 (detalhar quando chegar lá)
 E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -65,6 +65,13 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-22 — 2026-10-09 — E2 concluída (MFA adiado)
+- **Decidido:** D-MFA (adiado; veio da auditoria feita por IA, não da equipe nem do plano).
+- **Verificado no staging:** migração `creator_invites` aplicada pelo deploy (5 migrações; `CreatorInvite` com RLS;
+  nenhuma tabela sem RLS).
+- **E2 fechada:** login (E2.1), papéis (E2.2), super admins (E2.3), convite da equipe (E2.4), convite de creator
+  (E2.5); MFA adiado (E2.6).
 
 ### CP-21 — 2026-10-09 — Convite de creator (E2.5)
 - **Feito:** migração `creator_invites` (tabela `CreatorInvite`, RLS, trava `CreatorInvite_accepted_has_user`);
