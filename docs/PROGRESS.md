@@ -83,7 +83,9 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
   Parte 1 feita (CP-30): agendamento ligado, credenciais no modelo do Dev Dashboard, conexão da loja e tela
   `/admin/sync`. Mudou para a loja real (D-REALSTORE): `INTEGRATION_ENC_KEY` salva na Vercel e marca `botanika`
-  criada. Falta: app no Dev Dashboard da Botanika, conectar, conferir pedidos reais chegando.
+  criada. App "Creator Club - v2" criado no Dev Dashboard da Botanika (só `read_orders`; `read_all_orders` foi
+  recusado como escopo inválido) e credenciais guardadas cifradas (CP-32). Falta: instalar o app na loja, conectar
+  em `/admin/sync` (sem redigitar) e conferir pedidos reais chegando.
 
 ### Depois de E3 (detalhar quando chegar lá)
 E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -91,6 +93,19 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-32 — 2026-10-09 — App da Botanika criado e credenciais guardadas
+- **No Shopify (pelo responsável):** app "Creator Club - v2" no Dev Dashboard da organização Botanika Brasil, versão
+  `creator-club-v2-1` ativa, escopo `read_orders`, webhooks 2026-10. `read_all_orders` foi recusado na criação
+  ("escopo inválido"): fica para a carga histórica (pedidos com mais de 60 dias).
+- **Conferido:** pedido da chave de acesso feito pelo banco (pg_net) respondeu `app_not_installed`: credenciais
+  aceitas, falta instalar o app na loja. A resposta guardada pelo pg_net tem só o erro, nenhuma chave.
+- **No staging:** Client ID/secret cifrados com a `INTEGRATION_ENC_KEY` e gravados em `BrandIntegration` da marca
+  `botanika` como DESCONECTADA (sem sync até conectar), com auditoria `integration.credentials`. Nada disso vai para o
+  repositório (D-PUBLIC).
+- **Feito no código:** "Reconectar" com Client ID/secret em branco reaproveita os guardados (para mudar escopos sem
+  redigitar); `app_not_installed` vira mensagem clara; a tela mostra loja desconectada.
+- **Verificado:** 75 unitários; 70 de integração (2 novos); typecheck.
 
 ### CP-31 — 2026-10-09 — Loja real da Botanika no lugar da loja de teste
 - **Decidido:** D-REALSTORE (substitui D-DEVSTORE: a conta não cria loja de desenvolvimento; app só leitura até a
