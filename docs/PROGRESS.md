@@ -59,6 +59,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-15 — 2026-10-09 — Direção de design registrada
+- **Feito:** `docs/design/DESIGN.md` com a linha visual (*liquid glass*, monocromático, cor de destaque por marca,
+  dashboard com sidebar recolhível) e as 3 referências de código recebidas em `docs/design/referencias/`.
+  Só referência: não muda a fila. `CLAUDE.md` passa a exigir perguntar antes de executar qualquer dúvida e a ler
+  o `DESIGN.md` antes de construir telas.
+- **Em aberto:** D-BRANDCOLOR (cores oficiais; o app antigo tinha Botanika verde e VermeFree azul, o contrário do
+  que foi dito).
+
 ### CP-14 — 2026-10-09 — Login com Supabase Auth no código (E2.1, parte 1)
 - **Feito:** `@supabase/ssr` 0.12.7 e `@supabase/supabase-js` 2.117.2 (versões exatas); `src/proxy.ts` renova a
   sessão sem decidir acesso; `/entrar` (e-mail e senha, mensagem única que não revela se a conta existe),
