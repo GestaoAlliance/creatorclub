@@ -4,9 +4,11 @@ import { inject } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 
 export function testClient(): PrismaClient {
+  const schema = inject("testSchema");
+  // search_path também no schema de teste: SQL cru (ex.: fila de tarefas) usa nomes sem schema.
   const adapter = new PrismaPg(
-    { connectionString: inject("testDatabaseUrl") },
-    { schema: inject("testSchema") },
+    { connectionString: inject("testDatabaseUrl"), options: `-c search_path=${schema},public` },
+    { schema },
   );
   return new PrismaClient({ adapter });
 }

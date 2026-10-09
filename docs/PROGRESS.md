@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.1 — Fila no Postgres e worker. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.2 — Credenciais e cliente do Shopify. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -63,8 +63,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 ### E3 — Sync Shopify (detalhada em 2026-10-09, a partir do plano)
 Pedidos chegam por webhook, reconciliação e carga histórica; uma única função `processOrder` grava o pedido.
 Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o pedido é gravado).
-- [ ] **E3.1** Fila no Postgres e worker: pegar tarefas com `FOR UPDATE SKIP LOCKED`, trava com prazo, nova
+- [x] **E3.1** Fila no Postgres e worker: pegar tarefas com `FOR UPDATE SKIP LOCKED`, trava com prazo, nova
   tentativa com espera crescente, falha definitiva visível; `POST /api/jobs/run` protegido por segredo (D-CRON).
+  O agendamento no pg_cron e o `JOBS_SECRET` na Vercel entram na E3.5, quando houver tarefa de verdade.
 - [ ] **E3.2** Credenciais e cliente do Shopify: token e segredo do webhook cifrados (AES-256-GCM, D-SHOPAPP);
   cliente GraphQL Admin com versão fixa, limite de custo e nova tentativa; nunca loga token.
 - [ ] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
@@ -84,6 +85,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-24 — 2026-10-09 — Fila no Postgres e worker (E3.1)
+- **Feito:** `src/lib/jobs/queue.ts`: `enqueueJob` (na transação de quem chama; `dedupeKey` repetida é ignorada),
+  `claimJobs` (`FOR UPDATE SKIP LOCKED`, prazo de 5 min, cada pega conta uma tentativa), `runJobs` (espera de
+  30 s dobrando até 1 h; última tentativa ou tipo desconhecido = FAILED; só quem segura a tarefa a conclui;
+  tarefa presa na última tentativa vira FAILED). `POST /api/jobs/run` exige `Authorization: Bearer JOBS_SECRET`
+  (mínimo 32 caracteres, comparação em tempo constante; sem segredo, 401 para todos) e fica fora do `proxy`.
+  Testes de integração passam a usar `search_path` no schema de teste (SQL cru da fila).
+- **Verificado:** 50 unitários (4 novos); 39 de integração (8 novos: dedupe, transação desfeita, dois workers sem
+  pegar a mesma tarefa, agendada para depois, nova tentativa com espera, tipo desconhecido, tarefa presa
+  retomada sem o worker antigo concluir, presa na última tentativa); typecheck; build.
 
 ### CP-23 — 2026-10-09 — E3 detalhada
 - **Decidido:** D-DEVSTORE (staging numa loja de desenvolvimento), D-CRON (agendamento pelo pg_cron do Supabase),
