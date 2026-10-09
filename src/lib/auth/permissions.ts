@@ -37,7 +37,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
   GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal"],
   ENVIO: ["shipping.view", "personal.address"],
-  // DECISÃO-ABERTA: D-ADJUST — Pagamento ainda sem "ledger.adjust" (só super admin) até a resposta.
+  // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
   PAGAMENTO: ["creators.view", "money.view", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],
 };

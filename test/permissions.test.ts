@@ -28,7 +28,7 @@ describe("matriz de permissões (D-ROLES)", () => {
     expect(ROLE_PERMISSIONS.HUNTER).not.toContain("creators.view");
   });
 
-  it("só super admin ajusta saldo, conecta loja e gerencia equipe (D-ADJUST em aberto)", () => {
+  it("só super admin ajusta saldo, conecta loja e gerencia equipe (D-ADJUST)", () => {
     for (const p of ["ledger.adjust", "integrations.manage", "staff.manage"] as Permission[]) {
       const roles = (Object.keys(ROLE_PERMISSIONS) as StaffRole[]).filter((r) => ROLE_PERMISSIONS[r].includes(p));
       expect(roles).toEqual(["SUPER_ADMIN"]);

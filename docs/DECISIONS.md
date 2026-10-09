@@ -30,6 +30,7 @@
 | D-ADMIN | 2026-10-09 | SUPER_ADMIN (vê e faz tudo, em todas as marcas): **Pedro** (`pedrogustavolage@gmail.com`) e **Ana**. Super admins adicionam e removem pessoas da equipe ao longo do tempo (E2.4). | Pedro |
 | D-LOGIN | 2026-10-09 | Entrada por **e-mail e senha** (mínimo 10) com "esqueci a senha"; link mágico só se pedirem depois. | Pedro |
 | D-ROLES | 2026-10-09 | Permissões por papel (`src/lib/auth/permissions.ts`): **Gestão** vê e edita creators e cupons, vê valores, endereço, CPF e Pix. **Envio** vê lista de envio e endereço, sem valores. **Pagamento** vê creators, valores, CPF e Pix; vê saques e NF e marca como pago. **Hunter** só as próprias prospecções. Ajuste manual de saldo, conexão de loja e gestão da equipe: só SUPER_ADMIN. Negar por padrão. | Pedro |
+| D-ADJUST | 2026-10-09 | Ajuste manual de saldo (lançamento `ADJUSTMENT` no extrato: bônus, correção) **só SUPER_ADMIN**. Cada ajuste é uma linha própria, com valor, motivo e quem lançou; nunca apagado (correção = novo ajuste). Motivo obrigatório na tela (E5). O saldo é a soma do extrato: o Shopify fornece só as vendas. | Pedro |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -48,7 +49,7 @@
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
 | ~~D-ADMIN~~ | ~~E-mail do primeiro SUPER_ADMIN~~ — **decidida** em 2026-10-09 | E2.3 |
 | D-SMTP | Remetente dos e-mails do Auth (convite, senha): Resend com qual domínio e conta? O e-mail padrão do Supabase só serve para teste (poucos envios por hora) | Resend, conta da Gestão Alliance, domínio a definir | E2.4 |
-| D-ADJUST | O Pagamento também pode lançar ajuste manual de saldo (crédito/débito de correção no extrato), ou só SUPER_ADMIN? | Só SUPER_ADMIN | E5 |
+| ~~D-ADJUST~~ | ~~Pagamento pode ajustar saldo?~~ — **decidida** em 2026-10-09: só SUPER_ADMIN | E5 |
 | D-HUNTERSRC | Como saber de qual hunter veio cada creator? UTM não parece o melhor; ideia: pelo formulário que a hunter envia à creator | — | L2 (Hunter) |
 | ~~D-LOGIN~~ | ~~Forma de entrar~~ — **decidida** em 2026-10-09 | E2.1 |
 | ~~D-ACCT~~ | ~~Donos das contas Supabase/Vercel~~ | ~~Contas da empresa, Pedro dono~~ — **substituída** em 2026-10-09 (ver D-ACCT em Decididas) | E1.4 |
