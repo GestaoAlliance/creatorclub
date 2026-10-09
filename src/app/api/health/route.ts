@@ -1,5 +1,5 @@
-// Liveness: só confirma que o app responde. A checagem de banco, fila e
-// sincronização (readiness) entra quando essas peças existirem (E1.2 / E3).
+// Liveness: só confirma que o app responde. A checagem de banco fica em /api/ready;
+// fila e sincronização entram lá quando existirem (E3).
 export const dynamic = "force-dynamic";
 
 export function GET(): Response {

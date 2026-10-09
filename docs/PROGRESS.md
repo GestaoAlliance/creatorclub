@@ -6,7 +6,8 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
-- **Próxima tarefa:** E0.2 — saques já pagos a cada creator (o app antigo não registrou nenhum). Depois E0.3, E0.4 e E1.4.
+- **Próxima tarefa:** terminar a E1.4 (staging): variáveis de banco na Vercel e primeiro deploy verificado.
+  Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
   E1.4: contas da Gestão Alliance conectadas; falta decidir D-INFRA (organização Supabase está no plano Free).
@@ -34,8 +35,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E1.1** Esqueleto Next.js (App Router, TypeScript, Tailwind) junto do núcleo de domínio; `npm test`, `npm run typecheck` e `npm run build` passando.
 - [x] **E1.2** Schema Prisma do núcleo (Brand, BrandIntegration, User, RoleGrant, CreatorAccount, Creator, CommissionPolicy, Coupon, Order, OrderLine, OrderAttribution, LedgerEntry, Withdrawal, File, WebhookEvent, Job, SyncRun, AuditLog, Click) com migração inicial e restrições (únicos, FKs `Restrict`, índice parcial de saque aberto). Testes de integração contra Postgres local.
 - [x] **E1.3** CI no GitHub Actions: instalar, typecheck, testes (com Postgres de serviço), build.
-- [!] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`. Projeto Vercel `creatorclub` já existe
-  e liga o repositório (ver CONTEXTO.md); falta região, variáveis e acesso do conector. *Bloqueado: D-INFRA.*
+- [~] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`.
+  Pronto no código: `vercel.json` (gru1), migração no build de produção (D-MIGRATE), RLS em todas as tabelas (D-RLS),
+  `GET /api/ready`. **Falta:** `DATABASE_URL` e `DIRECT_URL` no ambiente Production do projeto Vercel `creatorclub`,
+  deploy da `main` e conferência (`/api/ready` ok; tabelas e RLS no Supabase).
 
 ### Depois de E1 (detalhar quando chegar lá)
 E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -43,6 +46,16 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-10 — 2026-10-09 — Staging preparado no código (E1.4, parte 1)
+- **Feito:** D-INFRA decidida (staging no Free, pago antes da E9). `vercel.json` com região `gru1`;
+  `scripts/vercel-build.mjs` aplica migrações só no deploy de produção, com `DIRECT_URL`; migração
+  `rls_lockdown` liga RLS em todas as tabelas (a Data API do Supabase não enxerga nada); `GET /api/ready`
+  responde se o app alcança o banco (503 sem detalhes se não).
+- **Verificado:** 33 unitários; 16 de integração contra Postgres 16 (o de RLS falha sem a migração nova e passa
+  com ela); migração × schema sem divergência; typecheck; build. Caminho de produção do script testado localmente:
+  aplica as 2 migrações, 21 tabelas com RLS, build ok; sem as variáveis, falha com mensagem clara.
+- **Falta (E1.4, parte 2):** variáveis de banco na Vercel (o conector não enxerga o projeto) e primeiro deploy.
 
 ### CP-09 — 2026-10-09 — Backup do app antigo (fecha a pendência da E0.1)
 - **Feito:** registrado que o `creator-hub` não tem backup (página Database → Backups vazia, plano Free),

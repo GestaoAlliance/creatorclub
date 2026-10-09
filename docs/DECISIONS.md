@@ -23,6 +23,9 @@
 | D-ACCT | 2026-10-09 | Complemento: só o **Claude** fica na conta da Botanika. GitHub, Supabase, Vercel e qualquer outra ferramenta do projeto ficam nas contas da Gestão Alliance, separadas do resto da Botanika. Nenhuma conta da Botanika é conectada às ferramentas do projeto. | Pedido de 2026-10-09 |
 | D-E0SRC | 2026-10-09 | O inventário do app antigo (E0.1) é feito a partir de uma **exportação** das tabelas do `creator-hub` (CSV ou dump) enviada por quem tem acesso à Botanika, não por conexão ao Supabase da Botanika. | Pedido de 2026-10-09 |
 | D-PUBLIC | 2026-10-09 | O repositório `GestaoAlliance/creatorclub` continua **público**. Achados de segurança de sistemas em produção e dados pessoais não são registrados aqui; ficam com o responsável, fora do repositório. Contagens e regras de negócio podem ser registradas. | Pedido de 2026-10-09 |
+| D-INFRA | 2026-10-09 | Staging começa no **Supabase Free** (organização "Creator Club", projeto `Creator Club`) e no projeto Vercel `creatorclub` (time GestaoAlliance), para não travar. Antes de qualquer creator usar de verdade (E9), Supabase e Vercel passam para plano pago; produção nunca em Free. | Pedido de 2026-10-09 |
+| D-RLS | 2026-10-09 | Toda tabela do banco com **RLS ligado e sem políticas**: a Data API do Supabase (anon/authenticated) não lê nem grava nada; o app acessa só pelo servidor, como dono das tabelas. Teste de integração cobra RLS em toda tabela nova. | Técnica |
+| D-MIGRATE | 2026-10-09 | Migrações aplicadas pelo build da Vercel **só no deploy de produção** (a `main`), via `DIRECT_URL` (session pooler 5432); o app usa `DATABASE_URL` (transaction pooler 6543). Prévias de PR não têm variáveis de banco. | Técnica |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
@@ -40,4 +43,4 @@
 | D-NF | Código de serviço e descrição da NF | — | E8 |
 | D-MIN | R$ 500 é mínimo por solicitação | Sim, por solicitação | E8 |
 | ~~D-ACCT~~ | ~~Donos das contas Supabase/Vercel~~ | ~~Contas da empresa, Pedro dono~~ — **substituída** em 2026-10-09 (ver D-ACCT em Decididas) | E1.4 |
-| D-INFRA | Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início? | Ver CONTEXTO.md (contas existentes). A organização "Creator Club" (Gestão Alliance) é Free: pausa após 7 dias sem uso; produção nunca em Free | E1.4 |
+| ~~D-INFRA~~ | ~~Staging no Supabase Free + Vercel gratuito, ou plano pago desde o início?~~ — **decidida** em 2026-10-09 (ver D-INFRA em Decididas) | Ver CONTEXTO.md (contas existentes). A organização "Creator Club" (Gestão Alliance) é Free: pausa após 7 dias sem uso; produção nunca em Free | E1.4 |

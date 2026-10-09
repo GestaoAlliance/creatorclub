@@ -140,3 +140,10 @@ explícito e conferir.
 **Backup** — **nenhum** (página Database → Backups vazia, plano Free; conferido em 2026-10-09). Os dados do
 `creator-hub` existem só no banco ativo: se o projeto for pausado ou apagado antes da migração (E4/E6), eles se perdem.
 Recomendação: quem tem acesso guardar uma cópia (dump) em local seguro e privado, fora deste repositório.
+
+## Código do app antigo (recebido em 2026-10-09)
+
+O código-fonte do `creator-hub` foi enviado pelo responsável (zip) e lido só como referência; **não entra neste
+repositório** (D-PUBLIC). Bate com a auditoria acima. Ponto a não esquecer no corte (E9): os links rastreados das
+creators apontam para a rota `/r/[marca]/[código]` do app antigo; o v2 precisa manter essas URLs funcionando
+(mesma rota ou redirecionamento), senão os links nas bios param.
