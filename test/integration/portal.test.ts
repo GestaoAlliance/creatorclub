@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext, portalHome, startViewAs } from "@/lib/portal/context";
-import { expectDbError, seedBrand, testClient } from "./fixtures";
+import { expectDbError, seedBrand, testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -213,7 +213,7 @@ describe("Cupom e link (banco real)", () => {
     expect(clicks).toHaveLength(2);
     expect(clicks.some((c) => c.ipHash?.includes("9.9.9.9"))).toBe(false);
 
-    const promo = await prisma.coupon.create({ data: { brandId: a.brand.id, code: `PROMO${randomUUID().slice(0, 4).replace(/\d/g, "X").toUpperCase()}`, kind: "PROMO", classifiedAt: now, classifiedById: "x" } });
+    const promo = await prisma.coupon.create({ data: { brandId: a.brand.id, code: `PROMO${letters()}`, kind: "PROMO", classifiedAt: now, classifiedById: "x" } });
     expect(await resolveTrackedLink(prisma, a.brand.slug, promo.code, "/p", now)).toEqual({ url: "https://loja.example/p", click: null });
     expect(await resolveTrackedLink(prisma, a.brand.slug, "NAOEXISTE", "/", now)).toEqual({ url: "https://loja.example/", click: null });
     expect(await resolveTrackedLink(prisma, "marca-que-nao-existe", a.coupon.code, "/", now)).toBeNull();

@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { postCommission, settleOrder } from "@/lib/commission/ledger";
 import { recheckBrand } from "@/lib/commission/attribution";
-import { testClient } from "./fixtures";
+import { testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
-const u = () => randomUUID().slice(0, 6).replace(/\d/g, "X").toUpperCase();
+const u = () => letters();
 const T = (iso: string) => new Date(iso);
 
 /** Marca com uma creator de cupom e taxa (15%) confirmados. */

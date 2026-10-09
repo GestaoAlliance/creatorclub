@@ -176,8 +176,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   staging (privado, só PDF, 10 MB). Telas `/portal/[marca]/saque` e `/saque/novo`; item "Saque" no menu.
 - **Não testado ponta a ponta:** o envio real do PDF ao Supabase (o ambiente de desenvolvimento não alcança a rede);
   conferir no primeiro saque liberado.
-- **Observado:** uma vez, dois testes de atribuição falharam rodando a suíte inteira e passaram nas 4 execuções
-  seguintes; causa não encontrada, acompanhar.
+- **Corrigido (testes intermitentes):** os testes geravam nomes aleatórios trocando todo dígito por "X" (só 7
+  símbolos em 6 posições); com centenas de marcas e cupons por execução, às vezes dois nomes saíam iguais
+  (`Brand_slug_key`, visto no CI deste PR e antes na atribuição). Agora `letters()` em `fixtures.ts` usa a entropia
+  inteira do UUID (0→G … 9→P).
 - **Verificado:** 104 unitários (2 novos); 114 de integração (6 novos, incluindo a trava pelo nome e a corrida);
   migração × schema sem divergência; typecheck; build. Capturas para o OK do responsável.
 

@@ -15,6 +15,18 @@ export function testClient(): PrismaClient {
 
 const suffix = () => randomUUID().slice(0, 8);
 
+/**
+ * Sufixo aleatório só com letras maiúsculas (cupons de teste), com a entropia inteira do UUID: cada dígito hex vira
+ * uma letra distinta (0→G … 9→P). Trocar todo dígito por "X" deixava 7 símbolos e gerava colisões entre testes.
+ */
+export function letters(n = 10): string {
+  return randomUUID()
+    .replace(/-/g, "")
+    .slice(0, n)
+    .toUpperCase()
+    .replace(/\d/g, (d) => String.fromCharCode(71 + Number(d)));
+}
+
 /** Monta uma marca com uma creator, um cupom CREATOR e um pedido. Dados isolados por chamada. */
 export async function seedBrand(prisma: PrismaClient) {
   const s = suffix();
@@ -26,7 +38,7 @@ export async function seedBrand(prisma: PrismaClient) {
     data: { brandId: brand.id, accountId: account.id, categories: ["INFLUENCER"] },
   });
   const coupon = await prisma.coupon.create({
-    data: { brandId: brand.id, code: `C${s.replace(/\d/g, "X").toUpperCase()}`, kind: "CREATOR", classifiedAt: new Date(), classifiedById: "seed" },
+    data: { brandId: brand.id, code: `C${letters()}`, kind: "CREATOR", classifiedAt: new Date(), classifiedById: "seed" },
   });
   const order = await prisma.order.create({
     data: {
