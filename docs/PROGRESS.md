@@ -151,6 +151,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   `lucide-react` 1.54.0 (ícones). Conferido em capturas (claro, escuro, celular) numa página temporária.
 - **Verificado:** 93 unitários (2 novos); 103 de integração (3 novos, incluindo a trava pelo nome); migração × schema
   sem divergência; typecheck; build.
+- **CI:** imagem do Postgres trocada para o espelho `public.ecr.aws/docker/library/postgres:16` (o Docker Hub
+  recusou o download por limite de acesso sem login duas vezes seguidas).
 - **Atenção:** `next dev` acrescenta sozinho um bloco ao `CLAUDE.md`; não commitar esse bloco.
 
 ### CP-44 — 2026-10-09 — E7 detalhada; cor da Botanika, vendas sem cliente e destino do link decididos

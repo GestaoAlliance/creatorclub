@@ -21,7 +21,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # Espelho oficial da imagem do Docker Hub na AWS: o Docker Hub limita downloads sem login e derrubou o CI.
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
