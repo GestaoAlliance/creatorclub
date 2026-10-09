@@ -20,6 +20,9 @@
 | D-COUPONOWNER | 2026-10-09 | Cupom (código único por marca) separado de `CouponAssignment` (dona com vigência, sem sobreposição): troca de dona não reescreve o passado. | Técnica |
 | D-QUEUE | 2026-10-09 | Webhook grava evento + tarefa no Postgres na mesma transação antes de responder; worker processa. | Plano |
 | D-ACCT | 2026-10-09 | Contas do projeto passam a ser as da **Gestão Alliance** (substitui a proposta "contas da empresa, Pedro dono"). GitHub já migrado: repositório `GestaoAlliance/creatorclub` com todo o histórico de `Botanika-HUb/botanika-creator-club` (sem reescrever). Supabase: organização "Creator Club" (Free, projeto `Creator Club` em sa-east-1). Vercel: time "GestaoAlliance". Projetos novos (E1.4) nascem nessas contas (ver CONTEXTO.md). | Pedido de 2026-10-09 |
+| D-ACCT | 2026-10-09 | Complemento: só o **Claude** fica na conta da Botanika. GitHub, Supabase, Vercel e qualquer outra ferramenta do projeto ficam nas contas da Gestão Alliance, separadas do resto da Botanika. Nenhuma conta da Botanika é conectada às ferramentas do projeto. | Pedido de 2026-10-09 |
+| D-E0SRC | 2026-10-09 | O inventário do app antigo (E0.1) é feito a partir de uma **exportação** das tabelas do `creator-hub` (CSV ou dump) enviada por quem tem acesso à Botanika, não por conexão ao Supabase da Botanika. | Pedido de 2026-10-09 |
+| D-PUBLIC | 2026-10-09 | O repositório `GestaoAlliance/creatorclub` continua **público**. Achados de segurança de sistemas em produção e dados pessoais não são registrados aqui; ficam com o responsável, fora do repositório. Contagens e regras de negócio podem ser registradas. | Pedido de 2026-10-09 |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
