@@ -55,7 +55,7 @@ export async function receiveShopifyWebhook(
   if (!brand || !conn) return { status: 404, body: { ok: false } };
 
   const h = input.headers;
-  if (!verifyShopifyHmac(input.rawBody, conn.webhookSecret, header(h, "shopify-hmac-sha256"))) {
+  if (!verifyShopifyHmac(input.rawBody, conn.clientSecret, header(h, "shopify-hmac-sha256"))) {
     return { status: 401, body: { ok: false } };
   }
   if ((header(h, "shopify-shop-domain") ?? "").toLowerCase() !== conn.shop) return { status: 401, body: { ok: false } };

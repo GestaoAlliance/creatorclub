@@ -2,8 +2,11 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { decryptSecret, encryptSecret, parseKey } from "@/lib/crypto/secret-box";
 import { assertShopDomain, SHOPIFY_API_VERSION } from "./client";
 
-/** Credenciais do app do Creator Club numa loja (D-SHOPAPP). Gravadas cifradas em `BrandIntegration`. */
-export type ShopifyCredentials = { accessToken: string; webhookSecret: string };
+/**
+ * Credenciais do app do Creator Club numa loja (D-SHOPAPP): Client ID e Client secret do app no Dev Dashboard.
+ * Gravadas cifradas em `BrandIntegration`. O Client secret também assina os webhooks (HMAC).
+ */
+export type ShopifyCredentials = { clientId: string; clientSecret: string };
 
 export type ShopifyConnection = ShopifyCredentials & { brandId: string; shop: string; apiVersion: string; scopes: string | null };
 
@@ -15,10 +18,10 @@ export async function saveShopifyCredentials(
   input: { brandId: string; shop: string; scopes?: string; apiVersion?: string } & ShopifyCredentials,
   encKey: Buffer = key(),
 ): Promise<void> {
-  if (!input.accessToken || !input.webhookSecret) throw new Error("Token e segredo do webhook são obrigatórios.");
+  if (!input.clientId || !input.clientSecret) throw new Error("Client ID e Client secret são obrigatórios.");
   const shop = assertShopDomain(input.shop);
   const secretEncrypted = encryptSecret(
-    JSON.stringify({ accessToken: input.accessToken, webhookSecret: input.webhookSecret }),
+    JSON.stringify({ clientId: input.clientId, clientSecret: input.clientSecret }),
     encKey,
     context(input.brandId),
   );
@@ -50,7 +53,7 @@ export async function loadShopifyConnection(
     shop: row.externalId,
     apiVersion: row.apiVersion ?? SHOPIFY_API_VERSION,
     scopes: row.scopes,
-    ...secrets,
+    clientId: secrets.clientId,
+    clientSecret: secrets.clientSecret,
   };
 }
-
