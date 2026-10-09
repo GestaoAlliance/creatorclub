@@ -39,6 +39,7 @@
 | D-DEVSTORE | 2026-10-09 | O staging testa o sync numa **loja de desenvolvimento do Shopify** (conta Shopify Partners da Gestão Alliance). A loja real da Botanika só é ligada quando a creator for usar de verdade; nenhum teste cria ou edita cupom na loja real. | Pedro |
 | D-CRON | 2026-10-09 | Agendamento pelo **Supabase pg_cron** (com `pg_net`): o banco chama endereços protegidos do app (fila a cada minuto, reconciliação a cada 15 min). O segredo da chamada fica no Supabase Vault e na Vercel, nunca no repositório. Sem plano pago da Vercel para isso. | Pedro |
 | D-SHOPAPP | 2026-10-09 | **App novo e próprio do Creator Club** em cada loja (criado pelo responsável no painel do Shopify), com `read_orders`, `read_all_orders`, `read_discounts` e `write_discounts`. Token e segredo do webhook guardados **cifrados** no banco (`BrandIntegration.secretEncrypted`, AES-256-GCM, chave só na Vercel). O app antigo do creator-hub é desligado depois do corte (E9). | Pedro |
+| D-PAIDAT | 2026-10-09 | "Data do pagamento" do pedido (taxa vigente e D-MONTH) = `processedAt` da **primeira transação `SALE` ou `CAPTURE` com sucesso** no Shopify. Sem ela o pedido não está pago (Pix/boleto pendente, só autorização). Conferido em pedidos reais da Botanika (cartão e Pix via Mercado Pago: uma `SALE` com sucesso segundos antes do pedido). | Técnica |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 

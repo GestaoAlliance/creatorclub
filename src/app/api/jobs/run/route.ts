@@ -12,7 +12,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false }, { status: 401 });
   }
   try {
-    const result = await runJobs(db(), jobHandlers, { budgetMs: 45_000 });
+    const result = await runJobs(db(), jobHandlers(), { budgetMs: 45_000 });
     return Response.json({ ok: true, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
