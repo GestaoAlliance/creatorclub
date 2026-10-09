@@ -34,7 +34,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E1.1** Esqueleto Next.js (App Router, TypeScript, Tailwind) junto do núcleo de domínio; `npm test`, `npm run typecheck` e `npm run build` passando.
 - [x] **E1.2** Schema Prisma do núcleo (Brand, BrandIntegration, User, RoleGrant, CreatorAccount, Creator, CommissionPolicy, Coupon, Order, OrderLine, OrderAttribution, LedgerEntry, Withdrawal, File, WebhookEvent, Job, SyncRun, AuditLog, Click) com migração inicial e restrições (únicos, FKs `Restrict`, índice parcial de saque aberto). Testes de integração contra Postgres local.
 - [x] **E1.3** CI no GitHub Actions: instalar, typecheck, testes (com Postgres de serviço), build.
-- [!] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`. *Bloqueado: D-INFRA (contas já conectadas).*
+- [!] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`. Projeto Vercel `creatorclub` já existe
+  e liga o repositório (ver CONTEXTO.md); falta região, variáveis e acesso do conector. *Bloqueado: D-INFRA.*
 
 ### Depois de E1 (detalhar quando chegar lá)
 E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -42,6 +43,12 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-08 — 2026-10-09 — Projeto Vercel do Creator Club
+- **Feito:** registrado que o repositório está ligado ao projeto Vercel `creatorclub` (time GestaoAlliance).
+  O duplicado `creatorclub-ksmg`, criado na mesma ligação, foi apagado pelo responsável no painel.
+- **Verificado:** CI verde na `main` após o merge do CP-06/CP-07 (run 37949525868, commit `f87c36d`).
+  A exclusão do `-ksmg` não pôde ser conferida daqui: o conector da Vercel não enxerga esses projetos.
 
 ### CP-07 — 2026-10-09 — Inventário do app antigo (E0.1)
 - **Feito:** tabelas, colunas, contagens, creators por status, marcas e migrações do `creator-hub` registradas
