@@ -28,3 +28,10 @@ export function shopifyOrder(overrides: Partial<ShopifyOrderNode> = {}): Shopify
     ...overrides,
   };
 }
+
+/** Converte pedidos de exemplo para o JSONL da Bulk Operation (itens em linhas próprias com __parentId). */
+export function toJsonl(orders: ShopifyOrderNode[]): string {
+  return orders
+    .flatMap(({ lineItems, ...o }) => [JSON.stringify(o), ...lineItems.nodes.map((l) => JSON.stringify({ ...l, __parentId: o.id }))])
+    .join("\n");
+}

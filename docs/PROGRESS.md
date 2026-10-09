@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.6 — Carga histórica desde o primeiro cupom de creator (D-HIST). E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.7 — Loja de desenvolvimento ligada ao staging e tela de saúde do sync. E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -76,7 +76,9 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.5** Reconciliação a cada 15 min (janela com margem de 30 min) e "sincronizar agora" (super admin);
   agendamento no pg_cron (D-CRON); `SyncRun` registra cada passada. O botão "sincronizar agora" entra na tela de
   saúde (E3.7); a ativação do pg_cron no staging segue `docs/ops/agendamento.md`.
-- [ ] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST).
+- [x] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST). A **data** de início
+  depende de saber quais cupons são de creator (D-CLASS, E4): a lista do app antigo mistura cupons promocionais
+  (ex.: BOTANIKA, FRETEGRATIS, 20OFF). A carga na loja real roda quando ela for ligada; o botão fica na tela de saúde.
 - [ ] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
 
@@ -86,6 +88,18 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-29 — 2026-10-09 — Carga histórica (E3.6)
+- **Feito:** `src/lib/shopify/backfill.ts`: `startHistoricalImport` (só super admin, uma carga por vez por marca;
+  carga parada por tarefa que falhou de vez é fechada com erro e pode ser refeita; auditoria `sync.backfill`)
+  → tarefa `start` (pede a Bulk Operation de pedidos criados desde a data) → `poll` a cada 30 s (até 2 h;
+  FAILED/CANCELED/EXPIRED fecham a passada com o motivo) → `import` baixa o JSONL, remonta pedidos e itens e grava
+  com `processOrder` em lotes de 200, retomando do ponto em que parou. Passada em `SyncRun` (`backfill`).
+- **Conferido no Shopify:** mutação, consulta de acompanhamento e consulta da exportação validadas no schema
+  `2026-10` (nada executado na loja).
+- **Em aberto:** data de início da carga na loja real (primeiro cupom de creator) depende de D-CLASS.
+- **Verificado:** 72 unitários (3 novos); 64 de integração (4 novos: fluxo completo com 2 lotes, exportação que
+  falha, período sem pedidos, permissão e uma carga por vez); typecheck.
 
 ### CP-28 — 2026-10-09 — Reconciliação e agendamento (E3.5)
 - **Feito:** `src/lib/shopify/reconcile.ts`: relê no Shopify os pedidos alterados desde o cursor da última passada

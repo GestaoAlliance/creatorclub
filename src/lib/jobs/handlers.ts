@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { backfillHandlers } from "@/lib/shopify/backfill";
 import { ORDER_SYNC_JOB, orderSyncHandler } from "@/lib/shopify/jobs";
 import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
 import type { JobHandlers } from "./queue";
@@ -9,5 +10,6 @@ export function jobHandlers(): JobHandlers {
   return {
     [ORDER_SYNC_JOB]: orderSyncHandler(prisma),
     [RECONCILE_JOB]: reconcileHandler(prisma),
+    ...backfillHandlers(prisma),
   };
 }
