@@ -5,8 +5,8 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto
-- **Próxima tarefa:** fechar a E1.4: conferir `/api/ready` e a região `gru1` no app publicado. Depois E2.
+- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 Base do projeto concluída; próxima E2
+- **Próxima tarefa:** E2 — Login e papéis (detalhar no início da tarefa). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -35,9 +35,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado
 - [x] **E1.1** Esqueleto Next.js (App Router, TypeScript, Tailwind) junto do núcleo de domínio; `npm test`, `npm run typecheck` e `npm run build` passando.
 - [x] **E1.2** Schema Prisma do núcleo (Brand, BrandIntegration, User, RoleGrant, CreatorAccount, Creator, CommissionPolicy, Coupon, Order, OrderLine, OrderAttribution, LedgerEntry, Withdrawal, File, WebhookEvent, Job, SyncRun, AuditLog, Click) com migração inicial e restrições (únicos, FKs `Restrict`, índice parcial de saque aberto). Testes de integração contra Postgres local.
 - [x] **E1.3** CI no GitHub Actions: instalar, typecheck, testes (com Postgres de serviço), build.
-- [~] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`.
-  Feito: variáveis na Vercel, migrações aplicadas pelo deploy da `main` (21 tabelas, todas com RLS).
-  **Falta:** conferir no navegador `/api/ready` (`{"ok":true,"db":"ok"}`) e a região das funções (`gru1`).
+- [x] **E1.4** Staging: projeto Supabase (sa-east-1) e Vercel (gru1) em contas da Gestão Alliance (D-ACCT); deploy automático da `main`.
+  No ar em https://creatorclub-six.vercel.app (Vercel `creatorclub`, funções em `gru1`), banco no projeto Supabase
+  `Creator Club` com as migrações aplicadas pelo deploy da `main`.
 
 ### Depois de E1 (detalhar quando chegar lá)
 E2 Login e papéis · E3 Sync Shopify · E4 Cupons e creators atuais · E5 Atribuição e extrato no banco ·
@@ -57,6 +57,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   tipos da extensão, o papel `postgres` não é; testado localmente, a migração falharia).
 - **Feito no código:** `vercel-build` recusa `DIRECT_URL` na porta 6543 com mensagem clara; migração
   `db_hardening`.
+- **Verificado no app publicado:** `/api/ready` responde `{"ok":true,"db":"ok"}`; funções (`/`, `/api/health`,
+  `/api/ready`) na região `gru1`; domínio de produção `creatorclub-six.vercel.app`. **E1.4 concluída.**
 - **Verificado localmente:** 33 unitários; 16 de integração em banco comum e em banco com schema `extensions`
   (como o Supabase); migração × schema sem divergência; typecheck.
 
