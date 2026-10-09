@@ -6,8 +6,8 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
-  (aceite bloqueado); E5 em andamento.
-- **Próxima tarefa:** E5.5 — aceite do extrato: conferir 10 creators no último mês contra o Shopify.
+  (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
+- **Próxima tarefa:** E7.1 — base visual do portal e acesso da creator.
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
 - **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
@@ -117,11 +117,33 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
 - [ ] **E5.5** Aceite: 10 creators no último mês conferidas contra o Shopify (pedidos com cupom × comissão lançada).
   Depende da conferência da Ana (E4.5): sem dona e taxa confirmadas nada é lançado.
 
-### Depois de E5 (detalhar quando chegar lá)
-E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 Corte.
+### E7 — Portal da creator (detalhada em 2026-10-09; adiantada porque E5.5 e E6 esperam pessoas)
+Visual *liquid glass* (`docs/design/DESIGN.md`), cor de destaque da marca vinda do banco (D-BRANDCOLOR). Cada tela
+só mostra dados da própria creator, decidido no servidor.
+- [ ] **E7.1** Base visual e acesso: shell do portal (barra lateral recolhível, cabeçalho, tema claro/escuro), cor
+  da marca como variável CSS a partir de `Brand` (Botanika `#323C91` + `#C4D78A`), troca de marca para quem
+  participa de mais de uma; creator logada só vê a própria participação.
+- [ ] **E7.2** Início: indicadores (disponível, a liberar, vendas e comissão do mês pelo mês do pagamento) e
+  atividade recente.
+- [ ] **E7.3** Vendas: pedidos atribuídos, sem dados do cliente (D-SALESVIEW).
+- [ ] **E7.4** Extrato: o mesmo `creatorStatement` da E5.4 com o acesso da creator.
+- [ ] **E7.5** Cupom e link: código, link `/r/[marca]/[código]` (registra o clique e leva à loja com o cupom
+  aplicado, D-LINK), copiar; mantém as URLs do app antigo funcionando.
+- [ ] **E7.6** Aceite: 2 ou 3 creators piloto conferem os próprios números. *Depende de:* escolher as piloto, e da
+  conferência da Ana (E4.5) para haver comissão lançada.
+
+### Depois (detalhar quando chegar lá)
+E6 Saldo de abertura e conferência (espera E0.2) · E8 Saques · E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-44 — 2026-10-09 — E7 detalhada; cor da Botanika, vendas sem cliente e destino do link decididos
+- **Decidido:** D-BRANDCOLOR (Botanika `#323C91` + `#C4D78A`), D-SALESVIEW, D-LINK; ordem: E7 antes de E6 (E5.5
+  espera a Ana, E6 espera a lista de saques do Pagamento).
+- **Feito:** E7 quebrada em E7.1–E7.6.
+- **Vercel:** pedido para conferir se o plano mudou; a API não mostra o plano e não há cobrança registrada em
+  outubro. Prévias continuam desligadas (D-PREVIEW) de todo jeito: não têm banco.
 
 ### CP-43 — 2026-10-09 — Saldo e extrato por creator (E5.4)
 - **Feito:** `src/lib/commission/statement.ts` (`creatorStatement`: saldo = soma do extrato, separado em a liberar,

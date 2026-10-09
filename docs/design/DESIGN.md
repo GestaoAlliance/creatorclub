@@ -43,6 +43,6 @@
 
 | ID | Pergunta | Precisa antes de |
 | --- | --- | --- |
-| D-BRANDCOLOR | Cores oficiais das marcas. **Botanika:** principal `#323C91` (azul), secundária `#C4D78A` (verde-claro), lidas do tema publicado da loja no Shopify (`config/settings_data.json`, esquema padrão) em 2026-10-09. **VermeFree:** verde (site vermefree.com.br); código hex ainda não confirmado (o conector do Shopify está ligado só à loja da Botanika). | Primeira tela com marca |
+| D-BRANDCOLOR | **Botanika decidida** (ver `docs/DECISIONS.md`). Cores oficiais das marcas. **Botanika:** principal `#323C91` (azul), secundária `#C4D78A` (verde-claro), lidas do tema publicado da loja no Shopify (`config/settings_data.json`, esquema padrão) em 2026-10-09. **VermeFree:** verde (site vermefree.com.br); código hex ainda não confirmado (o conector do Shopify está ligado só à loja da Botanika). | Primeira tela com marca |
 
 O `#2f6b3f` (verde) que o app antigo gravava para a Botanika **não** é a cor da marca: não usar.
