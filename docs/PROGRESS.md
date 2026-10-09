@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.2 — Credenciais e cliente do Shopify. E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.3 — `processOrder` (pedido do Shopify → `Order`/`OrderLine`). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -66,7 +66,7 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
 - [x] **E3.1** Fila no Postgres e worker: pegar tarefas com `FOR UPDATE SKIP LOCKED`, trava com prazo, nova
   tentativa com espera crescente, falha definitiva visível; `POST /api/jobs/run` protegido por segredo (D-CRON).
   O agendamento no pg_cron e o `JOBS_SECRET` na Vercel entram na E3.5, quando houver tarefa de verdade.
-- [ ] **E3.2** Credenciais e cliente do Shopify: token e segredo do webhook cifrados (AES-256-GCM, D-SHOPAPP);
+- [x] **E3.2** Credenciais e cliente do Shopify: token e segredo do webhook cifrados (AES-256-GCM, D-SHOPAPP);
   cliente GraphQL Admin com versão fixa, limite de custo e nova tentativa; nunca loga token.
 - [ ] **E3.3** `processOrder`: pedido do Shopify → `Order`/`OrderLine` em centavos; só grava se a versão
   (`updatedAt`) for mais nova; guarda os códigos de cupom; avisa se `taxesIncluded` mudar (D-TAX). Testes com
@@ -85,6 +85,17 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-25 — 2026-10-09 — Credenciais e cliente do Shopify (E3.2)
+- **Feito:** `src/lib/crypto/secret-box.ts` (AES-256-GCM, chave `INTEGRATION_ENC_KEY` de 32 bytes; a marca entra
+  como dado autenticado, então o segredo de uma marca não abre em outra); `src/lib/shopify/credentials.ts` (token
+  e segredo do webhook gravados cifrados em `BrandIntegration`; ler devolve `null` sem loja conectada);
+  `src/lib/shopify/client.ts` (GraphQL Admin na versão fixa `2026-10`, a estável mais nova; só domínio
+  `*.myshopify.com`; espera pelo custo em THROTTLED; nova tentativa em 429 com `Retry-After`, 5xx e rede, até 5
+  vezes; 401/403 e erro de consulta falham na hora; mensagens sem o token).
+- **Verificado:** 60 unitários (10 novos); 42 de integração (3 novos: grava cifrado e lê só com a chave certa,
+  segredo de uma marca não abre em outra, sem loja = `null` e domínio inválido não grava); typecheck.
+- **Falta (na E3.7):** gerar `INTEGRATION_ENC_KEY` e salvar na Vercel; gravar as credenciais da loja de dev.
 
 ### CP-24 — 2026-10-09 — Fila no Postgres e worker (E3.1)
 - **Feito:** `src/lib/jobs/queue.ts`: `enqueueJob` (na transação de quem chama; `dedupeKey` repetida é ignorada),
