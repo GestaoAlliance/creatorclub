@@ -6,7 +6,7 @@
 ## Onde estamos
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1 e E2 concluídas; E3 em andamento
-- **Próxima tarefa:** E3.5 — Reconciliação a cada 15 min e "sincronizar agora". E0.2–E0.4 seguem quando as pessoas responderem.
+- **Próxima tarefa:** E3.6 — Carga histórica desde o primeiro cupom de creator (D-HIST). E0.2–E0.4 seguem quando as pessoas responderem.
   Em paralelo, quando as pessoas responderem: E0.2, E0.3, E0.4.
 - **Bloqueios:** E0.2 depende do Pagamento (Juci/Pâmela); E0.3 de acesso de admin ao Shopify; E0.4 do Vitor.
   `creator-hub` **sem backup**: recomendado guardar um dump privado antes de qualquer pausa do projeto.
@@ -73,8 +73,9 @@ Nenhuma tela consulta o Shopify. Atribuição e extrato ficam na E5 (aqui só o 
   pedidos de exemplo (pago, reembolso parcial, cancelado, teste, vários cupons).
 - [x] **E3.4** Webhook `/api/webhooks/shopify/[marca]`: valida HMAC, grava `WebhookEvent` + `Job` na mesma
   transação e responde 200; repetido não duplica; HMAC errado = 401 sem gravar.
-- [ ] **E3.5** Reconciliação a cada 15 min (janela com margem de 30 min) e "sincronizar agora" (super admin);
-  agendamento no pg_cron (D-CRON); `SyncRun` registra cada passada.
+- [x] **E3.5** Reconciliação a cada 15 min (janela com margem de 30 min) e "sincronizar agora" (super admin);
+  agendamento no pg_cron (D-CRON); `SyncRun` registra cada passada. O botão "sincronizar agora" entra na tela de
+  saúde (E3.7); a ativação do pg_cron no staging segue `docs/ops/agendamento.md`.
 - [ ] **E3.6** Carga histórica (Bulk Operations) desde o primeiro cupom de creator (D-HIST).
 - [ ] **E3.7** Loja de desenvolvimento ligada ao staging (D-DEVSTORE): app criado pelo responsável, webhooks
   registrados, pedido de teste passa por webhook e reconciliação; tela simples de saúde do sync.
@@ -85,6 +86,19 @@ E6 Saldo de abertura e conferência · E7 Portal da creator · E8 Saques · E9 C
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-28 — 2026-10-09 — Reconciliação e agendamento (E3.5)
+- **Feito:** `src/lib/shopify/reconcile.ts`: relê no Shopify os pedidos alterados desde o cursor da última passada
+  boa menos 30 min (primeira passada: últimos 30 min; a carga histórica cobre o passado), 25 por página, até 20
+  páginas por passada (o resto continua na seguinte); grava com `processOrder`; pedido com mais de 50 itens vira
+  tarefa própria; cada passada em `SyncRun` (com erro, se houver; passada com erro não move a janela) e
+  `lastSyncAt` da loja. O worker (`/api/jobs/run`) agenda uma reconciliação por loja conectada a cada 15 min.
+  `requestSyncNow` ("sincronizar agora"): só super admin, no máximo uma por minuto, na auditoria.
+  Roteiro do pg_cron em `docs/ops/agendamento.md` (segredo no Vault e na Vercel, nunca no repositório).
+- **Conferido no Shopify (leitura):** filtro `updated_at:>=` com ordenação por `UPDATED_AT` funciona na loja.
+- **Verificado:** 69 unitários; 60 de integração (6 novos: primeira passada, janela com margem, passada com erro
+  não move a janela, pedido grande e limite de páginas, um agendamento por 15 min, permissão e limite do
+  "sincronizar agora"); typecheck.
 
 ### CP-27 — 2026-10-09 — Webhook do Shopify (E3.4)
 - **Feito:** `POST /api/webhooks/shopify/[marca]` (fora do `proxy`) e `src/lib/shopify/webhook.ts`: valida o HMAC

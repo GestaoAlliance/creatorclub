@@ -30,13 +30,13 @@ export type ShopifyOrderNode = {
   };
 };
 
-const ORDER_FIELDS = `
+export const ORDER_FIELDS = `
   id name createdAt updatedAt cancelledAt test taxesIncluded displayFinancialStatus currencyCode discountCodes
   currentSubtotalPriceSet { shopMoney { amount } }
   currentTotalPriceSet { shopMoney { amount } }
   transactions(first: 100) { kind status processedAt }`;
 
-const LINE_ITEMS = `
+export const LINE_ITEMS = `
   pageInfo { hasNextPage endCursor }
   nodes { id title currentQuantity discountedTotalSet { shopMoney { amount } } }`;
 
