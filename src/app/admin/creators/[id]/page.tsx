@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { creatorProfile, ProfileError, STATUS_LABEL } from "@/lib/creators/profile";
 import { randomUUID } from "node:crypto";
 import { formatBRL } from "@/domain";
+import { creatorStatement, LEDGER_LABEL, StatementError } from "@/lib/commission/statement";
 import { AdjustForm, ContactForm, InviteButton, RateChangeForm, StatusForm } from "./forms";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +14,15 @@ const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: 
 const pct = (bps: number) => `${(bps / 100).toString().replace(".", ",")}%`;
 
 // Ficha da creator (E4.4). Tela simples (D-ADMINUI).
-export default async function CreatorPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CreatorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ mes?: string }>;
+}) {
   const { id } = await params;
+  const { mes } = await searchParams;
   const actor = await currentActor();
   if (!actor) redirect(`/entrar?next=/admin/creators/${id}`);
   let p;
@@ -23,6 +31,15 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
   } catch (error) {
     if (error instanceof ProfileError) notFound();
     throw error;
+  }
+  let st = null;
+  if (p.adjustments) {
+    try {
+      st = await creatorStatement(db(), actor, id, mes ? { month: mes } : {});
+    } catch (error) {
+      if (!(error instanceof StatementError)) throw error;
+      st = await creatorStatement(db(), actor, id);
+    }
   }
 
   return (
@@ -82,6 +99,71 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
           </>
         )}
       </section>
+
+      {st && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-semibold">Saldo e extrato</h2>
+          <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            {[
+              ["Saldo", st.balance.totalCents],
+              ["A liberar", st.balance.heldCents],
+              ["Em saque", st.balance.reservedCents],
+              ["Disponível", st.balance.availableCents],
+            ].map(([label, cents]) => (
+              <div key={label} className="rounded border border-stone-200 p-2">
+                <dt className="text-stone-500">{label}</dt>
+                <dd className={`font-semibold ${(cents as number) < 0 ? "text-red-700" : ""}`}>{formatBRL(cents as number)}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-stone-500">
+            Comissão fica a liberar por {st.holdDays} dias depois do pagamento do pedido. Venda conta no mês do pagamento.
+          </p>
+          {st.months.length > 0 && (
+            <nav className="flex flex-wrap gap-2 text-sm">
+              {st.months.map((m) => (
+                <Link
+                  key={m.month}
+                  href={`/admin/creators/${p.id}?mes=${m.month}`}
+                  className={m.month === st.month ? "font-semibold" : "underline"}
+                >
+                  {m.month.slice(5)}/{m.month.slice(0, 4)} ({formatBRL(m.totalCents)})
+                </Link>
+              ))}
+            </nav>
+          )}
+          {st.lines.length === 0 && <p className="text-sm text-stone-500">Nenhum lançamento.</p>}
+          {st.lines.length > 0 && (
+            <table className="w-full text-sm">
+              <thead className="text-left text-stone-500">
+                <tr>
+                  <th className="py-1">Data</th>
+                  <th>Lançamento</th>
+                  <th className="text-right">Valor</th>
+                  <th>Libera</th>
+                </tr>
+              </thead>
+              <tbody>
+                {st.lines.map((l) => (
+                  <tr key={l.id} className="border-t border-stone-100 align-top">
+                    <td className="py-1">{date(l.orderPaidAt ?? l.createdAt)}</td>
+                    <td>
+                      {LEDGER_LABEL[l.type]}
+                      {l.orderName && ` · pedido ${l.orderName}`}
+                      {l.baseCents !== null && l.rateBps !== null && (
+                        <span className="text-stone-500"> · {pct(l.rateBps)} de {formatBRL(l.baseCents)}</span>
+                      )}
+                      {l.note && <span className="text-stone-500"> · {l.note}</span>}
+                    </td>
+                    <td className={`text-right ${l.amountCents < 0 ? "text-red-700" : ""}`}>{formatBRL(l.amountCents)}</td>
+                    <td>{l.held ? date(l.availableAt) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
 
       {p.adjustments && (
         <section className="flex flex-col gap-2">

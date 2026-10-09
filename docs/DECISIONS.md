@@ -53,6 +53,7 @@
 | D-HOLD | 2026-10-09 | Comissão fica **disponível para saque 7 dias depois do pagamento** do pedido (proteção contra devolução e estorno). Vale por marca (`Brand.commissionHoldDays`). | Pedro |
 | D-NEG | 2026-10-09 | Estorno depois de saque pago: o lançamento negativo entra normalmente e o **saldo pode ficar negativo**, abatendo das próximas comissões. Nunca cortar em zero. | Pedro |
 | D-MONTH | 2026-10-09 | A venda conta no **mês da data do pagamento** (D-PAIDAT), no fuso `America/Sao_Paulo`; é a mesma data que define a taxa vigente. | Pedro |
+| D-MONTH | 2026-10-09 | Complemento (extrato, E5.4): comissão **e estorno** de um pedido aparecem no mês do pagamento do pedido (o estorno de uma venda de setembro, mesmo lançado em outubro, fica em setembro); o que não vem de pedido (ajuste, saque, saldo de abertura) aparece no mês em que foi lançado. O saldo não depende do mês: é sempre a soma de tudo. | Técnica (aplicação de D-MONTH) |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
