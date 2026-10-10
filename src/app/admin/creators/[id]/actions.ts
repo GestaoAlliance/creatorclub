@@ -11,6 +11,7 @@ import { AdjustError, brlToCents, createAdjustment } from "@/lib/commission/adju
 import { TeamError } from "@/lib/team/invites";
 import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
 import { correctRateSinceStart, RateFixError } from "@/lib/commission/rate-fix";
+import { ContractError, updateChecklist } from "@/lib/creators/contract";
 import { formatBRL } from "@/domain";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
@@ -21,7 +22,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError) {
       return { error: error.message };
     }
     throw error;
@@ -53,6 +54,30 @@ export async function rateFixAction(_p: State, form: FormData): Promise<State> {
     const r = await correctRateSinceStart(db(), await currentActor(), id, percentToBps(String(form.get("rate") ?? "")));
     return { ok: `Taxa corrigida desde o início: ${r.orders} pedido(s), diferença de ${formatBRL(r.deltaCents)} no extrato.` };
   }, "");
+}
+
+const triState = (v: FormDataEntryValue | null) => (v === "sim" ? true : v === "nao" ? false : null);
+const dayOrNull = (v: FormDataEntryValue | null) => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+export async function checklistAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(
+    id,
+    async () => {
+      const r = await updateChecklist(db(), await currentActor(), id, {
+        start: dayOrNull(form.get("start")),
+        end: dayOrNull(form.get("end")),
+        contractSigned: triState(form.get("contractSigned")),
+        couponRegistered: triState(form.get("couponRegistered")),
+        followsOnInstagram: triState(form.get("followsOnInstagram")),
+        inGroup: triState(form.get("inGroup")),
+        tagged: triState(form.get("tagged")),
+        note: String(form.get("note") ?? ""),
+      });
+      return { ok: r.end ? `Salvo. Contrato até ${r.end.split("-").reverse().join("/")}.` : "Salvo." };
+    },
+    "",
+  );
 }
 
 export async function inviteAction(_p: State, form: FormData): Promise<State> {

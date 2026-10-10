@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps } from "@/domain";
+import { assertBps, contractStatus } from "@/domain";
+import { dayOf } from "./contract";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -39,6 +40,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     fakeEmail: c.account.email.endsWith(FAKE_EMAIL_DOMAIN),
     hasLogin: c.account.userId !== null,
     reviewed: c.reviewedAt !== null,
+    contract: contractStatus(dayOf(c.contractEnd), new Date()),
   }));
 }
 
@@ -70,6 +72,23 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     hasLogin: a.userId !== null,
     reviewedAt: creator.reviewedAt,
     withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,
+    categories: creator.categories,
+    instagram: a.instagram,
+    contract: {
+      start: dayOf(creator.contractStart),
+      end: dayOf(creator.contractEnd),
+      ...contractStatus(dayOf(creator.contractEnd), new Date()),
+      contractSigned: creator.contractSigned,
+      couponRegistered: creator.couponRegistered,
+      followsOnInstagram: creator.followsOnInstagram,
+      inGroup: creator.inGroup,
+      tagged: creator.tagged,
+      note: creator.checklistNote,
+    },
+    ugc: creator.ugcFolderUrl || creator.ugcVideoStatus || creator.ugcOrder
+      ? { folderUrl: creator.ugcFolderUrl, videoStatus: creator.ugcVideoStatus, order: creator.ugcOrder }
+      : null,
+    notes: creator.notes,
     coupons: assignments.map((x) => ({
       code: x.coupon.code,
       kind: x.coupon.kind,

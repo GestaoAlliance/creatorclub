@@ -175,6 +175,7 @@ model CreatorAccount {
   cpf            String?
   cnpj           String?
   pixKey         String?
+  instagram      String? // sem o @
   /// Endereço de entrega (D-SHIPADDR): a creator mantém no portal; cada envio guarda uma cópia.
   addrZip        String?
   addrStreet     String?
@@ -236,8 +237,23 @@ model Creator {
   /// D-ANAREVIEW: a Ana conferiu os números (cupons, taxa, vendas) desta creator. Exigido para o saldo de abertura (E6).
   reviewedAt              DateTime?
   reviewedById            String?
-  source                  String? // hunter | site | instagram | legacy_import
+  source                  String? // hunter | site | instagram | legacy_import | central
   legacyId                String?
+  /// D-CHECKLIST: contrato (vigência; aviso 30 dias antes e no fim, nunca desliga sozinho) e checklist da Central.
+  /// Booleano nulo = não informado.
+  contractStart           DateTime?         @db.Date
+  contractEnd             DateTime?         @db.Date
+  contractSigned          Boolean?
+  couponRegistered        Boolean?
+  followsOnInstagram      Boolean?
+  inGroup                 Boolean?
+  tagged                  Boolean?
+  checklistNote           String?
+  /// UGC (até o módulo UGC): pasta dos vídeos, situação dos vídeos e o que foi pedido.
+  ugcFolderUrl            String?
+  ugcVideoStatus          String?
+  ugcOrder                String?
+  notes                   String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 

@@ -5,21 +5,38 @@ import Link from "next/link";
 import { useState } from "react";
 import { badge, ui } from "@/components/ui/styles";
 
-type Row = { id: string; name: string; status: string; statusLabel: string; fakeEmail: boolean; hasLogin: boolean; reviewed: boolean };
+type Row = {
+  id: string;
+  name: string;
+  status: string;
+  statusLabel: string;
+  fakeEmail: boolean;
+  hasLogin: boolean;
+  reviewed: boolean;
+  contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null };
+};
 
 const STATUS_BADGE: Record<string, string> = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral };
 
 /** Lista de creators com busca por nome (no próprio navegador; a lista já vem filtrada pela permissão). */
-export function CreatorList({ rows }: { rows: Row[] }) {
+export function CreatorList({ rows, contractsOnly = false }: { rows: Row[]; contractsOnly?: boolean }) {
   const [q, setQ] = useState("");
+  const [onlyContracts, setOnlyContracts] = useState(contractsOnly);
   const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-  const shown = rows.filter((r) => norm(r.name).includes(norm(q)));
+  const warn = (r: Row) => r.status !== "DEACTIVATED" && (r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED");
+  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)));
   return (
     <section className={ui.card}>
       <label className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar creator" aria-label="Buscar creator" className={`${ui.input} pl-9`} />
       </label>
+      {rows.some(warn) && (
+        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
+          <input type="checkbox" checked={onlyContracts} onChange={(e) => setOnlyContracts(e.target.checked)} className="size-4 accent-[var(--brand)]" />
+          Só contratos vencendo ou vencidos
+        </label>
+      )}
       {shown.length === 0 ? (
         <p className={ui.muted}>Nenhuma creator encontrada.</p>
       ) : (
@@ -37,6 +54,10 @@ export function CreatorList({ rows }: { rows: Row[] }) {
                     {c.hasLogin && <span className={badge.sky}>no portal</span>}
                     {c.reviewed && <span className={badge.green}>conferida</span>}
                     {c.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
+                    {c.status !== "DEACTIVATED" && c.contract.status === "EXPIRING" && (
+                      <span className={badge.amber}>contrato vence em {c.contract.daysLeft} {c.contract.daysLeft === 1 ? "dia" : "dias"}</span>
+                    )}
+                    {c.status !== "DEACTIVATED" && c.contract.status === "EXPIRED" && <span className={badge.red}>contrato vencido</span>}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-stone-400" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, contactAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
+import { adjustAction, checklistAction, contactAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -47,6 +47,67 @@ export function RateChangeForm({ creatorId }: { creatorId: string }) {
       <input className={`${ui.inputSm} w-20`} name="rate" placeholder="15" inputMode="decimal" required />%
       <button className={btn} disabled={pending}>Mudar taxa a partir de agora</button>
       <Msg state={state} />
+    </form>
+  );
+}
+
+type Checklist = {
+  start: string | null;
+  end: string | null;
+  contractSigned: boolean | null;
+  couponRegistered: boolean | null;
+  followsOnInstagram: boolean | null;
+  inGroup: boolean | null;
+  tagged: boolean | null;
+  note: string | null;
+};
+
+const CHECK_ITEMS: { name: keyof Checklist; label: string }[] = [
+  { name: "contractSigned", label: "Contrato assinado" },
+  { name: "couponRegistered", label: "Cupom cadastrado" },
+  { name: "followsOnInstagram", label: "Seguimos no Instagram" },
+  { name: "inGroup", label: "Grupo" },
+  { name: "tagged", label: "Etiquetada" },
+];
+
+const tri = (v: unknown) => (v === true ? "sim" : v === false ? "nao" : "");
+
+/** Contrato e checklist (D-CHECKLIST): fim vazio = início + 6 meses (UGC 3). */
+export function ChecklistForm({ creatorId, c }: { creatorId: string; c: Checklist }) {
+  const [state, action, pending] = useActionState(checklistAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <div className="grid grid-cols-2 gap-3">
+        <label className={ui.label}>
+          Início
+          <input type="date" name="start" defaultValue={c.start ?? ""} className={ui.input} />
+        </label>
+        <label className={ui.label}>
+          Fim
+          <input type="date" name="end" defaultValue={c.end ?? ""} className={ui.input} />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {CHECK_ITEMS.map((i) => (
+          <label key={i.name} className={ui.label}>
+            {i.label}
+            <select name={i.name} defaultValue={tri(c[i.name])} className={ui.input}>
+              <option value="">—</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </label>
+        ))}
+      </div>
+      <label className={ui.label}>
+        Observação
+        <input name="note" maxLength={300} defaultValue={c.note ?? ""} placeholder="ex.: @ não encontrado" className={ui.input} />
+      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <button className={btn} disabled={pending}>Salvar</button>
+        <Msg state={state} />
+      </div>
     </form>
   );
 }

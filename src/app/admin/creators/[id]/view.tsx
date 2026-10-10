@@ -8,9 +8,10 @@ import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
-import { AdjustForm, ContactForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { AdjustForm, ChecklistForm, ContactForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
+const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
 const pct = (bps: number) => `${(bps / 100).toString().replace(".", ",")}%`;
 const STATUS_BADGE = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral } as const;
 
@@ -78,6 +79,31 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
           )}
         </Card>
 
+        <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />}>
+          {p.contract.status === "EXPIRED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Contrato vencido em {dmy(p.contract.end)}: renovar ou encerrar.</p>}
+          {p.contract.status === "EXPIRING" && (
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              Contrato vence em {p.contract.daysLeft} {p.contract.daysLeft === 1 ? "dia" : "dias"} ({dmy(p.contract.end)}).
+            </p>
+          )}
+          {p.canEdit ? (
+            <ChecklistForm creatorId={p.id} c={p.contract} />
+          ) : (
+            <p className="text-sm">
+              {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "Sem datas de contrato."}
+            </p>
+          )}
+          {p.ugc && (
+            <div className={`${ui.inset} grid gap-1 text-sm`}>
+              <p className="font-medium">UGC</p>
+              {p.ugc.videoStatus && <p><span className="text-stone-500">Vídeos</span> {p.ugc.videoStatus}</p>}
+              {p.ugc.order && <p><span className="text-stone-500">Pedido</span> {p.ugc.order}</p>}
+              {p.ugc.folderUrl && <a href={p.ugc.folderUrl} target="_blank" rel="noreferrer" className={ui.link}>Abrir a pasta dos vídeos</a>}
+            </div>
+          )}
+          {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
+        </Card>
+
         {terms.currentVersion !== null && (
           <Card title="Termo de aceite" icon={<FileSignature className="size-4" />}>
             {terms.last?.version === terms.currentVersion ? (
@@ -96,6 +122,9 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
             <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} />
           ) : (
             <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
+          )}
+          {p.instagram && (
+            <a href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noreferrer" className={`${ui.link} text-sm`}>@{p.instagram}</a>
           )}
           {p.fiscal && (
             <div className={`${ui.inset} grid gap-1 text-sm`}>
