@@ -1,4 +1,4 @@
-import { ArrowRight, Banknote, ClipboardCheck, FileSignature, Inbox, Package, Users } from "lucide-react";
+import { ArrowRight, Banknote, ClipboardCheck, FileSignature, Inbox, Package, TrendingDown, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Kpi, PageHeader } from "@/components/ui/page";
@@ -35,6 +35,11 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
           <Tile href="/admin/creators?contrato=1" icon={<FileSignature className="size-4" />} title="Contratos">
             <Kpi label="Vencem em 30 dias" value={h.creators.contractsExpiring} tone={h.creators.contractsExpiring ? "amber" : undefined} />
             <Kpi label="Vencidos" value={h.creators.contractsExpired} hint="renovar ou encerrar" tone={h.creators.contractsExpired ? "red" : undefined} />
+          </Tile>
+        )}
+        {h.creators && h.creators.idle > 0 && (
+          <Tile href="/admin/creators?semvenda=1" icon={<TrendingDown className="size-4" />} title="Sem vender">
+            <Kpi label="Há 60 dias ou mais" value={h.creators.idle} hint="ativas: falar com a creator" tone="amber" />
           </Tile>
         )}
         {h.withdrawals && (

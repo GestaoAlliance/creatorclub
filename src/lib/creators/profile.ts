@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { assertBps, contractStatus } from "@/domain";
 import { dayOf } from "./contract";
+import { idleFor } from "./idle";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -28,11 +29,15 @@ function audit(prisma: PrismaClient, actor: Actor, brandId: string, action: stri
 
 export async function listCreators(prisma: PrismaClient, actor: Actor | null, brandId: string) {
   if (!actor || !can(actor.grants, "creators.view", brandId)) throw new ProfileError("Sem permissão.");
-  const creators = await prisma.creator.findMany({
-    where: { brandId },
-    orderBy: { account: { name: "asc" } },
-    include: { account: { select: { name: true, email: true, userId: true } } },
-  });
+  const [creators, brand] = await Promise.all([
+    prisma.creator.findMany({
+      where: { brandId },
+      orderBy: { account: { name: "asc" } },
+      include: { account: { select: { name: true, email: true, userId: true } }, contractTemplate: { select: { releaseMinCents: true } } },
+    }),
+    prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } }),
+  ]);
+  const idle = await idleFor(prisma, creators, brand.timezone);
   return creators.map((c) => ({
     id: c.id,
     name: c.account.name,
@@ -41,12 +46,20 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     hasLogin: c.account.userId !== null,
     reviewed: c.reviewedAt !== null,
     contract: contractStatus(dayOf(c.contractEnd), new Date()),
+    idle: idle.get(c.id) ?? null,
   }));
 }
 
 export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, creatorId: string) {
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.view", creator.brandId)) throw new ProfileError("Sem permissão.");
+  const [template, brand] = await Promise.all([
+    creator.contractTemplateId
+      ? prisma.contractTemplate.findUnique({ where: { id: creator.contractTemplateId }, select: { releaseMinCents: true } })
+      : Promise.resolve(null),
+    prisma.brand.findUniqueOrThrow({ where: { id: creator.brandId }, select: { timezone: true } }),
+  ]);
+  const idle = (await idleFor(prisma, [{ ...creator, contractTemplate: template }], brand.timezone)).get(creator.id) ?? null;
   const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
   const money = can(actor.grants, "money.view", creator.brandId);
   const [assignments, policies, invites, adjustments, templates] = await Promise.all([
@@ -87,6 +100,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
       note: creator.checklistNote,
       templateId: creator.contractTemplateId,
     },
+    idle,
     contractTemplates: templates,
     ugc: creator.ugcFolderUrl || creator.ugcVideoStatus || creator.ugcOrder
       ? { folderUrl: creator.ugcFolderUrl, videoStatus: creator.ugcVideoStatus, order: creator.ugcOrder }

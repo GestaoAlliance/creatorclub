@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I1 (aviso de 60 dias sem vendas), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** I2 (conferência da NF no pedido de saque), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -167,7 +167,7 @@ já existem antes de desenhar.
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
 ### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
-- [ ] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
+- [x] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
 - [ ] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
   emissão não bloqueia. Chave única por nota.
 - [ ] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
@@ -185,6 +185,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-70 — 2026-10-10 — Aviso de 60 dias sem vender (I1)
+- **Decidido:** D-IDLE60 detalhada (quem nunca vendeu conta desde o início do contrato; sem data, desde a entrada no
+  sistema; aparece no painel, na lista e na ficha). Ficam fora do aviso: pausadas, desligadas e contrato de permuta.
+- **Feito:** regra pura `idleStatus` (`IDLE_WARN_DAYS` = 60); `lastSaleAt` (último pagamento de pedido elegível
+  atribuído). Painel: cartão "Sem vender" com atalho para `/admin/creators?semvenda=1`. Lista: selo "sem vender há N
+  dias" / "nunca vendeu · N dias" e filtro. Ficha: última venda e dias sem vender no cartão de contrato.
+- **Verificado:** 1 unitário novo; 1 de integração novo (venda cancelada não conta, nunca vendeu, contrato recente,
+  pausada e permuta fora, painel); typecheck; build.
 
 ### CP-69 — 2026-10-10 — Perguntas do inventário do Drive respondidas
 - **Decidido:** D-RATECONTRACT, D-IDLE60, D-PRESCNF, D-PFRECEIPT, D-NFCHECK, D-UGCQUOTA, D-UGCCOUPON, D-CAPTACAO,

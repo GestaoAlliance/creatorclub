@@ -14,17 +14,20 @@ type Row = {
   hasLogin: boolean;
   reviewed: boolean;
   contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null };
+  idle: { days: number; idle: boolean; lastSaleDay: string | null } | null;
 };
 
 const STATUS_BADGE: Record<string, string> = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral };
 
 /** Lista de creators com busca por nome (no próprio navegador; a lista já vem filtrada pela permissão). */
-export function CreatorList({ rows, contractsOnly = false }: { rows: Row[]; contractsOnly?: boolean }) {
+export function CreatorList({ rows, contractsOnly = false, idleOnly = false }: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean }) {
   const [q, setQ] = useState("");
   const [onlyContracts, setOnlyContracts] = useState(contractsOnly);
+  const [onlyIdle, setOnlyIdle] = useState(idleOnly);
+  const isIdle = (r: Row) => r.idle?.idle === true;
   const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
   const warn = (r: Row) => r.status !== "DEACTIVATED" && (r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED");
-  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)));
+  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)) && (!onlyIdle || isIdle(r)));
   return (
     <section className={ui.card}>
       <label className="relative">
@@ -35,6 +38,12 @@ export function CreatorList({ rows, contractsOnly = false }: { rows: Row[]; cont
         <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
           <input type="checkbox" checked={onlyContracts} onChange={(e) => setOnlyContracts(e.target.checked)} className="size-4 accent-[var(--brand)]" />
           Só contratos vencendo ou vencidos
+        </label>
+      )}
+      {rows.some(isIdle) && (
+        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
+          <input type="checkbox" checked={onlyIdle} onChange={(e) => setOnlyIdle(e.target.checked)} className="size-4 accent-[var(--brand)]" />
+          Só ativas há 60 dias ou mais sem vender
         </label>
       )}
       {shown.length === 0 ? (
@@ -58,6 +67,9 @@ export function CreatorList({ rows, contractsOnly = false }: { rows: Row[]; cont
                       <span className={badge.amber}>contrato vence em {c.contract.daysLeft} {c.contract.daysLeft === 1 ? "dia" : "dias"}</span>
                     )}
                     {c.status !== "DEACTIVATED" && c.contract.status === "EXPIRED" && <span className={badge.red}>contrato vencido</span>}
+                    {c.idle?.idle && (
+                      <span className={badge.amber}>{c.idle.lastSaleDay ? `sem vender há ${c.idle.days} dias` : `nunca vendeu · ${c.idle.days} dias`}</span>
+                    )}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-stone-400" />

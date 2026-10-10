@@ -32,3 +32,21 @@ export function contractStatus(end: string | null, now: Date, timeZone: string =
   if (daysLeft <= CONTRACT_WARN_DAYS) return { status: "EXPIRING", daysLeft };
   return { status: "ACTIVE", daysLeft };
 }
+
+/** D-IDLE60: a equipe é avisada quando a creator ativa passa este tanto de dias sem vender (nada é encerrado sozinho). */
+export const IDLE_WARN_DAYS = 60;
+
+/**
+ * Dias sem vender, contados da última venda; quem nunca vendeu conta desde o início do contrato (sem data na ficha,
+ * desde a entrada no sistema). Dias em "AAAA-MM-DD" no fuso da marca.
+ */
+export function idleStatus(
+  lastSaleDay: string | null,
+  startDay: string,
+  now: Date,
+  timeZone: string = DEFAULT_TIMEZONE,
+): { days: number; idle: boolean; lastSaleDay: string | null } {
+  const from = lastSaleDay ?? startDay;
+  const days = Math.max(0, Math.round((Date.parse(`${dayKey(now, timeZone)}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000));
+  return { days, idle: days >= IDLE_WARN_DAYS, lastSaleDay };
+}

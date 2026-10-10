@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addMonthsToDay, contractMonthsFor, contractStatus } from "../src/domain";
+import { addMonthsToDay, contractMonthsFor, contractStatus, idleStatus } from "../src/domain";
 import { T } from "./helpers";
 
 describe("vigência do contrato (D-CHECKLIST)", () => {
@@ -24,5 +24,16 @@ describe("vigência do contrato (D-CHECKLIST)", () => {
     expect(contractStatus("2026-10-10", now)).toEqual({ status: "EXPIRED", daysLeft: 0 });
     // 10/10 às 23h em São Paulo ainda é dia 10.
     expect(contractStatus("2026-10-11", T("2026-10-11T02:00:00Z"))).toEqual({ status: "EXPIRING", daysLeft: 1 });
+  });
+});
+
+describe("aviso de 60 dias sem vender (D-IDLE60)", () => {
+  const now = T("2026-10-10T15:00:00Z");
+  it("conta da última venda; quem nunca vendeu conta desde o início", () => {
+    expect(idleStatus("2026-08-11", "2026-01-01", now)).toEqual({ days: 60, idle: true, lastSaleDay: "2026-08-11" });
+    expect(idleStatus("2026-08-12", "2026-01-01", now)).toEqual({ days: 59, idle: false, lastSaleDay: "2026-08-12" });
+    expect(idleStatus(null, "2026-09-01", now)).toEqual({ days: 39, idle: false, lastSaleDay: null });
+    expect(idleStatus(null, "2026-08-01", now)).toMatchObject({ days: 70, idle: true });
+    expect(idleStatus(null, "2026-12-01", now)).toMatchObject({ days: 0, idle: false }); // contrato futuro
   });
 });
