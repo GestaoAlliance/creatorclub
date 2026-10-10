@@ -20,5 +20,5 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/f/[marca]/[f
       console.error("hunter.click", error);
     }
   }
-  return NextResponse.redirect(target.url, 302);
+  return NextResponse.redirect(new URL(target.url, request.url), 302);
 }

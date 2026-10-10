@@ -820,6 +820,10 @@ model CreatorApplication {
   note            String? // observação da equipe (ex.: status da planilha antiga)
   hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
   hunterLinkId    String?
+  /// D-SIGNUP: inscrição pelo formulário do próprio sistema — quando aceitou o uso dos dados e hash do IP do dia
+  /// (só para limitar envios repetidos; o IP em si nunca é gravado).
+  consentAt       DateTime?
+  ipHash          String?
   raw             Json
   status          ApplicationStatus @default(NEW)
   decidedAt       DateTime?

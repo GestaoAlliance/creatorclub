@@ -7,7 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** só pendências de pessoas. Responsável: pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
+- **Próxima tarefa:** F2 (triagem e organização das candidatas), da fila "Captação no sistema" — só quando o
+  responsável pedir. Pendente do responsável: divulgar o link novo `/inscricao/botanika` e os links dos hunters
+  (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -172,6 +174,12 @@ já existem antes de desenhar.
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
+### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
+- [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
+- [ ] **F2** Triagem: organizar as candidatas (sem critérios automáticos por enquanto; evitar repetidas).
+- [ ] **F3** Aprovar com um clique: creator, cupom na Shopify (D-COUPONCREATE) e convite do portal; recusar com resposta.
+- [ ] **F4** Contrato (Autentique ou outro) e liberação do painel depois da assinatura.
+
 ### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
 - [x] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
 - [x] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
@@ -196,6 +204,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-87 — 2026-10-10 — Formulário de inscrição do próprio sistema (F1)
+- **Decidido:** D-SIGNUP (um formulário só, mesmas perguntas, CNPJ e razão social opcionais, aceite obrigatório, sem
+  triagem por enquanto). Nova fila "Captação no sistema" (F1 a F4).
+- **Feito:** migração `site_signup` (`consentAt` e `ipHash` na candidata; trava `CreatorApplication_site_consent`;
+  `HunterClick_form` aceita `inscricao`; índice parcial para o limite de envios). Perguntas e validação puras
+  (`src/domain/signup.ts`, títulos iguais aos do Google, então a leitura é a mesma), `src/lib/onboarding/signup.ts`
+  (robô, limite de 5 por hora por aparelho, mesmo e-mail no dia não duplica, hunter do link), página pública
+  `/inscricao/[marca]` (o que foi digitado não se perde em erro). Link do hunter `/f/[marca]/inscricao/[codigo]`. Tela
+  Hunters: link de inscrição de cada hunter e o link geral; saiu o passo de colar o link do Google. Candidatas mostram a
+  origem ("Inscrição pelo site", "Captação (Google)", "Hunter (Google)").
+- **Verificado:** 2 unitários e 2 de integração novos (fluxo completo, robô, erros, limite, trava pelo nome).
+  Capturas com a página de verdade rodando num banco local (formulário, erro, recebida, Hunters). `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-86 — 2026-10-10 — Ficha da creator organizada para o dia a dia
 - **Decidido:** D-FICHA (pedido do responsável: tirar os blocos que não servem e organizar para o uso diário).

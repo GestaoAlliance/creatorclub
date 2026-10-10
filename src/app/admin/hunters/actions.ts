@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { createHunterLink, HunterError, setFormLink } from "@/lib/onboarding/hunters";
+import { createHunterLink, HunterError } from "@/lib/onboarding/hunters";
 
 export type HunterState = { error?: string; ok?: string } | undefined;
 
@@ -27,17 +27,5 @@ export async function createLinkAction(_p: HunterState, form: FormData): Promise
         code: String(form.get("code") ?? ""),
       }),
     "Link criado.",
-  );
-}
-
-export async function formLinkAction(_p: HunterState, form: FormData): Promise<HunterState> {
-  return run(
-    async () =>
-      setFormLink(db(), await currentActor(), {
-        brandId: String(form.get("brandId") ?? ""),
-        form: String(form.get("form") ?? ""),
-        url: String(form.get("url") ?? ""),
-      }),
-    "Link do formulário salvo.",
   );
 }
