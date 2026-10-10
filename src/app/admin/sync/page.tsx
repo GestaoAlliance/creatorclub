@@ -3,6 +3,7 @@ import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { syncHealth } from "@/lib/shopify/health";
+import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { BackfillForm, ConnectForm, SyncNowForm } from "./forms";
@@ -45,6 +46,17 @@ export default async function SyncPage() {
               />
             </div>
             {h.shopify?.scopes && <p className={ui.hint}>Permissões do app: {h.shopify.scopes}</p>}
+            {h.shopify?.status === "CONNECTED" && missingRecommendedScopes(h.shopify.scopes).length > 0 && (
+              <div className="rounded-2xl border border-amber-400/60 bg-amber-100/70 p-3 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
+                <p className="font-medium">Faltam permissões no app da Shopify:</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {missingRecommendedScopes(h.shopify.scopes).map((s) => (
+                    <li key={s}><code>{s}</code>: {SCOPE_PURPOSE[s]}</li>
+                  ))}
+                </ul>
+                <p className="mt-1">Libere no app (Dev Dashboard → versão nova) e conecte de novo aqui.</p>
+              </div>
+            )}
             {h.shopify?.status === "CONNECTED" && (
               <div className="grid gap-4 border-t border-stone-200/70 pt-4 sm:grid-cols-2 dark:border-white/10">
                 <SyncNowForm brandId={h.brand.id} />

@@ -7,10 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** escolher com o responsável (P2 tem o código pronto e espera o domínio do P3 e a conta do Resend).
-  Pendente do responsável: preencher o início do contrato das UGC nas fichas (23 de 24 sem data, D-UGCSTART); liberar
-  `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync`; adicionar a pergunta "Código de
-  quem te convidou" nos dois formulários e colar os links em `/admin/hunters`.
+- **Próxima tarefa:** resolver as pendências com o responsável (segredos do backup e cópia do app antigo; permissões de
+  cupom na Shopify; início do contrato das UGC; pergunta do hunter nos formulários; convidar os hunters). P2 espera o
+  domínio do P3 e a conta do Resend.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -159,8 +158,9 @@ Bônus por metas (benefícios desbloqueados), gamificação, competições de ve
 já existem antes de desenhar.
 
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
-- [ ] **P1** Backup dos bancos: cópia diária privada do Supabase do v2 (fora do repositório) e uma cópia do
-  `creator-hub` antigo; ou plano pago com backup. Decidir onde guardar.
+- [~] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions, pronta (CP-82). Para ligar: o
+  responsável põe `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE` e `BACKUP_OLD_DATABASE_URL` nos segredos do GitHub; rodar
+  uma vez à mão para cada alvo e testar a restauração de uma cópia real.
 - [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
   Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
   (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
@@ -195,6 +195,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-82 — 2026-10-10 — Backup cifrado diário pronto para ligar (P1)
+- **Decidido:** D-BACKUP (GitHub Actions, cifra AES-256 com senha fora do repositório, 90 dias; cópia única do app
+  antigo pelo mesmo caminho).
+- **Feito:** `scripts/backup.sh` (pg_dump dos esquemas `public`, `auth` e `storage`, confere a cópia, cifra com `gpg`);
+  `.github/workflows/backup.yml` (diário às 3h17 de São Paulo e à mão com alvo `creator-club` ou `app-antigo`; cliente
+  do Postgres 17; ações fixadas por hash); `docs/BACKUP.md` (segredos, como restaurar, cuidados). De passagem: a tela de
+  sync mostra sempre as permissões que faltam no app da Shopify e para que servem (incluídas `read_discounts` e
+  `write_discounts`, que a criação de cupom usa).
+- **Verificado:** ida e volta no banco local (copiar → cifrar → abrir → restaurar: mesmas 39 tabelas, 10 gatilhos e 277
+  travas/chaves, com `btree_gist` criada antes; senha errada não abre). Este ambiente não alcança o banco de produção:
+  a primeira cópia real roda no GitHub depois dos segredos. `npm test`, `npm run test:integration`,
+  `npm run typecheck` e `npm run build` passando.
 
 ### CP-81 — 2026-10-10 — Convite por e-mail pronto para ligar (P2, código)
 - **Decidido:** D-EMAIL (Resend com o domínio do projeto, que espera o P3; convite vai por e-mail ao ser gerado; link

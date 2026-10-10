@@ -17,7 +17,19 @@ import { ORDER_TOPICS } from "./webhook";
  * Cupons (`read_discounts`/`write_discounts`) só entram na E4: até lá o app é só leitura (D-REALSTORE).
  */
 export const REQUIRED_SCOPES = ["read_orders"];
-export const RECOMMENDED_SCOPES = ["read_all_orders"];
+export const RECOMMENDED_SCOPES = ["read_all_orders", "read_discounts", "write_discounts"];
+
+/** Para que serve cada permissão recomendada (aparece na tela de sync quando falta). */
+export const SCOPE_PURPOSE: Record<string, string> = {
+  read_all_orders: "ler pedidos com mais de 60 dias (carga histórica)",
+  read_discounts: "ler cupons da loja",
+  write_discounts: "criar cupom na Shopify pela ficha (D-COUPONCREATE)",
+};
+
+export function missingRecommendedScopes(scopes: string | null | undefined): string[] {
+  const have = (scopes ?? "").split(",").map((s) => s.trim());
+  return RECOMMENDED_SCOPES.filter((s) => !have.includes(s));
+}
 
 const TOPIC_ENUM: Record<string, string> = {
   "orders/create": "ORDERS_CREATE",
@@ -104,7 +116,7 @@ export async function connectShopifyStore(
   return {
     shop: shop.myshopifyDomain,
     scopes: token.scopes,
-    missingRecommended: RECOMMENDED_SCOPES.filter((s) => !token.scopes.includes(s)),
+    missingRecommended: missingRecommendedScopes(token.scopes.join(",")),
     webhooksCreated,
     warnings,
   };
