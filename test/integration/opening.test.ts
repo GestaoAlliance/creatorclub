@@ -91,4 +91,23 @@ describe("saldo de abertura (banco real)", () => {
     await prisma.ledgerEntry.create({ data: { ...row, idempotencyKey: `t:${letters()}` } });
     await expectDbError(prisma.ledgerEntry.create({ data: { ...row, idempotencyKey: `t:${letters()}` } }), /LedgerEntry_one_opening_per_creator/);
   });
+
+  it("pagamentos da planilha (D-LEGACYPAY): aparecem por mês na lista; travas e somente inserção", async () => {
+    const c = await creator();
+    const base = { brandId: c.brand.id, creatorId: c.creator.id, periodLabel: "agosto/26", salesCents: 100_000, rateBps: 1500, source: "planilha-pagamentos", importedById: "claude" };
+    await prisma.legacyPayment.createMany({
+      data: [
+        { ...base, month: "2026-08", amountCents: 15_000, sourceRef: `ago:${c.creator.id}` },
+        { ...base, month: "2026-07", periodLabel: "23/06 a 31/07", amountCents: 5_000, sourceRef: `jul:${c.creator.id}` },
+      ],
+    });
+    const row = (await openingList(prisma, c.pagamento)).find((r) => r.creatorId === c.creator.id);
+    expect(row?.legacyPayments).toEqual([{ month: "2026-07", amountCents: 5_000 }, { month: "2026-08", amountCents: 15_000 }]);
+
+    await expectDbError(prisma.legacyPayment.create({ data: { ...base, month: "2026-08", amountCents: 1, sourceRef: `ago:${c.creator.id}` } }), /LegacyPayment_brandId_source_sourceRef_key|Unique constraint/);
+    await expectDbError(prisma.legacyPayment.create({ data: { ...base, month: "08/2026", amountCents: 1, sourceRef: "x1" } }), /LegacyPayment_month_format/);
+    await expectDbError(prisma.legacyPayment.create({ data: { ...base, month: "2026-08", amountCents: 0, sourceRef: "x2" } }), /LegacyPayment_amounts/);
+    const one = await prisma.legacyPayment.findFirstOrThrow({ where: { creatorId: c.creator.id } });
+    await expectDbError(prisma.legacyPayment.update({ where: { id: one.id }, data: { amountCents: 1 } }), /somente inserção/);
+  });
 });
