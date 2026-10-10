@@ -1,11 +1,14 @@
 import { Check, ExternalLink, Package, Truck } from "lucide-react";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type myShipments } from "@/lib/shipments/shipments";
 import type { Address } from "@/lib/shipments/address";
+import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
+import { KitPicker } from "./kit-picker";
 import { ReceivedButton } from "./received-button";
 
 type Shipment = Awaited<ReturnType<typeof myShipments>>[number];
+type PendingKits = Awaited<ReturnType<typeof myPendingKits>>;
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 
@@ -38,10 +41,25 @@ function Steps({ s }: { s: Shipment }) {
   );
 }
 
-/** Aba Envios (E7.8): endereço e os produtos que a equipe mandou, com rastreio e "Recebi". */
-export function ShipmentsView({ marca, address, shipments, viewOnly }: { marca: string; address: Address | null; shipments: Shipment[]; viewOnly: boolean }) {
+/** Aba Envios (E7.8): kit do mês a escolher (D-KIT), endereço e os produtos enviados, com rastreio e "Recebi". */
+export function ShipmentsView({
+  marca,
+  address,
+  shipments,
+  kits,
+  viewOnly,
+}: {
+  marca: string;
+  address: Address | null;
+  shipments: Shipment[];
+  kits: PendingKits;
+  viewOnly: boolean;
+}) {
   return (
     <div className="flex flex-col gap-6">
+      {kits.kits.map((k) => (
+        <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
+      ))}
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} />
       <section className="glass rounded-3xl p-5">
         <h2 className="mb-3 flex items-center gap-2 font-semibold"><Package className="size-4" /> Meus envios</h2>
