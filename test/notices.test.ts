@@ -17,3 +17,18 @@ describe("textos dos avisos (U5)", () => {
     expect(notices.withdrawalRejected("w", 100, "NF sem CNPJ.").body).toContain("Motivo: NF sem CNPJ. O valor");
   });
 });
+
+describe("avisos por data e e-mail (U5b)", () => {
+  it("textos e chaves", async () => {
+    const { noticeEmail } = await import("@/domain");
+    const { siteOrigin } = await import("@/lib/notifications/scheduled");
+    expect(notices.withdrawalWindow("2026-11", 10, 12_345, false)).toMatchObject({ dedupeKey: "window:2026-11:open", body: expect.stringContaining("R$ 123,45") });
+    expect(notices.withdrawalWindow("2026-11", 10, 1, true).dedupeKey).toBe("window:2026-11:last");
+    expect(notices.contractEnding("2026-11-20").body).toContain("20/11/2026");
+    const e = noticeEmail({ name: "Ana <b>", brandName: "Botanika", title: "Oi & tchau", body: "x", link: "https://x/portal" });
+    expect(e.html).toContain("Oi &amp; tchau");
+    expect(e.html).not.toContain("<b>");
+    expect(siteOrigin({ VERCEL_PROJECT_PRODUCTION_URL: "creatorclub-six.vercel.app" })).toBe("https://creatorclub-six.vercel.app");
+    expect(siteOrigin({})).toBeNull();
+  });
+});
