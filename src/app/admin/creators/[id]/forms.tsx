@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, contactAction, inviteAction, rateAction, reviewedAction, statusAction, type State } from "./actions";
+import { adjustAction, contactAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -46,6 +46,23 @@ export function RateChangeForm({ creatorId }: { creatorId: string }) {
       <input type="hidden" name="creatorId" value={creatorId} />
       <input className={`${ui.inputSm} w-20`} name="rate" placeholder="15" inputMode="decimal" required />%
       <button className={btn} disabled={pending}>Mudar taxa a partir de agora</button>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+/** Correção da taxa desde o início (D-RATEFIX): só super admin e só com o saque travado. */
+export function RateFixForm({ creatorId }: { creatorId: string }) {
+  const [state, action, pending] = useActionState(rateFixAction, undefined);
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => { if (!confirm("Corrigir a taxa de todos os pedidos desta creator? A diferença entra no extrato.")) e.preventDefault(); }}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <input className={`${ui.inputSm} w-20`} name="rate" placeholder="10" inputMode="decimal" required />%
+      <button className={btn} disabled={pending}>Corrigir desde o início</button>
       <Msg state={state} />
     </form>
   );

@@ -8,7 +8,7 @@ import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
-import { AdjustForm, ContactForm, InviteButton, RateChangeForm, ReviewedButton, StatusForm } from "./forms";
+import { AdjustForm, ContactForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 const pct = (bps: number) => `${(bps / 100).toString().replace(".", ",")}%`;
@@ -142,6 +142,15 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
               <p className={ui.hint}>Mudar a taxa vale só para pedidos pagos depois da mudança; o passado não muda.</p>
               <RateChangeForm creatorId={p.id} />
             </>
+          )}
+          {p.canAdjust && !p.withdrawalsUnlocked && p.policies.length === 1 && (
+            <div className={`${ui.inset} flex flex-col gap-2`}>
+              <p className={ui.hint}>
+                Taxa errada desde o começo (veio do app antigo)? Corrija para todos os pedidos: a diferença entra no extrato como
+                estorno ou comissão. Só enquanto o saque está travado.
+              </p>
+              <RateFixForm creatorId={p.id} />
+            </div>
           )}
         </Card>
 
