@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I5 (link do formulário por hunter), da fila "Inventário do Drive". Pendente do responsável: instalar os scripts dos formulários Hunter e Captação (`docs/forms/`). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
-  saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
+- **Próxima tarefa:** I6 (UGC com cupom próprio e meta de vídeos no ciclo), da fila "Inventário do Drive". Pendente do
+  responsável: adicionar a pergunta "Código de quem te convidou" nos dois formulários e colar os links pré-preenchidos em `/admin/hunters`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -174,7 +174,7 @@ já existem antes de desenhar.
   Pix só em chave do próprio CPF. Retenção de imposto: confirmar com a contabilidade antes de ligar.
 - [x] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
   antigas importadas.
-- [ ] **I5** Link do formulário por hunter (D-HUNTERLINK): a candidata chega marcada com quem a trouxe.
+- [x] **I5** Link do formulário por hunter (D-HUNTERLINK): a candidata chega marcada com quem a trouxe.
 - [ ] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA) — no
   módulo UGC.
 - [!] **I7** NFs antigas: só 3 de 20 cupons pagos têm NF no Drive; conferir com o Pagamento onde estão as outras.
@@ -185,6 +185,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-75 — 2026-10-10 — Link do formulário por hunter (I5)
+- **Decidido:** D-HUNTERLINK detalhada: hunter é quem tem o papel Hunter na equipe; link curto do sistema
+  `/f/[marca]/[formulario]/[codigo]` que conta o clique e abre o Google Forms com a pergunta "Código de quem te convidou"
+  pré-preenchida; vale para os formulários Hunter e Captação.
+- **Feito:** migração `hunter_links` (`HunterLink`, `HunterClick` só de inserção, `FormLink`, e na candidata `hunterCode` e
+  `hunterLinkId`; RLS e travas `HunterLink_code_format`, `HunterClick_form`, `FormLink_values`). Regras puras do código e
+  do link (`src/domain/hunter.ts`), `src/lib/onboarding/hunters.ts`, rota `/f/...`. Tela `/admin/hunters` (menu
+  "Hunters", quem edita creators): criar o link de cada hunter, copiar os dois links, cliques em 30 dias, candidatas e
+  aprovadas; colar o link pré-preenchido de cada formulário. Candidatas: "Trazida por <hunter>".
+- **Falta (responsável):** adicionar a pergunta "Código de quem te convidou" (resposta curta, opcional) nos dois
+  formulários, gerar o link pré-preenchido com CODIGO e colar em `/admin/hunters`; convidar os hunters em Equipe.
+- **Verificado:** 2 unitários novos; 2 de integração novos (fluxo completo, permissão, travas pelo nome); migração ×
+  schema sem divergência; typecheck; build.
 
 ### CP-74 — 2026-10-10 — Scripts dos formulários instalados; correção de duplicada
 - **Feito (responsável):** scripts instalados nos formulários Hunter e Captação (`instalar` + `enviarTodas`). Chegaram as

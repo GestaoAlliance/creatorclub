@@ -26,6 +26,7 @@ export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilt
           </span>
         </span>
       </div>
+      {a.hunter && <p className="text-sm">Trazida por <span className="font-medium">{a.hunter.name}</span> <span className={ui.hint}>(link {a.hunter.code})</span></p>}
       {a.note && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{a.note}</p>}
       <div className="grid gap-1.5 text-sm sm:grid-cols-2">
         {a.instagram && <p className="flex items-center gap-1.5"><AtSign className="size-3.5 text-stone-500" /> {a.instagram.replace(/^@/, "")}</p>}
