@@ -15,6 +15,7 @@ const ITEMS: (NavItem & { needs: Permission; global?: boolean })[] = [
   { href: "/abertura", label: "Abertura", icon: "opening", needs: "withdrawals.manage" },
   { href: "/equipe", label: "Equipe", icon: "team", needs: "staff.manage", global: true },
   { href: "/termo", label: "Termo", icon: "terms", needs: "staff.manage", global: true },
+  { href: "/contratos", label: "Contratos", icon: "contract", needs: "staff.manage", global: true },
   { href: "/sync", label: "Shopify", icon: "sync", needs: "integrations.manage", global: true },
   { href: "/importar", label: "Importar", icon: "import", needs: "integrations.manage", global: true },
 ];

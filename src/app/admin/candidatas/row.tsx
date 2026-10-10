@@ -3,6 +3,7 @@ import Link from "next/link";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationCard } from "./card";
+import type { TemplateOption } from "./forms";
 
 type Row = Awaited<ReturnType<typeof listApplications>>["rows"][number];
 
@@ -13,7 +14,7 @@ const compact = (n: number | null, raw: string | null) =>
   n === null ? (raw ?? "—") : n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "").replace(".", ",")} mi` : n >= 1_000 ? `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1).replace(/\.0$/, "").replace(".", ",")} mil` : String(n);
 
 /** Linha da lista compacta (F2): o essencial numa linha; clique abre o cartão completo com aprovar/recusar. */
-export function ApplicationRow({ a, status }: { a: Row; status: ApplicationFilter }) {
+export function ApplicationRow({ a, status, templates }: { a: Row; status: ApplicationFilter; templates: readonly TemplateOption[] }) {
   const d = daysAgo(a.submittedAt);
   return (
     <li>
@@ -55,7 +56,7 @@ export function ApplicationRow({ a, status }: { a: Row; status: ApplicationFilte
               </ul>
             </div>
           )}
-          <ApplicationCard a={a} status={status} />
+          <ApplicationCard a={a} status={status} templates={templates} />
         </div>
       </details>
     </li>

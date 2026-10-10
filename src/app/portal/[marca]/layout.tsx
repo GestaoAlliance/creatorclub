@@ -7,6 +7,8 @@ import { currentPortalContext } from "@/lib/portal/current";
 import { TermsGate } from "@/components/portal/terms-gate";
 import { db } from "@/lib/db";
 import { pendingTerms } from "@/lib/terms/terms";
+import { ContractGate } from "@/components/portal/contract-gate";
+import { pendingContract } from "@/lib/contracts/sign";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,15 @@ export default async function PortalLayout({ children, params }: { children: Rea
     // Equipe sem a visualização ativa (ex.: abriu o link do portal em outro aparelho): manda escolher a creator.
     if (actor.grants.length > 0) redirect("/admin/creators?portal=1");
     notFound();
+  }
+  // Contrato pendente (D-SIGNCONTRACT): quem foi aprovada em Candidatas assina antes de tudo, depois vem o termo.
+  const contract = ctx.viewAs ? null : await pendingContract(db(), ctx);
+  if (contract) {
+    return (
+      <PortalShell ctx={ctx}>
+        <ContractGate marca={ctx.brand.slug} brandName={ctx.brand.name} contract={contract} />
+      </PortalShell>
+    );
   }
   // Termo pendente (D-TERMS): a creator só vê o termo até aceitar. A equipe vendo o portal não é bloqueada.
   const terms = ctx.viewAs ? null : await pendingTerms(db(), ctx);

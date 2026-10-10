@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** F4 (contrato: Autentique ou outro, e liberação do painel depois da assinatura), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
+- **Próxima tarefa:** a definir com o responsável (fila "Captação no sistema" concluída). Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -177,7 +177,7 @@ já existem antes de desenhar.
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
 - [x] **F2** Organizar as candidatas: busca, filtros, lista compacta e aviso de repetida (D-CANDLIST).
 - [x] **F3** Aprovar com um clique: creator, cupom na Shopify (D-COUPONCREATE) e convite do portal; recusar com resposta.
-- [ ] **F4** Contrato (Autentique ou outro) e liberação do painel depois da assinatura.
+- [x] **F4** Contrato assinado no portal (D-SIGNCONTRACT) e liberação do painel depois da assinatura.
 
 ### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
 - [x] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
@@ -203,6 +203,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-91 — 2026-10-10 — Contrato assinado no portal (F4)
+- **Decidido:** D-SIGNCONTRACT (assinatura no próprio portal, portal travado até assinar, só as novas, versão escolhida
+  na aprovação, textos dos modelos do Drive ajustados às regras, termo continua separado).
+- **Feito:** migração `contract_signature` (`ContractDocument` e `ContractSignature` só de inserção, com travas e RLS;
+  `ContractTemplate.documentKind`; `Creator.contractRequiredAt`; textos v1 da Botanika). Preenchimento puro em
+  `src/domain/contract-text.ts`; `src/lib/contracts/sign.ts` (pendente, assinar, publicar, visão geral, ficha);
+  tela de assinatura no portal com o texto se preenchendo na hora; campo "Contrato" na aprovação; página Contratos
+  (super admin); cartão na ficha e o texto assinado; saque também exige contrato assinado.
+- **Verificado:** 3 unitários (preenchimento, kit, textos da migração sem campos desconhecidos nem marcas do Word) e
+  2 de integração (aprovar → travado → assinar → liberado e ficha marcada; travas do banco). Capturas com banco local.
+  `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-90 — 2026-10-10 — Aprovar candidata com um clique (F3)
 - **Decidido:** D-APPROVE (cupom na Shopify primeiro; se recusar, nada é gravado; comissão sempre escolhida pela

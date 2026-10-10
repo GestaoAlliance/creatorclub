@@ -11,7 +11,7 @@ import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
 
 export type ApproveState =
-  | { error?: string; ok?: { coupon: string; discountBps: number; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string } }
+  | { error?: string; ok?: { coupon: string; discountBps: number; contract: boolean; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string } }
   | undefined;
 
 export async function approveAction(_prev: ApproveState, form: FormData): Promise<ApproveState> {
@@ -26,6 +26,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
       rateBps: percentToBps(String(form.get("rate") ?? "")),
       discountBps,
       email: String(form.get("email") ?? ""),
+      contractTemplateId: String(form.get("contractTemplateId") ?? "") || null,
     });
     // Sem revalidatePath aqui: a linha sumiria da aba "Novas" junto com o convite e o botão de WhatsApp. A tela
     // atualiza quando a equipe clica em "Concluir" (router.refresh).
@@ -48,7 +49,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     }
     return {
       ok: {
-        coupon: r.couponCode, discountBps, creatorId: r.creatorId, link,
+        coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link,
         ...(inviteError ? { inviteError } : {}), ...(mail ? { mail } : {}), ...(mailError ? { mailError } : {}),
       },
     };

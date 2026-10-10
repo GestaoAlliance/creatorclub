@@ -5,6 +5,7 @@ import { creatorStatement, StatementError } from "@/lib/commission/statement";
 import { creatorProfile, ProfileError } from "@/lib/creators/profile";
 import { db } from "@/lib/db";
 import { creatorTermsStatus } from "@/lib/terms/terms";
+import { creatorContractSignature } from "@/lib/contracts/sign";
 import { CreatorProfileView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,6 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     }
   }
 
-  const terms = await creatorTermsStatus(db(), p.id, p.brandId);
-  return <CreatorProfileView p={p} st={st} terms={terms} requestId={randomUUID()} />;
+  const [terms, contract] = await Promise.all([creatorTermsStatus(db(), p.id, p.brandId), creatorContractSignature(db(), p.id)]);
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} />;
 }

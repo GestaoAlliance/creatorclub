@@ -64,7 +64,7 @@ export function CandidatasView({ status, sp, filters, data }: { status: Applicat
       ) : (
         <ul className="glass divide-y divide-stone-200/70 rounded-3xl px-2 md:px-4 dark:divide-white/10">
           {rows.map((a) => (
-            <ApplicationRow key={a.id} a={a} status={status} />
+            <ApplicationRow key={a.id} a={a} status={status} templates={data.templates.filter((t) => t.brandId === a.brandId)} />
           ))}
         </ul>
       )}

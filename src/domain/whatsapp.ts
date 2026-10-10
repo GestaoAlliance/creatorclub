@@ -14,14 +14,15 @@ export function whatsappLink(phone: string | null | undefined, text: string): st
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
 
 /** Boas-vindas depois de aprovar: cupom, desconto e, se houver, o link do convite do portal. */
-export function welcomeMessage(p: { name: string; brand: string; coupon: string; discountBps: number; inviteLink: string | null }): string {
-  const pct = (p.discountBps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+export function welcomeMessage(p: { name: string; brand: string; coupon: string; discountBps: number; inviteLink: string | null; contract?: boolean }): string {
+  const pct = (p.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   return [
     `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada! 🎉`,
     `Seu cupom é *${p.coupon}*: quem comprar com ele ganha ${pct}% de desconto, e a venda fica registrada para você.`,
     ...(p.inviteLink
       ? [`Para entrar no seu portal (vendas, saldo, extrato e saque), crie sua senha por este link. Ele vale 7 dias e funciona uma vez:\n${p.inviteLink}`]
       : []),
+    ...(p.contract ? ["No primeiro acesso, você lê e assina o contrato da parceria no próprio portal."] : []),
     "Qualquer dúvida, é só chamar por aqui.",
   ].join("\n\n");
 }
