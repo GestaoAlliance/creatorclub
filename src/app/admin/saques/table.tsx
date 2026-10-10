@@ -25,7 +25,11 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
                 <p className="font-semibold">{r.name}</p>
                 <p className={ui.hint}>pedido em {day(r.requestedAt)}{r.decidedAt && ` · decidido em ${day(r.decidedAt)}`}</p>
               </div>
-              <span className={STATUS_BADGE[r.status]}>{WITHDRAWAL_STATUS_LABEL[r.status]}</span>
+              <span className="flex flex-wrap justify-end gap-1.5">
+                {r.nfCheck === "OK" && <span className={badge.green}>nota conferida</span>}
+                {r.nfCheck === "MANUAL" && <span className={badge.amber}>conferir a nota</span>}
+                <span className={STATUS_BADGE[r.status]}>{WITHDRAWAL_STATUS_LABEL[r.status]}</span>
+              </span>
             </div>
             <div>
               <p className="text-3xl font-semibold tabular-nums">{formatBRL(r.amountCents)}</p>
@@ -50,6 +54,9 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
                 )}
               </div>
             </div>
+            {r.status === "REQUESTED" && r.nfCheck === "MANUAL" && (
+              <p className="text-sm text-amber-800 dark:text-amber-300">O sistema não conseguiu ler esta nota (foto, escaneada ou fora do padrão nacional). Abra a nota e confira tomadora, valor e CNPJ antes de pagar.</p>
+            )}
             {r.status === "REJECTED" && r.note && <p className="text-sm text-stone-600 dark:text-stone-400">Motivo: {r.note}</p>}
             {r.status === "REQUESTED" && (
               <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">

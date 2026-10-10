@@ -465,6 +465,11 @@ enum PaymentMethod {
   ALELO
 }
 
+enum NfCheckStatus {
+  OK
+  MANUAL
+}
+
 enum WithdrawalStatus {
   REQUESTED
   PAID
@@ -481,6 +486,8 @@ model Withdrawal {
   method         PaymentMethod    @default(NF_PIX)
   status         WithdrawalStatus @default(REQUESTED)
   nfFileId       String?
+  nfAccessKey    String? // D-NFCHECK: chave de acesso da NFS-e (50 dígitos); uma nota vale para um saque só
+  nfCheck        NfCheckStatus? // D-NFCHECK: OK = conferida pelo sistema; MANUAL = o Pagamento confere
   idempotencyKey String           @unique
   requestedAt    DateTime         @default(now())
   decidedAt      DateTime?

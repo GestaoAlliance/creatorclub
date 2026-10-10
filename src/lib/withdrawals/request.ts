@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { checkWithdrawalRequest, type WithdrawalError } from "@/domain";
+import { checkNf, checkWithdrawalRequest, parseNfseText, type WithdrawalError } from "@/domain";
 import { creatorBalance } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { pendingTerms } from "@/lib/terms/terms";
+import { pdfText } from "./nf";
 
 /**
  * Pedido de saque pela creator (E7.7, D-WDRULES). A nota fiscal (PDF até 10 MB) sobe direto do navegador para o
@@ -11,6 +12,8 @@ import { pendingTerms } from "@/lib/terms/terms";
  * que trava a creator (`FOR UPDATE`), recalcula o saldo e aplica as regras: liberada (D-WDLOCK), janela, mínimo,
  * valor igual ao total disponível (D-CONTRACT), um pedido em aberto (índice `Withdrawal_one_open_per_creator`). O mesmo `requestId` nunca cria dois pedidos.
  * O valor só sai do saldo quando o Pagamento marcar como pago (E8); até lá fica "em saque" (reservado).
+ * D-NFCHECK: a nota é lida e conferida (tomadora, valor, emissor, código 17.06, chave nunca usada); diferença bloqueia
+ * com o motivo; nota que o sistema não consegue ler entra marcada para o Pagamento conferir.
  */
 
 export class WithdrawalRequestError extends Error {}
@@ -26,6 +29,8 @@ const RULE_TEXT: Record<WithdrawalError, string> = {
   VALOR_PARCIAL: "Seu saldo disponível mudou. Recarregue a página e confira o valor.",
   SAQUE_EM_ABERTO: "Você já tem um pedido de saque em análise.",
 };
+
+const NF_USED = "Esta nota fiscal já foi usada em outro pedido de saque. Emita uma nota nova.";
 
 export function nfPath(brandId: string, creatorId: string, requestId: string): string {
   return `${brandId}/${creatorId}/${requestId}.pdf`;
@@ -59,6 +64,7 @@ export async function requestWithdrawal(
   assertRequestId(input.requestId);
   await assertCanStart(prisma, ctx);
   checkPdf(input.pdf);
+  const nfFields = parseNfseText(await pdfText(input.pdf));
   const key = `withdrawal:${input.requestId}`;
   const existing = await prisma.withdrawal.findUnique({ where: { idempotencyKey: key }, select: { id: true, creatorId: true } });
   if (existing) {
@@ -75,8 +81,8 @@ export async function requestWithdrawal(
       const creator = await tx.creator.findUniqueOrThrow({
         where: { id: ctx.creatorId },
         include: {
-          account: { select: { id: true, pixKey: true } },
-          brand: { select: { timezone: true, withdrawalMinCents: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true } },
+          account: { select: { id: true, pixKey: true, cnpj: true } },
+          brand: { select: { name: true, nfTakerDocument: true, timezone: true, withdrawalMinCents: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true } },
         },
       });
       const balance = await creatorBalance(tx, creator, creator.brand.timezone, now);
@@ -90,6 +96,15 @@ export async function requestWithdrawal(
         },
       );
       if (errors.length) throw new WithdrawalRequestError(RULE_TEXT[errors[0]!]);
+
+      const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj });
+      if (nf.problems.length) throw new WithdrawalRequestError(nf.problems.join(" "));
+      const accessKey = nfFields.accessKey;
+      if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "PAID"] } } })))
+        throw new WithdrawalRequestError(NF_USED);
+      // Ficha sem CNPJ: grava o CNPJ de quem emitiu a nota.
+      if (!creator.account.cnpj && nf.issuerDoc?.length === 14)
+        await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { cnpj: nf.issuerDoc } });
 
       const pix = input.pixKey?.trim();
       if (!creator.account.pixKey) {
@@ -109,7 +124,16 @@ export async function requestWithdrawal(
         },
       });
       const withdrawal = await tx.withdrawal.create({
-        data: { brandId: creator.brandId, creatorId: creator.id, amountCents: input.amountCents, nfFileId: file.id, idempotencyKey: key, requestedAt: now },
+        data: {
+          brandId: creator.brandId,
+          creatorId: creator.id,
+          amountCents: input.amountCents,
+          nfFileId: file.id,
+          nfAccessKey: accessKey,
+          nfCheck: nf.status,
+          idempotencyKey: key,
+          requestedAt: now,
+        },
       });
       await tx.auditLog.create({
         data: {
@@ -119,7 +143,7 @@ export async function requestWithdrawal(
           action: "withdrawal.request",
           entity: "Withdrawal",
           entityId: withdrawal.id,
-          after: { amountCents: input.amountCents, availableCents: balance.availableCents, pixKeySet: !creator.account.pixKey },
+          after: { amountCents: input.amountCents, availableCents: balance.availableCents, pixKeySet: !creator.account.pixKey, nfCheck: nf.status },
         },
       });
       return { withdrawalId: withdrawal.id, created: true };
@@ -127,6 +151,7 @@ export async function requestWithdrawal(
   } catch (error) {
     if (error instanceof WithdrawalRequestError) throw error;
     if (String(error).includes("Withdrawal_one_open_per_creator")) throw new WithdrawalRequestError(RULE_TEXT.SAQUE_EM_ABERTO);
+    if (String(error).includes("Withdrawal_nf_access_key_once")) throw new WithdrawalRequestError(NF_USED);
     throw error;
   }
 }

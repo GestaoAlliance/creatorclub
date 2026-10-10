@@ -115,6 +115,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       decidedAt: true,
       note: true,
       nfFileId: true,
+      nfCheck: true,
       creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
     },
   });
@@ -155,6 +156,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       decidedAt: r.decidedAt,
       note: r.note,
       hasNf: r.nfFileId !== null,
+      nfCheck: r.nfCheck,
       availableBeforeCents,
     };
   });
