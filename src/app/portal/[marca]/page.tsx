@@ -1,4 +1,5 @@
 import { HomeView } from "@/components/portal/home-view";
+import { KitBanner } from "@/components/portal/kit-banner";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { portalSummary } from "@/lib/portal/home";
@@ -9,5 +10,16 @@ export const dynamic = "force-dynamic";
 export default async function PortalHome({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
-  return <HomeView s={await portalSummary(db(), ctx)} base={`/portal/${ctx.brand.slug}`} ugc={ctx.ugcOnly} />;
+  const base = `/portal/${ctx.brand.slug}`;
+  const [summary, kit] = await Promise.all([
+    portalSummary(db(), ctx),
+    // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
+    db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
+  ]);
+  return (
+    <div className="flex flex-col gap-6">
+      {kit && <KitBanner base={base} products={kit.products} welcome={kit.kind === "WELCOME"} />}
+      <HomeView s={summary} base={base} ugc={ctx.ugcOnly} />
+    </div>
+  );
 }

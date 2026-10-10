@@ -213,3 +213,14 @@ export async function myAddress(prisma: PrismaClient, ctx: PortalContext): Promi
   });
   return addressOf(creator.account);
 }
+
+/**
+ * Endereço que a creator já digitou em texto livre (no contrato ou na inscrição), para ajudar a cadastrar o endereço
+ * de entrega em campos quando ainda não há (U2, kit de boas-vindas). Só leitura; nada é copiado sozinho.
+ */
+export async function informedAddress(prisma: PrismaClient, ctx: PortalContext): Promise<string | null> {
+  const sig = await prisma.contractSignature.findFirst({ where: { creatorId: ctx.creatorId }, orderBy: { signedAt: "desc" }, select: { address: true } });
+  if (sig) return sig.address;
+  const app = await prisma.creatorApplication.findFirst({ where: { creatorId: ctx.creatorId }, orderBy: { submittedAt: "desc" }, select: { address: true } });
+  return app?.address?.trim().replace(/\s*\n+\s*/g, ", ") || null;
+}
