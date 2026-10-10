@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { listApplications, receiveApplication } from "@/lib/onboarding/applications";
-import { createHunterLink, hunterPanel, recordHunterClick, resolveHunterLink, setFormLink } from "@/lib/onboarding/hunters";
+import { listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
+import { createHunterLink, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink } from "@/lib/onboarding/hunters";
+import { staffHome } from "@/lib/staff/home";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -61,5 +62,29 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     await expectDbError(prisma.hunterClick.create({ data: { brandId: brand.id, hunterLinkId: link.id, form: "outro" } }), /HunterClick_form/);
     const click = await prisma.hunterClick.create({ data: { brandId: brand.id, hunterLinkId: link.id, form: "hunter" } });
     await expectDbError(prisma.hunterClick.delete({ where: { id: click.id } }), /HunterClick é somente inserção/);
+  });
+
+  it("U3: a hunter vê só o próprio link e as próprias indicações, sem contato nem motivo de recusa", async () => {
+    const { brand } = await seedBrand(prisma);
+    const gestao = await userWith("GESTAO", brand.id);
+    const bia = await userWith("HUNTER", brand.id, "Bia");
+    const caio = await userWith("HUNTER", brand.id, "Caio");
+    expect(await myHunterPanel(prisma, bia)).toEqual([]);
+    expect((await staffHome(prisma, bia)).hunter).toEqual({ clicks30: 0, inReview: 0, approved: 0, hasLink: false });
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: bia.userId, code: "bia" });
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: caio.userId, code: "caio" });
+    const target = await resolveHunterLink(prisma, brand.slug, "inscricao", "bia");
+    await recordHunterClick(prisma, target!.click!, { ip: "1.2.3.4", userAgent: "x" });
+    const answers = (name: string, code: string) => ({ "Seu nome completo:": name, "EMAIL:": `${randomUUID()}@x.com`, "@ do seu Instagram:": "@perfil", "Quantidade de seguidores no instagram": "12 mil", "Seu whatsapp com DDD:": "11999999999", "Código de quem te convidou": code });
+    const a1 = await receiveApplication(prisma, { brandSlug: brand.slug, source: "hunter_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers("Maria", "bia") });
+    await receiveApplication(prisma, { brandSlug: brand.slug, source: "hunter_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers("Joana", "caio") });
+    await rejectApplication(prisma, gestao, a1.id, "motivo interno");
+
+    const [panel] = await myHunterPanel(prisma, bia);
+    expect(panel).toMatchObject({ code: "bia", clicks: 1, clicks30: 1, counts: { total: 1, inReview: 0, approved: 0, rejected: 1 } });
+    expect(panel!.applications).toEqual([{ id: a1.id, name: "Maria", instagram: "perfil", followers: "12 mil", submittedAt: expect.any(Date), status: "REJECTED" }]);
+    expect(JSON.stringify(panel)).not.toMatch(/motivo interno|11999999999|@x\.com/);
+    expect((await staffHome(prisma, bia)).hunter).toEqual({ clicks30: 1, inReview: 0, approved: 0, hasLink: true });
+    await expect(myHunterPanel(prisma, gestao)).rejects.toThrow(/permissão/);
   });
 });

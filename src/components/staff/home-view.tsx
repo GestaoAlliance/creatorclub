@@ -1,4 +1,4 @@
-import { ArrowRight, Banknote, ClipboardCheck, FileSignature, Inbox, Package, TrendingDown, Users } from "lucide-react";
+import { ArrowRight, Banknote, ClipboardCheck, FileSignature, Inbox, Package, Target, TrendingDown, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Kpi, PageHeader } from "@/components/ui/page";
@@ -20,12 +20,24 @@ function Tile({ href, icon, title, children }: { href: string; icon: ReactNode; 
 
 /** Início da equipe (D-DESIGNALL): um cartão por assunto do papel, cada um abre a tela. Só exibe. */
 export function StaffHomeView({ h }: { h: StaffHome }) {
-  const empty = !h.creators && !h.coupons && !h.shipments && !h.withdrawals;
+  const empty = !h.creators && !h.coupons && !h.shipments && !h.withdrawals && !h.hunter;
   return (
     <>
       <PageHeader title="Início">O que está esperando por você agora. Toque num cartão para abrir a tela.</PageHeader>
       {empty && <p className={ui.muted}>Seu papel ainda não tem telas por aqui.</p>}
       <div className="grid gap-4 md:grid-cols-2">
+        {h.hunter && (
+          <Tile href="/admin/indicacoes" icon={<Target className="size-4" />} title="Minhas indicações">
+            {h.hunter.hasLink ? (
+              <>
+                <Kpi label="Cliques em 30 dias" value={h.hunter.clicks30} hint="no seu link" />
+                <Kpi label="Em análise" value={h.hunter.inReview} hint={`${h.hunter.approved} aprovadas`} tone={h.hunter.inReview ? "amber" : undefined} />
+              </>
+            ) : (
+              <p className={`${ui.muted} col-span-2`}>A equipe ainda não criou o seu link. Fale com a Gestão.</p>
+            )}
+          </Tile>
+        )}
         {h.creators && h.creators.applications > 0 && (
           <Tile href="/admin/candidatas" icon={<Inbox className="size-4" />} title="Candidatas">
             <Kpi label="Novas" value={h.creators.applications} hint="responderam o formulário" tone="amber" />
