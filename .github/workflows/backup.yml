@@ -1,0 +1,56 @@
+# Cópia cifrada diária do banco (P1, D-BACKUP). Fica 90 dias nos artefatos desta execução; sem a senha
+# (BACKUP_PASSPHRASE) o arquivo não abre. Como restaurar: docs/BACKUP.md.
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # todo dia às 3h17 em São Paulo
+  workflow_dispatch:
+    inputs:
+      alvo:
+        description: "Qual banco copiar"
+        type: choice
+        options: [creator-club, app-antigo]
+        default: creator-club
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-${{ github.event.inputs.alvo || 'creator-club' }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Cliente do Postgres 17
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y > /dev/null
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Cópia cifrada
+        env:
+          ALVO: ${{ github.event.inputs.alvo || 'creator-club' }}
+          URL_V2: ${{ secrets.BACKUP_DATABASE_URL }}
+          URL_ANTIGO: ${{ secrets.BACKUP_OLD_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ "$ALVO" = "app-antigo" ]; then export BACKUP_DATABASE_URL="$URL_ANTIGO"; schemas="public auth"; else export BACKUP_DATABASE_URL="$URL_V2"; schemas="public auth storage"; fi
+          if [ -z "$BACKUP_DATABASE_URL" ]; then echo "::error::Falta o segredo da conexão do banco ($ALVO)."; exit 1; fi
+          # shellcheck disable=SC2086
+          scripts/backup.sh "$ALVO" backup $schemas | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar (90 dias)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backup-${{ github.event.inputs.alvo || 'creator-club' }}-${{ github.run_id }}
+          path: backup/*.dump.gpg
+          retention-days: 90
+          if-no-files-found: error
