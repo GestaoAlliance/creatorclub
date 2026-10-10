@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** só pendências de pessoas. Responsável: segredos do backup no GitHub (P1); permissões de cupom na
+- **Próxima tarefa:** só pendências de pessoas. Responsável: permissões de cupom na
   Shopify e reconectar; pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -161,9 +161,8 @@ Bônus por metas (benefícios desbloqueados), gamificação, competições de ve
 já existem antes de desenhar.
 
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
-- [~] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions, pronta (CP-82). Para ligar: o
-  responsável põe `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE` e `BACKUP_OLD_DATABASE_URL` nos segredos do GitHub; rodar
-  uma vez à mão para cada alvo e testar a restauração de uma cópia real.
+- [x] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions (CP-82), ligada em 2026-10-10
+  (CP-84): primeira cópia do banco novo (74 tabelas com dados) e cópia única do app antigo, as duas com sucesso.
 - [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
   Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
   (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
@@ -198,6 +197,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-84 — 2026-10-10 — Backup ligado (P1)
+- **Feito:** segredos `BACKUP_PASSPHRASE`, `BACKUP_OLD_DATABASE_URL` e `BACKUP_DATABASE_URL` no GitHub (pelo
+  responsável). No banco novo, usuário `backup_reader` só de leitura (`pg_read_all_data` + `BYPASSRLS`; conferido: lê
+  dados, logins e Storage; não insere, altera, apaga nem cria), para não usar a senha principal. Primeiras cópias:
+  app antigo (execução 38074439007) e banco novo (execução 38074894461, 74 tabelas com dados, 1,2 MB cifrado).
+- **Falta (responsável):** baixar a cópia do app antigo e guardar no Drive da empresa (o artefato expira em 08/01/2027).
 
 ### CP-83 — 2026-10-10 — Conferência de setembro contra o Shopify (E5.5) e rede de segurança da comissão
 - **Feito:** as 10 creators com mais pedidos pagos em setembro (fuso de São Paulo) conferidas pedido a pedido contra a
