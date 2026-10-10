@@ -17,7 +17,9 @@ export function UgcVideosCard({ creatorId, status, canEdit, cycle, videos }: {
   return (
     <Card title="Vídeos (UGC)" icon={<Clapperboard className="size-4" />}>
       {cycle.status === "NO_CONTRACT" ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">Preencha o início do contrato para contar a meta do ciclo.</p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          {cycle.outside > 0 ? `${cycle.outside} ${cycle.outside === 1 ? "vídeo registrado" : "vídeos registrados"}. ` : ""}Preencha o início do contrato para contar a meta do ciclo.
+        </p>
       ) : (
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-stone-600 dark:text-stone-400">
@@ -33,7 +35,7 @@ export function UgcVideosCard({ creatorId, status, canEdit, cycle, videos }: {
           {cycle.status === "MISSED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Ciclo terminou sem bater a meta: faltaram {cycle.goal - cycle.count}.</p>}
         </div>
       )}
-      {cycle.outside > 0 && <p className={ui.hint}>{cycle.outside} vídeo(s) com data fora do ciclo atual não contam.</p>}
+      {cycle.status !== "NO_CONTRACT" && cycle.outside > 0 && <p className={ui.hint}>{cycle.outside} vídeo(s) com data fora do ciclo atual não contam.</p>}
       {videos.length > 0 && (
         <ul className={ui.list}>
           {videos.map((v) => (
