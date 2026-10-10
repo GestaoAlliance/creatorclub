@@ -7,7 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** U5b (avisos por data e envio por e-mail), da fila "Uso real". U1 em andamento com o
+- **Próxima tarefa:** U6 (conteúdo das influencers e prospecção antes do formulário), da fila "Uso real": perguntar
+  ao responsável se a equipe quer. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -182,10 +183,10 @@ já existem antes de desenhar.
 - [x] **U2** Kit de boas-vindas do contrato (D-WELCOMEKIT): liberado ao assinar, escolhido no portal, cai na fila do Envio.
 - [x] **U3** Tela da hunter "Minhas indicações" (D-HUNTERVIEW): link, cliques e situação de quem trouxe.
 - [x] **U4** Tela "Desempenho" para a Gestão (D-PERFORMANCE): ranking do mês, mínimo, kit, variação e UGC à parte.
-- [~] **U5** Avisos para as creators (D-NOTICES).
+- [x] **U5** Avisos para as creators (D-NOTICES).
   - [x] **U5a** Sininho e página Avisos no portal; avisos de comissão liberada, kit, envio, saque pago/recusado e
     primeira venda.
-  - [ ] **U5b** Avisos por data (janela de saque, perto do mínimo, contrato vencendo) e envio por e-mail quando houver
+  - [x] **U5b** Avisos por data (janela de saque, perto do mínimo, contrato vencendo) e envio por e-mail quando houver
     remetente.
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
 
@@ -219,6 +220,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-97 — 2026-10-11 — Avisos por data e e-mail (U5b)
+- **Decidido:** D-NOTICES completada (rodada diária a partir das 9h; e-mail só com remetente, só avisos das últimas
+  24 h, nunca para e-mail de importação).
+- **Feito:** migração `notice_runs` (uma rodada por marca e dia); `src/lib/notifications/scheduled.ts` (janela de saque
+  aberta e lembrete nos 3 últimos dias para quem tem saldo e não pediu; perto do mínimo, uma vez por mês; contrato
+  vencendo em 30 dias; e-mail dos avisos, 20 por rodada); worker chama os dois; texto do e-mail em `noticeEmail`.
+  Corrigido antes de ir ao ar: e-mails de importação ficavam na frente da fila e podiam travar o envio.
+- **Verificado:** unitários dos textos, do e-mail e do endereço do site; integração (antes das 9h nada; uma rodada por
+  dia; lembrete no dia 8; quem pediu saque não recebe; e-mail sem remetente/endereço não sai; avisos com mais de 24 h e
+  e-mail de importação ficam de fora). `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build`
+  passando.
 
 ### CP-96 — 2026-10-10 — Avisos no portal (U5a)
 - **Decidido:** D-NOTICES (portal agora, e-mail depois; nove avisos; U5 em duas partes).

@@ -89,3 +89,17 @@ export function staffInviteEmail(input: { name: string; roleLabel: string; brand
     ].join("\n"),
   };
 }
+
+/** Aviso do portal também por e-mail (U5b, D-NOTICES): o mesmo título e texto, com o botão para o portal. */
+export function noticeEmail(input: { name: string; brandName: string; title: string; body: string; link: string }): EmailContent {
+  return {
+    subject: `${input.title} · Creator Club ${input.brandName}`,
+    html: layout({
+      title: `Oi, ${escapeHtml(firstName(input.name))}!`,
+      paragraphs: [`<strong>${escapeHtml(input.title)}</strong>`, escapeHtml(input.body)],
+      button: { label: "Abrir o portal", href: input.link },
+      footer: [`Você recebe este e-mail porque participa do Creator Club ${escapeHtml(input.brandName)}. Os avisos também ficam no sininho do portal.`],
+    }),
+    text: [`Oi, ${firstName(input.name)}!`, "", input.title, input.body, "", `Abrir o portal: ${input.link}`].join("\n"),
+  };
+}

@@ -74,6 +74,7 @@ model Brand {
   contractDocuments  ContractDocument[]
   contractSignatures ContractSignature[]
   notifications      Notification[]
+  noticeRuns         NoticeRun[]
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
@@ -1093,4 +1094,17 @@ model Notification {
 
   @@unique([creatorId, dedupeKey])
   @@index([creatorId, createdAt])
+}
+
+/// U5b (D-NOTICES): uma rodada de avisos por data por marca e dia (dia de São Paulo); o worker roda a cada minuto.
+model NoticeRun {
+  id      String   @id @default(uuid())
+  brandId String
+  day     String // AAAA-MM-DD
+  created Int      @default(0)
+  ranAt   DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, day])
 }
