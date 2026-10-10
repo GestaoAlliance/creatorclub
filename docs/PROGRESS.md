@@ -7,9 +7,10 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** resolver as pendências com o responsável (segredos do backup e cópia do app antigo; permissões de
-  cupom na Shopify; início do contrato das UGC; pergunta do hunter nos formulários; convidar os hunters). P2 espera o
-  domínio do P3 e a conta do Resend.
+- **Próxima tarefa:** só pendências de pessoas. Responsável: segredos do backup no GitHub (P1); permissões de cupom na
+  Shopify e reconectar; pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
+  (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
+  antigas (I7).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -29,10 +30,11 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
   Fonte: consultas de leitura rodadas por quem tem acesso (D-E0SRC). Resultado em `docs/CONTEXTO.md`.
   Backup: nenhum (plano Free).
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
-- [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
+- [x] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
   Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
   `taxesIncluded = false` lido no Shopify em 2026-10-09 (D-TAX). Scopes do app novo: D-SHOPAPP.
-  Falta: volume de pedidos com cupom (levantado na E3.5).
+  Volume (2026-10-10, pedidos pagos, mês do pagamento em São Paulo): jul 880 pagos, 643 com cupom, 204 de creator
+  (23%, R$ 65,3 mil); ago 1.307 / 919 / 338 (26%, R$ 112,5 mil); set 1.587 / 896 / 291 (18%, R$ 103,0 mil).
 - [x] **E0.4** Formulário de cadastro: é o "Formulário creators - Hunter" (Google Forms) que a Ana manda; ligado ao painel em CP-59 (D-ONBOARD).
 
 > E0 foi definida no plano como primeira etapa, mas ficou fora desta fila até 2026-10-09 (corrigido).
