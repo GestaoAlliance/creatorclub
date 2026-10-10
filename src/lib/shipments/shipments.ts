@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { notices, type Notice } from "@/domain";
+import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import type { PortalContext } from "@/lib/portal/context";
@@ -91,6 +93,7 @@ async function transition(
   data: Record<string, unknown>,
   check: (brandId: string, creatorId: string) => void,
   auditAs: { actorId: string; action: string; after: object },
+  notice?: Notice,
 ) {
   const s = await prisma.shipment.findUnique({ where: { id: shipmentId }, select: { brandId: true, creatorId: true, status: true } });
   if (!s) throw new ShipmentError("Envio não encontrado.");
@@ -99,6 +102,7 @@ async function transition(
     const { count } = await tx.shipment.updateMany({ where: { id: shipmentId, status: { in: from } }, data });
     if (count === 0) throw new ShipmentError("Este envio mudou de situação. Atualize a página.");
     await audit(tx, s.brandId, auditAs.actorId, auditAs.action, shipmentId, auditAs.after);
+    if (notice) await notify(tx, [{ brandId: s.brandId, creatorId: s.creatorId, notice }]);
   });
 }
 
@@ -113,6 +117,7 @@ export async function markShipped(prisma: PrismaClient, actor: Actor | null, inp
     { status: "SHIPPED", carrier, trackingCode, shippedAt: now, shippedById: actor?.userId },
     (brandId) => assertManage(actor, brandId),
     { actorId: actor?.userId ?? "", action: "shipment.shipped", after: { carrier, trackingCode } },
+    notices.shipped(input.shipmentId, carrier, trackingCode),
   );
 }
 

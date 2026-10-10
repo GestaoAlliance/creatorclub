@@ -88,6 +88,9 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
     // D-WELCOMEKIT: assinar libera o kit de boas-vindas da versão do contrato; a escolha vira envio na fila do Envio.
     const { kits } = await myPendingKits(prisma, s.ctx);
     expect(kits).toMatchObject([{ kind: "WELCOME", products: 2, salesCents: 0 }]);
+    expect(await prisma.notification.findMany({ where: { creatorId: s.r.creatorId }, select: { kind: true, title: true } })).toEqual([
+      { kind: "KIT_AVAILABLE", title: "Seu kit de boas-vindas: 2 suplementos" },
+    ]);
     expect(await informedAddress(prisma, s.ctx)).toBe("Rua A, 10, Centro, São Paulo - SP");
     const product = await prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title: "Whey", active: true } });
     await updateMyAddress(prisma, s.ctx, s.userId, { zip: "01000-000", street: "Rua A", number: "10", complement: "", district: "Centro", city: "São Paulo", state: "SP" });

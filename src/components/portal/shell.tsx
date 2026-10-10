@@ -1,3 +1,4 @@
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { stopViewAsAction } from "@/app/portal/actions";
@@ -7,7 +8,16 @@ import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
 /** Moldura do portal da creator (E7.1): cor da marca, menu lateral (computador) ou inferior (celular). Só exibe. */
-export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly">; children: ReactNode }) {
+export function PortalShell({
+  ctx,
+  unread = 0,
+  children,
+}: {
+  ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly">;
+  /** U5: avisos não lidos (sininho). */
+  unread?: number;
+  children: ReactNode;
+}) {
   const base = `/portal/${ctx.brand.slug}`;
   const others = ctx.brands.filter((b) => b.slug !== ctx.brand.slug);
   // D-UGCPORTAL: quem é só UGC não tem saldo nem saque. O filtro roda no menu (componente de cliente).
@@ -36,6 +46,18 @@ export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creat
                 </div>
               </details>
             )}
+            <Link
+              href={`${base}/avisos`}
+              aria-label={unread ? `Avisos: ${unread} não ${unread === 1 ? "lido" : "lidos"}` : "Avisos"}
+              className="glass relative grid size-10 place-content-center rounded-full"
+            >
+              <Bell className="size-4" />
+              {unread > 0 && (
+                <span className="absolute -right-1 -top-1 grid min-w-5 place-content-center rounded-full bg-brand px-1 text-[11px] font-semibold text-white dark:bg-brand-2 dark:text-stone-950">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </Link>
             <ThemeToggle />
             <form action={signOut}>
               <button className="glass rounded-full px-4 py-2 text-sm">Sair</button>

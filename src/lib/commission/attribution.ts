@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import {
+  notices,
   ATTRIBUTION_RULE,
   attributeOrder,
   isPending,
@@ -10,6 +11,7 @@ import {
   type PendingAttribution,
 } from "@/domain";
 import { enqueueJob } from "@/lib/jobs/queue";
+import { notify } from "@/lib/notifications/notify";
 
 /**
  * Atribuição no banco (E5.1). Cada pedido decide a dona **uma vez** (`OrderAttribution`, com os códigos como
@@ -70,6 +72,7 @@ export async function decideAttribution(prisma: PrismaClient, orderId: string, a
     if (rate === null) return { status: "unchanged" };
     // Congela uma única vez: só grava se ainda estiver vazia.
     const { count } = await prisma.orderAttribution.updateMany({ where: { id: order.attribution.id, rateBps: null }, data: { rateBps: rate } });
+    if (count === 1) await maybeFirstSale(prisma, order.brandId, order.attribution.creatorId, order.paidAt);
     return count === 1 ? { status: "rate_frozen", rateBps: rate } : { status: "unchanged" };
   }
 
@@ -96,7 +99,18 @@ export async function decideAttribution(prisma: PrismaClient, orderId: string, a
     ],
     skipDuplicates: true, // decidido uma vez: corrida com outro worker não grava de novo
   });
+  if (count === 1) await maybeFirstSale(prisma, order.brandId, decided.creatorId, order.paidAt);
   return count === 1 ? { status: "attributed", creatorId: decided.creatorId, rateBps } : { status: "unchanged" };
+}
+
+/**
+ * U5 (D-NOTICES): "primeira venda" só para venda recente (pago nos últimos 7 dias) e quando é a única venda dela, para
+ * a carga de pedidos antigos não disparar avisos de vendas velhas.
+ */
+async function maybeFirstSale(prisma: PrismaClient, brandId: string, creatorId: string, paidAt: Date | null, now = new Date()) {
+  if (!paidAt || now.getTime() - paidAt.getTime() > 7 * 86_400_000) return;
+  if ((await prisma.orderAttribution.count({ where: { creatorId } })) !== 1) return;
+  await notify(prisma, [{ brandId, creatorId, notice: notices.firstSale() }]);
 }
 
 export type RecheckResult = { checked: number; attributed: number; frozen: number; pending: number };

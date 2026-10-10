@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { pendingTerms } from "@/lib/terms/terms";
 import { ContractGate } from "@/components/portal/contract-gate";
 import { pendingContract } from "@/lib/contracts/sign";
+import { unreadCount } from "@/lib/notifications/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +27,12 @@ export default async function PortalLayout({ children, params }: { children: Rea
     if (actor.grants.length > 0) redirect("/admin/creators?portal=1");
     notFound();
   }
+  const unread = await unreadCount(db(), ctx);
   // Contrato pendente (D-SIGNCONTRACT): quem foi aprovada em Candidatas assina antes de tudo, depois vem o termo.
   const contract = ctx.viewAs ? null : await pendingContract(db(), ctx);
   if (contract) {
     return (
-      <PortalShell ctx={ctx}>
+      <PortalShell ctx={ctx} unread={unread}>
         <ContractGate marca={ctx.brand.slug} brandName={ctx.brand.name} contract={contract} />
       </PortalShell>
     );
@@ -40,10 +42,10 @@ export default async function PortalLayout({ children, params }: { children: Rea
   if (terms) {
     const renewal = (await db().termsAcceptance.count({ where: { creatorId: ctx.creatorId } })) > 0;
     return (
-      <PortalShell ctx={ctx}>
+      <PortalShell ctx={ctx} unread={unread}>
         <TermsGate marca={ctx.brand.slug} brandName={ctx.brand.name} terms={terms} defaultName={ctx.name} renewal={renewal} />
       </PortalShell>
     );
   }
-  return <PortalShell ctx={ctx}>{children}</PortalShell>;
+  return <PortalShell ctx={ctx} unread={unread}>{children}</PortalShell>;
 }

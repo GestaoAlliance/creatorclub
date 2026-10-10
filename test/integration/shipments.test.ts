@@ -62,6 +62,7 @@ describe("envios de produtos (banco real)", () => {
 
     await expect(confirmReceived(prisma, s.ctx, s.userId, id)).rejects.toThrow(/mudou de situação/);
     await markShipped(prisma, s.envio, { shipmentId: id, carrier: "", trackingCode: " aa123456789br " });
+    expect(await prisma.notification.findFirstOrThrow({ where: { dedupeKey: `shipped:${id}` } })).toMatchObject({ kind: "SHIPPED", body: expect.stringContaining("AA123456789BR") });
     await expect(markShipped(prisma, s.envio, { shipmentId: id, carrier: "Correios", trackingCode: "XX" })).rejects.toThrow(/mudou de situação/);
     await expect(confirmReceived(prisma, { ...s.ctx, viewAs: { userId: "sa" } }, s.userId, id)).rejects.toThrow(/Visualização da equipe/);
     await confirmReceived(prisma, s.ctx, s.userId, id);

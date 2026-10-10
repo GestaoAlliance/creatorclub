@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { computeBalance } from "@/domain";
+import { computeBalance, notices } from "@/domain";
+import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { ledgerEntriesWithMonth, releasedThroughFor } from "@/lib/commission/release";
@@ -52,6 +53,7 @@ export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, w
     await tx.auditLog.create({
       data: { brandId: w.brandId, actorType: "USER", actorId: actor.userId, action: "withdrawal.paid", entity: "Withdrawal", entityId: w.id, after: { amountCents: w.amountCents } },
     });
+    await notify(tx, [{ brandId: w.brandId, creatorId: w.creatorId, notice: notices.withdrawalPaid(w.id, w.amountCents) }]);
   });
 }
 
@@ -69,6 +71,7 @@ export async function rejectWithdrawal(prisma: PrismaClient, actor: Actor | null
     await tx.auditLog.create({
       data: { brandId: w.brandId, actorType: "USER", actorId: actor.userId, action: "withdrawal.rejected", entity: "Withdrawal", entityId: w.id, after: { note } },
     });
+    await notify(tx, [{ brandId: w.brandId, creatorId: w.creatorId, notice: notices.withdrawalRejected(w.id, w.amountCents, note) }]);
   });
 }
 

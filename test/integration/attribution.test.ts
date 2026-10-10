@@ -88,6 +88,24 @@ describe("atribuição no banco", () => {
     expect((await prisma.orderAttribution.findUniqueOrThrow({ where: { orderId: o.id } })).creatorId).toBe(w.ana.creator.id);
   });
 
+  it("U5: aviso de primeira venda só para venda recente e só uma vez", async () => {
+    const w = await world();
+    await classifyCoupon(prisma, w.gestao, w.ana.coupon.id, "CREATOR");
+    await confirmOwner(prisma, w.gestao, { couponId: w.ana.coupon.id, creatorId: w.ana.creator.id });
+    const firstSale = () => prisma.notification.count({ where: { creatorId: w.ana.creator.id, kind: "FIRST_SALE" } });
+    // Venda antiga (carga histórica): não avisa.
+    await decideAttribution(prisma, (await order(w.brand.id, [w.ana.coupon.code], new Date(Date.now() - 30 * 86_400_000))).id);
+    expect(await firstSale()).toBe(0);
+    // Outra creator, venda recente e única: avisa uma vez.
+    await classifyCoupon(prisma, w.gestao, w.bia.coupon.id, "CREATOR");
+    await confirmOwner(prisma, w.gestao, { couponId: w.bia.coupon.id, creatorId: w.bia.creator.id });
+    await decideAttribution(prisma, (await order(w.brand.id, [w.bia.coupon.code], new Date(Date.now() - 86_400_000))).id);
+    await decideAttribution(prisma, (await order(w.brand.id, [w.bia.coupon.code], new Date())).id);
+    expect(await prisma.notification.findMany({ where: { creatorId: w.bia.creator.id }, select: { kind: true, href: true } })).toEqual([
+      { kind: "FIRST_SALE", href: `/portal/${w.brand.slug}/vendas` },
+    ]);
+  });
+
   it("pedido não pago atribui sem taxa; a taxa congela quando ele é pago", async () => {
     const w = await world();
     await classifyCoupon(prisma, w.gestao, w.bia.coupon.id, "CREATOR");

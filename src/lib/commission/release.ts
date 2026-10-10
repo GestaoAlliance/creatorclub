@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import {
+import { notify } from "@/lib/notifications/notify";
+import { notices,
   accumulatedSales,
   computeBalance,
   entryMonth,
@@ -168,6 +169,11 @@ async function closeBrandMonth(
         return products > 0 ? [{ brandId: brand.id, creatorId: c.id, month, salesCents, products, createdAt: now }] : [];
       });
       if (kits.length) await tx.kitGrant.createMany({ data: kits, skipDuplicates: true });
+      // U5 (D-NOTICES): avisa quem teve comissão liberada e quem ganhou kit neste fechamento.
+      await notify(tx, [
+        ...[...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month) })),
+        ...kits.map((k) => ({ brandId: brand.id, creatorId: k.creatorId, notice: notices.kitAvailable("MONTHLY", month, k.products) })),
+      ]);
       const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
       await tx.auditLog.create({
         data: {
