@@ -61,7 +61,9 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
           </div>
           <ReleaseProgressBar r={st.release} />
           <p className={ui.hint}>
-            Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam a {formatBRL(st.release.minCents)}
+            {st.release.minCents === null
+              ? "Contrato sem comissão (permuta)"
+              : `Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam a ${formatBRL(st.release.minCents)}`}
             {st.releasedThrough ? `; liberada até ${st.releasedThrough.slice(5)}/${st.releasedThrough.slice(0, 4)}` : "; nada liberado ainda"}. Venda conta no mês do pagamento.
           </p>
         </Card>
@@ -87,10 +89,11 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
             </p>
           )}
           {p.canEdit ? (
-            <ChecklistForm creatorId={p.id} c={p.contract} />
+            <ChecklistForm creatorId={p.id} c={p.contract} templates={p.contractTemplates} />
           ) : (
             <p className="text-sm">
-              {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "Sem datas de contrato."}
+              {p.contractTemplates.find((t) => t.id === p.contract.templateId)?.name ?? "Modelo padrão da marca"} ·{" "}
+              {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "sem datas de contrato"}
             </p>
           )}
           {p.ugc && (

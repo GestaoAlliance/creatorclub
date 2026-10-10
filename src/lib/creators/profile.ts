@@ -49,13 +49,14 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
   if (!actor || !can(actor.grants, "creators.view", creator.brandId)) throw new ProfileError("Sem permissão.");
   const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
   const money = can(actor.grants, "money.view", creator.brandId);
-  const [assignments, policies, invites, adjustments] = await Promise.all([
+  const [assignments, policies, invites, adjustments, templates] = await Promise.all([
     prisma.couponAssignment.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" }, include: { coupon: true } }),
     prisma.commissionPolicy.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" } }),
     prisma.creatorInvite.findMany({ where: { accountId: creator.accountId }, orderBy: { createdAt: "desc" }, take: 3 }),
     money
       ? prisma.ledgerEntry.findMany({ where: { creatorId, type: "ADJUSTMENT" }, orderBy: { createdAt: "desc" }, take: 20 })
       : Promise.resolve([]),
+    prisma.contractTemplate.findMany({ where: { brandId: creator.brandId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   const a = creator.account;
   return {
@@ -84,7 +85,9 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
       inGroup: creator.inGroup,
       tagged: creator.tagged,
       note: creator.checklistNote,
+      templateId: creator.contractTemplateId,
     },
+    contractTemplates: templates,
     ugc: creator.ugcFolderUrl || creator.ugcVideoStatus || creator.ugcOrder
       ? { folderUrl: creator.ugcFolderUrl, videoStatus: creator.ugcVideoStatus, order: creator.ugcOrder }
       : null,

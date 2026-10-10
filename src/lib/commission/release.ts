@@ -83,7 +83,8 @@ export async function creatorBalance(prisma: Db, creator: { id: string; brandId:
 
 export type ReleaseProgress = {
   releasedThrough: string | null;
-  minCents: number;
+  /** Mínimo de vendas do contrato; `null` = contrato sem comissão (UGC permuta). */
+  minCents: number | null;
   /** Vendas acumuladas desde a última liberação, contando o mês corrente. */
   accumulatedCents: number;
   /** Próximo fechamento (dia 1 do mês seguinte). */
@@ -94,14 +95,18 @@ export type ReleaseProgress = {
 export async function releaseProgress(prisma: Db, creatorId: string, now: Date): Promise<ReleaseProgress> {
   const creator = await prisma.creator.findUniqueOrThrow({
     where: { id: creatorId },
-    select: { categories: true, brand: { select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true } } },
+    select: {
+      categories: true,
+      contractTemplate: { select: { releaseMinCents: true } },
+      brand: { select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true } },
+    },
   });
   const tz = creator.brand.timezone;
   const [sales, released] = await Promise.all([salesByMonth(prisma, [creatorId], tz), releasedThroughFor(prisma, [creatorId])]);
   const releasedThrough = released.get(creatorId) ?? null;
   return {
     releasedThrough,
-    minCents: releaseMinFor(creator.categories, creator.brand),
+    minCents: releaseMinFor(creator.categories, creator.brand, creator.contractTemplate),
     accumulatedCents: accumulatedSales(sales.get(creatorId)!, releasedThrough, monthKey(now, tz)),
     nextClosingAt: monthClosesAt(monthKey(now, tz), tz),
   };
@@ -138,11 +143,15 @@ async function closeBrandMonth(
       // Trava o fechamento da marca: dois workers ao mesmo tempo não gravam em dobro.
       await tx.$queryRaw`SELECT id FROM "Brand" WHERE id = ${brand.id} FOR UPDATE`;
       if (await tx.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } })) return 0;
-      const creators = await tx.creator.findMany({ where: { brandId: brand.id }, select: { id: true, categories: true } });
+      const creators = await tx.creator.findMany({
+        where: { brandId: brand.id },
+        select: { id: true, categories: true, contractTemplate: { select: { releaseMinCents: true } } },
+      });
       const ids = creators.map((c) => c.id);
       const [sales, released] = await Promise.all([salesByMonth(tx, ids, brand.timezone), releasedThroughFor(tx, ids)]);
       const rows = creators.flatMap((c) => {
-        const minCents = releaseMinFor(c.categories, brand);
+        const minCents = releaseMinFor(c.categories, brand, c.contractTemplate);
+        if (minCents === null) return []; // contrato sem comissão (UGC permuta)
         return planReleases({ salesByMonth: sales.get(c.id)!, releasedThrough: released.get(c.id) ?? null, lastClosedMonth: month, minCents }).map(
           (r) => ({ brandId: brand.id, creatorId: c.id, month: r.month, salesCents: r.salesCents, minCents, releasedAt: now }),
         );

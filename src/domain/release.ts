@@ -58,10 +58,15 @@ export function accumulatedSales(salesByMonth: ReadonlyMap<string, number>, rele
   return acc;
 }
 
-/** Mínimo de vendas do contrato: prescritor tem o próprio; influencer e UGC usam o padrão. */
+/**
+ * Mínimo de vendas do contrato. D-CONTRACTVER: vale o modelo que a creator assinou (`null` no modelo = sem comissão,
+ * ex.: UGC permuta). Sem modelo: prescritor tem o mínimo próprio da marca; os demais, o padrão da marca.
+ */
 export function releaseMinFor(
   categories: readonly string[],
   brand: { releaseMinCents: number; releaseMinPrescriberCents: number },
-): number {
+  template?: { releaseMinCents: number | null } | null,
+): number | null {
+  if (template) return template.releaseMinCents;
   return categories.includes("PRESCRITOR") ? brand.releaseMinPrescriberCents : brand.releaseMinCents;
 }

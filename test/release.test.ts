@@ -56,6 +56,13 @@ describe("fechamento mensal (D-CONTRACT)", () => {
     expect(releaseMinFor(["INFLUENCER"], brand)).toBe(50_000);
     expect(releaseMinFor(["UGC"], brand)).toBe(50_000);
   });
+
+  it("D-CONTRACTVER: o modelo assinado vence a regra da marca; modelo sem comissão = null", () => {
+    const brand = { releaseMinCents: 50_000, releaseMinPrescriberCents: 100_000 };
+    expect(releaseMinFor(["INFLUENCER"], brand, { releaseMinCents: 100_000 })).toBe(100_000);
+    expect(releaseMinFor(["PRESCRITOR"], brand, { releaseMinCents: 100_000 })).toBe(100_000);
+    expect(releaseMinFor(["UGC"], brand, { releaseMinCents: null })).toBeNull();
+  });
 });
 
 describe("saldo com liberação mensal", () => {
