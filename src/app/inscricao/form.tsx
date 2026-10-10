@@ -13,6 +13,24 @@ function Field({ q, value, error }: { q: SignupQuestion; value: string; error?: 
     </span>
   );
   const err = error && <span role="alert" className="text-xs text-red-700 dark:text-red-400">{error}</span>;
+  if (q.kind === "multi") {
+    const chosen = value.split(", ");
+    return (
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2">{label}</legend>
+        <div className="flex flex-wrap gap-2">
+          {q.options!.map((o) => (
+            <label key={o} className="glass flex cursor-pointer items-center gap-2 rounded-2xl px-3.5 py-2 text-sm has-[:checked]:bg-brand has-[:checked]:text-white">
+              <input type="checkbox" name={q.key} value={o} defaultChecked={chosen.includes(o)} className="size-4 accent-white" />
+              {o}
+            </label>
+          ))}
+        </div>
+        {q.hint && <span className={ui.hint}>{q.hint}</span>}
+        {err}
+      </fieldset>
+    );
+  }
   if (q.kind === "choice") {
     return (
       <fieldset className="flex flex-col gap-2">
@@ -52,13 +70,13 @@ function Field({ q, value, error }: { q: SignupQuestion; value: string; error?: 
 }
 
 /** Formulário de inscrição (D-SIGNUP): as mesmas perguntas do Google, no visual do sistema. */
-export function SignupForm({ marca, brandName, hunterCode }: { marca: string; brandName: string; hunterCode: string | null }) {
-  const [state, action, pending] = useActionState(signupAction.bind(null, marca), { n: 0 } as SignupState);
+export function SignupForm({ hunterCode }: { hunterCode: string | null }) {
+  const [state, action, pending] = useActionState(signupAction, { n: 0 } as SignupState);
   if (state.done) {
     return (
       <div className="flex flex-col gap-2 py-6 text-center">
         <p className="text-lg font-semibold">Inscrição recebida!</p>
-        <p className={ui.muted}>Obrigada pelo interesse na {brandName}. A equipe vai analisar e falar com você pelo WhatsApp.</p>
+        <p className={ui.muted}>Obrigada pelo interesse! A equipe vai analisar e falar com você pelo WhatsApp.</p>
       </div>
     );
   }

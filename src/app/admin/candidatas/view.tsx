@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import type { ApplicationFilters, ApplicationSort } from "@/domain";
+import { SIGNUP_BRANDS, type ApplicationFilters, type ApplicationSort } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationRow } from "./row";
 
@@ -10,7 +10,7 @@ export const SORTS: [ApplicationSort, string][] = [["antigas", "Mais antigas pri
 const KINDS: [string, string][] = [["", "Todos os tipos"], ["INFLUENCER", "Influencer"], ["UGC", "UGC"], ["PRESCRITOR", "Prescritor"]];
 const SOURCES: [string, string][] = [["", "Todas as origens"], ["site_form", "Inscrição pelo site"], ["captacao_form", "Captação (Google)"], ["hunter_form", "Hunter (Google)"]];
 
-export type Search = { ver?: string; q?: string; tipo?: string; origem?: string; hunter?: string; vf?: string; ordem?: string };
+export type Search = { ver?: string; q?: string; tipo?: string; origem?: string; hunter?: string; marca?: string; ordem?: string };
 type Data = Awaited<ReturnType<typeof listApplications>>;
 
 /** Tela Candidatas (F2): abas, busca e filtros, lista compacta. Só exibe. */
@@ -49,9 +49,10 @@ export function CandidatasView({ status, sp, filters, data }: { status: Applicat
           <select name="ordem" defaultValue={filters.sort} aria-label="Ordem" className={ui.inputSm}>
             {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="vf" value="1" defaultChecked={sp.vf === "1"} className="size-4 accent-[var(--brand)]" /> também VermeFree
-          </label>
+          <select name="marca" defaultValue={sp.marca ?? ""} aria-label="Marca de interesse" className={ui.inputSm}>
+            <option value="">Qualquer marca</option>
+            {SIGNUP_BRANDS.map((b) => <option key={b} value={b}>Quer {b}</option>)}
+          </select>
           <button className={ui.btnSm}>Filtrar</button>
           {filtered && <Link href={status === "NEW" ? "/admin/candidatas" : `/admin/candidatas?ver=${status}`} className={`${ui.link} text-sm`}>Limpar</Link>}
         </div>

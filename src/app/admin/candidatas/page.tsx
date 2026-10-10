@@ -21,7 +21,7 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
     ...(sp.tipo ? { kind: sp.tipo } : {}),
     ...(sp.origem ? { source: sp.origem } : {}),
     ...(sp.hunter ? { hunter: sp.hunter } : {}),
-    ...(sp.vf === "1" ? { vermefree: true } : {}),
+    ...(sp.marca ? { brand: sp.marca } : {}),
     sort: SORTS.find(([s]) => s === sp.ordem)?.[0] ?? "antigas",
   };
   const data = await listApplications(db(), actor, status, filters);

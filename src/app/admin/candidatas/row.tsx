@@ -30,7 +30,7 @@ export function ApplicationRow({ a, status }: { a: Row; status: ApplicationFilte
                 {KIND_LABEL[a.categoryProposal] ?? a.categoryProposal}
               </span>
               {a.hunter && <span className={badge.sky}>hunter: {a.hunter.name}</span>}
-              {a.alsoVermeFree && <span className={badge.green}>também VermeFree</span>}
+              {a.brands.map((b) => <span key={b} className={badge.green}>{b}</span>)}
               {a.duplicates.length > 0 && <span className={badge.red}>repetida</span>}
               <span className={ui.hint}>{a.source === "site_form" ? "site" : "Google"} · {d === 0 ? "hoje" : d === 1 ? "há 1 dia" : `há ${d} dias`}</span>
             </p>

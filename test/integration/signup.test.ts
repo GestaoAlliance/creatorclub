@@ -30,9 +30,9 @@ describe("inscrição pelo formulário do sistema (D-SIGNUP, banco real)", () =>
 
     // Link do hunter: conta o clique e abre o formulário com o código.
     const target = await resolveHunterLink(prisma, brand.slug, "inscricao", "BIA");
-    expect(target).toMatchObject({ url: `/inscricao/${brand.slug}?h=bia`, click: { form: "inscricao" } });
+    expect(target).toMatchObject({ url: "/inscricao?h=bia", click: { form: "inscricao" } });
     await recordHunterClick(prisma, target!.click!, { ip: "9.9.9.9", userAgent: "x" });
-    expect(await resolveHunterLink(prisma, brand.slug, "inscricao", "ninguem")).toEqual({ url: `/inscricao/${brand.slug}`, click: null });
+    expect(await resolveHunterLink(prisma, brand.slug, "inscricao", "ninguem")).toEqual({ url: "/inscricao", click: null });
 
     const now = new Date("2026-10-10T15:00:00Z");
     expect(await submitSignup(prisma, { ...base(brand.slug, "Maria@Example.com", "1.1.1.1"), hunterCode: "bia" }, now)).toEqual({ ok: true });
