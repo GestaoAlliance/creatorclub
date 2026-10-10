@@ -20,7 +20,7 @@ export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilt
           </p>
         </div>
         <span className="flex flex-wrap justify-end gap-1.5">
-          {a.alsoVermeFree && <span className={badge.green}>também VermeFree</span>}
+          {a.brands.map((b) => <span key={b} className={badge.green}>{b}</span>)}
           <span className={a.categoryProposal === "PRESCRITOR" ? badge.sky : a.categoryProposal === "UGC" ? badge.amber : badge.neutral}>
             {a.kindAnswer ?? "tipo não informado"}
           </span>

@@ -120,9 +120,9 @@ describe("candidatas do formulário de Captação (D-CAPTACAO, banco real)", () 
       source: "captacao_form",
       storiesViews: "900",
       collabInterest: "Sim",
-      alsoVermeFree: true,
+      brands: ["Botanika", "VermeFree"],
       extras: [{ question: "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?", answer: "Uso os produtos" }],
     });
-    expect(rows.find((r) => r.id === imported.id)).toMatchObject({ note: "Planilha: Em contato", alsoVermeFree: false });
+    expect(rows.find((r) => r.id === imported.id)).toMatchObject({ note: "Planilha: Em contato", brands: [] });
   });
 });

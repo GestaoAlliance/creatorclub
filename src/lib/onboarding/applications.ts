@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, validateNewCouponCode, type ApplicationFilters, type DupSource } from "@/domain";
+import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -238,7 +238,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         source: r.source,
         storiesViews: r.storiesViews,
         collabInterest: r.collabInterest,
-        alsoVermeFree: /vermefree/i.test(r.brandsWanted ?? ""),
+        brands: wantedBrands(r.brandsWanted),
         note: r.note,
         extras: extraAnswers(r.raw),
         hunter: r.hunterLink ? { name: r.hunterLink.user.name, code: r.hunterLink.code } : null,

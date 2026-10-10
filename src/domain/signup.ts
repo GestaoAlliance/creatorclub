@@ -4,12 +4,18 @@
  * Todas obrigatórias como no Google, menos CNPJ e razão social (quem não tem CNPJ recebe como pessoa física, D-PFRECEIPT).
  */
 
+/** Marcas que a pessoa pode escolher representar (D-SIGNUP). Para incluir outra (ex.: Shoty), é só acrescentar aqui. */
+export const SIGNUP_BRANDS = ["Botanika", "VermeFree", "Revita Derma"] as const;
+
+/** A inscrição sem marca no endereço (`/inscricao`) entra nesta marca do sistema, a única ligada por enquanto. */
+export const SIGNUP_DEFAULT_BRAND = "botanika";
+
 export type SignupQuestion = {
   key: string;
   /** Título igual ao do Google Forms (é por ele que a resposta é lida e mostrada à equipe). */
   title: string;
   label: string;
-  kind: "text" | "email" | "tel" | "long" | "choice";
+  kind: "text" | "email" | "tel" | "long" | "choice" | "multi";
   options?: readonly string[];
   required: boolean;
   hint?: string;
@@ -34,7 +40,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "knows", title: "Você já conhece a Botanika Brasil e a VermeFree?  ", label: "Você já conhece a Botanika Brasil e a VermeFree?", kind: "choice", options: YES_NO, required: true },
   { key: "commissioned", title: "Você já trabalhou de forma comissionada para outras marcas?", label: "Você já trabalhou de forma comissionada para outras marcas?", kind: "choice", options: YES_NO, required: true },
   { key: "accepts", title: "Você aceita receber os produtos e compartilhar sua experiência com seu público, postando no feed e stories? ", label: "Você aceita receber os produtos e compartilhar sua experiência com seu público, postando no feed e stories?", kind: "choice", options: YES_NO, required: true },
-  { key: "brands", title: "Tenho interesse em representar:", label: "Tenho interesse em representar", kind: "choice", options: ["Botanika", "Botanika e VermeFree"], required: true },
+  { key: "brands", title: "Tenho interesse em representar:", label: "Tenho interesse em representar", kind: "multi", options: SIGNUP_BRANDS, required: true, hint: "Pode marcar mais de uma." },
   { key: "collab", title: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar o seu cupom, você tem interesse? ", label: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do Instagram da Botanika e da VermeFree para divulgar o seu cupom. Você tem interesse?", kind: "choice", options: YES_NO, required: true },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço para entrega dos suplementos", kind: "long", required: true, hint: "Rua/Av., número, bairro, cidade, estado, CEP e ponto de referência" },
   { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Sugestão de nome de cupom", kind: "text", required: true, hint: "Só letras, até 8 (ex.: MARIA)" },
@@ -74,6 +80,7 @@ export function validateSignup(values: Record<string, string | undefined>, conse
       continue;
     }
     if (q.kind === "choice" && !q.options!.includes(v)) errors[q.key] = "Escolha uma das opções.";
+    else if (q.kind === "multi" && v.split(", ").some((x) => !q.options!.includes(x))) errors[q.key] = "Escolha entre as opções.";
     else if (q.kind === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) errors[q.key] = "E-mail inválido.";
     else if (q.kind === "tel" && v.replace(/\D/g, "").length < 10) errors[q.key] = "Informe o WhatsApp com DDD.";
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
@@ -82,4 +89,10 @@ export function validateSignup(values: Record<string, string | undefined>, conse
   }
   if (!consent) errors.consent = "É preciso concordar para enviar.";
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, answers };
+}
+
+/** Marcas que a candidata quer representar, de qualquer formato de resposta ("Botanika e VermeFree", "Botanika, Revita Derma"). */
+export function wantedBrands(answer: string | null | undefined): string[] {
+  const a = (answer ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "");
+  return SIGNUP_BRANDS.filter((b) => a.includes(b.toLowerCase().replace(/\s+/g, "")));
 }

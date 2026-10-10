@@ -46,11 +46,11 @@ export function findDuplicates(me: { id: string; email: string | null; cpf: stri
 }
 
 export type ApplicationSort = "antigas" | "novas" | "seguidores";
-export type ApplicationFilters = { q?: string; kind?: string; source?: string; hunter?: string; vermefree?: boolean; sort?: ApplicationSort };
+export type ApplicationFilters = { q?: string; kind?: string; source?: string; hunter?: string; brand?: string; sort?: ApplicationSort };
 
 type Filterable = {
   fullName: string; email: string | null; instagram: string | null; categoryProposal: string; source: string;
-  hunter: { code: string } | null; alsoVermeFree: boolean; submittedAt: Date; followersCount: number | null;
+  hunter: { code: string } | null; brands: readonly string[]; submittedAt: Date; followersCount: number | null;
 };
 
 /** Aplica busca e filtros e ordena (padrão: mais antigas primeiro, quem espera há mais tempo). */
@@ -62,7 +62,7 @@ export function filterApplications<T extends Filterable>(rows: readonly T[], f: 
     if (f.kind && r.categoryProposal !== f.kind) return false;
     if (f.source && r.source !== f.source) return false;
     if (f.hunter === "nenhum" ? r.hunter !== null : f.hunter && r.hunter?.code !== f.hunter) return false;
-    if (f.vermefree && !r.alsoVermeFree) return false;
+    if (f.brand && !r.brands.includes(f.brand)) return false;
     return true;
   });
   const sort = f.sort ?? "antigas";

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** F3 (aprovar com um clique: creator, cupom na Shopify e convite), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao/botanika` e os links dos hunters
+- **Próxima tarefa:** F3 (aprovar com um clique: creator, cupom na Shopify e convite), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -203,6 +203,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-89 — 2026-10-10 — Inscrição sem marca no endereço
+- **Decidido:** D-SIGNUP atualizada (endereço `/inscricao` neutro "Creator Club"; marcas Botanika, VermeFree e Revita
+  Derma em caixas de seleção, Shoty em breve; link curto do hunter `/i/[codigo]`; tudo entra na Botanika, com etiqueta).
+- **Feito:** formulário e ação movidos para `src/app/inscricao/`; `/inscricao/[marca]` redireciona para `/inscricao`
+  (mantendo o código do hunter); rota `/i/[codigo]` conta o clique e abre a inscrição; `SIGNUP_BRANDS` e `wantedBrands`
+  em `src/domain/signup.ts` (lê também as respostas antigas do Google, "Botanika e VermeFree"); Candidatas troca
+  "também VermeFree" por etiquetas das marcas e filtro "Quer ..."; Hunters mostra os links novos.
+- **Verificado:** testes de marcas (opções, respostas antigas) e de link do hunter atualizados. `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando. Capturas do formulário e de Hunters.
 
 ### CP-88 — 2026-10-10 — Candidatas organizadas (F2)
 - **Decidido:** D-CANDLIST (busca, filtros, lista compacta e aviso de repetida; sem "Em conversa").

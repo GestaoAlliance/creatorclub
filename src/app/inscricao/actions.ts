@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { SIGNUP_QUESTIONS } from "@/domain";
+import { SIGNUP_DEFAULT_BRAND, SIGNUP_QUESTIONS } from "@/domain";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
 import { submitSignup } from "@/lib/onboarding/signup";
@@ -9,11 +9,13 @@ import { submitSignup } from "@/lib/onboarding/signup";
 export type SignupState = { done?: boolean; errors?: Record<string, string>; values?: Record<string, string>; n: number };
 
 /** Envio do formulário de inscrição (D-SIGNUP). Em erro devolve o que foi digitado para nada se perder. */
-export async function signupAction(marca: string, prev: SignupState, form: FormData): Promise<SignupState> {
-  const values: Record<string, string> = Object.fromEntries(SIGNUP_QUESTIONS.map((q) => [q.key, String(form.get(q.key) ?? "")]));
+export async function signupAction(prev: SignupState, form: FormData): Promise<SignupState> {
+  const values: Record<string, string> = Object.fromEntries(
+    SIGNUP_QUESTIONS.map((q) => [q.key, q.kind === "multi" ? form.getAll(q.key).map(String).join(", ") : String(form.get(q.key) ?? "")]),
+  );
   try {
     const r = await submitSignup(db(), {
-      brandSlug: marca,
+      brandSlug: SIGNUP_DEFAULT_BRAND,
       values,
       consent: form.get("consent") === "sim",
       honeypot: String(form.get("site") ?? ""),

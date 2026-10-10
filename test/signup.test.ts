@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_QUESTIONS, validateSignup } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, validateSignup, wantedBrands } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
   fullName: "  Maria   Exemplo ", kind: "Influencer e UGC", phone: "(11) 91234-5678", email: "Maria@Example.com",
   instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", followers: "12 mil", storiesViews: "800", niche: "Saúde",
   content: "Rotina\nfitness", why: "Uso os produtos", knows: "Sim", commissioned: "Não", accepts: "Sim",
-  brands: "Botanika e VermeFree", collab: "Sim", address: "Rua A, 1\nSão Paulo - SP", coupon: "MARIA", cpf: "529.982.247-25", pix: "maria@example.com",
+  brands: "Botanika, VermeFree", collab: "Sim", address: "Rua A, 1\nSão Paulo - SP", coupon: "MARIA", cpf: "529.982.247-25", pix: "maria@example.com",
 };
 
 describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
@@ -17,7 +17,7 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
     expect(r.answers["@ do seu Instagram:"]).toBe("@maria.exemplo");
     expect(r.answers["ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)"]).toBe("Rua A, 1\nSão Paulo - SP");
     const f = parseHunterAnswers(r.answers);
-    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", followers: "12 mil", storiesViews: "800", brandsWanted: "Botanika e VermeFree", collabInterest: "Sim", suggestedCoupon: "MARIA", cnpj: null });
+    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", followers: "12 mil", storiesViews: "800", brandsWanted: "Botanika, VermeFree", collabInterest: "Sim", suggestedCoupon: "MARIA", cnpj: null });
     expect(categoryFromAnswer(f.kindAnswer)).toBe("INFLUENCER");
     // As perguntas sem campo próprio aparecem para a equipe como antes.
     expect(extraAnswers(r.answers).map((x) => x.question)).toEqual(expect.arrayContaining([
@@ -36,5 +36,17 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
     });
     // CNPJ e razão social são opcionais; o resto é obrigatório, como no Google.
     expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "companyName"]);
+  });
+
+  it("marcas de interesse: caixas de seleção só com as opções; leitura também das respostas antigas do Google", () => {
+    expect(SIGNUP_BRANDS).toEqual(["Botanika", "VermeFree", "Revita Derma"]);
+    expect(validateSignup({ ...full, brands: "VermeFree" }, true).ok).toBe(true);
+    const bad = validateSignup({ ...full, brands: "Botanika, Shoty" }, true);
+    expect(bad.ok ? null : bad.errors.brands).toBe("Escolha entre as opções.");
+    expect(wantedBrands("Botanika, Revita Derma")).toEqual(["Botanika", "Revita Derma"]);
+    expect(wantedBrands("Botanika e VermeFree")).toEqual(["Botanika", "VermeFree"]);
+    expect(wantedBrands("Só a vermefree")).toEqual(["VermeFree"]);
+    expect(wantedBrands("revita  derma")).toEqual(["Revita Derma"]);
+    expect(wantedBrands(null)).toEqual([]);
   });
 });

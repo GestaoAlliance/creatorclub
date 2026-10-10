@@ -26,13 +26,13 @@ describe("organização das candidatas (F2)", () => {
 
   it("busca, filtros e ordem", () => {
     const row = (id: string, o: Partial<Parameters<typeof filterApplications>[0][number]>) => ({
-      id, fullName: id, email: null, instagram: null, categoryProposal: "INFLUENCER", source: "site_form", hunter: null, alsoVermeFree: false,
+      id, fullName: id, email: null, instagram: null, categoryProposal: "INFLUENCER", source: "site_form", hunter: null, brands: [],
       submittedAt: new Date("2026-10-01"), followersCount: null, ...o,
     });
     const rows = [
       row("Ana", { submittedAt: new Date("2026-10-03"), followersCount: 500, instagram: "@ana.fit" }),
       row("Bia", { submittedAt: new Date("2026-10-01"), followersCount: 9000, categoryProposal: "UGC", hunter: { code: "joao" } }),
-      row("Caca", { submittedAt: new Date("2026-10-02"), source: "captacao_form", alsoVermeFree: true }),
+      row("Caca", { submittedAt: new Date("2026-10-02"), source: "captacao_form", brands: ["Botanika", "VermeFree"] }),
     ];
     expect(filterApplications(rows, {}).map((r) => r.id)).toEqual(["Bia", "Caca", "Ana"]);
     expect(filterApplications(rows, { sort: "seguidores" }).map((r) => r.id)).toEqual(["Bia", "Ana", "Caca"]);
@@ -41,6 +41,6 @@ describe("organização das candidatas (F2)", () => {
     expect(filterApplications(rows, { kind: "UGC" }).map((r) => r.id)).toEqual(["Bia"]);
     expect(filterApplications(rows, { hunter: "joao" }).map((r) => r.id)).toEqual(["Bia"]);
     expect(filterApplications(rows, { hunter: "nenhum" }).map((r) => r.id)).toEqual(["Caca", "Ana"]);
-    expect(filterApplications(rows, { source: "captacao_form", vermefree: true }).map((r) => r.id)).toEqual(["Caca"]);
+    expect(filterApplications(rows, { source: "captacao_form", brand: "VermeFree" }).map((r) => r.id)).toEqual(["Caca"]);
   });
 });

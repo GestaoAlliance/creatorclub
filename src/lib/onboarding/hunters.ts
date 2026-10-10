@@ -122,7 +122,7 @@ export async function resolveHunterLink(prisma: PrismaClient, brandSlug: string,
     const code = normalizeHunterCode(decodeURIComponent(rawCode));
     const link = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: { id: true } }) : null;
     return {
-      url: link ? `/inscricao/${brand.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${brand.slug}`,
+      url: link ? `/inscricao?h=${encodeURIComponent(code)}` : "/inscricao",
       click: link ? { brandId: brand.id, hunterLinkId: link.id, form } : null,
     };
   }
