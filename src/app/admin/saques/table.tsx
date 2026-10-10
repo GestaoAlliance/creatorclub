@@ -26,6 +26,7 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
                 <p className={ui.hint}>pedido em {day(r.requestedAt)}{r.decidedAt && ` · decidido em ${day(r.decidedAt)}`}</p>
               </div>
               <span className="flex flex-wrap justify-end gap-1.5">
+                {r.individual && <span className={badge.sky}>pessoa física · recibo</span>}
                 {r.nfCheck === "OK" && <span className={badge.green}>nota conferida</span>}
                 {r.nfCheck === "MANUAL" && <span className={badge.amber}>conferir a nota</span>}
                 <span className={STATUS_BADGE[r.status]}>{WITHDRAWAL_STATUS_LABEL[r.status]}</span>
@@ -47,6 +48,11 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
               </div>
               <div className="flex gap-2">
                 {r.pixKey && <CopyButton value={r.pixKey} label="Copiar" />}
+                {r.individual && (
+                  <a href={`/admin/saques/recibo/${r.id}`} target="_blank" rel="noopener noreferrer" className={ui.ghostSm}>
+                    <FileText className="size-3.5" /> Recibo
+                  </a>
+                )}
                 {r.hasNf && (
                   <a href={`/admin/saques/nf/${r.id}`} target="_blank" rel="noopener noreferrer" className={ui.ghostSm}>
                     <FileText className="size-3.5" /> Nota
@@ -54,6 +60,9 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
                 )}
               </div>
             </div>
+            {r.status === "REQUESTED" && r.individual && (
+              <p className="text-sm text-sky-800 dark:text-sky-300">Pessoa física: antes de pagar, confira no app do banco se o nome da chave Pix é o da creator.</p>
+            )}
             {r.status === "REQUESTED" && r.nfCheck === "MANUAL" && (
               <p className="text-sm text-amber-800 dark:text-amber-300">O sistema não conseguiu ler esta nota (foto, escaneada ou fora do padrão nacional). Abra a nota e confira tomadora, valor e CNPJ antes de pagar.</p>
             )}

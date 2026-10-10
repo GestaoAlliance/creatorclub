@@ -35,7 +35,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
     <div className="flex flex-col gap-6">
       {justRequested && (
         <p role="status" className="rounded-2xl border border-emerald-400/50 bg-emerald-100/80 px-4 py-3 text-sm text-emerald-950 dark:bg-emerald-900/40 dark:text-emerald-100">
-          Pedido de saque enviado! A equipe confere a nota fiscal e paga por Pix. Você acompanha em "Meus saques".
+          Pedido de saque enviado! A equipe confere {tab.individual ? "o recibo" : "a nota fiscal"} e paga por Pix. Você acompanha em "Meus saques".
         </p>
       )}
       <section className="glass flex flex-col gap-5 rounded-3xl p-5 md:p-6">
@@ -72,10 +72,19 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           {tab.release.minCents !== null &&
             `A comissão do mês é liberada no dia 1 do mês seguinte quando suas vendas acumuladas chegam a ${formatBRL(tab.release.minCents)}; se não chegarem, elas somam com as do mês seguinte. `}
           Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
-          liberado, com a nota fiscal em PDF · pagamento por Pix até o dia 15.
+          liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix até o dia 15.
         </p>
       </section>
 
+      {tab.individual ? (
+        <section className="glass flex flex-col gap-3 rounded-3xl p-5">
+          <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Você recebe como pessoa física</h2>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            Não precisa de nota fiscal. No pedido de saque você confere o recibo, digita nome completo e CPF e aceita. O Pix é feito na
+            chave do seu cadastro.
+          </p>
+        </section>
+      ) : (
       <section className="glass flex flex-col gap-3 rounded-3xl p-5">
         <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -95,6 +104,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           </div>
         )}
       </section>
+      )}
 
       <section className="glass rounded-3xl p-5">
         <h2 className="mb-2 font-semibold">Meus saques</h2>

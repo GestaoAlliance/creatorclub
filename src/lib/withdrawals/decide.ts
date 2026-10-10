@@ -116,6 +116,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       note: true,
       nfFileId: true,
       nfCheck: true,
+      method: true,
       creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
     },
   });
@@ -157,6 +158,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       note: r.note,
       hasNf: r.nfFileId !== null,
       nfCheck: r.nfCheck,
+      individual: r.method === "RECEIPT_PIX",
       availableBeforeCents,
     };
   });
@@ -168,4 +170,15 @@ export async function nfLocation(prisma: PrismaClient, actor: Actor | null, with
   if (!w || !w.nfFile) throw new WithdrawalDecisionError("Nota fiscal não encontrada.");
   assertManage(actor, w.brandId);
   return w.nfFile;
+}
+
+/** Recibo aceito pela creator pessoa física (D-PFRECEIPT), só para quem decide saques; CPF só com `personal.fiscal`. */
+export async function receiptFor(prisma: PrismaClient, actor: Actor | null, withdrawalId: string) {
+  const w = await prisma.withdrawal.findUnique({ where: { id: withdrawalId }, select: { brandId: true, receipt: true } });
+  if (!w || !w.receipt) throw new WithdrawalDecisionError("Recibo não encontrado.");
+  assertManage(actor, w.brandId);
+  const r = w.receipt;
+  if (can(actor.grants, "personal.fiscal", w.brandId)) return { body: r.body, acceptedAt: r.acceptedAt, ip: r.ip };
+  const formatted = `${r.cpf.slice(0, 3)}.${r.cpf.slice(3, 6)}.${r.cpf.slice(6, 9)}-${r.cpf.slice(9)}`;
+  return { body: r.body.replace(formatted, `***.${r.cpf.slice(3, 6)}.${r.cpf.slice(6, 9)}-**`), acceptedAt: r.acceptedAt, ip: r.ip };
 }

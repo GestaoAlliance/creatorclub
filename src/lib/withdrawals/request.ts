@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { checkNf, checkWithdrawalRequest, parseNfseText, type WithdrawalError } from "@/domain";
-import { creatorBalance } from "@/lib/commission/release";
+import { checkNf, checkWithdrawalRequest, dayKey, parseNfseText, receiptText, type WithdrawalError } from "@/domain";
+import { creatorBalance, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
-import { pendingTerms } from "@/lib/terms/terms";
+import { isValidCpf, pendingTerms } from "@/lib/terms/terms";
 import { pdfText } from "./nf";
 
 /**
@@ -55,16 +55,28 @@ export async function assertCanStart(prisma: PrismaClient, ctx: PortalContext) {
   if (await pendingTerms(prisma, ctx)) throw new WithdrawalRequestError("Aceite o termo do Creator Club antes de pedir saque.");
 }
 
-export async function requestWithdrawal(
+type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
+type LockedCreator = {
+  id: string;
+  brandId: string;
+  receivesAsIndividual: boolean;
+  account: { id: string; pixKey: string | null; cnpj: string | null; cpf: string | null };
+  brand: { name: string; legalName: string | null; nfTakerDocument: string | null; timezone: string };
+};
+
+/** O que cada tipo de pedido grava no saque: a nota (PJ) ou o recibo aceito (pessoa física, D-PFRECEIPT). */
+type Document = {
+  check(creator: LockedCreator, tx: Tx, releasedThrough: string | null): Promise<{ data: Record<string, unknown>; audit: object; after?: (withdrawalId: string) => Promise<unknown> }>;
+};
+
+/** Núcleo do pedido: trava a creator, aplica as regras de saldo e janela, grava o pedido com o documento e audita. */
+async function createRequest(
   prisma: PrismaClient,
   ctx: PortalContext,
-  input: { actorUserId: string; requestId: string; amountCents: number; pdf: Uint8Array; pixKey?: string },
-  now = new Date(),
+  input: { actorUserId: string; requestId: string; amountCents: number; pixKey?: string },
+  doc: Document,
+  now: Date,
 ): Promise<{ withdrawalId: string; created: boolean }> {
-  assertRequestId(input.requestId);
-  await assertCanStart(prisma, ctx);
-  checkPdf(input.pdf);
-  const nfFields = parseNfseText(await pdfText(input.pdf));
   const key = `withdrawal:${input.requestId}`;
   const existing = await prisma.withdrawal.findUnique({ where: { idempotencyKey: key }, select: { id: true, creatorId: true } });
   if (existing) {
@@ -81,11 +93,21 @@ export async function requestWithdrawal(
       const creator = await tx.creator.findUniqueOrThrow({
         where: { id: ctx.creatorId },
         include: {
-          account: { select: { id: true, pixKey: true, cnpj: true } },
-          brand: { select: { name: true, nfTakerDocument: true, timezone: true, withdrawalMinCents: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true } },
+          account: { select: { id: true, pixKey: true, cnpj: true, cpf: true } },
+          brand: {
+            select: {
+              name: true,
+              legalName: true,
+              nfTakerDocument: true,
+              timezone: true,
+              withdrawalMinCents: true,
+              withdrawalWindowStartDay: true,
+              withdrawalWindowEndDay: true,
+            },
+          },
         },
       });
-      const balance = await creatorBalance(tx, creator, creator.brand.timezone, now);
+      const [balance, released] = await Promise.all([creatorBalance(tx, creator, creator.brand.timezone, now), releasedThroughFor(tx, [creator.id])]);
       const errors = checkWithdrawalRequest(
         { amountCents: input.amountCents, availableCents: balance.availableCents, hasOpenWithdrawal: balance.reservedCents > 0, now },
         {
@@ -97,14 +119,7 @@ export async function requestWithdrawal(
       );
       if (errors.length) throw new WithdrawalRequestError(RULE_TEXT[errors[0]!]);
 
-      const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj });
-      if (nf.problems.length) throw new WithdrawalRequestError(nf.problems.join(" "));
-      const accessKey = nfFields.accessKey;
-      if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "PAID"] } } })))
-        throw new WithdrawalRequestError(NF_USED);
-      // Ficha sem CNPJ: grava o CNPJ de quem emitiu a nota.
-      if (!creator.account.cnpj && nf.issuerDoc?.length === 14)
-        await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { cnpj: nf.issuerDoc } });
+      const document = await doc.check(creator, tx, released.get(creator.id) ?? null);
 
       const pix = input.pixKey?.trim();
       if (!creator.account.pixKey) {
@@ -112,29 +127,10 @@ export async function requestWithdrawal(
         await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { pixKey: pix.slice(0, 140) } });
       }
 
-      const file = await tx.file.create({
-        data: {
-          brandId: creator.brandId,
-          bucket: NF_BUCKET,
-          path: nfPath(creator.brandId, creator.id, input.requestId),
-          mime: "application/pdf",
-          sizeBytes: input.pdf.byteLength,
-          sha256: createHash("sha256").update(input.pdf).digest("hex"),
-          uploadedById: input.actorUserId,
-        },
-      });
       const withdrawal = await tx.withdrawal.create({
-        data: {
-          brandId: creator.brandId,
-          creatorId: creator.id,
-          amountCents: input.amountCents,
-          nfFileId: file.id,
-          nfAccessKey: accessKey,
-          nfCheck: nf.status,
-          idempotencyKey: key,
-          requestedAt: now,
-        },
+        data: { brandId: creator.brandId, creatorId: creator.id, amountCents: input.amountCents, idempotencyKey: key, requestedAt: now, ...document.data },
       });
+      await document.after?.(withdrawal.id);
       await tx.auditLog.create({
         data: {
           brandId: creator.brandId,
@@ -143,7 +139,7 @@ export async function requestWithdrawal(
           action: "withdrawal.request",
           entity: "Withdrawal",
           entityId: withdrawal.id,
-          after: { amountCents: input.amountCents, availableCents: balance.availableCents, pixKeySet: !creator.account.pixKey, nfCheck: nf.status },
+          after: { amountCents: input.amountCents, availableCents: balance.availableCents, pixKeySet: !creator.account.pixKey, ...document.audit },
         },
       });
       return { withdrawalId: withdrawal.id, created: true };
@@ -154,4 +150,101 @@ export async function requestWithdrawal(
     if (String(error).includes("Withdrawal_nf_access_key_once")) throw new WithdrawalRequestError(NF_USED);
     throw error;
   }
+}
+
+/** Pedido com nota fiscal (creator com CNPJ). */
+export async function requestWithdrawal(
+  prisma: PrismaClient,
+  ctx: PortalContext,
+  input: { actorUserId: string; requestId: string; amountCents: number; pdf: Uint8Array; pixKey?: string },
+  now = new Date(),
+): Promise<{ withdrawalId: string; created: boolean }> {
+  assertRequestId(input.requestId);
+  await assertCanStart(prisma, ctx);
+  checkPdf(input.pdf);
+  const nfFields = parseNfseText(await pdfText(input.pdf));
+  return createRequest(
+    prisma,
+    ctx,
+    input,
+    {
+      async check(creator, tx) {
+        if (creator.receivesAsIndividual) throw new WithdrawalRequestError("Seu cadastro está como pessoa física: o saque é com recibo, sem nota.");
+        const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj });
+        if (nf.problems.length) throw new WithdrawalRequestError(nf.problems.join(" "));
+        const accessKey = nfFields.accessKey;
+        if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "PAID"] } } })))
+          throw new WithdrawalRequestError(NF_USED);
+        // Ficha sem CNPJ: grava o CNPJ de quem emitiu a nota.
+        if (!creator.account.cnpj && nf.issuerDoc?.length === 14)
+          await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { cnpj: nf.issuerDoc } });
+        const file = await tx.file.create({
+          data: {
+            brandId: creator.brandId,
+            bucket: NF_BUCKET,
+            path: nfPath(creator.brandId, creator.id, input.requestId),
+            mime: "application/pdf",
+            sizeBytes: input.pdf.byteLength,
+            sha256: createHash("sha256").update(input.pdf).digest("hex"),
+            uploadedById: input.actorUserId,
+          },
+        });
+        return { data: { method: "NF_PIX", nfFileId: file.id, nfAccessKey: accessKey, nfCheck: nf.status }, audit: { nfCheck: nf.status } };
+      },
+    },
+    now,
+  );
+}
+
+/** Texto do recibo que a creator pessoa física vê antes de aceitar (D-PFRECEIPT). */
+export function buildReceipt(creator: Pick<LockedCreator, "brand">, input: { fullName: string; cpf: string; amountCents: number }, releasedThrough: string | null, now: Date) {
+  return receiptText({
+    fullName: input.fullName,
+    cpf: input.cpf,
+    payerName: creator.brand.legalName ?? creator.brand.name,
+    payerDocument: creator.brand.nfTakerDocument,
+    brandName: creator.brand.name,
+    amountCents: input.amountCents,
+    releasedThrough,
+    day: dayKey(now, creator.brand.timezone),
+  });
+}
+
+/** Pedido com recibo (creator marcada como pessoa física na ficha, D-PFRECEIPT). */
+export async function requestWithdrawalWithReceipt(
+  prisma: PrismaClient,
+  ctx: PortalContext,
+  input: { actorUserId: string; requestId: string; amountCents: number; fullName: string; cpf: string; accept: boolean; pixKey?: string; ip?: string | null; userAgent?: string | null },
+  now = new Date(),
+): Promise<{ withdrawalId: string; created: boolean }> {
+  assertRequestId(input.requestId);
+  await assertCanStart(prisma, ctx);
+  const fullName = input.fullName.trim().replace(/\s+/g, " ").slice(0, 160);
+  const cpf = input.cpf.replace(/\D/g, "");
+  if (fullName.split(" ").length < 2) throw new WithdrawalRequestError("Digite seu nome completo.");
+  if (!isValidCpf(cpf)) throw new WithdrawalRequestError("CPF inválido. Confira os números.");
+  if (!input.accept) throw new WithdrawalRequestError("Marque que você confere e aceita o recibo.");
+  return createRequest(
+    prisma,
+    ctx,
+    input,
+    {
+      async check(creator, tx, releasedThrough) {
+        if (!creator.receivesAsIndividual) throw new WithdrawalRequestError("O saque com recibo é só para quem a equipe cadastrou como pessoa física.");
+        const saved = creator.account.cpf?.replace(/\D/g, "") || null;
+        if (saved && saved !== cpf) throw new WithdrawalRequestError("O CPF não confere com o seu cadastro. Fale com a equipe.");
+        if (!saved) await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { cpf } });
+        const body = buildReceipt(creator, { fullName, cpf, amountCents: input.amountCents }, releasedThrough, now);
+        return {
+          data: { method: "RECEIPT_PIX" },
+          audit: { method: "RECEIPT_PIX" },
+          after: (withdrawalId) =>
+            tx.withdrawalReceipt.create({
+              data: { brandId: creator.brandId, withdrawalId, userId: input.actorUserId, fullName, cpf, body, ip: input.ip ?? null, userAgent: input.userAgent?.slice(0, 300) ?? null, acceptedAt: now },
+            }),
+        };
+      },
+    },
+    now,
+  );
 }

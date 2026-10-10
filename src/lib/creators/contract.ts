@@ -6,7 +6,7 @@ import { can } from "@/lib/auth/permissions";
 /**
  * Contrato e checklist da creator (D-CHECKLIST): início e fim do contrato (sem fim informado, o fim é o início + 6
  * meses, UGC 3) e os itens que a Central controlava: contrato assinado, cupom cadastrado, seguimos no Instagram,
- * grupo e etiquetada. Quem edita creators (Gestão, super admin) muda; vai para a auditoria.
+ * grupo e etiquetada; e se recebe como pessoa física (D-PFRECEIPT). Quem edita creators (Gestão, super admin) muda; vai para a auditoria.
  */
 
 export class ContractError extends Error {}
@@ -22,6 +22,8 @@ export type ChecklistInput = {
   note: string | null;
   /** D-CONTRACTVER: modelo de contrato assinado (da mesma marca); `undefined` = não mexe. */
   templateId?: string | null;
+  /** D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota); `undefined` = não mexe. */
+  receivesAsIndividual?: boolean;
 };
 
 const toDate = (day: string | null) => (day ? new Date(`${day}T00:00:00Z`) : null);
@@ -49,6 +51,7 @@ export async function updateChecklist(prisma: PrismaClient, actor: Actor | null,
     tagged: input.tagged,
     checklistNote: note,
     ...(input.templateId !== undefined ? { contractTemplateId: input.templateId } : {}),
+    ...(input.receivesAsIndividual !== undefined ? { receivesAsIndividual: input.receivesAsIndividual } : {}),
   };
   const before = {
     contractTemplateId: creator.contractTemplateId,
@@ -60,6 +63,7 @@ export async function updateChecklist(prisma: PrismaClient, actor: Actor | null,
     inGroup: creator.inGroup,
     tagged: creator.tagged,
     checklistNote: creator.checklistNote,
+    receivesAsIndividual: creator.receivesAsIndividual,
   };
   await prisma.$transaction([
     prisma.creator.update({ where: { id: creatorId }, data }),
