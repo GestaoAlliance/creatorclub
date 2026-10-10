@@ -171,6 +171,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-56 — 2026-10-10 — Mesmo visual em todo o sistema (D-DESIGNALL)
+- **Decidido:** D-DESIGNALL (substitui D-ADMINUI): o *liquid glass* do portal vale para todas as telas da equipe e
+  para login, senha e convite; menu por papel; Início da equipe com os números do papel; cor da marca escolhida.
+- **Feito:** peças comuns (`src/components/ui/`: estilos, `Card`, `Kpi`, `PageHeader`, `Msg`); menu único
+  (`src/components/portal/nav.tsx`, com "Mais" no celular) usado pelo portal e pela equipe; `src/lib/staff/` (menu por
+  papel, testado; marca do topo por cookie `cc_brand`; números do Início); `/admin` (Início) e moldura em
+  `src/app/admin/layout.tsx`. Telas refeitas: Creators (com busca), ficha (cartões), Cupons, Envios, Saques,
+  Abertura, Equipe, Shopify, Importar, entrar, esqueci, nova senha, convite, página inicial. `/conta` leva a equipe
+  ao painel e a creator ao portal. Telas de entrada com a cor da Botanika enquanto for a única marca (D-LOGINCOLOR). Ficha e Início separados em componentes de exibição (para as capturas).
+- **Verificado:** 109 unitários (1 novo: menu por papel); 130 de integração; typecheck; build. Capturas para o OK.
+
 ### CP-55 — 2026-10-10 — Saldo de abertura e conferência da Ana (E6)
 - **Decidido:** D-OPENFLOW (o Pagamento informa um total já pago + observação por creator; aprovar lança o "Saldo de
   abertura" negativo e libera o saque; saldo negativo é aceito com aviso, D-NEG; aprovam Pagamento e super admin;

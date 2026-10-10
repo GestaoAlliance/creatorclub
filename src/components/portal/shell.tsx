@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { stopViewAsAction } from "@/app/portal/actions";
 import { signOut } from "@/app/entrar/actions";
-import { BottomNav, SideNav } from "@/components/portal/nav";
+import { BottomNav, PORTAL_ITEMS, SideNav } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
@@ -13,7 +13,7 @@ export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creat
 
   return (
     <div style={brandCssVars(ctx.brand) as CSSProperties} className="portal-bg flex min-h-screen">
-      <SideNav base={base} brandName={ctx.brand.name} />
+      <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -60,7 +60,7 @@ export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creat
         )}
         <main className="flex-1">{children}</main>
       </div>
-      <BottomNav base={base} />
+      <BottomNav base={base} items={PORTAL_ITEMS} />
     </div>
   );
 }

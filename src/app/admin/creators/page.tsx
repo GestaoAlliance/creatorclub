@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/ui/page";
+import { ui } from "@/components/ui/styles";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { listCreators, STATUS_LABEL } from "@/lib/creators/profile";
+import { CreatorList } from "./list";
 
 export const dynamic = "force-dynamic";
 
@@ -19,32 +22,29 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   });
   const { marca, portal } = await searchParams;
   const brand = brands.find((b) => b.slug === marca) ?? brands[0];
-  if (!brand) return <main className="px-6 py-10 text-sm">Nenhuma marca.</main>;
+  if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   const creators = await listCreators(db(), actor, brand.id);
+  const active = creators.filter((c) => c.status === "ACTIVE").length;
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold">Creators · {brand.name}</h1>
+    <>
+      <PageHeader title="Creators">
+        {creators.length} creators na {brand.name} · {active} ativas. Toque numa creator para ver a ficha.
+      </PageHeader>
       {portal && (
-        <p role="status" className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          O portal é de cada creator. Para ver como ela vê, abra a creator abaixo e clique em &quot;Ver o portal como esta
-          creator&quot;. A visualização vale só neste aparelho, por 1 hora.
+        <p role="status" className="rounded-2xl border border-amber-400/60 bg-amber-100/80 px-4 py-3 text-sm text-amber-950 dark:bg-amber-900/40 dark:text-amber-100">
+          O portal é de cada creator. Para ver como ela vê, abra a creator abaixo e toque em &quot;Ver o portal como esta creator&quot;. A
+          visualização vale só neste aparelho, por 1 hora.
         </p>
       )}
       {brands.length > 1 && (
-        <nav className="flex gap-3 text-sm">
-          {brands.map((b) => <Link key={b.id} href={`/admin/creators?marca=${b.slug}`} className={b.id === brand.id ? "font-semibold" : "underline"}>{b.name}</Link>)}
+        <nav className="flex flex-wrap gap-2">
+          {brands.map((b) => (
+            <Link key={b.id} href={`/admin/creators?marca=${b.slug}`} className={b.id === brand.id ? ui.pillOn : ui.pill}>{b.name}</Link>
+          ))}
         </nav>
       )}
-      <ul className="flex flex-col gap-1 text-sm">
-        {creators.map((c) => (
-          <li key={c.id}>
-            <Link href={`/admin/creators/${c.id}`} className="underline">{c.name}</Link> · {STATUS_LABEL[c.status]}
-            {c.fakeEmail && <span className="text-amber-700"> · e-mail a confirmar</span>}
-            {c.hasLogin && " · no portal"}
-          </li>
-        ))}
-      </ul>
-    </main>
+      <CreatorList rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} />
+    </>
   );
 }
