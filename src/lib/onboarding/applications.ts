@@ -136,14 +136,14 @@ export async function receiveApplication(
   });
   if (existing) return { id: existing.id, created: false };
   const fields = parseHunterAnswers(input.answers);
-  // Resposta já importada da planilha (D-CAPTACAO): mesmo formulário, mesmo segundo e mesmo nome não duplica.
+  // Resposta já importada da planilha (D-CAPTACAO): mesmo formulário e mesmo segundo não duplica. Não compara o nome:
+  // o texto da planilha pode vir com outra codificação de acentos ou espaços que o do formulário.
   const second = new Date(Math.floor(input.submittedAt.getTime() / 1000) * 1000);
   const imported = await prisma.creatorApplication.findFirst({
     where: {
       brandId: brand.id,
       source: input.source,
       externalKey: { startsWith: "planilha:" },
-      fullName: fields.fullName,
       submittedAt: { gte: second, lt: new Date(second.getTime() + 1000) },
     },
     select: { id: true },

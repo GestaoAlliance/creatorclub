@@ -107,7 +107,9 @@ describe("candidatas do formulário de Captação (D-CAPTACAO, banco real)", () 
       "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar": "Sim",
       "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?": "Uso os produtos",
     };
-    const again = await receiveApplication(prisma, { brandSlug: brand.slug, source: "captacao_form", externalKey: randomUUID(), submittedAt: new Date(at.getTime() + 400), answers: answers("m@x.com", extra) });
+    // Nome com acento em outra codificação (NFD) e espaço a mais: ainda é a mesma resposta.
+    const nfd = { ...answers("m@x.com", extra), "Seu nome completo:": " Maria  da Silva".normalize("NFD") };
+    const again = await receiveApplication(prisma, { brandSlug: brand.slug, source: "captacao_form", externalKey: randomUUID(), submittedAt: new Date(at.getTime() + 400), answers: nfd });
     expect(again).toEqual({ id: imported.id, created: false });
 
     const fresh = await receiveApplication(prisma, { brandSlug: brand.slug, source: "captacao_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers("n@x.com", extra) });
