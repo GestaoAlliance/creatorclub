@@ -10,6 +10,8 @@ import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { AdjustError, brlToCents, createAdjustment } from "@/lib/commission/adjust";
 import { TeamError } from "@/lib/team/invites";
 import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
+import { correctRateSinceStart, RateFixError } from "@/lib/commission/rate-fix";
+import { formatBRL } from "@/domain";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -19,7 +21,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError) {
       return { error: error.message };
     }
     throw error;
@@ -43,6 +45,14 @@ export async function statusAction(_p: State, form: FormData): Promise<State> {
 export async function rateAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   return run(id, async () => changeRate(db(), await currentActor(), id, percentToBps(String(form.get("rate") ?? ""))), "Taxa nova vale a partir de agora.");
+}
+
+export async function rateFixAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => {
+    const r = await correctRateSinceStart(db(), await currentActor(), id, percentToBps(String(form.get("rate") ?? "")));
+    return { ok: `Taxa corrigida desde o início: ${r.orders} pedido(s), diferença de ${formatBRL(r.deltaCents)} no extrato.` };
+  }, "");
 }
 
 export async function inviteAction(_p: State, form: FormData): Promise<State> {

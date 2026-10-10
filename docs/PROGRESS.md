@@ -173,6 +173,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-62 — 2026-10-10 — Correção de taxa desde o início (planilha de pagamentos × sistema)
+- **Decidido:** D-RATEFIX. Comparando a planilha "Pagamentos influencers" com o sistema, duas taxas provisórias do app
+  antigo (D-RATEPROV) estavam erradas: VICTORIA é 10% (sistema 15%) e CEMBRANELLI é 15% (sistema 20%). O responsável
+  confirmou a planilha. Correção vale para todos os pedidos, com a diferença lançada no extrato.
+- **Feito:** `src/lib/commission/rate-fix.ts` (`correctRateSinceStart`: só super admin, só com saque travado, só com
+  uma taxa no histórico; muda a taxa e a taxa congelada dos pedidos e lança a diferença de cada pedido como
+  estorno/comissão com nota e chave própria; auditoria `commission.correct`). Botão "Corrigir desde o início" no
+  cartão de taxa da ficha.
+- **Falta:** aplicar nas duas creators em produção (botão na ficha, depois do deploy).
+- **Verificado:** integração (2 novos: estorno da diferença, reprocessar não duplica, permissões e travas); typecheck.
+
 ### CP-61 — 2026-10-10 — Termo v2 publicado (regras do contrato)
 - **Decidido:** texto do termo v2 aprovado pelo responsável (só os itens 4 e 5 mudam: liberação mensal com mínimo de
   vendas de R$ 500 / R$ 1.000 e acúmulo; saque do valor total do dia 1 ao 10, pagamento até o dia 15). Publicado

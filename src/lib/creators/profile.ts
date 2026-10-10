@@ -69,6 +69,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey } : null,
     hasLogin: a.userId !== null,
     reviewedAt: creator.reviewedAt,
+    withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,
     coupons: assignments.map((x) => ({
       code: x.coupon.code,
       kind: x.coupon.kind,
