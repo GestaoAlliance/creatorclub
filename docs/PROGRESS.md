@@ -172,6 +172,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-58 — 2026-10-10 — Feedback do responsável: cupons em abas e "Loja de teste" arquivada
+- **Decidido:** D-COUPONTABS (Cupons separados em "A conferir", "Creators" e "Promocionais", com busca; trocar o
+  tipo de um promocional fica em "Trocar tipo"), D-ARCHIVE (marca não é apagada; arquivada some de todas as telas;
+  a "Loja de teste" de 09/10, sem dados, foi arquivada na migração com registro na auditoria).
+- **Feito:** migração `brand_archive` (`Brand.archivedAt`); listas de marcas filtram arquivadas (painel, Creators,
+  Cupons, Shopify, Equipe, Importar, telas de entrada). `src/app/admin/cupons/board.tsx` com abas e busca.
+- **Feedback em andamento:** a equipe (Juci, Alvaro, Ana) vai mandar ajustes pelo WhatsApp; o responsável repassa.
+- **Verificado:** 111 unitários; 135 de integração (1 novo: marca arquivada some); migração × schema sem
+  divergência; typecheck; build. Capturas para o OK.
+
 ### CP-57 — 2026-10-10 — Termo de aceite da creator (P4)
 - **Decidido:** D-TERMS (portal bloqueado até aceitar a versão mais nova; a creator digita nome completo e CPF, e
   ficam gravados data, IP e navegador; o CPF vai para o cadastro se estiver vazio e, se for diferente, o aceite é
