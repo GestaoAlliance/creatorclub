@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** perguntas abertas do inventário do Drive (doc "Inventário do Drive — Creator Club Botanika"). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** I1 (aviso de 60 dias sem vendas), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -166,11 +166,31 @@ já existem antes de desenhar.
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
+### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
+- [ ] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
+- [ ] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
+  emissão não bloqueia. Chave única por nota.
+- [ ] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
+  Pix só em chave do próprio CPF. Retenção de imposto: confirmar com a contabilidade antes de ligar.
+- [ ] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
+  antigas importadas.
+- [ ] **I5** Link do formulário por hunter (D-HUNTERLINK): a candidata chega marcada com quem a trouxe.
+- [ ] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA) — no
+  módulo UGC.
+- [!] **I7** NFs antigas: só 3 de 20 cupons pagos têm NF no Drive; conferir com o Pagamento onde estão as outras.
+- [ ] **I8** Perguntas ainda abertas: o que significam ✅/❌ nas pastas de entrega UGC; o que conta como "collab" na Central.
+
 ### Depois (detalhar quando chegar lá)
 E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-69 — 2026-10-10 — Perguntas do inventário do Drive respondidas
+- **Decidido:** D-RATECONTRACT, D-IDLE60, D-PRESCNF, D-PFRECEIPT, D-NFCHECK, D-UGCQUOTA, D-UGCCOUPON, D-CAPTACAO,
+  D-HUNTERLINK (respostas do responsável às perguntas 2 a 10 do doc "Inventário do Drive — Creator Club Botanika").
+- **Feito:** fila "Inventário do Drive" (I1–I8) com o trabalho que sai dessas decisões. Só documentação.
+- **Falta:** saber onde estão as NFs antigas (I7) e o significado de ✅/❌ e "collab" (I8).
 
 ### CP-68 — 2026-10-10 — Termo v3 publicado
 - **Decidido:** texto do termo v3 aprovado pelo responsável (D-TERMS): mínimo de vendas do contrato de cada creator
