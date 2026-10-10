@@ -64,6 +64,30 @@ export const notices = {
     body: `O pedido de ${brl(amountCents)} não foi aprovado. Motivo: ${reason.trim().replace(/[.!?]?$/, ".")} O valor continua no seu saldo; corrija e peça de novo dentro da janela.`,
     path: "/saque",
   }),
+  /** Janela de saque (D-CONTRACT): aberta no dia 1 e lembrete perto do fim, para quem tem saldo e não pediu. */
+  withdrawalWindow: (month: string, endDay: number, availableCents: number, last: boolean): Notice => ({
+    kind: "WITHDRAWAL_WINDOW",
+    dedupeKey: `window:${month}:${last ? "last" : "open"}`,
+    title: last ? `Faltam poucos dias para pedir seu saque` : "A janela de saque está aberta",
+    body: `Você tem ${brl(availableCents)} disponível. Peça o saque até o dia ${endDay}, com a nota fiscal do valor total.`,
+    path: "/saque",
+  }),
+  /** Passou de 70% do mínimo do contrato (uma vez por mês). */
+  nearMinimum: (month: string, missingCents: number): Notice => ({
+    kind: "NEAR_MINIMUM",
+    dedupeKey: `near-min:${month}`,
+    title: "Você está perto de liberar sua comissão",
+    body: `Faltam ${brl(missingCents)} em vendas para chegar ao mínimo do contrato. Quando chegar, a comissão é liberada no fechamento do mês.`,
+    path: "/vendas",
+  }),
+  /** 30 dias antes do fim do contrato. `end` em "AAAA-MM-DD". */
+  contractEnding: (end: string): Notice => ({
+    kind: "CONTRACT_ENDING",
+    dedupeKey: `contract-end:${end}`,
+    title: "Sua parceria está perto do fim do contrato",
+    body: `O seu contrato vai até ${end.slice(8, 10)}/${end.slice(5, 7)}/${end.slice(0, 4)}. A equipe vai falar com você sobre a renovação.`,
+    path: null,
+  }),
   firstSale: (): Notice => ({
     kind: "FIRST_SALE",
     dedupeKey: "first-sale",
