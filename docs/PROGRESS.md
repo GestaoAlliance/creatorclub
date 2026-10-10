@@ -186,6 +186,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-74 — 2026-10-10 — Scripts dos formulários instalados; correção de duplicada
+- **Feito (responsável):** scripts instalados nos formulários Hunter e Captação (`instalar` + `enviarTodas`). Chegaram as
+  9 respostas do Hunter e 6 da Captação.
+- **Feito (produção):** das 6 da Captação, 1 era a mesma resposta já importada (o nome veio com outra codificação e
+  escapou da checagem) e 4 eram respostas repetidas mais antigas da mesma pessoa; as 5 foram recusadas com o motivo
+  (nada apagado). Fica 1 resposta nova de verdade.
+- **Corrigido:** a checagem de "já importada da planilha" compara só formulário + segundo, sem o nome.
+- **Verificado:** teste de integração cobre nome com espaço a mais; typecheck.
+
 ### CP-73 — 2026-10-10 — Formulário de Captação como entrada de candidatas (I4)
 - **Decidido:** D-CAPTACAO detalhada: respostas antigas entram; quem já é creator (mesmo CPF ou e-mail) entra como
   "Aprovada" ligada à ficha, o resto como "Nova"; repetidas entram uma vez (a mais recente); o STATUS da planilha vira
