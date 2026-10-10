@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** U4 (painel do mês para a Gestão: vendas, mínimo, faixa do kit e ranking), da fila "Uso real". U1 em andamento com o
+- **Próxima tarefa:** U5 (avisos para as creators: e-mail depois do domínio; até lá, WhatsApp pronto para a equipe), da fila "Uso real". U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -181,7 +181,7 @@ já existem antes de desenhar.
   juntar as anotações no fim da semana.
 - [x] **U2** Kit de boas-vindas do contrato (D-WELCOMEKIT): liberado ao assinar, escolhido no portal, cai na fila do Envio.
 - [x] **U3** Tela da hunter "Minhas indicações" (D-HUNTERVIEW): link, cliques e situação de quem trouxe.
-- [ ] **U4** Painel do mês para a Gestão: vendas, mínimo, faixa do kit e ranking (base da gamificação).
+- [x] **U4** Tela "Desempenho" para a Gestão (D-PERFORMANCE): ranking do mês, mínimo, kit, variação e UGC à parte.
 - [ ] **U5** Avisos para as creators (e-mail depois do domínio; até lá, WhatsApp pronto para a equipe).
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
 
@@ -215,6 +215,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-95 — 2026-10-10 — Tela Desempenho (U4)
+- **Decidido:** D-PERFORMANCE (tela nova, só Gestão e super admin; as quatro informações pedidas mais resumo, aviso de
+  60 dias e filtro de quem não vendeu; UGC à parte).
+- **Feito:** regras puras em `src/domain/performance.ts` (faixa do kit e próxima, variação, ordenação, meses);
+  `monthPerformance` em `src/lib/creators/performance.ts` (vendas e pedidos por mês em lote, mínimo pela última
+  liberação, 60 dias, ciclo UGC); página `/admin/desempenho` e item no menu.
+- **Verificado:** 4 unitários e 1 de integração (mês atual e anterior, mínimo, kit, UGC à parte, mês inválido volta ao
+  atual, Pagamento não abre). Capturas com vendas fictícias num banco local. `npm test`, `npm run test:integration`,
+  `npm run typecheck` e `npm run build` passando.
 
 ### CP-94 — 2026-10-10 — Tela da hunter (U3)
 - **Decidido:** D-HUNTERVIEW (nome, @, seguidores, data e situação; sem contato, sem motivo da recusa, sem vendas).

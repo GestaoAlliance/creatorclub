@@ -10,6 +10,7 @@ const ITEMS: (NavItem & { needs: Permission; global?: boolean; hunterOnly?: bool
   { href: "/indicacoes", label: "Minhas indicações", icon: "hunter", needs: "prospects.own", hunterOnly: true },
   { href: "/candidatas", label: "Candidatas", icon: "inbox", needs: "creators.view" },
   { href: "/creators", label: "Creators", icon: "creators", needs: "creators.view" },
+  { href: "/desempenho", label: "Desempenho", icon: "trophy", needs: "creators.edit" },
   { href: "/hunters", label: "Hunters", icon: "hunter", needs: "creators.edit" },
   { href: "/cupons", label: "Cupons", icon: "review", needs: "creators.edit" },
   { href: "/envios", label: "Envios", icon: "package", needs: "shipping.view" },
