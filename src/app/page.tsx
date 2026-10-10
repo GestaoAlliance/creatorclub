@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AuthFrame } from "@/components/auth-frame";
 import { ui } from "@/components/ui/styles";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <AuthFrame title="Creator Club" subtitle="Suas vendas, seu saldo e seus saques num lugar só.">

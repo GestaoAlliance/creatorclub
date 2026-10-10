@@ -1,10 +1,23 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
+import { db } from "@/lib/db";
+import { brandCssVars } from "@/lib/portal/context";
+
+/** Cor das telas de entrada (D-LOGINCOLOR): com uma marca só, a cor dela; com várias, o cinza neutro. */
+async function loginColors(): Promise<Record<string, string>> {
+  try {
+    const brands = await db().brand.findMany({ take: 2, select: { primaryColor: true, secondaryColor: true } });
+    return brands.length === 1 ? brandCssVars(brands[0]!) : {};
+  } catch {
+    return {};
+  }
+}
 
 /** Moldura das telas de entrada (entrar, senha, convite): o mesmo vidro do sistema, centralizado (D-DESIGNALL). */
-export function AuthFrame({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export async function AuthFrame({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  const vars = await loginColors();
   return (
-    <div className="portal-bg flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <div style={vars as CSSProperties} className="portal-bg flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>

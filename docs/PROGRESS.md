@@ -179,7 +179,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   papel, testado; marca do topo por cookie `cc_brand`; números do Início); `/admin` (Início) e moldura em
   `src/app/admin/layout.tsx`. Telas refeitas: Creators (com busca), ficha (cartões), Cupons, Envios, Saques,
   Abertura, Equipe, Shopify, Importar, entrar, esqueci, nova senha, convite, página inicial. `/conta` leva a equipe
-  ao painel e a creator ao portal. Ficha e Início separados em componentes de exibição (para as capturas).
+  ao painel e a creator ao portal. Telas de entrada com a cor da Botanika enquanto for a única marca (D-LOGINCOLOR). Ficha e Início separados em componentes de exibição (para as capturas).
 - **Verificado:** 109 unitários (1 novo: menu por papel); 130 de integração; typecheck; build. Capturas para o OK.
 
 ### CP-55 — 2026-10-10 — Saldo de abertura e conferência da Ana (E6)

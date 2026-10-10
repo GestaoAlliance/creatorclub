@@ -3,6 +3,8 @@ import { AuthFrame } from "@/components/auth-frame";
 import { ui } from "@/components/ui/styles";
 import { ResetRequestForm } from "../forms";
 
+export const dynamic = "force-dynamic";
+
 export default function EsqueciPage() {
   return (
     <AuthFrame title="Esqueci a senha" subtitle="Enviamos um link para você criar uma nova senha.">
