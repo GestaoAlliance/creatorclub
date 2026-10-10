@@ -8,7 +8,7 @@ import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
-import { AdjustForm, ChecklistForm, ContactForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
@@ -162,6 +162,7 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
               </li>
             ))}
           </ul>
+          {p.canEdit && p.status !== "DEACTIVATED" && <CouponCreateForm creatorId={p.id} />}
           <Link href="/admin/cupons" className={`${ui.link} text-sm`}>Abrir a conferência de cupons</Link>
         </Card>
 

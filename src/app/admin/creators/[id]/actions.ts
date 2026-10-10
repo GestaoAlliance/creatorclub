@@ -12,6 +12,7 @@ import { TeamError } from "@/lib/team/invites";
 import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
 import { correctRateSinceStart, RateFixError } from "@/lib/commission/rate-fix";
 import { ContractError, updateChecklist } from "@/lib/creators/contract";
+import { CouponCreateError, createCouponInShopify } from "@/lib/coupons/create";
 import { formatBRL } from "@/domain";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
@@ -22,7 +23,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError) {
       return { error: error.message };
     }
     throw error;
@@ -107,4 +108,20 @@ export async function adjustAction(_p: State, form: FormData): Promise<State> {
 export async function reviewedAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   return run(id, async () => markReviewed(db(), await currentActor(), id), "Conferência registrada.");
+}
+
+export async function couponCreateAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(
+    id,
+    async () => {
+      const r = await createCouponInShopify(db(), await currentActor(), {
+        creatorId: id,
+        code: String(form.get("code") ?? ""),
+        discountBps: percentToBps(String(form.get("discount") ?? "")),
+      });
+      return { ok: `Cupom ${r.code} criado na Shopify e ligado à creator.` };
+    },
+    "",
+  );
 }
