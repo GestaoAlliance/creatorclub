@@ -13,3 +13,4 @@ export * from "./nf";
 export * from "./receipt";
 export * from "./hunter";
 export * from "./ugc";
+export * from "./email";

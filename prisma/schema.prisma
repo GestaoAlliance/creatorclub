@@ -166,6 +166,8 @@ model StaffInvite {
   acceptedAt     DateTime?
   acceptedUserId String?
   revokedAt      DateTime?
+  /// D-EMAIL: quando o convite foi enviado por e-mail (nulo = só o link na tela).
+  emailedAt      DateTime?
   createdAt      DateTime  @default(now())
 
   brand Brand? @relation(fields: [brandId], references: [id], onDelete: Restrict)
@@ -211,6 +213,8 @@ model CreatorInvite {
   acceptedAt     DateTime?
   acceptedUserId String?
   revokedAt      DateTime?
+  /// D-EMAIL: quando o convite foi enviado por e-mail (nulo = só o link na tela).
+  emailedAt      DateTime?
   createdAt      DateTime  @default(now())
 
   account CreatorAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)

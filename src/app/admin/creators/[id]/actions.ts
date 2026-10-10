@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { percentToBps, ReviewError } from "@/lib/coupons/review";
 import { changeRate, ProfileError, setCreatorStatus, updateContact, type CreatorStatusValue } from "@/lib/creators/profile";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
+import { emailCreatorInvite } from "@/lib/team/invite-email";
+import { configuredSender } from "@/lib/email/sender";
 import { AdjustError, brlToCents, createAdjustment } from "@/lib/commission/adjust";
 import { TeamError } from "@/lib/team/invites";
 import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
@@ -87,9 +89,14 @@ export async function checklistAction(_p: State, form: FormData): Promise<State>
 export async function inviteAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   return run(id, async () => {
-    const { token } = await createCreatorInvite(db(), await currentActor(), String(form.get("accountId")));
+    const actor = await currentActor();
+    const { token, invite } = await createCreatorInvite(db(), actor, String(form.get("accountId")));
     const origin = (await headers()).get("origin") ?? "";
-    return { link: `${origin}/convite/${token}` };
+    const link = `${origin}/convite/${token}`;
+    // D-EMAIL: com remetente configurado, o convite também vai por e-mail; sem ele, só o link na tela.
+    const mail = await emailCreatorInvite(db(), configuredSender(), { inviteId: invite.id, actorId: actor!.userId, link });
+    if (!mail) return { link };
+    return mail.sent ? { link, ok: `Convite enviado por e-mail para ${mail.to}.` } : { link, error: `O e-mail não foi enviado (${mail.reason}) Mande o link pelo WhatsApp.` };
   }, "");
 }
 

@@ -197,7 +197,7 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
     }),
     prisma.staffInvite.findMany({
       where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
-      select: { id: true, email: true, name: true, role: true, brandId: true, expiresAt: true },
+      select: { id: true, email: true, name: true, role: true, brandId: true, expiresAt: true, emailedAt: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),

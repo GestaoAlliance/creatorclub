@@ -76,6 +76,7 @@ export default async function EquipePage() {
                     <p className="font-medium">{i.name}</p>
                     <p className={ui.hint}>
                       {i.email} · {ROLE_LABEL[i.role]} ({brandName(i.brandId)}) · vence {i.expiresAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      {i.emailedAt && " · enviado por e-mail"}
                     </p>
                   </div>
                   <form action={revokeInviteAction}>

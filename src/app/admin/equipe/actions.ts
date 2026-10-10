@@ -5,20 +5,26 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { createStaffInvite, disableStaffUser, revokeRoleGrant, revokeStaffInvite, TeamError } from "@/lib/team/invites";
+import { emailStaffInvite } from "@/lib/team/invite-email";
+import { configuredSender } from "@/lib/email/sender";
 
-export type InviteState = { error?: string; link?: string; email?: string } | undefined;
+export type InviteState = { error?: string; link?: string; email?: string; mailed?: boolean; mailError?: string } | undefined;
 
 export async function inviteAction(_prev: InviteState, form: FormData): Promise<InviteState> {
   try {
-    const { token, invite } = await createStaffInvite(db(), await currentActor(), {
+    const actor = await currentActor();
+    const { token, invite } = await createStaffInvite(db(), actor, {
       email: form.get("email"),
       name: form.get("name"),
       role: form.get("role"),
       brandId: form.get("brandId"),
     });
     const origin = (await headers()).get("origin") ?? "";
+    const link = `${origin}/convite/${token}`;
+    // D-EMAIL: com remetente configurado, o convite também vai por e-mail.
+    const mail = await emailStaffInvite(db(), configuredSender(), { inviteId: invite.id, actorId: actor!.userId, link });
     revalidatePath("/admin/equipe");
-    return { link: `${origin}/convite/${token}`, email: invite.email };
+    return { link, email: invite.email, ...(mail ? (mail.sent ? { mailed: true } : { mailError: mail.reason }) : {}) };
   } catch (error) {
     if (error instanceof TeamError) return { error: error.message };
     throw error;

@@ -7,10 +7,10 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** nenhuma da fila "Inventário do Drive" (I7 bloqueada no Pagamento); escolher a próxima com o
-  responsável. Pendente do responsável: preencher o início do contrato das UGC nas fichas (23 de 24 sem data,
-  D-UGCSTART); liberar `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync`; adicionar a
-  pergunta "Código de quem te convidou" nos dois formulários e colar os links em `/admin/hunters`.
+- **Próxima tarefa:** escolher com o responsável (P2 tem o código pronto e espera o domínio do P3 e a conta do Resend).
+  Pendente do responsável: preencher o início do contrato das UGC nas fichas (23 de 24 sem data, D-UGCSTART); liberar
+  `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync`; adicionar a pergunta "Código de
+  quem te convidou" nos dois formulários e colar os links em `/admin/hunters`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -161,7 +161,10 @@ já existem antes de desenhar.
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
 - [ ] **P1** Backup dos bancos: cópia diária privada do Supabase do v2 (fora do repositório) e uma cópia do
   `creator-hub` antigo; ou plano pago com backup. Decidir onde guardar.
-- [ ] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP), antes de convidar as creators.
+- [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
+  Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
+  (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
+  configurar o SMTP do Supabase Auth com o Resend ("esqueci a senha"); testar com um e-mail da equipe.
 - [ ] **P3** Domínio do projeto (o responsável compra) e os links `/r/...` antigos: o domínio do app antigo precisa
   redirecionar para o v2, senão os links nas bios quebram no corte.
 - [x] **P4** Termo de aceite da creator no primeiro acesso ao portal (D-TERMS): portal bloqueado até aceitar; nome
@@ -192,6 +195,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-81 — 2026-10-10 — Convite por e-mail pronto para ligar (P2, código)
+- **Decidido:** D-EMAIL (Resend com o domínio do projeto, que espera o P3; convite vai por e-mail ao ser gerado; link
+  segue na tela). D-SMTP respondida.
+- **Feito:** textos dos e-mails (`src/domain/email.ts`, com escape de HTML); remetente Resend por `fetch` com chave de
+  idempotência por convite (`src/lib/email/sender.ts`; sem `RESEND_API_KEY`/`EMAIL_FROM` não envia nada);
+  `src/lib/team/invite-email.ts` (envia, marca `emailedAt`, audita `invite.emailed` ou `invite.email_failed`; falha
+  não desfaz o convite). Migração `invite_emailed` (`emailedAt` em `CreatorInvite` e `StaffInvite`). Ficha e Equipe
+  avisam se foi por e-mail; convites pendentes da equipe mostram "enviado por e-mail". `.env.example` atualizado.
+- **Falta (responsável):** domínio (P3), conta no Resend e DNS; depois eu configuro as variáveis e o SMTP do Auth.
+- **Verificado:** 6 unitários novos (textos, escape, remetente com `fetch` falso); 3 de integração (envio marcado e
+  auditado, falha sem desfazer, sem remetente não faz nada, convite da equipe). Nenhum e-mail real enviado. Migração ×
+  schema sem divergência. `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-80 — 2026-10-10 — Vídeos das UGC importados do Drive (I9)
 - **Decidido:** D-UGCMARKS corrigida (✅/❌ é da pasta, não do vídeo) e D-UGCIMPORT detalhada (todos os vídeos, cópias
