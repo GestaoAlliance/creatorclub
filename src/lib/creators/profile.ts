@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { assertBps, contractStatus } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
+import { ugcCyclesFor, ugcVideosOf } from "./ugc";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -37,7 +38,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     }),
     prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } }),
   ]);
-  const idle = await idleFor(prisma, creators, brand.timezone);
+  const [idle, ugc] = await Promise.all([idleFor(prisma, creators, brand.timezone), ugcCyclesFor(prisma, creators, brand.timezone)]);
   return creators.map((c) => ({
     id: c.id,
     name: c.account.name,
@@ -47,6 +48,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     reviewed: c.reviewedAt !== null,
     contract: contractStatus(dayOf(c.contractEnd), new Date()),
     idle: idle.get(c.id) ?? null,
+    ugcCycle: ugc.get(c.id) ?? null,
   }));
 }
 
@@ -59,7 +61,13 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
       : Promise.resolve(null),
     prisma.brand.findUniqueOrThrow({ where: { id: creator.brandId }, select: { timezone: true } }),
   ]);
-  const idle = (await idleFor(prisma, [{ ...creator, contractTemplate: template }], brand.timezone)).get(creator.id) ?? null;
+  const [idleMap, ugcMap, ugcVideos] = await Promise.all([
+    idleFor(prisma, [{ ...creator, contractTemplate: template }], brand.timezone),
+    ugcCyclesFor(prisma, [creator], brand.timezone),
+    ugcVideosOf(prisma, creator.id),
+  ]);
+  const idle = idleMap.get(creator.id) ?? null;
+  const ugcCycle = ugcMap.get(creator.id) ?? null;
   const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
   const money = can(actor.grants, "money.view", creator.brandId);
   const [assignments, policies, invites, adjustments, templates] = await Promise.all([
@@ -106,6 +114,8 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     ugc: creator.ugcFolderUrl || creator.ugcVideoStatus || creator.ugcOrder
       ? { folderUrl: creator.ugcFolderUrl, videoStatus: creator.ugcVideoStatus, order: creator.ugcOrder }
       : null,
+    ugcCycle,
+    ugcVideos: ugcCycle ? ugcVideos : [],
     notes: creator.notes,
     coupons: assignments.map((x) => ({
       code: x.coupon.code,

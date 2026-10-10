@@ -15,7 +15,15 @@ type Row = {
   reviewed: boolean;
   contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null };
   idle: { days: number; idle: boolean; lastSaleDay: string | null } | null;
+  ugcCycle: { count: number; goal: number; status: "NO_CONTRACT" | "OPEN" | "DONE" | "MISSED" } | null;
 };
+
+/** Selo dos vídeos da UGC no ciclo (D-UGCVIDEOS). */
+function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
+  if (c.status === "NO_CONTRACT") return <span className={badge.amber}>vídeos: sem datas do contrato</span>;
+  const cls = c.status === "DONE" ? badge.green : c.status === "MISSED" ? badge.red : badge.neutral;
+  return <span className={cls}>vídeos {c.count}/{c.goal}{c.status === "MISSED" ? " · meta não batida" : ""}</span>;
+}
 
 const STATUS_BADGE: Record<string, string> = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral };
 
@@ -67,6 +75,7 @@ export function CreatorList({ rows, contractsOnly = false, idleOnly = false }: {
                       <span className={badge.amber}>contrato vence em {c.contract.daysLeft} {c.contract.daysLeft === 1 ? "dia" : "dias"}</span>
                     )}
                     {c.status !== "DEACTIVATED" && c.contract.status === "EXPIRED" && <span className={badge.red}>contrato vencido</span>}
+                    {c.ugcCycle && c.status !== "DEACTIVATED" && <UgcBadge c={c.ugcCycle} />}
                     {c.idle?.idle && (
                       <span className={badge.amber}>{c.idle.lastSaleDay ? `sem vender há ${c.idle.days} dias` : `nunca vendeu · ${c.idle.days} dias`}</span>
                     )}
