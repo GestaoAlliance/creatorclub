@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import type { Address } from "@/lib/shipments/address";
+import type { ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, type ShipmentStatusValue } from "@/lib/shipments/shipments";
 import { NewShipmentForm } from "./forms";
 import { ShipmentsTable } from "./table";
@@ -53,7 +53,7 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         shipments={shipments.map((s) => ({
           ...s,
           canManage: can(actor.grants, "shipping.manage", s.brandId),
-          address: can(actor.grants, "personal.address", s.brandId) ? (s.address as Address) : null,
+          address: can(actor.grants, "personal.address", s.brandId) ? (s.address as ShipmentAddress) : null,
         }))}
       />
     </>

@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** contrato, parte 2 — envio sugerido do kit mensal pela faixa de vendas do mês anterior (D-CONTRACT);
-  depois vigência do contrato com aviso de 30 dias e checklist da Central na ficha. P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** importar as respostas dos formulários (Hunter: rodar `enviarTodas` no script; demais
+  formulários a decidir) e depois o envio sugerido do kit mensal pela faixa de vendas do mês anterior (D-CONTRACT). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -173,6 +173,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-65 — 2026-10-10 — Histórico de envios importado das planilhas
+- **Decidido:** D-SHIPIMPORT (envios com rastreio entram como entregues; data = "último pedido" da Central quando
+  existe, senão a data de criação da planilha com a observação "data aproximada"; "Whey" sem sabor = Whey Sem Sabor;
+  linhas sem rastreio entram como "Preparando"; endereço do envio = texto da planilha).
+- **Feito:** `formatAddress` aceita o endereço em texto livre dos envios importados (`ShipmentAddress`). Importação em
+  produção (Drive → banco): 46 envios (42 entregues, 4 preparando), 116 itens casados com o catálogo, 24 com data
+  aproximada. 2 linhas sem creator no sistema ficaram de fora (passadas ao responsável).
+- **Verificado:** unitário novo (endereço em texto); typecheck; testes.
+
 ### CP-64 — 2026-10-10 — Contrato e checklist na ficha (Central), com aviso de vencimento
 - **Decidido:** D-CHECKLIST e D-CENTRAL. Cartão "Contrato e checklist" na ficha (início, fim — vazio = início + 6
   meses, UGC 3 —, contrato assinado, cupom cadastrado, seguimos no Instagram, grupo, etiquetada, observação), editável
@@ -183,7 +192,9 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 - **Feito:** migração `contract_checklist` (colunas na `Creator`, `CreatorAccount.instagram`, trava
   `Creator_contract_period`). `src/domain/contract.ts` (meses por tipo, soma de meses, situação do contrato) e
   `src/lib/creators/contract.ts` (`updateChecklist`, com auditoria `creator.checklist`). Instagram na ficha.
-- **Falta:** importar a Central em produção depois do deploy (direto Drive → banco).
+- **Importado em produção (2026-10-10):** 20 creators/prescritores novos, 27 existentes completados (só campos
+  vazios), 23 UGC novas e 1 existente com tipo UGC; 29 com datas de contrato. 4 linhas sem cupom e sem cadastro no
+  sistema ficaram de fora (passadas ao responsável).
 - **Verificado:** 3 unitários e 3 de integração novos (trava pelo nome, contagem do Início); typecheck; testes.
 
 ### CP-63 — 2026-10-10 — Pagamentos da planilha no sistema e sugestão do saldo de abertura
