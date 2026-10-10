@@ -7,10 +7,10 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I8 (perguntas abertas: ✅/❌ nas pastas de entrega UGC e o que conta como "collab" na Central;
-  precisa da resposta do responsável). Pendente do responsável: liberar `write_discounts` e `read_discounts` no app da
-  Shopify e reconectar em `/admin/sync`; adicionar a pergunta "Código de quem te convidou" nos dois formulários e colar
-  os links pré-preenchidos em `/admin/hunters`.
+- **Próxima tarefa:** I9 (importar os vídeos das pastas de entrega das UGC no Drive, D-UGCIMPORT; resumo para o
+  responsável antes de gravar). Pendente do responsável: preencher o início do contrato das UGC nas fichas (23 de 24
+  sem data, D-UGCSTART); liberar `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync`;
+  adicionar a pergunta "Código de quem te convidou" nos dois formulários e colar os links em `/admin/hunters`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -183,13 +183,23 @@ já existem antes de desenhar.
   - [x] **I6b** Ciclo UGC e contador de vídeos na ficha (meta no total do ciclo, D-UGCVIDEOS).
   - [x] **I6c** Portal da UGC: só vendas, cupom e link (sem saldo e saque, D-UGCPORTAL).
 - [!] **I7** NFs antigas: só 3 de 20 cupons pagos têm NF no Drive; conferir com o Pagamento onde estão as outras.
-- [ ] **I8** Perguntas ainda abertas: o que significam ✅/❌ nas pastas de entrega UGC; o que conta como "collab" na Central.
+- [x] **I8** Perguntas abertas respondidas: ✅/❌ nas pastas de entrega UGC (D-UGCMARKS) e "collab" na Central (D-COLLAB);
+  início do contrato das UGC fica com a equipe (D-UGCSTART).
+- [ ] **I9** Importar os vídeos das pastas de entrega das UGC no Drive (D-UGCIMPORT).
 
 ### Depois (detalhar quando chegar lá)
 E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-79 — 2026-10-10 — Perguntas abertas da UGC respondidas (I8)
+- **Decidido:** D-UGCMARKS (✅ aprovado, conta; ❌ refazer, não conta), D-COLLAB (post em collab no Instagram; só
+  informação), D-UGCSTART (equipe preenche o início do contrato das UGC na ficha), D-UGCIMPORT (importar os vídeos das
+  pastas do Drive). Nova tarefa I9.
+- **Visto em produção:** migração `ugc_videos` aplicada; 24 UGC na Botanika (23 só UGC), 23 sem início de contrato, 17
+  com pasta de vídeos; nenhuma ainda com login no portal.
+- **Verificado:** só documentação.
 
 ### CP-78 — 2026-10-10 — Portal de quem é só UGC (I6c)
 - **Decidido:** D-UGCPORTAL (só quem é apenas UGC; abas Início, Vendas, Cupom e Envios; vendas com número, data e valor;
