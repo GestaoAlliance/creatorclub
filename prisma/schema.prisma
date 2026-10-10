@@ -41,6 +41,7 @@ model Brand {
   releaseMinPrescriberCents Int       @default(100000)
   nfInstructions            String?
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
+  legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
   legacyId                  String?   @unique
   /// D-ARCHIVE: marca arquivada some de todas as telas (nada é apagado).
   archivedAt                DateTime?
@@ -236,6 +237,8 @@ model Creator {
   /// D-WDLOCK: saque liberado depois do saldo de abertura aprovado (E6). Nulo = travado.
   withdrawalsUnlockedAt   DateTime?
   withdrawalsUnlockedById String?
+  /// D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota); a equipe marca na ficha.
+  receivesAsIndividual    Boolean   @default(false)
   /// D-ANAREVIEW: a Ana conferiu os números (cupons, taxa, vendas) desta creator. Exigido para o saldo de abertura (E6).
   reviewedAt              DateTime?
   reviewedById            String?
@@ -463,6 +466,7 @@ model LedgerEntry {
 enum PaymentMethod {
   NF_PIX
   ALELO
+  RECEIPT_PIX // D-PFRECEIPT: pessoa física, recibo aceito no portal + Pix
 }
 
 enum NfCheckStatus {
@@ -498,10 +502,27 @@ model Withdrawal {
   creator       Creator       @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   nfFile        File?         @relation(fields: [nfFileId], references: [id], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
+  receipt       WithdrawalReceipt?
 
   @@unique([id, brandId])
   @@index([brandId, status])
   @@index([creatorId])
+}
+
+/// D-PFRECEIPT: recibo da creator pessoa física, aceito no portal no lugar da nota. Só recebe inserções.
+model WithdrawalReceipt {
+  id           String   @id @default(uuid())
+  brandId      String
+  withdrawalId String   @unique
+  userId       String
+  fullName     String
+  cpf          String
+  body         String // texto do recibo como a creator viu
+  ip           String?
+  userAgent    String?
+  acceptedAt   DateTime @default(now())
+
+  withdrawal Withdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
 }
 
 /// Arquivo no Storage privado (NF, contrato, vídeo UGC).

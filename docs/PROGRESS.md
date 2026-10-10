@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I3 (saque de creator sem CNPJ, com recibo), da fila "Inventário do Drive". Antes de ligar: confirmar retenção de imposto com a contabilidade. P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** I4 (formulário de Captação Botanika + VermeFree como entrada de candidatas), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -170,7 +170,7 @@ já existem antes de desenhar.
 - [x] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
 - [x] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
   emissão não bloqueia. Chave única por nota.
-- [ ] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
+- [x] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
   Pix só em chave do próprio CPF. Retenção de imposto: confirmar com a contabilidade antes de ligar.
 - [ ] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
   antigas importadas.
@@ -185,6 +185,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-72 — 2026-10-10 — Saque de pessoa física com recibo (I3)
+- **Decidido:** D-PFRECEIPT detalhada: sem retenção de imposto; a equipe marca "recebe como pessoa física" na ficha;
+  qualquer chave Pix, e o Pagamento confere o nome no app do banco antes de pagar.
+- **Feito:** migração `withdrawal_receipt` (`Creator.receivesAsIndividual`, `Brand.legalName` com a razão social da
+  Botanika, método `RECEIPT_PIX`, tabela `WithdrawalReceipt` só de inserção com RLS e trava `WithdrawalReceipt_values`).
+  Regra pura `receiptText` e `brlInWords` (valor por extenso). Pedido de saque com núcleo único para nota e recibo
+  (`requestWithdrawalWithReceipt`): nome completo, CPF válido (igual ao da ficha; ficha sem CPF recebe o digitado),
+  aceite; texto aceito, IP e navegador gravados. Portal: aba Saque explica o recibo; o passo a passo vira "confira e
+  aceite o recibo". Pagamento: selo "pessoa física · recibo", aviso para conferir o nome do Pix e página do recibo
+  (`/admin/saques/recibo/[id]`, CPF mascarado sem `personal.fiscal`). Ficha: "Recebe como" no cartão de contrato.
+- **Verificado:** 2 unitários novos; 3 de integração novos (fluxo completo com ficha, portal, Pagamento e permissão;
+  CPF diferente; travas pelo nome); migração × schema sem divergência; typecheck; build.
 
 ### CP-71 — 2026-10-10 — Conferência da NF no pedido de saque (I2)
 - **Decidido:** D-NFCHECK detalhada: nota errada bloqueia na hora com o motivo; nota que o sistema não lê entra marcada

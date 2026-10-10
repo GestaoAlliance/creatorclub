@@ -29,6 +29,8 @@ export type WithdrawalTab = {
   policy: { windowStartDay: number; windowEndDay: number };
   /** Dados para emitir a nota antes de pedir (D-NF): CNPJ do tomador e a sugestão de descrição/código. */
   nf: { takerDocument: string | null; instructions: string | null };
+  /** D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota). */
+  individual: boolean;
   blocks: WithdrawalBlock[];
   withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; decidedAt: Date | null; note: string | null }[];
   statement: Statement;
@@ -52,7 +54,7 @@ export async function portalWithdrawalTab(
         nfInstructions: true,
       },
     }),
-    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { withdrawalsUnlockedAt: true } }),
+    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { withdrawalsUnlockedAt: true, receivesAsIndividual: true } }),
     prisma.withdrawal.findMany({
       where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
       orderBy: { requestedAt: "desc" },
@@ -77,6 +79,7 @@ export async function portalWithdrawalTab(
     release,
     policy,
     nf: { takerDocument: brand.nfTakerDocument, instructions: brand.nfInstructions },
+    individual: creator.receivesAsIndividual,
     blocks,
     withdrawals,
     statement: statementForMonth(ledger, opts.month, monthKey(now, brand.timezone)),

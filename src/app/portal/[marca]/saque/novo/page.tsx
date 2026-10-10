@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { ReceiptForm } from "@/components/portal/receipt-form";
 import { WithdrawalForm } from "@/components/portal/withdrawal-form";
+import { dayKey } from "@/domain";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { portalWithdrawalTab } from "@/lib/portal/withdrawals";
@@ -16,16 +18,34 @@ export default async function NewWithdrawal({ params }: { params: Promise<{ marc
   const tab = await portalWithdrawalTab(db(), ctx);
   if (tab.blocks.length) redirect(`/portal/${ctx.brand.slug}/saque`);
   const [brand, account] = await Promise.all([
-    db().brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { nfTakerDocument: true } }),
+    db().brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { name: true, legalName: true, nfTakerDocument: true, timezone: true } }),
     db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { pixKey: true } } } }),
   ]);
+  const pixKeyMasked = account.account.pixKey ? mask(account.account.pixKey) : null;
+  // D-PFRECEIPT: pessoa física saca com recibo, sem nota.
+  if (tab.individual)
+    return (
+      <ReceiptForm
+        marca={ctx.brand.slug}
+        requestId={randomUUID()}
+        availableCents={tab.balance.availableCents}
+        pixKeyMasked={pixKeyMasked}
+        receipt={{
+          payerName: brand.legalName ?? brand.name,
+          payerDocument: brand.nfTakerDocument,
+          brandName: brand.name,
+          releasedThrough: tab.release.releasedThrough,
+          day: dayKey(new Date(), brand.timezone),
+        }}
+      />
+    );
   return (
     <WithdrawalForm
       marca={ctx.brand.slug}
       requestId={randomUUID()}
       availableCents={tab.balance.availableCents}
       takerDocument={brand.nfTakerDocument}
-      pixKeyMasked={account.account.pixKey ? mask(account.account.pixKey) : null}
+      pixKeyMasked={pixKeyMasked}
     />
   );
 }

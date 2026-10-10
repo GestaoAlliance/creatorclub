@@ -61,6 +61,7 @@ type Checklist = {
   tagged: boolean | null;
   note: string | null;
   templateId: string | null;
+  receivesAsIndividual: boolean;
 };
 
 const CHECK_ITEMS: { name: keyof Checklist; label: string }[] = [
@@ -86,6 +87,13 @@ export function ChecklistForm({ creatorId, c, templates }: { creatorId: string; 
           {templates.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
+        </select>
+      </label>
+      <label className={ui.label}>
+        Recebe como
+        <select name="receivesAsIndividual" defaultValue={c.receivesAsIndividual ? "pf" : "pj"} className={ui.input}>
+          <option value="pj">Empresa (CNPJ, com nota fiscal)</option>
+          <option value="pf">Pessoa física (CPF, com recibo no portal)</option>
         </select>
       </label>
       <div className="grid grid-cols-2 gap-3">

@@ -101,6 +101,7 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
             <p className="text-sm">
               {p.contractTemplates.find((t) => t.id === p.contract.templateId)?.name ?? "Modelo padrão da marca"} ·{" "}
               {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "sem datas de contrato"}
+              {p.contract.receivesAsIndividual && " · recebe como pessoa física (recibo)"}
             </p>
           )}
           {p.ugc && (

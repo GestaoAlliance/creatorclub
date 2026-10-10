@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { brlToCents } from "@/lib/commission/adjust";
 import { db } from "@/lib/db";
@@ -8,7 +9,16 @@ import { currentPortalContext } from "@/lib/portal/current";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentActor } from "@/lib/auth/current";
 import { cancelMyWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
-import { assertCanStart, assertRequestId, MAX_NF_BYTES, NF_BUCKET, nfPath, requestWithdrawal, WithdrawalRequestError } from "@/lib/withdrawals/request";
+import {
+  assertCanStart,
+  assertRequestId,
+  MAX_NF_BYTES,
+  NF_BUCKET,
+  nfPath,
+  requestWithdrawal,
+  requestWithdrawalWithReceipt,
+  WithdrawalRequestError,
+} from "@/lib/withdrawals/request";
 
 export type UploadTicket = { ok: true; signedUrl: string } | { ok: false; error: string };
 
@@ -50,6 +60,39 @@ export async function submitWithdrawal(_prev: SubmitState, form: FormData): Prom
     const pdf = new Uint8Array(await data.arrayBuffer());
     const pixKey = String(form.get("pixKey") ?? "");
     await requestWithdrawal(db(), ctx, { actorUserId: actor.userId, requestId, amountCents, pdf, ...(pixKey ? { pixKey } : {}) });
+  } catch (error) {
+    if (error instanceof WithdrawalRequestError) return { error: error.message };
+    throw error;
+  }
+  redirect(`/portal/${marca}/saque?pedido=enviado`);
+}
+
+/** Saque de pessoa física com recibo aceito no portal (D-PFRECEIPT). */
+export async function submitReceiptWithdrawal(_prev: SubmitState, form: FormData): Promise<SubmitState> {
+  const marca = String(form.get("marca") ?? "");
+  try {
+    const ctx = await currentPortalContext(marca);
+    const actor = await currentActor();
+    if (!actor) return { error: "Sua sessão expirou. Entre de novo." };
+    let amountCents: number;
+    try {
+      amountCents = brlToCents(String(form.get("amount") ?? ""));
+    } catch {
+      return { error: "Valor inválido." };
+    }
+    const h = await headers();
+    const pixKey = String(form.get("pixKey") ?? "");
+    await requestWithdrawalWithReceipt(db(), ctx, {
+      actorUserId: actor.userId,
+      requestId: String(form.get("requestId") ?? ""),
+      amountCents,
+      fullName: String(form.get("fullName") ?? ""),
+      cpf: String(form.get("cpf") ?? ""),
+      accept: form.get("accept") === "on",
+      ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip"),
+      userAgent: h.get("user-agent"),
+      ...(pixKey ? { pixKey } : {}),
+    });
   } catch (error) {
     if (error instanceof WithdrawalRequestError) return { error: error.message };
     throw error;
