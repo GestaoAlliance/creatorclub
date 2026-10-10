@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, contactAction, inviteAction, rateAction, statusAction, type State } from "./actions";
+import { adjustAction, contactAction, inviteAction, rateAction, reviewedAction, statusAction, type State } from "./actions";
 
 const input = "w-full rounded border border-stone-300 px-3 py-2";
 const btn = "rounded bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60";
@@ -92,6 +92,24 @@ export function AdjustForm({ creatorId, requestId }: { creatorId: string; reques
       </label>
       <Msg state={state} />
       <button className={btn} disabled={pending}>Lançar ajuste</button>
+    </form>
+  );
+}
+
+/** "Conferi os números" (D-ANAREVIEW): libera o saldo de abertura desta creator para o Pagamento. */
+export function ReviewedButton({ creatorId }: { creatorId: string }) {
+  const [state, action, pending] = useActionState(reviewedAction, undefined);
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!confirm("Confirmar que você conferiu cupons, taxa e vendas desta creator?")) e.preventDefault();
+      }}
+      className="flex flex-col gap-1"
+    >
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <button className={`${btn} self-start`} disabled={pending}>Conferi os números desta creator</button>
+      <Msg state={state} />
     </form>
   );
 }

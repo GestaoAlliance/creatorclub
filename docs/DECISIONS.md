@@ -80,6 +80,8 @@
 | D-SHIPPRODUCTS | 2026-10-09 | O conteúdo do envio são produtos da loja (catálogo do Shopify, tabela `Product`), com quantidade; o envio guarda o nome do produto do dia. Carga inicial pelo conector da Shopify; sincronização automática do catálogo fica para depois. | Pedro |
 | D-WDDECIDE | 2026-10-09 | Decisão do saque: Pagamento e super admin decidem (Gestão não vê a fila). Pago vale no dia do clique, sem comprovante, e lança o saque no extrato. Recusa exige motivo, que a creator vê. A creator pode cancelar o próprio pedido enquanto está em análise. | Pedro |
 | D-ACCEPTANA | 2026-10-09 | Sem aceite com creators piloto: a Ana confere os números antes de o portal ser liberado para as creators. | Pedro |
+| D-OPENFLOW | 2026-10-10 | Saldo de abertura (decide D-OPEN): por creator, o Pagamento informa o total já pago antes do v2 e como foi pago; ao aprovar, entra no extrato como "Saldo de abertura" negativo e o saque é liberado. Saldo negativo é aceito com aviso. Aprovam Pagamento e super admin. Comprovantes, se houver, ficam guardados para conferir e automatizar depois. | Pedro |
+| D-ANAREVIEW | 2026-10-10 | A abertura só pode ser aprovada depois de a Ana marcar "Conferi os números" na ficha da creator (Gestão ou super admin). As confirmações provisórias de taxa e cupom (D-RATEPROV) não contam como conferência. | Pedro |
 | D-E7ORDER | 2026-10-09 | Ordem do portal: Vendas → Cupom/link → Extrato → Saque (com NF em PDF) → Envios. | Pedro |
 | D-PERKS | 2026-10-09 | Bônus por metas, gamificação e competições de vendas: ideias anotadas; benefícios a levantar com a Ana antes de desenhar. | Pedro |
 | D-LINKFALLBACK | 2026-10-09 | Link rastreado de cupom desconhecido, promocional ou de creator desligada leva à página inicial da loja, sem cupom e sem contar clique (o link da bio nunca quebra). O IP do clique nunca é gravado: só um hash que muda a cada dia. | Técnica (aplicação de D-LINK) |
@@ -95,7 +97,7 @@
 | ~~D-HOLD~~ | ~~Dias de retenção da comissão~~ — **decidida** em 2026-10-09 (7 dias) | E5 |
 | ~~D-NEG~~ | ~~Estorno depois de saque pago~~ — **decidida** em 2026-10-09 | E5 |
 | ~~D-MONTH~~ | ~~Data do pedido ou do pagamento~~ — **decidida** em 2026-10-09 (pagamento) | E5 |
-| D-OPEN | Saldo inicial: reconstrução ou abertura | Abertura aprovada pelo Pagamento | E6 |
+| ~~D-OPEN~~ | ~~Saldo inicial: reconstrução ou abertura~~ — **decidida** em 2026-10-10 (D-OPENFLOW) | E6 |
 | ~~D-HIST~~ | ~~Desde quando importar pedidos~~ — **decidida** em 2026-10-09 | E3 |
 | ~~D-TAX~~ | ~~Loja usa preço com imposto incluso?~~ — **decidida** em 2026-10-09 (não usa) | E3 |
 | D-RATE | Comissão padrão por marca (15% ou 10%) | 15% na Botanika | E4 |

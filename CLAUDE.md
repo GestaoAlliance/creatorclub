@@ -49,7 +49,7 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 
 ## Decisões em aberto (marcar no código com `// DECISÃO-ABERTA: <id>`)
 
-- D-OPEN saldo de abertura vs. reconstrução — proposta: abertura aprovada pelo Pagamento.
+- Nenhuma no momento (D-OPEN decidida em 2026-10-10: D-OPENFLOW e D-ANAREVIEW).
 
 ## Comandos
 

@@ -9,6 +9,7 @@ import { changeRate, ProfileError, setCreatorStatus, updateContact, type Creator
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { AdjustError, brlToCents, createAdjustment } from "@/lib/commission/adjust";
 import { TeamError } from "@/lib/team/invites";
+import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -18,7 +19,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError) {
       return { error: error.message };
     }
     throw error;
@@ -64,4 +65,9 @@ export async function adjustAction(_p: State, form: FormData): Promise<State> {
     });
     return { ok: r.created ? "Ajuste lançado no extrato." : "Este ajuste já tinha sido lançado." };
   }, "");
+}
+
+export async function reviewedAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => markReviewed(db(), await currentActor(), id), "Conferência registrada.");
 }

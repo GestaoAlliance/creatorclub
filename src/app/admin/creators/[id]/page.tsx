@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { formatBRL } from "@/domain";
 import { creatorStatement, LEDGER_LABEL, StatementError } from "@/lib/commission/statement";
 import { viewAsAction } from "@/app/portal/actions";
-import { AdjustForm, ContactForm, InviteButton, RateChangeForm, StatusForm } from "./forms";
+import { AdjustForm, ContactForm, InviteButton, RateChangeForm, ReviewedButton, StatusForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +78,18 @@ export default async function CreatorPage({
           <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />
         </section>
       )}
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-semibold">Conferência da Ana</h2>
+        {p.reviewedAt ? (
+          <p className="text-sm text-green-800">Números conferidos em {date(p.reviewedAt)}. O Pagamento já pode aprovar o saldo de abertura.</p>
+        ) : (
+          <>
+            <p className="text-sm text-stone-600">Ainda não conferida. Depois de conferir cupons, taxa e vendas, marque aqui: libera o saldo de abertura (saque) para o Pagamento.</p>
+            {p.canEdit && <ReviewedButton creatorId={p.id} />}
+          </>
+        )}
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">Cupons</h2>
