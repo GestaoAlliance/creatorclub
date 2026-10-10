@@ -21,28 +21,31 @@ datasource db {
 // ───────────────────────────── Marca e integrações ─────────────────────────────
 
 model Brand {
-  id                       String    @id @default(uuid())
-  slug                     String    @unique
-  name                     String
-  enabled                  Boolean   @default(false)
-  timezone                 String    @default("America/Sao_Paulo")
-  currency                 String    @default("BRL")
-  storeUrl                 String?
-  primaryColor             String    @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
-  secondaryColor           String?
-  defaultCommissionBps     Int       @default(1500) // DECISÃO-ABERTA: D-RATE
-  defaultDiscountBps       Int       @default(500)
-  withdrawalMinCents       Int       @default(50000)
-  withdrawalWindowStartDay Int       @default(10)
-  withdrawalWindowEndDay   Int       @default(15)
-  commissionHoldDays       Int       @default(7) // D-HOLD: 7 dias depois do pagamento
-  nfInstructions           String?
-  nfTakerDocument          String? // D-NF: CNPJ do tomador da nota fiscal da creator
-  legacyId                 String?   @unique
+  id                        String    @id @default(uuid())
+  slug                      String    @unique
+  name                      String
+  enabled                   Boolean   @default(false)
+  timezone                  String    @default("America/Sao_Paulo")
+  currency                  String    @default("BRL")
+  storeUrl                  String?
+  primaryColor              String    @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
+  secondaryColor            String?
+  defaultCommissionBps      Int       @default(1500) // DECISÃO-ABERTA: D-RATE
+  defaultDiscountBps        Int       @default(500)
+  withdrawalMinCents        Int       @default(1) // D-CONTRACT: sem mínimo por pedido (o mínimo é de vendas no mês)
+  withdrawalWindowStartDay  Int       @default(1) // D-CONTRACT: NF do dia 1 ao 10, pagamento até o dia 15
+  withdrawalWindowEndDay    Int       @default(10)
+  commissionHoldDays        Int       @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
+  /// D-CONTRACT: vendas acumuladas mínimas para liberar a comissão no fechamento do mês.
+  releaseMinCents           Int       @default(50000)
+  releaseMinPrescriberCents Int       @default(100000)
+  nfInstructions            String?
+  nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
+  legacyId                  String?   @unique
   /// D-ARCHIVE: marca arquivada some de todas as telas (nada é apagado).
-  archivedAt               DateTime?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  archivedAt                DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 
   integrations       BrandIntegration[]
   roleGrants         RoleGrant[]
@@ -67,6 +70,8 @@ model Brand {
   termsVersions      TermsVersion[]
   applications       CreatorApplication[]
   termsAcceptances   TermsAcceptance[]
+  commissionReleases CommissionRelease[]
+  monthClosings      MonthClosing[]
 }
 
 enum IntegrationKind {
@@ -235,8 +240,8 @@ model Creator {
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 
-  brand              Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  account            CreatorAccount     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  brand              Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  account            CreatorAccount      @relation(fields: [accountId], references: [id], onDelete: Restrict)
   commissionPolicies CommissionPolicy[]
   couponAssignments  CouponAssignment[]
   attributions       OrderAttribution[]
@@ -244,6 +249,7 @@ model Creator {
   withdrawals        Withdrawal[]
   shipments          Shipment[]
   termsAcceptances   TermsAcceptance[]
+  commissionReleases CommissionRelease[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -755,4 +761,36 @@ model CreatorApplication {
 
   @@unique([brandId, source, externalKey])
   @@index([brandId, status, submittedAt])
+}
+
+/// D-CONTRACT: liberação da comissão no fechamento do mês. Comissões de pedidos pagos até `month` (inclusive) ficam
+/// disponíveis para saque. Só é gravada quando as vendas acumuladas desde a liberação anterior atingem o mínimo.
+/// Somente inserção.
+model CommissionRelease {
+  id         String   @id @default(uuid())
+  brandId    String
+  creatorId  String
+  month      String // AAAA-MM
+  salesCents Int // vendas acumuladas desde a liberação anterior até `month`
+  minCents   Int // mínimo vigente no fechamento
+  releasedAt DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([creatorId, month])
+  @@index([brandId, month])
+}
+
+/// D-CONTRACT: fechamento do mês de uma marca já rodado (o worker não refaz).
+model MonthClosing {
+  id       String   @id @default(uuid())
+  brandId  String
+  month    String // AAAA-MM
+  releases Int
+  closedAt DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, month])
 }

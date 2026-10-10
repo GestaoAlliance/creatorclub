@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const mask = (pix: string) => (pix.length <= 6 ? "•••" : `${pix.slice(0, 3)}•••${pix.slice(-3)}`);
 
-// Passo a passo do saque (D-WDFLOW: valor → nota já emitida → confirmar). Se alguma regra impede o pedido, volta para a aba Saque (que explica o motivo).
+// Passo a passo do saque (D-WDFLOW, D-CONTRACT: nota já emitida do valor total → confirmar). Se alguma regra impede o pedido, volta para a aba Saque (que explica o motivo).
 export default async function NewWithdrawal({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
@@ -24,7 +24,6 @@ export default async function NewWithdrawal({ params }: { params: Promise<{ marc
       marca={ctx.brand.slug}
       requestId={randomUUID()}
       availableCents={tab.balance.availableCents}
-      minCents={tab.policy.minCents}
       takerDocument={brand.nfTakerDocument}
       pixKeyMasked={account.account.pixKey ? mask(account.account.pixKey) : null}
     />

@@ -10,7 +10,7 @@ const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
 const T = (iso: string) => new Date(iso);
-const IN_WINDOW = T("2026-10-12T15:00:00Z");
+const IN_WINDOW = T("2026-10-05T15:00:00Z"); // D-CONTRACT: janela do dia 1 ao 10
 const PDF = new TextEncoder().encode("%PDF-1.4 nota");
 
 async function userWith(role: "PAGAMENTO" | "GESTAO" | "SUPER_ADMIN", brandId: string | null) {
@@ -19,7 +19,7 @@ async function userWith(role: "PAGAMENTO" | "GESTAO" | "SUPER_ADMIN", brandId: s
   return (await loadActor(prisma, id))!;
 }
 
-/** Creator liberada, com R$ 800 disponíveis e um pedido de saque de R$ 600 em análise. */
+/** Creator liberada, com R$ 800 disponíveis (setembro liberado) e um pedido de saque do total em análise. */
 async function requested() {
   const a = await seedBrand(prisma);
   const userId = randomUUID();
@@ -27,8 +27,9 @@ async function requested() {
   await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { userId, pixKey: "pix@exemplo.com", cpf: "12345678900" } });
   await prisma.creator.update({ where: { id: a.creator.id }, data: { withdrawalsUnlockedAt: T("2026-10-01T00:00:00Z"), withdrawalsUnlockedById: "pagamento" } });
   await prisma.ledgerEntry.create({ data: commissionEntry({ brandId: a.brand.id, creatorId: a.creator.id, orderId: a.order.id }, { amountCents: 80_000, availableAt: T("2026-09-08T12:00:00Z") }) });
+  await prisma.commissionRelease.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, month: "2026-09", salesCents: 50_000, minCents: 50_000 } });
   const ctx = await portalContext(prisma, (await loadActor(prisma, userId))!, a.brand.slug);
-  const { withdrawalId } = await requestWithdrawal(prisma, ctx, { actorUserId: userId, requestId: randomUUID(), amountCents: 60_000, pdf: PDF }, IN_WINDOW);
+  const { withdrawalId } = await requestWithdrawal(prisma, ctx, { actorUserId: userId, requestId: randomUUID(), amountCents: 80_000, pdf: PDF }, IN_WINDOW);
   const pagamento = await userWith("PAGAMENTO", a.brand.id);
   return { ...a, ctx, userId, withdrawalId, pagamento };
 }
@@ -39,15 +40,15 @@ describe("decisão do saque (banco real)", () => {
   it("fila mostra o pedido com Pix, documento e disponível; pagar lança o saque no extrato uma vez só", async () => {
     const s = await requested();
     const queue = await withdrawalQueue(prisma, s.pagamento, "REQUESTED", IN_WINDOW);
-    expect(queue.find((r) => r.id === s.withdrawalId)).toMatchObject({ amountCents: 60_000, pixKey: "pix@exemplo.com", document: "12345678900", hasNf: true, availableBeforeCents: 80_000 });
+    expect(queue.find((r) => r.id === s.withdrawalId)).toMatchObject({ amountCents: 80_000, pixKey: "pix@exemplo.com", document: "12345678900", hasNf: true, availableBeforeCents: 80_000 });
     expect(await nfLocation(prisma, s.pagamento, s.withdrawalId)).toMatchObject({ bucket: "nf" });
 
     const results = await Promise.allSettled([1, 2].map(() => payWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW)));
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    expect(await sum(s.creator.id)).toBe(20_000);
+    expect(await sum(s.creator.id)).toBe(0);
     const w = await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId }, include: { ledgerEntries: true } });
     expect(w).toMatchObject({ status: "PAID", decidedById: s.pagamento.userId });
-    expect(w.ledgerEntries).toMatchObject([{ type: "WITHDRAWAL", amountCents: -60_000 }]);
+    expect(w.ledgerEntries).toMatchObject([{ type: "WITHDRAWAL", amountCents: -80_000 }]);
     await expect(rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, "tarde")).rejects.toThrow(/já foi decidido/);
     expect((await withdrawalQueue(prisma, s.pagamento, "DECIDED")).find((r) => r.id === s.withdrawalId)?.status).toBe("PAID");
     expect(await prisma.auditLog.count({ where: { action: "withdrawal.paid", entityId: s.withdrawalId } })).toBe(1);
@@ -59,7 +60,7 @@ describe("decisão do saque (banco real)", () => {
     await rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, " Valor da nota   diferente do pedido ");
     expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ status: "REJECTED", note: "Valor da nota diferente do pedido" });
     expect(await sum(s.creator.id)).toBe(80_000);
-    const again = await requestWithdrawal(prisma, s.ctx, { actorUserId: s.userId, requestId: randomUUID(), amountCents: 50_000, pdf: PDF }, IN_WINDOW);
+    const again = await requestWithdrawal(prisma, s.ctx, { actorUserId: s.userId, requestId: randomUUID(), amountCents: 80_000, pdf: PDF }, IN_WINDOW);
     expect(again.created).toBe(true);
   });
 

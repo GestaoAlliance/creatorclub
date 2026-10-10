@@ -54,7 +54,7 @@ describe("acesso ao portal (banco real)", () => {
 });
 
 describe("Início do portal (banco real)", () => {
-  it("saldo, próxima liberação, vendas e comissão do mês pelo pagamento, últimos lançamentos e cupom", async () => {
+  it("saldo, progresso da liberação, vendas e comissão do mês pelo pagamento, últimos lançamentos e cupom", async () => {
     const { portalSummary } = await import("@/lib/portal/home");
     const { commissionEntry } = await import("./fixtures");
     const a = await seedBrand(prisma); // pedido pago em 2026-09-01
@@ -87,10 +87,13 @@ describe("Início do portal (banco real)", () => {
       ],
     });
 
+    await prisma.commissionRelease.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, month: "2026-09", salesCents: 50_000, minCents: 50_000 } });
+
     const s = await portalSummary(prisma, ctx, T("2026-10-07T12:00:00Z"));
     expect(s.month).toBe("2026-10");
-    expect(s.balance).toEqual({ totalCents: 5_500, heldCents: 3_000, reservedCents: 0, availableCents: 2_500 });
-    expect(s.nextReleaseAt?.toISOString()).toBe("2026-10-09T12:00:00.000Z");
+    // Setembro liberado; outubro (1.500 + 1.500 − 500) a liberar no fechamento (D-CONTRACT).
+    expect(s.balance).toEqual({ totalCents: 5_500, heldCents: 2_500, reservedCents: 0, availableCents: 3_000 });
+    expect(s.release).toEqual({ releasedThrough: "2026-09", minCents: 50_000, accumulatedCents: 20_000, nextClosingAt: T("2026-11-01T03:00:00Z") });
     expect([s.salesCount, s.salesCents]).toEqual([2, 20_000]);
     expect(s.commissionCents).toBe(2_500);
     expect(s.recent.map((l) => l.amountCents)).toEqual([-500, 1_500, 1_500, 3_000]);
@@ -230,29 +233,35 @@ describe("Cupom e link (banco real)", () => {
 });
 
 describe("Aba Saque (banco real)", () => {
-  it("botão travado até liberar a creator; regras de janela, mínimo, pedido aberto e visualização da equipe", async () => {
+  it("botão travado até liberar a creator; regras de janela, nada liberado, pedido aberto e visualização da equipe", async () => {
     const { portalWithdrawalTab } = await import("@/lib/portal/withdrawals");
     const { commissionEntry } = await import("./fixtures");
     const T = (iso: string) => new Date(iso);
     const a = await seedBrand(prisma);
     const ctx = await portalContext(prisma, await loginFor(a.account.id), a.brand.slug);
-    const inWindow = T("2026-10-12T15:00:00Z"); // dia 12, janela 10–15
+    const inWindow = T("2026-10-05T15:00:00Z"); // dia 5, janela 1–10 (D-CONTRACT)
     await prisma.ledgerEntry.create({ data: commissionEntry({ brandId: a.brand.id, creatorId: a.creator.id, orderId: a.order.id }, { amountCents: 80_000, availableAt: T("2026-09-08T12:00:00Z") }) });
 
+    // Antes do fechamento de setembro: tudo a liberar.
     let tab = await portalWithdrawalTab(prisma, ctx, { now: inWindow });
+    expect(tab.balance).toMatchObject({ heldCents: 80_000, availableCents: 0 });
+    expect(tab.blocks).toEqual(["LOCKED", "NOTHING_AVAILABLE"]);
+
+    await prisma.commissionRelease.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, month: "2026-09", salesCents: 50_000, minCents: 50_000 } });
+    tab = await portalWithdrawalTab(prisma, ctx, { now: inWindow });
     expect(tab.balance.availableCents).toBe(80_000);
     expect(tab.blocks).toEqual(["LOCKED"]);
 
     await prisma.creator.update({ where: { id: a.creator.id }, data: { withdrawalsUnlockedAt: inWindow, withdrawalsUnlockedById: "pagamento" } });
     expect((await portalWithdrawalTab(prisma, ctx, { now: inWindow })).blocks).toEqual([]);
-    expect((await portalWithdrawalTab(prisma, ctx, { now: T("2026-10-20T15:00:00Z") })).blocks).toEqual(["OUTSIDE_WINDOW"]);
+    expect((await portalWithdrawalTab(prisma, ctx, { now: T("2026-10-12T15:00:00Z") })).blocks).toEqual(["OUTSIDE_WINDOW"]);
     expect((await portalWithdrawalTab(prisma, { ...ctx, viewAs: { userId: "sa" } }, { now: inWindow })).blocks).toEqual(["VIEW_ONLY"]);
 
-    await prisma.withdrawal.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, amountCents: 50_000, idempotencyKey: randomUUID() } });
+    await prisma.withdrawal.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, amountCents: 80_000, idempotencyKey: randomUUID() } });
     tab = await portalWithdrawalTab(prisma, ctx, { now: inWindow });
-    expect(tab.balance).toMatchObject({ reservedCents: 50_000, availableCents: 30_000 });
-    expect(tab.blocks).toEqual(["BELOW_MIN", "OPEN_REQUEST"]);
-    expect(tab.withdrawals.map((w) => [w.amountCents, w.status])).toEqual([[50_000, "REQUESTED"]]);
+    expect(tab.balance).toMatchObject({ reservedCents: 80_000, availableCents: 0 });
+    expect(tab.blocks).toEqual(["NOTHING_AVAILABLE", "OPEN_REQUEST"]);
+    expect(tab.withdrawals.map((w) => [w.amountCents, w.status])).toEqual([[80_000, "REQUESTED"]]);
     expect(tab.statement.lines).toHaveLength(1);
   });
 

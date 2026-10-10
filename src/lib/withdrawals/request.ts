@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { checkWithdrawalRequest, computeBalance, type WithdrawalError } from "@/domain";
+import { checkWithdrawalRequest, type WithdrawalError } from "@/domain";
+import { creatorBalance } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { pendingTerms } from "@/lib/terms/terms";
 
@@ -8,7 +9,7 @@ import { pendingTerms } from "@/lib/terms/terms";
  * Pedido de saque pela creator (E7.7, D-WDRULES). A nota fiscal (PDF até 10 MB) sobe direto do navegador para o
  * bucket privado `nf` por um link assinado; aqui o servidor confere o arquivo e grava o pedido. Tudo numa transação
  * que trava a creator (`FOR UPDATE`), recalcula o saldo e aplica as regras: liberada (D-WDLOCK), janela, mínimo,
- * saldo, um pedido em aberto (índice `Withdrawal_one_open_per_creator`). O mesmo `requestId` nunca cria dois pedidos.
+ * valor igual ao total disponível (D-CONTRACT), um pedido em aberto (índice `Withdrawal_one_open_per_creator`). O mesmo `requestId` nunca cria dois pedidos.
  * O valor só sai do saldo quando o Pagamento marcar como pago (E8); até lá fica "em saque" (reservado).
  */
 
@@ -21,7 +22,8 @@ const RULE_TEXT: Record<WithdrawalError, string> = {
   FORA_DA_JANELA: "Os pedidos de saque abrem só na janela do mês.",
   VALOR_INVALIDO: "Informe um valor válido.",
   ABAIXO_DO_MINIMO: "O valor está abaixo do mínimo por pedido.",
-  SALDO_INSUFICIENTE: "O valor é maior que o seu saldo disponível.",
+  SALDO_INSUFICIENTE: "Seu saldo disponível mudou. Recarregue a página e confira o valor.",
+  VALOR_PARCIAL: "Seu saldo disponível mudou. Recarregue a página e confira o valor.",
   SAQUE_EM_ABERTO: "Você já tem um pedido de saque em análise.",
 };
 
@@ -77,13 +79,9 @@ export async function requestWithdrawal(
           brand: { select: { timezone: true, withdrawalMinCents: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true } },
         },
       });
-      const [entries, open] = await Promise.all([
-        tx.ledgerEntry.findMany({ where: { creatorId: creator.id, brandId: creator.brandId }, select: { type: true, amountCents: true, availableAt: true } }),
-        tx.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
-      ]);
-      const balance = computeBalance(entries, open, now);
+      const balance = await creatorBalance(tx, creator, creator.brand.timezone, now);
       const errors = checkWithdrawalRequest(
-        { amountCents: input.amountCents, availableCents: balance.availableCents, hasOpenWithdrawal: open.length > 0, now },
+        { amountCents: input.amountCents, availableCents: balance.availableCents, hasOpenWithdrawal: balance.reservedCents > 0, now },
         {
           minCents: creator.brand.withdrawalMinCents,
           windowStartDay: creator.brand.withdrawalWindowStartDay,

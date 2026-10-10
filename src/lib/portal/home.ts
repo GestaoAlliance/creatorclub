@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { monthKey, type Balance } from "@/domain";
+import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import { readLedger, type StatementLine } from "@/lib/commission/statement";
 import type { PortalContext } from "./context";
 
@@ -10,8 +11,8 @@ import type { PortalContext } from "./context";
 
 export type PortalSummary = {
   balance: Balance;
-  /** Data em que o próximo crédito retido fica disponível. */
-  nextReleaseAt: Date | null;
+  /** Liberação mensal (D-CONTRACT): vendas acumuladas, mínimo e próximo fechamento. */
+  release: ReleaseProgress;
   month: string;
   /** Pedidos pagos atribuídos à creator no mês (não cancelados, não teste) e a soma da base. */
   salesCount: number;
@@ -33,8 +34,9 @@ export async function portalSummary(prisma: PrismaClient, ctx: PortalContext, no
   // Janela folgada para trás; o mês exato é conferido no fuso da marca.
   const since = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000);
 
-  const [ledger, attributed, assignments] = await Promise.all([
+  const [ledger, release, attributed, assignments] = await Promise.all([
     readLedger(prisma, creator, now),
+    releaseProgress(prisma, ctx.creatorId, now),
     prisma.orderAttribution.findMany({
       where: {
         creatorId: ctx.creatorId,
@@ -53,10 +55,9 @@ export async function portalSummary(prisma: PrismaClient, ctx: PortalContext, no
   ]);
 
   const sales = attributed.filter((a) => a.order.paidAt && monthKey(a.order.paidAt, tz) === month);
-  const held = ledger.lines.filter((l) => l.held).map((l) => l.availableAt.getTime());
   return {
     balance: ledger.balance,
-    nextReleaseAt: held.length ? new Date(Math.min(...held)) : null,
+    release,
     month,
     salesCount: sales.length,
     salesCents: sales.reduce((sum, a) => sum + a.order.subtotalCents, 0),

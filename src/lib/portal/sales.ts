@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { dayKey } from "@/domain";
+import { dayKey, monthKey } from "@/domain";
+import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import type { PortalContext } from "./context";
 import { resolvePeriod, type Period } from "./period";
 
@@ -27,26 +28,27 @@ export type Sale = {
   rateBps: number | null;
   commissionCents: number;
   status: SaleStatus;
-  availableAt: Date | null;
 };
 
 export type SalesDay = { day: string; count: number; baseCents: number; commissionCents: number };
 
 export type SalesPage = {
   period: Omit<Period, "from" | "to">;
-  holdDays: number;
+  /** Liberação mensal (D-CONTRACT): vendas acumuladas, mínimo e próximo fechamento. */
+  release: ReleaseProgress;
   sales: Sale[];
   days: SalesDay[];
   totals: { count: number; baseCents: number; commissionCents: number; ticketCents: number };
 };
 
-export function saleStatus(entries: { amountCents: number; availableAt: Date }[], rateBps: number | null, now: Date): SaleStatus {
+/** Situação da venda; `released` = o mês do pagamento já teve a comissão liberada no fechamento (D-CONTRACT). */
+export function saleStatus(entries: { amountCents: number }[], rateBps: number | null, released: boolean): SaleStatus {
   if (rateBps === null) return "PENDING_RATE";
   const net = entries.reduce((s, e) => s + e.amountCents, 0);
   const hadReversal = entries.some((e) => e.amountCents < 0);
   if (hadReversal && net <= 0) return "REVERSED";
   if (hadReversal) return "PARTIAL_REFUND";
-  return entries.some((e) => e.amountCents > 0 && e.availableAt > now) ? "HELD" : "RELEASED";
+  return released ? "RELEASED" : "HELD";
 }
 
 export async function portalSales(
@@ -55,10 +57,8 @@ export async function portalSales(
   input: { p?: string; de?: string; ate?: string } = {},
   now = new Date(),
 ): Promise<SalesPage> {
-  const { timezone: tz, commissionHoldDays: holdDays } = await prisma.brand.findUniqueOrThrow({
-    where: { id: ctx.brand.id },
-    select: { timezone: true, commissionHoldDays: true },
-  });
+  const { timezone: tz } = await prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true } });
+  const release = await releaseProgress(prisma, ctx.creatorId, now);
   const { from, to, ...period } = resolvePeriod(input, now, tz);
   const rows = await prisma.orderAttribution.findMany({
     where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, order: { paidAt: { gte: from, lt: to }, test: false } },
@@ -70,7 +70,7 @@ export async function portalSales(
           name: true,
           paidAt: true,
           subtotalCents: true,
-          ledgerEntries: { where: { creatorId: ctx.creatorId, type: { in: ["COMMISSION", "REVERSAL"] } }, select: { amountCents: true, availableAt: true } },
+          ledgerEntries: { where: { creatorId: ctx.creatorId, type: { in: ["COMMISSION", "REVERSAL"] } }, select: { amountCents: true } },
         },
       },
     },
@@ -78,7 +78,7 @@ export async function portalSales(
   const sales = rows
     .map((r): Sale => {
       const entries = r.order.ledgerEntries;
-      const held = entries.filter((e) => e.amountCents > 0 && e.availableAt > now).map((e) => e.availableAt.getTime());
+      const released = release.releasedThrough !== null && monthKey(r.order.paidAt!, tz) <= release.releasedThrough;
       return {
         orderId: r.order.id,
         orderName: r.order.name,
@@ -86,8 +86,7 @@ export async function portalSales(
         baseCents: r.order.subtotalCents,
         rateBps: r.rateBps,
         commissionCents: entries.reduce((s, e) => s + e.amountCents, 0),
-        status: saleStatus(entries, r.rateBps, now),
-        availableAt: held.length ? new Date(Math.min(...held)) : null,
+        status: saleStatus(entries, r.rateBps, released),
       };
     })
     .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime());
@@ -104,7 +103,7 @@ export async function portalSales(
   const baseCents = sales.reduce((s, x) => s + x.baseCents, 0);
   return {
     period,
-    holdDays,
+    release,
     sales,
     days: [...byDay.values()],
     totals: {

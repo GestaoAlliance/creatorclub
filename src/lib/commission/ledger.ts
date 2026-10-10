@@ -6,7 +6,8 @@ import { decideAttribution, type AttributionOutcome } from "./attribution";
  * Lançamentos de comissão (E5.2). Para cada versão do pedido: devido − lançado vira um lançamento (COMMISSION se
  * positivo, REVERSAL se negativo; D-NEG: o saldo pode ficar negativo). A chave de idempotência inclui a versão.
  * Uma trava por pedido (advisory lock na transação) impede dois processos de lançar a mesma diferença.
- * Crédito fica disponível `Brand.commissionHoldDays` depois do pagamento (D-HOLD).
+ * `availableAt` (pagamento + `Brand.commissionHoldDays`) ficou só informativo: a comissão é liberada no fechamento
+ * do mês (D-CONTRACT, `src/lib/commission/release.ts`).
  */
 
 export type PostOutcome =

@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { computeBalance } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
+import { ledgerEntriesWithMonth, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 
 /**
@@ -118,12 +119,16 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
     },
   });
   const ids = [...new Set(rows.filter((r) => r.status === "REQUESTED").map((r) => r.creatorId))];
-  const [entries, open] = ids.length
+  const brandTz = new Map(
+    (await prisma.brand.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.brandId))] } }, select: { id: true, timezone: true } })).map((b) => [b.id, b.timezone]),
+  );
+  const [entries, open, released] = ids.length
     ? await Promise.all([
-        prisma.ledgerEntry.findMany({ where: { creatorId: { in: ids } }, select: { creatorId: true, type: true, amountCents: true, availableAt: true } }),
+        Promise.all([...brandTz].map(([brandId, tz]) => ledgerEntriesWithMonth(prisma, ids.filter((id) => rows.some((r) => r.creatorId === id && r.brandId === brandId)), tz))).then((x) => x.flat()),
         prisma.withdrawal.findMany({ where: { creatorId: { in: ids }, status: "REQUESTED" }, select: { creatorId: true, amountCents: true } }),
+        releasedThroughFor(prisma, ids),
       ])
-    : [[], []];
+    : [[], [], new Map<string, string | null>()];
   return rows.map((r) => {
     const fiscal = can(actor.grants, "personal.fiscal", r.brandId);
     const a = r.creator.account;
@@ -133,6 +138,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
         entries.filter((e) => e.creatorId === r.creatorId),
         open.filter((o) => o.creatorId === r.creatorId),
         now,
+        { releasedThrough: released.get(r.creatorId) ?? null },
       );
       availableBeforeCents = b.availableCents + r.amountCents;
     }

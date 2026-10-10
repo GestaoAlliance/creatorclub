@@ -7,7 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** escolher com o responsável entre P1 (backup) e P2 (Resend, espera o domínio). Para liberar
+- **Próxima tarefa:** contrato, parte 2 — envio sugerido do kit mensal pela faixa de vendas do mês anterior (D-CONTRACT);
+  depois vigência do contrato com aviso de 30 dias e checklist da Central na ficha. Termo v2 (regras novas de saque)
+  espera o OK do responsável. P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -171,6 +173,25 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-60 — 2026-10-10 — Regras do contrato: fechamento mensal com mínimo de vendas e saque do dia 1 ao 10
+- **Decidido:** D-CONTRACT (as regras dos contratos assinados valem sobre D-HOLD e D-WDRULES): comissão do mês fica a
+  liberar e é liberada no dia 1 do mês seguinte só se as vendas acumuladas desde a última liberação chegam ao mínimo
+  (R$ 500 influencer/UGC, R$ 1.000 prescritor); sem atingir, acumulam para o mês seguinte. NF do valor total liberado
+  do dia 1 ao 10, pagamento até o dia 15, sem saque parcial e sem mínimo por pedido.
+- **Feito:** migração `contract_monthly_release` (tabelas `CommissionRelease` e `MonthClosing` com RLS, somente
+  inserção e travas `CommissionRelease_month_format`, `CommissionRelease_reached_min`, `MonthClosing_month_format`,
+  `MonthClosing_releases_nonneg`, `Brand_releaseMin_positive`; mínimos na `Brand`; janela da Botanika 1–10, mínimo
+  por pedido 1 centavo). `src/domain/release.ts` (plano de liberações, acumulado, mínimo por tipo) e
+  `computeBalance` com liberação mensal (retido = líquido de cada mês não liberado). `src/lib/commission/release.ts`
+  (fechamento pelo worker a cada minuto, 1 h depois da meia-noite do dia 1, uma vez por marca e mês; progresso da
+  liberação). Saque exige o valor igual ao total disponível; formulário sem o passo "Valor". Portal (Início, Vendas,
+  Saque) e ficha com "vendas acumuladas X de R$ 500" e "a liberar" sem data fixa.
+- **Atenção:** o termo publicado (v1) ainda fala em saque do dia 10 ao 15 com mínimo de R$ 500 por pedido; o texto v2
+  precisa do OK do responsável. No primeiro fechamento (01/11, ou no deploy para setembro e antes) o sistema percorre
+  desde o primeiro mês com venda.
+- **Verificado:** 127 unitários (12 novos); 141 de integração (3 novos, travas pelo nome); migração × schema sem
+  divergência; typecheck; build. Capturas para o OK.
 
 ### CP-59 — 2026-10-10 — Candidatas do formulário Hunter no painel (onboarding, parte 1)
 - **Decidido:** D-ONBOARD (o formulário Hunter que a Ana manda alimenta o sistema por um script do Google Forms que
