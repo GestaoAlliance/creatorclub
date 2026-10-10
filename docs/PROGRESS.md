@@ -195,7 +195,9 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   (mesmo handler do Hunter, `src/lib/onboarding/form-route.ts`) e script `docs/forms/captacao-apps-script.gs`. Resposta
   que já veio da planilha (`planilha:` + segundo) não duplica quando o script manda as antigas. Candidatas: origem
   (Hunter/Captação), selo VermeFree, views, collab e observação; cartão separado em `card.tsx`.
-- **Falta (produção, depois do deploy):** importar as respostas da planilha (112 depois de tirar 4 repetidas).
+- **Feito em produção (2026-10-10):** 112 respostas importadas da planilha (116 linhas, 4 repetidas): 7 já eram creators
+  ("Aprovada", ligadas à ficha), 105 "Nova"; 10 com observação do STATUS; 92 com o selo VermeFree. Conferido por soma de
+  verificação contra a planilha. Duas respostas no mesmo segundo: a segunda entrou como `planilha:<segundo>-2`.
 - **Verificado:** 2 unitários novos; 1 de integração novo (campos novos, respostas extras, importada não duplica);
   migração × schema sem divergência; typecheck; build.
 
