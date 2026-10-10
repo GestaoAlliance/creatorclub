@@ -88,6 +88,13 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
               Contrato vence em {p.contract.daysLeft} {p.contract.daysLeft === 1 ? "dia" : "dias"} ({dmy(p.contract.end)}).
             </p>
           )}
+          {p.idle && (
+            <p className={p.idle.idle ? "text-sm font-medium text-amber-700 dark:text-amber-300" : ui.muted}>
+              {p.idle.lastSaleDay ? `Última venda em ${dmy(p.idle.lastSaleDay)}` : "Ainda não vendeu"}
+              {(p.idle.lastSaleDay === null || p.idle.days > 0) && ` · ${p.idle.days} ${p.idle.days === 1 ? "dia" : "dias"} sem vender`}
+              {p.idle.idle && ": falar com a creator."}
+            </p>
+          )}
           {p.canEdit ? (
             <ChecklistForm creatorId={p.id} c={p.contract} templates={p.contractTemplates} />
           ) : (
