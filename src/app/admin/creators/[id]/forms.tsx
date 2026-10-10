@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, checklistAction, contactAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
+import { adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -202,6 +202,26 @@ export function ReviewedButton({ creatorId }: { creatorId: string }) {
     >
       <input type="hidden" name="creatorId" value={creatorId} />
       <button className={btn} disabled={pending}>Conferi os números desta creator</button>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+export function CouponCreateForm({ creatorId }: { creatorId: string }) {
+  const [state, action, pending] = useActionState(couponCreateAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <div className="flex flex-wrap items-end gap-2">
+        <label className={ui.label}>Código
+          <input className={`${ui.inputSm} font-mono uppercase`} name="code" placeholder="SÓ LETRAS, ATÉ 8" maxLength={8} required />
+        </label>
+        <label className={ui.label}>Desconto (%)
+          <input className={`${ui.inputSm} w-20`} name="discount" defaultValue="5" inputMode="decimal" required />
+        </label>
+        <button className={btn} disabled={pending}>{pending ? "Criando…" : "Criar cupom na Shopify"}</button>
+      </div>
+      <p className={ui.hint}>Vale para todos os produtos e combina com outros descontos. Sem taxa definida em contrato de permuta, a taxa fica 0%.</p>
       <Msg state={state} />
     </form>
   );
