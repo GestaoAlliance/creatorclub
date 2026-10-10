@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I2 (conferência da NF no pedido de saque), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** I3 (saque de creator sem CNPJ, com recibo), da fila "Inventário do Drive". Antes de ligar: confirmar retenção de imposto com a contabilidade. P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -168,7 +168,7 @@ já existem antes de desenhar.
 
 ### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
 - [x] **I1** Aviso de 60 dias sem vendas (D-IDLE60): a equipe vê no painel e na lista quem está há 60 dias sem venda.
-- [ ] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
+- [x] **I2** Conferência da NF no pedido de saque (D-NFCHECK): tomador = Botanika, valor = total do saque; a data de
   emissão não bloqueia. Chave única por nota.
 - [ ] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
   Pix só em chave do próprio CPF. Retenção de imposto: confirmar com a contabilidade antes de ligar.
@@ -185,6 +185,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-71 — 2026-10-10 — Conferência da NF no pedido de saque (I2)
+- **Decidido:** D-NFCHECK detalhada: nota errada bloqueia na hora com o motivo; nota que o sistema não lê entra marcada
+  "conferir a nota" para o Pagamento; confere tomadora, valor, emissor = CNPJ da ficha (ficha sem CNPJ recebe o da
+  nota), código 17.06 e chave nunca usada (recusado ou cancelado libera a nota).
+- **Feito:** leitura do DANFSe (NFS-e padrão nacional) com `unpdf` 1.8.1 (`src/lib/withdrawals/nf.ts`), regra pura
+  `parseNfseText`/`checkNf` (`src/domain/nf.ts`). Migração `withdrawal_nf_check`: `Withdrawal.nfAccessKey` e
+  `nfCheck` (OK/MANUAL), travas `Withdrawal_nf_access_key_format` e `Withdrawal_nf_access_key_once`. Pagamento: selos
+  "nota conferida"/"conferir a nota" e aviso. Portal: instrução da nota cita código 17.06, CNPJ do cadastro e a
+  conferência.
+- **Verificado:** leitor testado com uma NF real do Drive (fora do repositório; passou como conferida); 5 unitários
+  novos (PDF gerado no teste com dados fictícios); 5 de integração novos (nota certa, cada motivo de bloqueio, nota
+  ilegível, nota repetida e liberada após recusa, travas pelo nome); migração × schema sem divergência; typecheck; build.
 
 ### CP-70 — 2026-10-10 — Aviso de 60 dias sem vender (I1)
 - **Decidido:** D-IDLE60 detalhada (quem nunca vendeu conta desde o início do contrato; sem data, desde a entrada no

@@ -60,7 +60,8 @@ export function WithdrawalForm(p: Props) {
           <h1 className="text-lg font-semibold">Envie o PDF da nota fiscal de {brl(cents)}</h1>
           <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
             O saque é sempre do <strong>valor total liberado</strong>. A nota precisa já estar emitida, neste valor, para o CNPJ{" "}
-            {p.takerDocument ?? "da marca"}.
+            {p.takerDocument ?? "da marca"}, com o código de serviço 17.06, pelo CNPJ do seu cadastro. O sistema confere a nota ao enviar
+            e uma nota só vale para um saque.
           </p>
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 px-4 py-8 text-center text-sm dark:border-white/15">
             <FileUp className="size-6 text-stone-500" />
