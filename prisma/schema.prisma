@@ -79,6 +79,7 @@ model Brand {
   hunterLinks        HunterLink[]
   hunterClicks       HunterClick[]
   formLinks          FormLink[]
+  ugcVideos          UgcVideo[]
 }
 
 enum IntegrationKind {
@@ -242,7 +243,7 @@ model Creator {
   withdrawalsUnlockedAt   DateTime?
   withdrawalsUnlockedById String?
   /// D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota); a equipe marca na ficha.
-  receivesAsIndividual    Boolean   @default(false)
+  receivesAsIndividual    Boolean           @default(false)
   /// D-ANAREVIEW: a Ana conferiu os números (cupons, taxa, vendas) desta creator. Exigido para o saldo de abertura (E6).
   reviewedAt              DateTime?
   reviewedById            String?
@@ -264,6 +265,8 @@ model Creator {
   ugcFolderUrl            String?
   ugcVideoStatus          String?
   ugcOrder                String?
+  /// D-UGCVIDEOS: meta de vídeos no ciclo (= período do contrato), definida por creator na ficha.
+  ugcVideoGoal            Int?
   notes                   String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
@@ -280,6 +283,7 @@ model Creator {
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
   kitGrants          KitGrant[]
+  ugcVideos          UgcVideo[]
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@unique([brandId, accountId])
@@ -502,9 +506,9 @@ model Withdrawal {
   decidedById    String?
   note           String?
 
-  brand         Brand         @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  creator       Creator       @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
-  nfFile        File?         @relation(fields: [nfFileId], references: [id], onDelete: Restrict)
+  brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator       Creator            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  nfFile        File?              @relation(fields: [nfFileId], references: [id], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
   receipt       WithdrawalReceipt?
 
@@ -977,4 +981,24 @@ model FormLink {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, form])
+}
+
+/// Vídeo entregue por uma UGC (D-UGCVIDEOS): um registro por vídeo, com o link. Conta na meta do ciclo (período do
+/// contrato) pela data de entrega. Nada é apagado: registro errado é retirado (removedAt) e sai da contagem.
+model UgcVideo {
+  id          String    @id @default(uuid())
+  brandId     String
+  creatorId   String
+  deliveredOn DateTime  @db.Date
+  url         String
+  product     String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  removedAt   DateTime?
+  removedById String?
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([creatorId, deliveredOn])
 }

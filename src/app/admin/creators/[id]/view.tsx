@@ -9,6 +9,7 @@ import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement"
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
 import { AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
@@ -114,6 +115,8 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
           )}
           {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
         </Card>
+
+        {p.ugcCycle && <UgcVideosCard creatorId={p.id} status={p.status} canEdit={p.canEdit} cycle={p.ugcCycle} videos={p.ugcVideos} />}
 
         {terms.currentVersion !== null && (
           <Card title="Termo de aceite" icon={<FileSignature className="size-4" />}>

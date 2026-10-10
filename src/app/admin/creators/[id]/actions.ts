@@ -13,6 +13,7 @@ import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
 import { correctRateSinceStart, RateFixError } from "@/lib/commission/rate-fix";
 import { ContractError, updateChecklist } from "@/lib/creators/contract";
 import { CouponCreateError, createCouponInShopify } from "@/lib/coupons/create";
+import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/creators/ugc";
 import { formatBRL } from "@/domain";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
@@ -23,7 +24,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError) {
       return { error: error.message };
     }
     throw error;
@@ -124,4 +125,26 @@ export async function couponCreateAction(_p: State, form: FormData): Promise<Sta
     },
     "",
   );
+}
+
+export async function ugcVideoAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => {
+    await addUgcVideo(db(), await currentActor(), {
+      creatorId: id,
+      url: String(form.get("url") ?? ""),
+      day: String(form.get("day") ?? ""),
+      product: String(form.get("product") ?? ""),
+    });
+  }, "Vídeo registrado.");
+}
+
+export async function ugcVideoRemoveAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => removeUgcVideo(db(), await currentActor(), String(form.get("videoId") ?? "")), "Vídeo retirado da contagem.");
+}
+
+export async function ugcGoalAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => setUgcVideoGoal(db(), await currentActor(), id, Number(String(form.get("goal") ?? "").trim() || NaN)), "Meta salva.");
 }

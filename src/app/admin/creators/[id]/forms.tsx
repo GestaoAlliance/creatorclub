@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, type State } from "./actions";
+import { adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -223,6 +223,54 @@ export function CouponCreateForm({ creatorId }: { creatorId: string }) {
       </div>
       <p className={ui.hint}>Vale para todos os produtos e combina com outros descontos. Sem taxa definida em contrato de permuta, a taxa fica 0%.</p>
       <Msg state={state} />
+    </form>
+  );
+}
+
+export function UgcGoalForm({ creatorId, goal }: { creatorId: string; goal: number }) {
+  const [state, action, pending] = useActionState(ugcGoalAction, undefined);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <label className={ui.label}>Meta de vídeos no ciclo
+        <input className={`${ui.inputSm} w-20`} name="goal" type="number" min={1} max={100} defaultValue={goal} required />
+      </label>
+      <button className={btn} disabled={pending}>Salvar meta</button>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+export function UgcVideoForm({ creatorId, today }: { creatorId: string; today: string }) {
+  const [state, action, pending] = useActionState(ugcVideoAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <label className={ui.label}>Link do vídeo
+        <input className={ui.inputSm} name="url" type="url" placeholder="https://drive.google.com/..." required />
+      </label>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className={ui.label}>Entregue em
+          <input className={ui.inputSm} name="day" type="date" defaultValue={today} max={today} required />
+        </label>
+        <label className={`${ui.label} min-w-40 flex-1`}>Produto (opcional)
+          <input className={ui.inputSm} name="product" maxLength={100} />
+        </label>
+      </div>
+      <button className={btn} disabled={pending}>{pending ? "Registrando…" : "Registrar vídeo"}</button>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+export function UgcVideoRemoveButton({ creatorId, videoId }: { creatorId: string; videoId: string }) {
+  const [state, action, pending] = useActionState(ugcVideoRemoveAction, undefined);
+  return (
+    <form action={action} onSubmit={(e) => { if (!confirm("Retirar este vídeo da contagem?")) e.preventDefault(); }}>
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <input type="hidden" name="videoId" value={videoId} />
+      <button className={`${ui.link} text-xs`} disabled={pending}>Retirar</button>
+      {state?.error && <Msg state={state} />}
     </form>
   );
 }

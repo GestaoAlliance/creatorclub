@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I6b (ciclo UGC e contador de vídeos na ficha, D-UGCQUOTA), da fila "Inventário do Drive". Pendente do
+- **Próxima tarefa:** I6c (portal da UGC: só vendas, cupom e link, sem saldo e saque), da fila "Inventário do Drive". Pendente do
   responsável: liberar `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync` (sem isso o
   botão "Criar cupom na Shopify" avisa e não cria); adicionar a pergunta "Código de quem te convidou" nos dois
   formulários e colar os links pré-preenchidos em `/admin/hunters`.
@@ -180,7 +180,7 @@ já existem antes de desenhar.
 - [ ] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA). Escopo
   escolhido: cupom + contador de vídeos; o sistema cria o cupom na Shopify; a UGC vê no portal só as vendas.
   - [x] **I6a** Criar cupom na Shopify pela ficha (D-COUPONCREATE); permuta sem taxa ganha 0%.
-  - [ ] **I6b** Ciclo UGC e contador de vídeos na ficha (meta no total do ciclo).
+  - [x] **I6b** Ciclo UGC e contador de vídeos na ficha (meta no total do ciclo, D-UGCVIDEOS).
   - [ ] **I6c** Portal da UGC: só vendas, cupom e link (sem saldo e saque).
 - [!] **I7** NFs antigas: só 3 de 20 cupons pagos têm NF no Drive; conferir com o Pagamento onde estão as outras.
 - [ ] **I8** Perguntas ainda abertas: o que significam ✅/❌ nas pastas de entrega UGC; o que conta como "collab" na Central.
@@ -190,6 +190,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-77 — 2026-10-10 — Contador de vídeos da UGC (I6b)
+- **Decidido:** D-UGCVIDEOS (ciclo = período do contrato; meta por creator na ficha, começa em 9; um registro por vídeo
+  com link). Onde mais aparece ficou sem preferência: ficha e selo na lista.
+- **Feito:** migração `ugc_videos` (`Creator.ugcVideoGoal`; tabela `UgcVideo` com RLS; travas `Creator_ugc_video_goal`,
+  `UgcVideo_values`, índice `UgcVideo_url_once` e gatilho `UgcVideo_only_remove`: nada é apagado, só retirado uma vez).
+  Regras puras (`src/domain/ugc.ts`), `src/lib/creators/ugc.ts` (registrar, retirar, meta, ciclo de cada UGC, com
+  auditoria). Ficha: cartão "Vídeos (UGC)" com contador, barra, vídeos e formulários. Lista: selo "vídeos 5/9".
+- **Verificado:** 3 unitários novos; 3 de integração novos (fluxo completo, permissão, travas pelo nome). Migração ×
+  schema sem divergência. `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-76 — 2026-10-10 — Criar cupom na Shopify pela ficha (I6a)
 - **Decidido:** D-COUPONCREATE (escopo do I6 escolhido pelo responsável: cupom + contador de vídeos; o sistema cria o
