@@ -1,4 +1,4 @@
-import { ArrowRight, Banknote, ClipboardCheck, Package, Users } from "lucide-react";
+import { ArrowRight, Banknote, ClipboardCheck, Inbox, Package, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Kpi, PageHeader } from "@/components/ui/page";
@@ -26,6 +26,11 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
       <PageHeader title="Início">O que está esperando por você agora. Toque num cartão para abrir a tela.</PageHeader>
       {empty && <p className={ui.muted}>Seu papel ainda não tem telas por aqui.</p>}
       <div className="grid gap-4 md:grid-cols-2">
+        {h.creators && h.creators.applications > 0 && (
+          <Tile href="/admin/candidatas" icon={<Inbox className="size-4" />} title="Candidatas">
+            <Kpi label="Novas" value={h.creators.applications} hint="responderam o formulário" tone="amber" />
+          </Tile>
+        )}
         {h.withdrawals && (
           <Tile href="/admin/saques" icon={<Banknote className="size-4" />} title="Saques">
             <Kpi label="Em análise" value={h.withdrawals.open} hint={formatBRL(h.withdrawals.openCents)} tone={h.withdrawals.open ? "amber" : undefined} />

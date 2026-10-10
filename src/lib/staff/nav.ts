@@ -6,6 +6,7 @@ import { brandsWith, type Grant, type Permission } from "@/lib/auth/permissions"
  * Regra pura (testada). Cada página continua conferindo o acesso sozinha.
  */
 const ITEMS: (NavItem & { needs: Permission; global?: boolean })[] = [
+  { href: "/candidatas", label: "Candidatas", icon: "inbox", needs: "creators.view" },
   { href: "/creators", label: "Creators", icon: "creators", needs: "creators.view" },
   { href: "/cupons", label: "Cupons", icon: "review", needs: "creators.edit" },
   { href: "/envios", label: "Envios", icon: "package", needs: "shipping.view" },

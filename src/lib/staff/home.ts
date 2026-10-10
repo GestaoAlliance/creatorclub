@@ -7,7 +7,7 @@ import { brandsWith, type Permission } from "@/lib/auth/permissions";
  * Só os números que a pessoa pode ver; nada de dado pessoal.
  */
 export type StaffHome = {
-  creators?: { active: number; toReview: number };
+  creators?: { active: number; toReview: number; applications: number };
   coupons?: { unclassified: number; ownerPending: number };
   shipments?: { preparing: number; shipped: number };
   withdrawals?: { open: number; openCents: number; openingsPending: number };
@@ -30,7 +30,8 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
       Promise.all([
         prisma.creator.count({ where: { ...view, status: "ACTIVE" } }),
         prisma.creator.count({ where: { ...view, status: { not: "DEACTIVATED" }, reviewedAt: null } }),
-      ]).then(([active, toReview]) => (out.creators = { active, toReview })),
+        prisma.creatorApplication.count({ where: { ...view, status: "NEW" } }),
+      ]).then(([active, toReview, applications]) => (out.creators = { active, toReview, applications })),
     edit &&
       Promise.all([
         prisma.coupon.count({ where: { ...edit, kind: null, active: true } }),
