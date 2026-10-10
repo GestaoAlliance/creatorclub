@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Download,
   Ellipsis,
+  FileSignature,
   House,
   Package,
   RefreshCw,
@@ -35,6 +36,7 @@ const ICONS = {
   team: UsersRound,
   sync: RefreshCw,
   import: Download,
+  terms: FileSignature,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;

@@ -62,6 +62,8 @@ model Brand {
   clicks             Click[]
   products           Product[]
   shipments          Shipment[]
+  termsVersions      TermsVersion[]
+  termsAcceptances   TermsAcceptance[]
 }
 
 enum IntegrationKind {
@@ -238,6 +240,7 @@ model Creator {
   ledgerEntries      LedgerEntry[]
   withdrawals        Withdrawal[]
   shipments          Shipment[]
+  termsAcceptances   TermsAcceptance[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -666,4 +669,44 @@ model ShipmentItem {
   product  Product  @relation(fields: [productId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([shipmentId])
+}
+
+// ───────────────────────────── Termo de aceite da creator (P4) ─────────────────────────────
+
+/// Texto do termo por marca, em versões (D-TERMS). Só recebe inserções; texto novo = versão nova = novo aceite.
+model TermsVersion {
+  id          String   @id @default(uuid())
+  brandId     String
+  version     Int
+  title       String
+  body        String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand       Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  acceptances TermsAcceptance[]
+
+  @@unique([brandId, version])
+  @@unique([id, brandId])
+}
+
+/// Aceite eletrônico do termo: quem, quando, de onde, com nome e CPF digitados. Só recebe inserções.
+model TermsAcceptance {
+  id             String   @id @default(uuid())
+  brandId        String
+  creatorId      String
+  termsVersionId String
+  userId         String
+  fullName       String
+  cpf            String
+  ip             String?
+  userAgent      String?
+  acceptedAt     DateTime @default(now())
+
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator      Creator      @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  termsVersion TermsVersion @relation(fields: [termsVersionId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([creatorId, termsVersionId])
+  @@index([termsVersionId])
 }

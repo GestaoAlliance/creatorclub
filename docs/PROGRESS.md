@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** escolher com o responsável entre P1 (backup), P2 (Resend) e P4 (termo de aceite). Para liberar
+- **Próxima tarefa:** escolher com o responsável entre P1 (backup) e P2 (Resend, espera o domínio). Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -162,14 +162,30 @@ já existem antes de desenhar.
 - [ ] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP), antes de convidar as creators.
 - [ ] **P3** Domínio do projeto (o responsável compra) e os links `/r/...` antigos: o domínio do app antigo precisa
   redirecionar para o v2, senão os links nas bios quebram no corte.
-- [ ] **P4** Termo de aceite da creator no primeiro acesso ao portal (o app antigo tinha texto + aceite com CPF/IP).
-  Texto e regras a definir com o responsável.
+- [x] **P4** Termo de aceite da creator no primeiro acesso ao portal (D-TERMS): portal bloqueado até aceitar; nome
+  completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
+  Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
 ### Depois (detalhar quando chegar lá)
 E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-57 — 2026-10-10 — Termo de aceite da creator (P4)
+- **Decidido:** D-TERMS (portal bloqueado até aceitar a versão mais nova; a creator digita nome completo e CPF, e
+  ficam gravados data, IP e navegador; o CPF vai para o cadastro se estiver vazio e, se for diferente, o aceite é
+  recusado; texto novo = versão nova = novo aceite; publicar é só do super admin; a equipe vendo o portal não é
+  bloqueada; saque exige o termo aceito).
+- **Feito:** migração `terms` (tabelas `TermsVersion` e `TermsAcceptance`, RLS, travas `TermsVersion_valid`,
+  `TermsAcceptance_cpf`, `TermsAcceptance_name`, gatilhos de só inserção; versão 1 da Botanika com o rascunho).
+  `src/lib/terms/terms.ts` (CPF com dígito verificador, aceite idempotente, publicação com versão seguinte, painel,
+  situação na ficha). Tela de aceite no portal (`TermsGate` no layout), `/admin/termo` (menu "Termo") e bloco
+  "Termo de aceite" na ficha (CPF mascarado).
+- **Atenção ao subir:** com o merge, todas as creators da Botanika passam a ver o termo no próximo acesso
+  (inclusive a Creator Teste).
+- **Verificado:** 111 unitários (2 novos); 134 de integração (4 novos, travas pelo nome); migração × schema sem
+  divergência; typecheck; build. Capturas e texto para o OK do responsável.
 
 ### CP-56 — 2026-10-10 — Mesmo visual em todo o sistema (D-DESIGNALL)
 - **Decidido:** D-DESIGNALL (substitui D-ADMINUI): o *liquid glass* do portal vale para todas as telas da equipe e
