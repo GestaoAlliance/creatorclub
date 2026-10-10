@@ -222,6 +222,9 @@ model Creator {
   /// D-WDLOCK: saque liberado depois do saldo de abertura aprovado (E6). Nulo = travado.
   withdrawalsUnlockedAt   DateTime?
   withdrawalsUnlockedById String?
+  /// D-ANAREVIEW: a Ana conferiu os números (cupons, taxa, vendas) desta creator. Exigido para o saldo de abertura (E6).
+  reviewedAt              DateTime?
+  reviewedById            String?
   source                  String? // hunter | site | instagram | legacy_import
   legacyId                String?
   createdAt               DateTime          @default(now())

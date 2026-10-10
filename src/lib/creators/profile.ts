@@ -67,6 +67,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     contact: { name: a.name, email: a.email, phone: a.phone, fakeEmail: a.email.endsWith(FAKE_EMAIL_DOMAIN) },
     fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey } : null,
     hasLogin: a.userId !== null,
+    reviewedAt: creator.reviewedAt,
     coupons: assignments.map((x) => ({
       code: x.coupon.code,
       kind: x.coupon.kind,

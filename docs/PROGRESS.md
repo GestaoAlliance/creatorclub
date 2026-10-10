@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** escolher com o responsável entre P1 (backup), P2 (Resend), P4 (termo de aceite) e E6 (saldo de
-  abertura, espera o Pagamento). Saque já funciona de ponta a ponta, mas segue travado por creator até a E6.
+- **Próxima tarefa:** escolher com o responsável entre P1 (backup), P2 (Resend) e P4 (termo de aceite). Para liberar
+  saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -146,6 +146,12 @@ só mostra dados da própria creator, decidido no servidor.
   antes do pedido, NF em PDF por link assinado), marcar pago (lança o saque no extrato) ou recusar com motivo; a
   creator cancela o próprio pedido em análise.
 
+### E6 — Saldo de abertura
+- [x] **E6** Tela `/admin/abertura` (D-OPENFLOW): por creator, comissão no v2, "já pago" (total + como foi pago),
+  saldo que fica; aprovar lança "Saldo de abertura" negativo e libera o saque. Só depois de a Ana marcar "Conferi os
+  números" na ficha (D-ANAREVIEW). *Para usar de verdade:* a Ana confere cada creator e o Pagamento (Juci/Pâmela,
+  E0.2) informa o que já pagou, com os comprovantes guardados para conferência e automação futura.
+
 ### Para conversar com a Ana (D-PERKS, depois do lançamento 1)
 Bônus por metas (benefícios desbloqueados), gamificação, competições de vendas. Levantar com a Ana quais benefícios
 já existem antes de desenhar.
@@ -160,10 +166,23 @@ já existem antes de desenhar.
   Texto e regras a definir com o responsável.
 
 ### Depois (detalhar quando chegar lá)
-E6 Saldo de abertura e conferência (espera E0.2) · E9 Corte.
+E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-55 — 2026-10-10 — Saldo de abertura e conferência da Ana (E6)
+- **Decidido:** D-OPENFLOW (o Pagamento informa um total já pago + observação por creator; aprovar lança o "Saldo de
+  abertura" negativo e libera o saque; saldo negativo é aceito com aviso, D-NEG; aprovam Pagamento e super admin;
+  comprovantes guardados para conferir e automatizar depois), D-ANAREVIEW (as confirmações provisórias de taxa e
+  cupom, D-RATEPROV, não contam como conferência: a Ana marca "Conferi os números" na ficha; sem isso a abertura
+  fica travada).
+- **Feito:** migração `opening_balance` (índice `LedgerEntry_one_opening_per_creator`; `Creator.reviewedAt/ById` com a
+  trava `Creator_review_has_author`). `src/lib/withdrawals/opening.ts` (`openingList`, `approveOpening` em transação
+  com `FOR UPDATE` e dupla aprovação impossível, `markReviewed`; tudo auditado). Telas `/admin/abertura` (link em
+  `/conta`) e o bloco "Conferência da Ana" na ficha da creator.
+- **Verificado:** 108 unitários; 130 de integração (6 novos: aprovar com corrida, nada pago, negativo, recusas,
+  conferência da Ana, travas pelo nome); migração × schema sem divergência; typecheck; build.
 
 ### CP-54 — 2026-10-10 — Portal aberto pela equipe sem "ver como" não dá mais 404
 - **Corrigido:** o responsável abriu o link `/portal/botanika` no celular e, depois de entrar como super admin, caiu
