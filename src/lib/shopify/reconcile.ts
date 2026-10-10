@@ -3,7 +3,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { enqueueJob, type ClaimedJob, type JobHandler } from "@/lib/jobs/queue";
 import type { ShopifyClient } from "./client";
-import { settleOrder } from "@/lib/commission/ledger";
+import { settleOrder, sweepUnpostedCommissions } from "@/lib/commission/ledger";
 import { ORDER_SYNC_JOB, defaultClientFactory, recordOrderWarnings, type ClientFactory } from "./jobs";
 import { LINE_ITEMS, ORDER_FIELDS, processOrder, type ShopifyOrderNode } from "./orders";
 
@@ -99,6 +99,8 @@ export function reconcileHandler(prisma: PrismaClient, clientFor: ClientFactory 
   return async (job: ClaimedJob) => {
     if (!job.brandId) throw new Error("Tarefa sem marca.");
     await reconcileBrand(prisma, job.brandId, await clientFor(prisma, job.brandId), { jobId: job.id });
+    // Pedido pago com dona e taxa mas sem lançamento (falha entre atribuir e lançar): lança agora (E5.5).
+    await sweepUnpostedCommissions(prisma, job.brandId);
   };
 }
 

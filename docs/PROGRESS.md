@@ -118,8 +118,9 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
 - [x] **E5.3** Ajuste manual de saldo (só super admin, motivo obrigatório, auditoria).
 - [x] **E5.4** Saldo e extrato por creator (disponível × a liberar × em saque), extrato por mês do pagamento
   (D-MONTH); na ficha da creator para quem vê valores.
-- [ ] **E5.5** Aceite: 10 creators no último mês conferidas contra o Shopify (pedidos com cupom × comissão lançada).
-  Depende da conferência da Ana (E4.5): sem dona e taxa confirmadas nada é lançado.
+- [x] **E5.5** Aceite: 10 creators no último mês conferidas contra o Shopify (pedidos com cupom × comissão lançada).
+  Feito em 2026-10-10 (CP-83): setembro, as 10 com mais pedidos — 10 de 10 iguais (291 pedidos, R$ 101.432,82);
+  1 pedido sem lançamento achado e corrigido pela rede de segurança. Ainda faltam 7 donas e 7 taxas a confirmar (E4.5).
 
 ### E7 — Portal da creator (detalhada em 2026-10-09; adiantada porque E5.5 e E6 esperam pessoas)
 Visual *liquid glass* (`docs/design/DESIGN.md`), cor de destaque da marca vinda do banco (D-BRANDCOLOR). Cada tela
@@ -195,6 +196,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-83 — 2026-10-10 — Conferência de setembro contra o Shopify (E5.5) e rede de segurança da comissão
+- **Feito:** as 10 creators com mais pedidos pagos em setembro (fuso de São Paulo) conferidas pedido a pedido contra a
+  loja (só leitura): mesmos pedidos e mesma soma do subtotal atual em 10 de 10 (291 pedidos, R$ 101.432,82). Regra da
+  atribuição conferida (cupons promocionais antes do da creator não levam o pedido). Comissão = subtotal × taxa em
+  9 de 10; a outra tinha 1 pedido pago, com dona e taxa congelada, **sem lançamento** (R$ 82,77; único em 909 desde
+  junho) e nada o reavaliava. Correção: `sweepUnpostedCommissions` roda a cada reconciliação (15 min) e lança o que
+  faltar (idempotente). Achados da busca na Shopify: `discount_code:` só acha o primeiro código do pedido e datas sem
+  hora usam o fuso da loja (anotado para conferências futuras).
+- **Verificado:** 1 teste de integração novo (lança uma vez; pendente, cancelado e teste ficam de fora).
+  `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando. Depois do deploy: conferir
+  que o pedido sem lançamento foi lançado.
 
 ### CP-82 — 2026-10-10 — Backup cifrado diário pronto para ligar (P1)
 - **Decidido:** D-BACKUP (GitHub Actions, cifra AES-256 com senha fora do repositório, 90 dias; cópia única do app

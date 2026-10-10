@@ -63,3 +63,27 @@ export async function settleOrder(prisma: PrismaClient, orderId: string, now = n
   const post = await postCommission(prisma, orderId, now);
   return { attribution, post };
 }
+
+/**
+ * Rede de segurança (E5.5): pedido pago, com dona e taxa congelada, mas sem nenhum lançamento — por exemplo, uma falha
+ * entre atribuir e lançar. Nada mais o reavalia (`recheckBrand` só olha pedido sem dona ou sem taxa), então roda a cada
+ * reconciliação. `postCommission` é idempotente: repetir não duplica.
+ */
+export async function sweepUnpostedCommissions(prisma: PrismaClient, brandId: string, now = new Date()): Promise<number> {
+  const orders = await prisma.order.findMany({
+    where: {
+      brandId,
+      test: false,
+      cancelledAt: null,
+      financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] },
+      attribution: { rateBps: { not: null } },
+      ledgerEntries: { none: {} },
+    },
+    select: { id: true },
+    orderBy: { paidAt: "asc" },
+    take: 200,
+  });
+  let posted = 0;
+  for (const { id } of orders) if ((await postCommission(prisma, id, now)).status === "posted") posted++;
+  return posted;
+}
