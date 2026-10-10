@@ -8,6 +8,9 @@ export const UGC_MAX_VIDEO_GOAL = 100;
 
 export const isUgc = (categories: readonly string[]) => categories.includes("UGC");
 
+/** Só UGC (nenhum outro tipo): portal simplificado, sem saldo, saque e termo (D-UGCPORTAL). */
+export const isUgcOnly = (categories: readonly string[]) => categories.length > 0 && categories.every((c) => c === "UGC");
+
 export type UgcCycleStatus = "NO_CONTRACT" | "OPEN" | "DONE" | "MISSED";
 
 export type UgcCycle = {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
-import { formatBRL } from "@/domain";
+import { formatBRL, isUgcOnly } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
@@ -118,7 +118,7 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
 
         {p.ugcCycle && <UgcVideosCard creatorId={p.id} status={p.status} canEdit={p.canEdit} cycle={p.ugcCycle} videos={p.ugcVideos} />}
 
-        {terms.currentVersion !== null && (
+        {terms.currentVersion !== null && !isUgcOnly(p.categories) && (
           <Card title="Termo de aceite" icon={<FileSignature className="size-4" />}>
             {terms.last?.version === terms.currentVersion ? (
               <p className={ui.ok}>Aceitou a versão {terms.last.version} em {date(terms.last.at)}.</p>

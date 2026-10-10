@@ -33,7 +33,9 @@ export async function currentTerms(prisma: PrismaClient, brandId: string) {
 }
 
 /** Termo que a creator ainda precisa aceitar (a versão mais nova), ou null. Sem termo na marca: nada a aceitar. */
-export async function pendingTerms(prisma: PrismaClient, ctx: Pick<PortalContext, "creatorId" | "brand">) {
+export async function pendingTerms(prisma: PrismaClient, ctx: Pick<PortalContext, "creatorId" | "brand"> & { ugcOnly?: boolean }) {
+  // D-UGCPORTAL: o termo atual fala de comissão e saque; quem é só UGC não precisa aceitar (termo próprio virá depois).
+  if (ctx.ugcOnly) return null;
   const terms = await currentTerms(prisma, ctx.brand.id);
   if (!terms) return null;
   const accepted = await prisma.termsAcceptance.findUnique({ where: { creatorId_termsVersionId: { creatorId: ctx.creatorId, termsVersionId: terms.id } }, select: { id: true } });

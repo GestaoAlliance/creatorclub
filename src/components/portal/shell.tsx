@@ -7,13 +7,15 @@ import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
 /** Moldura do portal da creator (E7.1): cor da marca, menu lateral (computador) ou inferior (celular). Só exibe. */
-export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs">; children: ReactNode }) {
+export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly">; children: ReactNode }) {
   const base = `/portal/${ctx.brand.slug}`;
   const others = ctx.brands.filter((b) => b.slug !== ctx.brand.slug);
+  // D-UGCPORTAL: quem é só UGC não tem saldo nem saque. O filtro roda no menu (componente de cliente).
+  const hidden = ctx.ugcOnly ? ["/saque"] : [];
 
   return (
     <div style={brandCssVars(ctx.brand) as CSSProperties} className="portal-bg flex min-h-screen">
-      <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} />
+      <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} hidden={hidden} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -55,12 +57,12 @@ export function PortalShell({ ctx, children }: { ctx: Pick<PortalContext, "creat
         )}
         {ctx.status === "DEACTIVATED" && (
           <p className="glass mb-4 rounded-2xl px-4 py-3 text-sm">
-            Sua participação na {ctx.brand.name} foi encerrada. Você continua vendo seu saldo e seu extrato.
+            Sua participação na {ctx.brand.name} foi encerrada. {ctx.ugcOnly ? "Você continua vendo suas vendas." : "Você continua vendo seu saldo e seu extrato."}
           </p>
         )}
         <main className="flex-1">{children}</main>
       </div>
-      <BottomNav base={base} items={PORTAL_ITEMS} />
+      <BottomNav base={base} items={PORTAL_ITEMS} hidden={hidden} />
     </div>
   );
 }

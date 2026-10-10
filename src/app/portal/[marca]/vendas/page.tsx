@@ -21,5 +21,5 @@ export default async function PortalSales({
     ...(typeof q.de === "string" ? { de: q.de } : {}),
     ...(typeof q.ate === "string" ? { ate: q.ate } : {}),
   });
-  return <SalesView page={page} base={`/portal/${ctx.brand.slug}`} />;
+  return <SalesView page={page} base={`/portal/${ctx.brand.slug}`} noCommission={ctx.ugcOnly} />;
 }

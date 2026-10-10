@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { isUgcOnly } from "@/domain";
 
 /**
  * Acesso ao portal da creator (E7). A marca vem do endereço (`/portal/[marca]`); a creator só entra nas marcas em
@@ -24,6 +25,8 @@ export type PortalContext = {
   brands: PortalBrand[];
   /** Preenchido quando é a equipe vendo o portal da creator: só leitura. */
   viewAs: { userId: string } | null;
+  /** Só UGC (D-UGCPORTAL): portal só com vendas, cupom e envios; sem saldo, saque e termo. */
+  ugcOnly: boolean;
 };
 
 const BRAND_SELECT = { id: true, slug: true, name: true, primaryColor: true, secondaryColor: true } as const;
@@ -65,6 +68,7 @@ export async function portalContext(
         brand: viewed.brand,
         brands: [brandOf(viewed.brand)],
         viewAs: { userId: actor.userId },
+        ugcOnly: isUgcOnly(viewed.categories),
       };
     }
   }
@@ -78,6 +82,7 @@ export async function portalContext(
     brand: current.brand,
     brands: list.map((c) => brandOf(c.brand)),
     viewAs: null,
+    ugcOnly: isUgcOnly(current.categories),
   };
 }
 

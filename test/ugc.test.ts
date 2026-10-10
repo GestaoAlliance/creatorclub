@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUgc, isValidVideoGoal, normalizeVideoUrl, ugcCycle } from "@/domain";
+import { isUgc, isUgcOnly, isValidVideoGoal, normalizeVideoUrl, ugcCycle } from "@/domain";
 
 describe("ciclo da UGC (D-UGCQUOTA, D-UGCVIDEOS)", () => {
   const base = { start: "2026-09-01", end: "2026-12-01", goal: 3 };
@@ -25,5 +25,6 @@ describe("ciclo da UGC (D-UGCQUOTA, D-UGCVIDEOS)", () => {
     expect([0, 1, 9, 100, 101, 2.5].map(isValidVideoGoal)).toEqual([false, true, true, true, false, false]);
     expect(isUgc(["INFLUENCER", "UGC"])).toBe(true);
     expect(isUgc(["INFLUENCER"])).toBe(false);
+    expect([["UGC"], ["UGC", "INFLUENCER"], [], ["PRESCRIBER"]].map(isUgcOnly)).toEqual([true, false, false, false]);
   });
 });
