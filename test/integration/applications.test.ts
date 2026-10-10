@@ -92,3 +92,35 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     await expectDbError(prisma.creatorApplication.update({ where: { id: a.id }, data: { fullName: " " } }), /CreatorApplication_name/);
   });
 });
+
+describe("candidatas do formulário de Captação (D-CAPTACAO, banco real)", () => {
+  it("guarda views, marcas e collab; mostra as outras respostas; resposta já importada da planilha não duplica", async () => {
+    const { brand } = await seedBrand(prisma);
+    const at = new Date("2026-09-25T13:45:12.000Z");
+    // Linha importada da planilha (chave própria, mesmo segundo e mesmo nome da resposta do formulário).
+    const imported = await prisma.creatorApplication.create({
+      data: { brandId: brand.id, source: "captacao_form", externalKey: "planilha:1", submittedAt: at, fullName: "Maria da Silva", raw: {}, note: "Planilha: Em contato" },
+    });
+    const extra = {
+      "Tenho interesse em representar:": "Botanika e VermeFree",
+      "Quantos visualizações tem seus stories? ": "900",
+      "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar": "Sim",
+      "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?": "Uso os produtos",
+    };
+    const again = await receiveApplication(prisma, { brandSlug: brand.slug, source: "captacao_form", externalKey: randomUUID(), submittedAt: new Date(at.getTime() + 400), answers: answers("m@x.com", extra) });
+    expect(again).toEqual({ id: imported.id, created: false });
+
+    const fresh = await receiveApplication(prisma, { brandSlug: brand.slug, source: "captacao_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers("n@x.com", extra) });
+    expect(fresh.created).toBe(true);
+    const gestao = await userWith("GESTAO", brand.id);
+    const rows = (await listApplications(prisma, gestao)).rows;
+    expect(rows.find((r) => r.id === fresh.id)).toMatchObject({
+      source: "captacao_form",
+      storiesViews: "900",
+      collabInterest: "Sim",
+      alsoVermeFree: true,
+      extras: [{ question: "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?", answer: "Uso os produtos" }],
+    });
+    expect(rows.find((r) => r.id === imported.id)).toMatchObject({ note: "Planilha: Em contato", alsoVermeFree: false });
+  });
+});

@@ -786,7 +786,7 @@ enum ApplicationStatus {
 model CreatorApplication {
   id              String            @id @default(uuid())
   brandId         String
-  source          String // hunter_form
+  source          String // hunter_form | captacao_form (D-CAPTACAO)
   externalKey     String // id da resposta no Google Forms
   submittedAt     DateTime
   fullName        String
@@ -802,6 +802,10 @@ model CreatorApplication {
   cnpj            String?
   companyName     String?
   pixKey          String?
+  storiesViews    String? // D-CAPTACAO: "Quantos visualizações tem seus stories?"
+  brandsWanted    String? // D-CAPTACAO: "Tenho interesse em representar:" (Botanika / Botanika e VermeFree)
+  collabInterest  String? // D-CAPTACAO: interesse em collab com o perfil da marca (Sim/Não)
+  note            String? // observação da equipe (ex.: status da planilha antiga)
   raw             Json
   status          ApplicationStatus @default(NEW)
   decidedAt       DateTime?

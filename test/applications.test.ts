@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryFromAnswer, couponFromSuggestion, parseHunterAnswers } from "@/lib/onboarding/applications";
+import { categoryFromAnswer, couponFromSuggestion, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const answers = {
   "Seu nome completo:": "  Maria   da Silva ",
@@ -44,5 +44,37 @@ describe("respostas do formulário Hunter", () => {
     expect(couponFromSuggestion("joão")).toBe("JOAO");
     expect(couponFromSuggestion("BELASAUDAVEL, BELA")).toBe("BELASAUD");
     expect(couponFromSuggestion(null)).toBe("");
+  });
+});
+
+describe("formulário de Captação (D-CAPTACAO)", () => {
+  // Títulos como estão no formulário de Captação Botanika + VermeFree (respostas fictícias).
+  const answers = {
+    "Seu nome completo:": "Maria Exemplo",
+    "Sou:": "Influenciadora",
+    "Tenho interesse em representar:": "Botanika e VermeFree",
+    "Quantidade de seguidores no instagram": "12 mil",
+    "Quantos visualizações tem seus stories? ": "800",
+    "Qual seu nicho ou sua área de atuação?": "fitness",
+    "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo": "treinos e receitas",
+    "Você já trabalhou de forma comissionada para outras marcas?": "Sim",
+    "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar": "Sim",
+    "RAZÃO SOCIAL:": "MARIA EXEMPLO LTDA",
+  };
+
+  it("lê os campos novos e deixa as outras perguntas como respostas extras", () => {
+    expect(parseHunterAnswers(answers)).toMatchObject({
+      fullName: "Maria Exemplo",
+      followers: "12 mil",
+      storiesViews: "800",
+      brandsWanted: "Botanika e VermeFree",
+      collabInterest: "Sim",
+      niche: "fitness",
+      companyName: "MARIA EXEMPLO LTDA",
+    });
+    expect(extraAnswers(answers)).toEqual([
+      { question: "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo", answer: "treinos e receitas" },
+      { question: "Você já trabalhou de forma comissionada para outras marcas?", answer: "Sim" },
+    ]);
   });
 });
