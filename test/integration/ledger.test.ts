@@ -109,3 +109,34 @@ describe("lançamentos de comissão (banco real)", () => {
     expect((await entries(o.id)).map((x) => x.amountCents)).toEqual([3_000]);
   });
 });
+
+describe("rede de segurança da comissão (E5.5, banco real)", () => {
+  it("pedido pago com dona e taxa mas sem lançamento é lançado uma vez; pendente, cancelado e teste ficam de fora", async () => {
+    const { seedBrand } = await import("./fixtures");
+    const { sweepUnpostedCommissions } = await import("@/lib/commission/ledger");
+    const a = await seedBrand(prisma);
+    // Como em produção: atribuição gravada com a taxa congelada, mas o lançamento nunca aconteceu.
+    await prisma.orderAttribution.create({
+      data: { brandId: a.brand.id, orderId: a.order.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] },
+    });
+    const extra = async (data: Record<string, unknown>) => {
+      const o = await prisma.order.create({
+        data: {
+          brandId: a.brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: `#${letters(5)}`, createdAtShop: new Date("2026-09-02T12:00:00Z"),
+          paidAt: new Date("2026-09-02T12:00:00Z"), financialStatus: "PAID", subtotalCents: 10_000, totalCents: 11_000, discountCodes: [a.coupon.code],
+          shopifyUpdatedAt: new Date("2026-09-02T12:00:00Z"), ...data,
+        },
+      });
+      await prisma.orderAttribution.create({ data: { brandId: a.brand.id, orderId: o.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] } });
+    };
+    await extra({ financialStatus: "PENDING", paidAt: null });
+    await extra({ cancelledAt: new Date("2026-09-03T12:00:00Z") });
+    await extra({ test: true });
+
+    expect(await sweepUnpostedCommissions(prisma, a.brand.id)).toBe(1);
+    const entries = await prisma.ledgerEntry.findMany({ where: { creatorId: a.creator.id } });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ orderId: a.order.id, type: "COMMISSION", amountCents: 3_000 });
+    expect(await sweepUnpostedCommissions(prisma, a.brand.id)).toBe(0);
+  });
+});
