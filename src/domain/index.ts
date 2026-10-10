@@ -15,3 +15,4 @@ export * from "./hunter";
 export * from "./ugc";
 export * from "./email";
 export * from "./signup";
+export * from "./applications";
