@@ -50,6 +50,7 @@ export function checkPdf(bytes: Uint8Array) {
 /** Regras que não dependem do valor: visualização da equipe, saque liberado e termo aceito (D-TERMS). */
 export async function assertCanStart(prisma: PrismaClient, ctx: PortalContext) {
   if (ctx.viewAs) throw new WithdrawalRequestError("Visualização da equipe: nada é pedido em nome da creator.");
+  if (ctx.ugcOnly) throw new WithdrawalRequestError("Contrato de UGC não tem saque.");
   const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { withdrawalsUnlockedAt: true } });
   if (!creator.withdrawalsUnlockedAt) throw new WithdrawalRequestError("Seu saldo está em conferência; o saque ainda não foi liberado.");
   if (await pendingTerms(prisma, ctx)) throw new WithdrawalRequestError("Aceite o termo do Creator Club antes de pedir saque.");

@@ -15,7 +15,10 @@ const STATUS_STYLE: Record<SaleStatus, string> = {
   PENDING_RATE: "bg-stone-500/15 text-stone-700 dark:text-stone-300",
 };
 
-function Badge({ status }: { status: SaleStatus }) {
+function Badge({ status, noCommission = false }: { status: SaleStatus; noCommission?: boolean }) {
+  // UGC (D-UGCPORTAL): sem comissão, a situação é só "Paga" ou o estorno.
+  if (noCommission && status !== "REVERSED" && status !== "PARTIAL_REFUND")
+    return <span className="inline-flex whitespace-nowrap rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">Paga</span>;
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>
       {SALE_STATUS_LABEL[status]}
@@ -23,13 +26,13 @@ function Badge({ status }: { status: SaleStatus }) {
   );
 }
 
-/** Vendas do portal (E7.3, D-SALESVIEW): sem dados do cliente. Só exibe. */
-export function SalesView({ page, base }: { page: SalesPage; base: string }) {
+/** Vendas do portal (E7.3, D-SALESVIEW): sem dados do cliente. Só exibe. `noCommission`: UGC, sem taxa e comissão (D-UGCPORTAL). */
+export function SalesView({ page, base, noCommission = false }: { page: SalesPage; base: string; noCommission?: boolean }) {
   const { totals } = page;
   const kpis = [
     ["Pedidos", String(totals.count)],
     ["Vendas", formatBRL(totals.baseCents)],
-    ["Comissão", formatBRL(totals.commissionCents)],
+    ...(noCommission ? [] : [["Comissão", formatBRL(totals.commissionCents)]]),
     ["Ticket médio", formatBRL(totals.ticketCents)],
   ];
   return (
@@ -37,7 +40,7 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
       <PeriodPicker page={page} base={base} />
 
       {/* Computador: três cartões. Celular: um cartão com uma linha por número (valores altos não cabem em três colunas). */}
-      <section className="hidden grid-cols-4 gap-3 md:grid">
+      <section className={`hidden gap-3 md:grid ${noCommission ? "grid-cols-3" : "grid-cols-4"}`}>
         {kpis.map(([label, value]) => (
           <div key={label} className="glass rounded-3xl p-4">
             <p className="text-xs text-stone-600 dark:text-stone-400">{label}</p>
@@ -56,7 +59,7 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
 
       {page.days.length > 1 && (
         <section className="glass rounded-3xl p-4 md:p-5">
-          <SalesChart days={page.days} />
+          <SalesChart days={page.days} noCommission={noCommission} />
         </section>
       )}
 
@@ -70,9 +73,9 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
                 <tr>
                   <th className="px-3 py-2 font-medium">Pedido</th>
                   <th className="px-3 py-2 font-medium">Pago em</th>
-                  <th className="px-3 py-2 text-right font-medium">Base</th>
-                  <th className="px-3 py-2 text-right font-medium">Taxa</th>
-                  <th className="px-3 py-2 text-right font-medium">Comissão</th>
+                  <th className="px-3 py-2 text-right font-medium">{noCommission ? "Valor" : "Base"}</th>
+                  {!noCommission && <th className="px-3 py-2 text-right font-medium">Taxa</th>}
+                  {!noCommission && <th className="px-3 py-2 text-right font-medium">Comissão</th>}
                   <th className="px-3 py-2 font-medium">Situação</th>
                 </tr>
               </thead>
@@ -82,11 +85,13 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
                     <td className="px-3 py-3 font-medium">{s.orderName}</td>
                     <td className="px-3 py-3 text-stone-600 dark:text-stone-400">{day(s.paidAt)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatBRL(s.baseCents)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{pct(s.rateBps)}</td>
-                    <td className={`px-3 py-3 text-right font-semibold tabular-nums ${s.commissionCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>
-                      {formatBRL(s.commissionCents)}
-                    </td>
-                    <td className="px-3 py-3"><Badge status={s.status} /></td>
+                    {!noCommission && <td className="px-3 py-3 text-right tabular-nums">{pct(s.rateBps)}</td>}
+                    {!noCommission && (
+                      <td className={`px-3 py-3 text-right font-semibold tabular-nums ${s.commissionCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>
+                        {formatBRL(s.commissionCents)}
+                      </td>
+                    )}
+                    <td className="px-3 py-3"><Badge status={s.status} noCommission={noCommission} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -97,12 +102,12 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
                   <div className="min-w-0">
                     <p className="text-sm font-medium">Pedido {s.orderName}</p>
                     <p className="text-xs text-stone-500">
-                      {day(s.paidAt)} · {formatBRL(s.baseCents)} × {pct(s.rateBps)}
+                      {noCommission ? day(s.paidAt) : `${day(s.paidAt)} · ${formatBRL(s.baseCents)} × ${pct(s.rateBps)}`}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-sm font-semibold tabular-nums">{formatBRL(s.commissionCents)}</span>
-                    <Badge status={s.status} />
+                    <span className="text-sm font-semibold tabular-nums">{formatBRL(noCommission ? s.baseCents : s.commissionCents)}</span>
+                    <Badge status={s.status} noCommission={noCommission} />
                   </div>
                 </li>
               ))}
@@ -111,8 +116,8 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
         )}
       </section>
       <p className="px-1 text-xs text-stone-500">
-        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago.
-        {page.release.minCents !== null &&
+        {noCommission ? "Valor" : "Base"} = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago.
+        {!noCommission && page.release.minCents !== null &&
           ` A comissão é liberada no dia 1 do mês seguinte quando as vendas acumuladas chegam a ${formatBRL(page.release.minCents)}.`}
       </p>
     </div>

@@ -7,10 +7,10 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I6c (portal da UGC: só vendas, cupom e link, sem saldo e saque), da fila "Inventário do Drive". Pendente do
-  responsável: liberar `write_discounts` e `read_discounts` no app da Shopify e reconectar em `/admin/sync` (sem isso o
-  botão "Criar cupom na Shopify" avisa e não cria); adicionar a pergunta "Código de quem te convidou" nos dois
-  formulários e colar os links pré-preenchidos em `/admin/hunters`.
+- **Próxima tarefa:** I8 (perguntas abertas: ✅/❌ nas pastas de entrega UGC e o que conta como "collab" na Central;
+  precisa da resposta do responsável). Pendente do responsável: liberar `write_discounts` e `read_discounts` no app da
+  Shopify e reconectar em `/admin/sync`; adicionar a pergunta "Código de quem te convidou" nos dois formulários e colar
+  os links pré-preenchidos em `/admin/hunters`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -177,11 +177,11 @@ já existem antes de desenhar.
 - [x] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
   antigas importadas.
 - [x] **I5** Link do formulário por hunter (D-HUNTERLINK): a candidata chega marcada com quem a trouxe.
-- [ ] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA). Escopo
+- [x] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA). Escopo
   escolhido: cupom + contador de vídeos; o sistema cria o cupom na Shopify; a UGC vê no portal só as vendas.
   - [x] **I6a** Criar cupom na Shopify pela ficha (D-COUPONCREATE); permuta sem taxa ganha 0%.
   - [x] **I6b** Ciclo UGC e contador de vídeos na ficha (meta no total do ciclo, D-UGCVIDEOS).
-  - [ ] **I6c** Portal da UGC: só vendas, cupom e link (sem saldo e saque).
+  - [x] **I6c** Portal da UGC: só vendas, cupom e link (sem saldo e saque, D-UGCPORTAL).
 - [!] **I7** NFs antigas: só 3 de 20 cupons pagos têm NF no Drive; conferir com o Pagamento onde estão as outras.
 - [ ] **I8** Perguntas ainda abertas: o que significam ✅/❌ nas pastas de entrega UGC; o que conta como "collab" na Central.
 
@@ -190,6 +190,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-78 — 2026-10-10 — Portal de quem é só UGC (I6c)
+- **Decidido:** D-UGCPORTAL (só quem é apenas UGC; abas Início, Vendas, Cupom e Envios; vendas com número, data e valor;
+  sem termo por enquanto). I6 concluída.
+- **Feito:** `PortalContext.ugcOnly`; menu sem Saque (o filtro roda no componente de cliente do menu); Início
+  simplificado (vendas e pedidos do mês, cupom); Vendas sem taxa e comissão (situação "Paga" ou estorno; gráfico sem
+  comissão); termo não é pedido; saque recusado no servidor e páginas de saque fora do ar; ficha sem o cartão do termo
+  para quem é só UGC. Corrigido de passagem: o eixo do gráfico de vendas dava erro de hidratação ("R$ 500,0" no
+  servidor × "R$ 500" no navegador).
+- **Verificado:** 1 unitário novo; 2 de integração novos (portal simplificado, sem termo, saque recusado, influencer +
+  UGC com portal completo, visualização da equipe). `npm test`, `npm run test:integration`, `npm run typecheck` e
+  `npm run build` passando; capturas sem erros no console.
 
 ### CP-77 — 2026-10-10 — Contador de vídeos da UGC (I6b)
 - **Decidido:** D-UGCVIDEOS (ciclo = período do contrato; meta por creator na ficha, começa em 9; um registro por vídeo

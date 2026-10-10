@@ -9,5 +9,5 @@ export const dynamic = "force-dynamic";
 export default async function PortalHome({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
-  return <HomeView s={await portalSummary(db(), ctx)} base={`/portal/${ctx.brand.slug}`} />;
+  return <HomeView s={await portalSummary(db(), ctx)} base={`/portal/${ctx.brand.slug}`} ugc={ctx.ugcOnly} />;
 }

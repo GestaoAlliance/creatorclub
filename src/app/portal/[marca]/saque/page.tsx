@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { WithdrawalView } from "@/components/portal/withdrawal-view";
 import { db } from "@/lib/db";
 import { PortalError } from "@/lib/portal/context";
@@ -11,6 +12,7 @@ export default async function PortalWithdrawals({ params, searchParams }: { para
   const { marca } = await params;
   const { mes, pedido } = await searchParams;
   const ctx = await currentPortalContext(marca);
+  if (ctx.ugcOnly) notFound(); // D-UGCPORTAL: UGC não tem saque.
   let tab;
   try {
     tab = await portalWithdrawalTab(db(), ctx, typeof mes === "string" ? { month: mes } : {});

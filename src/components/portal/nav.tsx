@@ -61,7 +61,8 @@ function useActive(base: string) {
 }
 
 /** Computador: barra lateral de vidro, recolhível (lembra a escolha neste navegador). */
-export function SideNav({ base, brandName, items }: { base: string; brandName: string; items: NavItem[] }) {
+export function SideNav({ base, brandName, items: all, hidden = [] }: { base: string; brandName: string; items: NavItem[]; hidden?: string[] }) {
+  const items = all.filter((i) => !hidden.includes(i.href));
   const [open, setOpen] = useState(true);
   const isActive = useActive(base);
   useEffect(() => {
@@ -122,7 +123,8 @@ export function SideNav({ base, brandName, items }: { base: string; brandName: s
 }
 
 /** Celular: barra de vidro fixa embaixo, tipo app. Mais de 5 itens: os 4 primeiros e "Mais" com o resto. */
-export function BottomNav({ base, items }: { base: string; items: NavItem[] }) {
+export function BottomNav({ base, items: all, hidden = [] }: { base: string; items: NavItem[]; hidden?: string[] }) {
+  const items = all.filter((i) => !hidden.includes(i.href));
   const isActive = useActive(base);
   const [more, setMore] = useState(false);
   const path = usePathname();

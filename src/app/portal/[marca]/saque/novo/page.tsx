@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ReceiptForm } from "@/components/portal/receipt-form";
 import { WithdrawalForm } from "@/components/portal/withdrawal-form";
 import { dayKey } from "@/domain";
@@ -15,6 +15,7 @@ const mask = (pix: string) => (pix.length <= 6 ? "•••" : `${pix.slice(0, 3
 export default async function NewWithdrawal({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
+  if (ctx.ugcOnly) notFound(); // D-UGCPORTAL: UGC não tem saque.
   const tab = await portalWithdrawalTab(db(), ctx);
   if (tab.blocks.length) redirect(`/portal/${ctx.brand.slug}/saque`);
   const [brand, account] = await Promise.all([
