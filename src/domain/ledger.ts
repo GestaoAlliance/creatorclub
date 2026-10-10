@@ -17,7 +17,24 @@ export type LedgerEntry = {
   type: LedgerType;
   amountCents: Cents;
   availableAt: Date;
+  /** Mês do extrato (D-MONTH). Exigido para comissão e estorno quando a liberação é mensal (D-CONTRACT). */
+  month?: string;
 };
+
+/**
+ * Liberação mensal (D-CONTRACT): comissões de meses até `releasedThrough` (inclusive) estão liberadas; as dos meses
+ * seguintes ficam a liberar. `null` = nada liberado ainda.
+ */
+export type ReleaseState = { releasedThrough: string | null };
+
+const isOrderEntry = (e: LedgerEntry) => e.type === "COMMISSION" || e.type === "REVERSAL";
+
+/** Comissão de pedido ainda a liberar no fechamento mensal. */
+export function isHeldByRelease(e: LedgerEntry, release: ReleaseState): boolean {
+  if (!isOrderEntry(e)) return false;
+  if (e.month === undefined) throw new Error("lançamento de pedido sem mês");
+  return release.releasedThrough === null || e.month > release.releasedThrough;
+}
 
 export type OpenWithdrawal = { amountCents: Cents };
 
@@ -32,17 +49,29 @@ export type Balance = {
   availableCents: Cents;
 };
 
+/**
+ * Com `release` (D-CONTRACT), comissão e estorno de pedido ficam a liberar pelo mês: em cada mês ainda não liberado,
+ * o líquido do mês (comissões − estornos, nunca abaixo de zero) fica retido; estorno de mês já liberado sai do
+ * disponível na hora. Os demais lançamentos seguem `availableAt`. Sem `release`, tudo segue `availableAt`.
+ */
 export function computeBalance(
   entries: readonly LedgerEntry[],
   openWithdrawals: readonly OpenWithdrawal[],
   now: Date,
+  release?: ReleaseState,
 ): Balance {
   let totalCents = 0;
   let heldCents = 0;
+  const heldMonths = new Map<string, number>();
   for (const e of entries) {
     totalCents += e.amountCents;
-    if (e.amountCents > 0 && e.availableAt > now) heldCents += e.amountCents;
+    if (release && isHeldByRelease(e, release)) {
+      heldMonths.set(e.month!, (heldMonths.get(e.month!) ?? 0) + e.amountCents);
+    } else if ((!release || !isOrderEntry(e)) && e.amountCents > 0 && e.availableAt > now) {
+      heldCents += e.amountCents;
+    }
   }
+  for (const net of heldMonths.values()) heldCents += Math.max(0, net);
   const reservedCents = openWithdrawals.reduce((sum, w) => sum + w.amountCents, 0);
   return {
     totalCents,

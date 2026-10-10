@@ -15,11 +15,10 @@ const STATUS_STYLE: Record<SaleStatus, string> = {
   PENDING_RATE: "bg-stone-500/15 text-stone-700 dark:text-stone-300",
 };
 
-function Badge({ status, availableAt }: { status: SaleStatus; availableAt: Date | null }) {
+function Badge({ status }: { status: SaleStatus }) {
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>
       {SALE_STATUS_LABEL[status]}
-      {status === "HELD" && availableAt && ` · ${day(availableAt)}`}
     </span>
   );
 }
@@ -87,7 +86,7 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
                     <td className={`px-3 py-3 text-right font-semibold tabular-nums ${s.commissionCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>
                       {formatBRL(s.commissionCents)}
                     </td>
-                    <td className="px-3 py-3"><Badge status={s.status} availableAt={s.availableAt} /></td>
+                    <td className="px-3 py-3"><Badge status={s.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -103,7 +102,7 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-sm font-semibold tabular-nums">{formatBRL(s.commissionCents)}</span>
-                    <Badge status={s.status} availableAt={s.availableAt} />
+                    <Badge status={s.status} />
                   </div>
                 </li>
               ))}
@@ -112,8 +111,8 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
         )}
       </section>
       <p className="px-1 text-xs text-stone-500">
-        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago. Comissão fica a
-        liberar por {page.holdDays} dias depois do pagamento.
+        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago. A comissão é liberada
+        no dia 1 do mês seguinte quando as vendas acumuladas chegam a {formatBRL(page.release.minCents)}.
       </p>
     </div>
   );

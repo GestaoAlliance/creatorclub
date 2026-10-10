@@ -39,11 +39,14 @@ describe("saldo e extrato (banco real)", () => {
       ],
     });
     await prisma.withdrawal.create({ data: { brandId: brand.id, creatorId: creator.id, amountCents: 1_000, idempotencyKey: randomUUID() } });
+    // Setembro liberado no fechamento (D-CONTRACT); outubro fica a liberar.
+    await prisma.commissionRelease.create({ data: { brandId: brand.id, creatorId: creator.id, month: "2026-09", salesCents: 60_000, minCents: 50_000 } });
 
     const gestao = await userWith("GESTAO", brand.id);
     const st = await creatorStatement(prisma, gestao, creator.id, { now: T("2026-10-06T12:00:00Z") });
     expect(st.balance).toEqual({ totalCents: 4_500, heldCents: 2_000, reservedCents: 1_000, availableCents: 1_500 });
-    expect(st.holdDays).toBe(7);
+    expect(st.releasedThrough).toBe("2026-09");
+    expect(st.release).toMatchObject({ releasedThrough: "2026-09", minCents: 50_000, nextClosingAt: T("2026-11-01T03:00:00Z") });
     expect(st.months).toEqual([
       { month: "2026-10", totalCents: 2_500 },
       { month: "2026-09", totalCents: 2_000 },
@@ -65,7 +68,7 @@ describe("saldo e extrato (banco real)", () => {
       data: commissionEntry(ids, { type: "REVERSAL", amountCents: -6_000, availableAt: T("2026-10-07T00:00:00Z") }),
     });
     const neg = await creatorStatement(prisma, gestao, creator.id, { now: T("2026-10-20T12:00:00Z") });
-    expect(neg.balance).toEqual({ totalCents: -1_500, heldCents: 0, reservedCents: 1_000, availableCents: -2_500 });
+    expect(neg.balance).toEqual({ totalCents: -1_500, heldCents: 2_000, reservedCents: 1_000, availableCents: -4_500 });
   });
 
   it("só quem vê valores da marca; mês inválido é recusado", async () => {

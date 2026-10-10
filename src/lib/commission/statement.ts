@@ -1,11 +1,13 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { computeBalance, entryMonth, isMonthKey, monthKey, type Balance, type LedgerType } from "@/domain";
+import { computeBalance, entryMonth, isHeldByRelease, isMonthKey, monthKey, type Balance, type LedgerType } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { releaseProgress, releasedThroughFor, type ReleaseProgress } from "./release";
 
 /**
  * Saldo e extrato da creator numa marca (E5.4). O saldo é a soma de todos os lançamentos (nunca cortado em zero,
- * D-NEG), separado em "a liberar" (crédito ainda na retenção, D-HOLD), "reservado" (saque pedido) e "disponível".
+ * D-NEG), separado em "a liberar" (comissão de mês ainda não liberado no fechamento, D-CONTRACT), "reservado" (saque
+ * pedido) e "disponível".
  * O extrato é mostrado por mês: lançamento de pedido conta no mês do pagamento do pedido (D-MONTH).
  * Ver: `money.view` da marca. O portal da creator (E7) reaproveita esta leitura com o acesso dela.
  */
@@ -36,7 +38,8 @@ export type StatementLine = {
 
 export type Statement = {
   balance: Balance;
-  holdDays: number;
+  /** Último mês com comissão liberada (D-CONTRACT); `null` = nenhum. */
+  releasedThrough: string | null;
   /** Meses com lançamento, do mais recente ao mais antigo, com o total líquido de cada um. */
   months: { month: string; totalCents: number }[];
   month: string;
@@ -53,36 +56,44 @@ export async function readLedger(
   prisma: PrismaClient,
   creator: { id: string; brandId: string; brand: { timezone: string } },
   now: Date,
-): Promise<{ balance: Balance; lines: StatementLineWithMonth[] }> {
-  const [entries, open] = await Promise.all([
+): Promise<Ledger> {
+  const [entries, open, released] = await Promise.all([
     prisma.ledgerEntry.findMany({
       where: { creatorId: creator.id, brandId: creator.brandId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: { order: { select: { name: true, paidAt: true } } },
     }),
     prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
+    releasedThroughFor(prisma, [creator.id]),
   ]);
-  const lines = entries.map((e) => ({
-    id: e.id,
-    type: e.type,
-    amountCents: e.amountCents,
-    createdAt: e.createdAt,
-    availableAt: e.availableAt,
-    held: e.amountCents > 0 && e.availableAt > now,
-    orderName: e.order?.name ?? null,
-    orderPaidAt: e.order?.paidAt ?? null,
-    baseCents: e.baseCents,
-    rateBps: e.rateBps,
-    note: e.note,
-    month: entryMonth({ createdAt: e.createdAt, orderPaidAt: e.order?.paidAt ?? null }, creator.brand.timezone),
-  }));
-  return { balance: computeBalance(entries, open, now), lines };
+  const release = { releasedThrough: released.get(creator.id) ?? null };
+  const lines = entries.map((e) => {
+    const month = entryMonth({ createdAt: e.createdAt, orderPaidAt: e.order?.paidAt ?? null }, creator.brand.timezone);
+    const line = { type: e.type, amountCents: e.amountCents, availableAt: e.availableAt, month };
+    const isOrder = e.type === "COMMISSION" || e.type === "REVERSAL";
+    return {
+      id: e.id,
+      type: e.type,
+      amountCents: e.amountCents,
+      createdAt: e.createdAt,
+      availableAt: e.availableAt,
+      held: e.amountCents > 0 && (isOrder ? isHeldByRelease(line, release) : e.availableAt > now),
+      orderName: e.order?.name ?? null,
+      orderPaidAt: e.order?.paidAt ?? null,
+      baseCents: e.baseCents,
+      rateBps: e.rateBps,
+      note: e.note,
+      month,
+    };
+  });
+  return { balance: computeBalance(lines, open, now, release), lines, releasedThrough: release.releasedThrough };
 }
+
+export type Ledger = { balance: Balance; lines: StatementLineWithMonth[]; releasedThrough: string | null };
 
 /** Extrato de um mês, com a lista de meses e o total líquido de cada um. */
 export function statementForMonth(
-  ledger: { balance: Balance; lines: StatementLineWithMonth[] },
-  holdDays: number,
+  ledger: Ledger,
   month: string | undefined,
   fallbackMonth: string,
 ): Statement {
@@ -92,7 +103,7 @@ export function statementForMonth(
   const chosen = month ?? months[0]?.month ?? fallbackMonth;
   return {
     balance: ledger.balance,
-    holdDays,
+    releasedThrough: ledger.releasedThrough,
     months,
     month: chosen,
     lines: ledger.lines
@@ -107,12 +118,12 @@ export async function creatorStatement(
   actor: Actor | null,
   creatorId: string,
   opts: { month?: string; now?: Date } = {},
-): Promise<Statement> {
-  const creator = await prisma.creator.findUnique({ where: { id: creatorId }, include: { brand: { select: { timezone: true, commissionHoldDays: true } } } });
+): Promise<Statement & { release: ReleaseProgress }> {
+  const creator = await prisma.creator.findUnique({ where: { id: creatorId }, include: { brand: { select: { timezone: true } } } });
   if (!creator) throw new StatementError("Creator não encontrada.");
   if (!actor || !can(actor.grants, "money.view", creator.brandId)) throw new StatementError("Sem permissão.");
   if (opts.month !== undefined && !isMonthKey(opts.month)) throw new StatementError("Mês inválido.");
   const now = opts.now ?? new Date();
-  const ledger = await readLedger(prisma, creator, now);
-  return statementForMonth(ledger, creator.brand.commissionHoldDays, opts.month, monthKey(now, creator.brand.timezone));
+  const [ledger, release] = await Promise.all([readLedger(prisma, creator, now), releaseProgress(prisma, creator.id, now)]);
+  return { ...statementForMonth(ledger, opts.month, monthKey(now, creator.brand.timezone)), release };
 }

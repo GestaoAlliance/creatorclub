@@ -27,9 +27,10 @@ export type WithdrawalError =
   | "VALOR_INVALIDO"
   | "ABAIXO_DO_MINIMO"
   | "SALDO_INSUFICIENTE"
+  | "VALOR_PARCIAL"
   | "SAQUE_EM_ABERTO";
 
-export function isInsideWithdrawalWindow(now: Date, policy: WithdrawalPolicy): boolean {
+export function isInsideWithdrawalWindow(now: Date, policy: Omit<WithdrawalPolicy, "minCents">): boolean {
   const { day } = localDate(now, policy.timeZone ?? DEFAULT_TIMEZONE);
   return day >= policy.windowStartDay && day <= policy.windowEndDay;
 }
@@ -47,6 +48,8 @@ export function checkWithdrawalRequest(
   assertCents(req.availableCents, "disponível");
   if (req.amountCents < policy.minCents) errors.push("ABAIXO_DO_MINIMO");
   if (req.amountCents > req.availableCents) errors.push("SALDO_INSUFICIENTE");
+  // D-CONTRACT: o saque é sempre do total disponível (a NF é do valor total do mês).
+  if (req.amountCents < req.availableCents) errors.push("VALOR_PARCIAL");
   if (req.hasOpenWithdrawal) errors.push("SAQUE_EM_ABERTO");
   return errors;
 }

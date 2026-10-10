@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, Clock, ShoppingBag, Wallet } from "lucide-
 import { CopyButton } from "@/components/portal/copy-button";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
+import { releaseNote } from "@/components/ui/release-progress";
 import type { PortalSummary } from "@/lib/portal/home";
 
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -14,7 +15,7 @@ export function HomeView({ s, base }: { s: PortalSummary; base: string }) {
 
   const cards = [
     { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} em saque` : "já liberado para você", Icon: Wallet, accent: true },
-    { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.nextReleaseAt ? `próxima liberação em ${day(s.nextReleaseAt)}` : "nada em espera", Icon: Clock },
+    { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.balance.heldCents > 0 ? releaseNote(s.release) : "nada em espera", Icon: Clock },
     { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: `${s.salesCount} ${s.salesCount === 1 ? "pedido" : "pedidos"}`, Icon: ShoppingBag },
     { label: `Comissão de ${monthName}`, value: formatBRL(s.commissionCents), note: "pela data do pagamento", Icon: ArrowUpRight },
   ];
@@ -55,7 +56,7 @@ export function HomeView({ s, base }: { s: PortalSummary; base: string }) {
                     </p>
                     <p className="text-xs text-stone-500">
                       {day(l.orderPaidAt ?? l.createdAt)}
-                      {l.held && ` · libera em ${day(l.availableAt)}`}
+                      {l.held && " · a liberar"}
                     </p>
                   </div>
                   <span className={`text-sm font-semibold tabular-nums ${l.amountCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatBRL(l.amountCents)}</span>

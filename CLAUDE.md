@@ -35,7 +35,8 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - Base: subtotal atual dos produtos (`currentSubtotalPriceSet`), só pedidos `PAID`/`PARTIALLY_REFUNDED`,
   não cancelados, não teste. Conferir `taxesIncluded` da loja antes de fechar a regra.
 - Saldo pode ficar negativo; nunca cortar em zero (D-NEG: abate das próximas comissões).
-- Comissão disponível 7 dias depois do pagamento (D-HOLD); a venda conta no mês do pagamento (D-MONTH).
+- Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam ao mínimo do contrato (D-CONTRACT,
+  substitui D-HOLD); saque com NF do valor total do dia 1 ao 10; a venda conta no mês do pagamento (D-MONTH).
 - Datas em UTC; "dia"/"mês"/janela de saque em `America/Sao_Paulo`.
 
 ## Arquitetura

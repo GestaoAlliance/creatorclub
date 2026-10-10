@@ -1,21 +1,23 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { isInsideWithdrawalWindow, isMonthKey, monthKey, type Balance } from "@/domain";
+import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import { readLedger, statementForMonth, type Statement } from "@/lib/commission/statement";
 import { PortalError, type PortalContext } from "./context";
 
 /**
  * Aba Saque do portal (E7.4 + E7.7, D-WDTAB): saldo, botão "Solicitar saque", meus saques e movimentações por mês.
- * O botão só funciona quando todas as regras passam (D-WDRULES): saque liberado para a creator (D-WDLOCK, depois do
- * saldo de abertura), janela do mês, mínimo por pedido, um pedido em aberto por vez; e nunca na visualização da equipe.
+ * O botão só funciona quando todas as regras passam (D-WDRULES, D-CONTRACT): saque liberado para a creator (D-WDLOCK,
+ * depois do saldo de abertura), janela do mês (NF do dia 1 ao 10), saldo liberado maior que zero (o pedido é sempre do
+ * total disponível), um pedido em aberto por vez; e nunca na visualização da equipe.
  */
 
-export type WithdrawalBlock = "LOCKED" | "VIEW_ONLY" | "OUTSIDE_WINDOW" | "BELOW_MIN" | "OPEN_REQUEST";
+export type WithdrawalBlock = "LOCKED" | "VIEW_ONLY" | "OUTSIDE_WINDOW" | "NOTHING_AVAILABLE" | "OPEN_REQUEST";
 
 export const WITHDRAWAL_BLOCK_TEXT: Record<WithdrawalBlock, string> = {
   LOCKED: "Seu saldo está em conferência pela equipe. O saque é liberado assim que a conferência terminar.",
   VIEW_ONLY: "Visualização da equipe: nada é pedido em nome da creator.",
-  OUTSIDE_WINDOW: "Os pedidos de saque abrem do dia {start} ao dia {end} de cada mês.",
-  BELOW_MIN: "O saque mínimo é de {min}. Assim que seu saldo disponível chegar lá, o botão libera.",
+  OUTSIDE_WINDOW: "Os pedidos de saque abrem do dia {start} ao dia {end} de cada mês, com a nota fiscal do valor total liberado.",
+  NOTHING_AVAILABLE: "Você ainda não tem comissão liberada. A comissão é liberada no fechamento do mês (dia 1) quando suas vendas acumuladas chegam a {min}.",
   OPEN_REQUEST: "Você já tem um pedido de saque em análise. Assim que ele for concluído, pode pedir outro.",
 };
 
@@ -23,8 +25,8 @@ export const WITHDRAWAL_STATUS_LABEL = { REQUESTED: "Em análise", PAID: "Pago",
 
 export type WithdrawalTab = {
   balance: Balance;
-  nextReleaseAt: Date | null;
-  policy: { minCents: number; windowStartDay: number; windowEndDay: number };
+  release: ReleaseProgress;
+  policy: { windowStartDay: number; windowEndDay: number };
   /** Dados para emitir a nota antes de pedir (D-NF): CNPJ do tomador e a sugestão de descrição/código. */
   nf: { takerDocument: string | null; instructions: string | null };
   blocks: WithdrawalBlock[];
@@ -44,8 +46,6 @@ export async function portalWithdrawalTab(
       where: { id: ctx.brand.id },
       select: {
         timezone: true,
-        commissionHoldDays: true,
-        withdrawalMinCents: true,
         withdrawalWindowStartDay: true,
         withdrawalWindowEndDay: true,
         nfTakerDocument: true,
@@ -59,24 +59,26 @@ export async function portalWithdrawalTab(
       select: { id: true, requestedAt: true, amountCents: true, status: true, decidedAt: true, note: true },
     }),
   ]);
-  const ledger = await readLedger(prisma, { id: ctx.creatorId, brandId: ctx.brand.id, brand: { timezone: brand.timezone } }, now);
-  const policy = { minCents: brand.withdrawalMinCents, windowStartDay: brand.withdrawalWindowStartDay, windowEndDay: brand.withdrawalWindowEndDay };
+  const [ledger, release] = await Promise.all([
+    readLedger(prisma, { id: ctx.creatorId, brandId: ctx.brand.id, brand: { timezone: brand.timezone } }, now),
+    releaseProgress(prisma, ctx.creatorId, now),
+  ]);
+  const policy = { windowStartDay: brand.withdrawalWindowStartDay, windowEndDay: brand.withdrawalWindowEndDay };
 
   const blocks: WithdrawalBlock[] = [];
   if (ctx.viewAs) blocks.push("VIEW_ONLY");
   if (!creator.withdrawalsUnlockedAt) blocks.push("LOCKED");
   if (!isInsideWithdrawalWindow(now, { ...policy, timeZone: brand.timezone })) blocks.push("OUTSIDE_WINDOW");
-  if (ledger.balance.availableCents < policy.minCents) blocks.push("BELOW_MIN");
+  if (ledger.balance.availableCents <= 0) blocks.push("NOTHING_AVAILABLE");
   if (withdrawals.some((w) => w.status === "REQUESTED")) blocks.push("OPEN_REQUEST");
 
-  const held = ledger.lines.filter((l) => l.held).map((l) => l.availableAt.getTime());
   return {
     balance: ledger.balance,
-    nextReleaseAt: held.length ? new Date(Math.min(...held)) : null,
+    release,
     policy,
     nf: { takerDocument: brand.nfTakerDocument, instructions: brand.nfInstructions },
     blocks,
     withdrawals,
-    statement: statementForMonth(ledger, brand.commissionHoldDays, opts.month, monthKey(now, brand.timezone)),
+    statement: statementForMonth(ledger, opts.month, monthKey(now, brand.timezone)),
   };
 }

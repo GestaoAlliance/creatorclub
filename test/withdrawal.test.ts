@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { assertNoOverlap, checkWithdrawalRequest, computeBalance, localDate, type WithdrawalPolicy } from "../src/domain";
 import { T, policies } from "./helpers";
 
-const botanika: WithdrawalPolicy = { minCents: 50_000, windowStartDay: 10, windowEndDay: 15 };
+// D-CONTRACT: NF do dia 1 ao 10, valor total disponível, sem mínimo por pedido.
+const botanika: WithdrawalPolicy = { minCents: 1, windowStartDay: 1, windowEndDay: 10 };
 
 describe("saldo", () => {
   it("separa retido, reservado e disponível", () => {
@@ -33,28 +34,33 @@ describe("saldo", () => {
 });
 
 describe("solicitação de saque", () => {
-  const base = { amountCents: 200_000, availableCents: 300_000, hasOpenWithdrawal: false };
+  const base = { amountCents: 300_000, availableCents: 300_000, hasOpenWithdrawal: false };
 
-  it("saque parcial de R$ 2.000 com R$ 3.000 disponíveis no dia 10", () => {
-    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-10T12:00:00Z") }, botanika)).toEqual([]);
+  it("saque do total disponível no dia 1", () => {
+    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-01T12:00:00Z") }, botanika)).toEqual([]);
   });
 
-  it("janela de 10 a 15 no horário de São Paulo, inclusiva", () => {
-    // 10/10 00:30 em São Paulo = 03:30 UTC → dentro.
-    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-10T03:30:00Z") }, botanika)).toEqual([]);
-    // 09/10 23:30 em São Paulo = 10/10 02:30 UTC → fora.
-    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-10T02:30:00Z") }, botanika)).toEqual(["FORA_DA_JANELA"]);
-    // 15/10 23:59 em São Paulo → dentro; 16/10 → fora.
-    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-16T02:59:00Z") }, botanika)).toEqual([]);
-    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-16T03:00:00Z") }, botanika)).toEqual(["FORA_DA_JANELA"]);
+  it("janela de 1 a 10 no horário de São Paulo, inclusiva", () => {
+    // 01/10 00:30 em São Paulo = 03:30 UTC → dentro.
+    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-01T03:30:00Z") }, botanika)).toEqual([]);
+    // 30/09 23:30 em São Paulo = 01/10 02:30 UTC → fora.
+    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-01T02:30:00Z") }, botanika)).toEqual(["FORA_DA_JANELA"]);
+    // 10/10 23:59 em São Paulo → dentro; 11/10 → fora.
+    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-11T02:59:00Z") }, botanika)).toEqual([]);
+    expect(checkWithdrawalRequest({ ...base, now: T("2026-10-11T03:00:00Z") }, botanika)).toEqual(["FORA_DA_JANELA"]);
   });
 
-  it("mínimo de R$ 500, saldo insuficiente e saque já aberto", () => {
-    const now = T("2026-10-12T12:00:00Z");
-    expect(checkWithdrawalRequest({ ...base, amountCents: 49_999, now }, botanika)).toEqual(["ABAIXO_DO_MINIMO"]);
+  it("valor parcial, maior que o disponível e saque já aberto", () => {
+    const now = T("2026-10-05T12:00:00Z");
+    expect(checkWithdrawalRequest({ ...base, amountCents: 200_000, now }, botanika)).toEqual(["VALOR_PARCIAL"]);
     expect(checkWithdrawalRequest({ ...base, amountCents: 300_001, now }, botanika)).toEqual(["SALDO_INSUFICIENTE"]);
     expect(checkWithdrawalRequest({ ...base, hasOpenWithdrawal: true, now }, botanika)).toEqual(["SAQUE_EM_ABERTO"]);
     expect(checkWithdrawalRequest({ ...base, amountCents: 0, now }, botanika)).toEqual(["VALOR_INVALIDO"]);
+  });
+
+  it("valor pequeno é aceito (sem mínimo por pedido)", () => {
+    const now = T("2026-10-05T12:00:00Z");
+    expect(checkWithdrawalRequest({ amountCents: 1_234, availableCents: 1_234, hasOpenWithdrawal: false, now }, botanika)).toEqual([]);
   });
 });
 

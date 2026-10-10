@@ -5,33 +5,24 @@ import { useActionState, useState, useTransition } from "react";
 import { prepareNfUpload, submitWithdrawal, type SubmitState } from "@/app/portal/[marca]/saque/actions";
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const toCents = (s: string) => {
-  const clean = s.replace(/[^\d,]/g, "");
-  if (!clean) return NaN;
-  const [int, dec = ""] = clean.split(",");
-  return Number(int) * 100 + Number((dec + "00").slice(0, 2));
-};
 
 type Props = {
   marca: string;
   requestId: string;
   availableCents: number;
-  minCents: number;
   takerDocument: string | null;
   pixKeyMasked: string | null;
 };
 
-/** Passo a passo do saque (D-WDFLOW): valor → enviar a nota já emitida (PDF) → confirmar. */
+/** Passo a passo do saque (D-WDFLOW, D-CONTRACT): enviar a nota já emitida do valor total disponível (PDF) → confirmar. */
 export function WithdrawalForm(p: Props) {
   const [step, setStep] = useState(1);
-  const [amount, setAmount] = useState(brl(p.availableCents).replace("R$", "").trim());
+  const cents = p.availableCents;
   const [file, setFile] = useState<File | null>(null);
   const [uploaded, setUploaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, startUpload] = useTransition();
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitWithdrawal, undefined);
-  const cents = toCents(amount);
-  const amountOk = Number.isFinite(cents) && cents >= p.minCents && cents <= p.availableCents;
 
   function upload() {
     if (!file) return;
@@ -44,7 +35,7 @@ export function WithdrawalForm(p: Props) {
       const res = await fetch(ticket.signedUrl, { method: "PUT", headers: { "content-type": "application/pdf", "x-upsert": "true" }, body: file });
       if (!res.ok) return setUploadError("O envio falhou. Tente de novo.");
       setUploaded(true);
-      setStep(3);
+      setStep(2);
     });
   }
 
@@ -53,7 +44,7 @@ export function WithdrawalForm(p: Props) {
   const ghost = "rounded-full px-4 py-3 text-sm text-stone-600 dark:text-stone-300";
   const Steps = () => (
     <ol className="flex gap-2 text-xs" aria-label="Etapas">
-      {["Valor", "Enviar a nota", "Confirmar"].map((label, i) => (
+      {["Enviar a nota", "Confirmar"].map((label, i) => (
         <li key={label} className={`flex-1 rounded-full px-2 py-1.5 text-center ${i + 1 === step ? "bg-brand font-semibold text-white" : i + 1 < step ? "bg-brand/15 text-brand dark:text-brand-2" : "bg-stone-200/60 text-stone-500 dark:bg-white/5"}`}>
           {i + 1}. {label}
         </li>
@@ -66,31 +57,18 @@ export function WithdrawalForm(p: Props) {
       <Steps />
       {step === 1 && (
         <section className={card}>
-          <h1 className="text-lg font-semibold">Quanto você quer sacar?</h1>
-          <p className="text-sm text-stone-600 dark:text-stone-400">Disponível: <strong>{brl(p.availableCents)}</strong> · mínimo {brl(p.minCents)}</p>
-          <label className="flex items-center gap-2 rounded-2xl border border-stone-300/70 bg-white/60 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-            <span className="text-stone-500">R$</span>
-            <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-transparent text-2xl font-semibold tabular-nums outline-none" aria-label="Valor do saque" />
-          </label>
-          {!amountOk && amount && <p className="text-sm text-red-700 dark:text-red-400">O valor precisa ficar entre {brl(p.minCents)} e {brl(p.availableCents)}.</p>}
-          <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
-            A nota fiscal precisa já estar emitida, <strong>neste valor</strong>, para o CNPJ {p.takerDocument ?? "da marca"}.
-          </p>
-          <button className={primary} disabled={!amountOk} onClick={() => setStep(2)}>Continuar</button>
-        </section>
-      )}
-
-      {step === 2 && (
-        <section className={card}>
           <h1 className="text-lg font-semibold">Envie o PDF da nota fiscal de {brl(cents)}</h1>
+          <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
+            O saque é sempre do <strong>valor total liberado</strong>. A nota precisa já estar emitida, neste valor, para o CNPJ{" "}
+            {p.takerDocument ?? "da marca"}.
+          </p>
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 px-4 py-8 text-center text-sm dark:border-white/15">
             <FileUp className="size-6 text-stone-500" />
             {file ? <span className="font-medium">{file.name}</span> : <span>Toque para escolher o PDF (até 10 MB)</span>}
             <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setUploaded(false); }} />
           </label>
           {uploadError && <p className="text-sm text-red-700 dark:text-red-400">{uploadError}</p>}
-          <div className="flex justify-between">
-            <button className={ghost} onClick={() => setStep(1)}>Voltar</button>
+          <div className="flex justify-end">
             <button className={primary} disabled={!file || uploading} onClick={upload}>
               {uploading ? <Loader2 className="inline size-4 animate-spin" /> : "Enviar e continuar"}
             </button>
@@ -98,12 +76,12 @@ export function WithdrawalForm(p: Props) {
         </section>
       )}
 
-      {step === 3 && uploaded && (
+      {step === 2 && uploaded && (
         <form action={action} className={card}>
           <h1 className="text-lg font-semibold">Confira e confirme</h1>
           <input type="hidden" name="marca" value={p.marca} />
           <input type="hidden" name="requestId" value={p.requestId} />
-          <input type="hidden" name="amount" value={amount} />
+          <input type="hidden" name="amount" value={(cents / 100).toFixed(2).replace(".", ",")} />
           <dl className="flex flex-col gap-2 text-sm">
             <div className="flex justify-between"><dt className="text-stone-500">Valor</dt><dd className="font-semibold tabular-nums">{brl(cents)}</dd></div>
             <div className="flex justify-between"><dt className="text-stone-500">Nota fiscal</dt><dd className="max-w-[60%] truncate">{file?.name}</dd></div>
@@ -119,7 +97,7 @@ export function WithdrawalForm(p: Props) {
           <p className="text-xs text-stone-500">O valor fica "em saque" até o pagamento. A equipe confere a nota e paga por Pix.</p>
           {state?.error && <p className="text-sm text-red-700 dark:text-red-400">{state.error}</p>}
           <div className="flex justify-between">
-            <button type="button" className={ghost} onClick={() => setStep(2)}>Voltar</button>
+            <button type="button" className={ghost} onClick={() => setStep(1)}>Voltar</button>
             <button className={primary} disabled={pending}>{pending ? <Loader2 className="inline size-4 animate-spin" /> : "Pedir saque"}</button>
           </div>
         </form>

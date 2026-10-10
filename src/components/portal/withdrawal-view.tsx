@@ -4,12 +4,13 @@ import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { CopyButton } from "./copy-button";
+import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
-const ORDER: WithdrawalBlock[] = ["VIEW_ONLY", "LOCKED", "OPEN_REQUEST", "OUTSIDE_WINDOW", "BELOW_MIN"];
+const ORDER: WithdrawalBlock[] = ["VIEW_ONLY", "LOCKED", "OPEN_REQUEST", "OUTSIDE_WINDOW", "NOTHING_AVAILABLE"];
 
 const STATUS_STYLE = {
   REQUESTED: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
@@ -26,7 +27,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
     ? WITHDRAWAL_BLOCK_TEXT[block]
         .replace("{start}", String(policy.windowStartDay))
         .replace("{end}", String(policy.windowEndDay))
-        .replace("{min}", formatBRL(policy.minCents))
+        .replace("{min}", formatBRL(tab.release.minCents))
     : null;
   const st = tab.statement;
 
@@ -58,7 +59,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           <div className="rounded-2xl bg-white/40 px-4 py-3 dark:bg-white/5">
             <p className="flex items-center gap-1.5 text-xs text-stone-500"><Clock className="size-3.5" /> A liberar</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">{formatBRL(balance.heldCents)}</p>
-            <p className="text-xs text-stone-500">{tab.nextReleaseAt ? `próxima em ${day(tab.nextReleaseAt)}` : "nada em espera"}</p>
+            <p className="text-xs text-stone-500">{balance.heldCents > 0 ? releaseNote(tab.release) : "nada em espera"}</p>
           </div>
           <div className="rounded-2xl bg-white/40 px-4 py-3 dark:bg-white/5">
             <p className="flex items-center gap-1.5 text-xs text-stone-500"><FileText className="size-3.5" /> Em saque</p>
@@ -66,16 +67,18 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
             <p className="text-xs text-stone-500">pedidos em análise</p>
           </div>
         </div>
+        <ReleaseProgressBar r={tab.release} />
         <p className="text-xs text-stone-500">
-          Pedidos do dia {policy.windowStartDay} ao {policy.windowEndDay} de cada mês · mínimo {formatBRL(policy.minCents)} por pedido · pode pedir
-          parte do saldo · nota fiscal em PDF · pagamento por Pix.
+          A comissão do mês é liberada no dia 1 do mês seguinte quando suas vendas acumuladas chegam a {formatBRL(tab.release.minCents)}; se não
+          chegarem, elas somam com as do mês seguinte. Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
+          liberado, com a nota fiscal em PDF · pagamento por Pix até o dia 15.
         </p>
       </section>
 
       <section className="glass flex flex-col gap-3 rounded-3xl p-5">
         <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">
-          O pedido só é feito com a nota já emitida, no mesmo valor que você vai sacar. Use estes dados:
+          O pedido só é feito com a nota já emitida, no valor total disponível para saque. Use estes dados:
         </p>
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-3 dark:bg-white/5">
           <div>
@@ -147,7 +150,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
                   </p>
                   <p className="text-xs text-stone-500">
                     {day(l.orderPaidAt ?? l.createdAt)}
-                    {l.held && ` · libera em ${day(l.availableAt)}`}
+                    {l.held && " · a liberar"}
                   </p>
                 </div>
                 <span className={`text-sm font-semibold tabular-nums ${l.amountCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatBRL(l.amountCents)}</span>

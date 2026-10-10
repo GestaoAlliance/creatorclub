@@ -6,3 +6,4 @@ export * from "./commission";
 export * from "./ledger";
 export * from "./withdrawal";
 export * from "./time";
+export * from "./release";

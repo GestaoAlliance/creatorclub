@@ -1,6 +1,7 @@
 import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Card, Kpi } from "@/components/ui/page";
+import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
@@ -57,7 +58,11 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
             <Kpi label="Em saque" value={formatBRL(st.balance.reservedCents)} />
             <Kpi label="Disponível" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} />
           </div>
-          <p className={ui.hint}>Comissão fica a liberar por {st.holdDays} dias depois do pagamento do pedido. Venda conta no mês do pagamento.</p>
+          <ReleaseProgressBar r={st.release} />
+          <p className={ui.hint}>
+            Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam a {formatBRL(st.release.minCents)}
+            {st.releasedThrough ? `; liberada até ${st.releasedThrough.slice(5)}/${st.releasedThrough.slice(0, 4)}` : "; nada liberado ainda"}. Venda conta no mês do pagamento.
+          </p>
         </Card>
       )}
 
@@ -182,7 +187,7 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
                     <p className={ui.hint}>
                       {date(l.orderPaidAt ?? l.createdAt)}
                       {l.baseCents !== null && l.rateBps !== null && ` · ${pct(l.rateBps)} de ${formatBRL(l.baseCents)}`}
-                      {l.held && ` · libera em ${date(l.availableAt)}`}
+                      {l.held && " · a liberar"}
                       {l.note && ` · ${l.note}`}
                     </p>
                   </div>
