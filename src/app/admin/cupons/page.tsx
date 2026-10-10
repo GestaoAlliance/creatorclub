@@ -4,6 +4,8 @@ import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { couponReview } from "@/lib/coupons/review";
+import { Card, Kpi, MobileLabel, PageHeader } from "@/components/ui/page";
+import { badge, ui } from "@/components/ui/styles";
 import { ClassifyForm, OwnerForm, RateForm } from "./forms";
 
 export const dynamic = "force-dynamic";
@@ -21,71 +23,80 @@ export default async function CuponsPage({ searchParams }: { searchParams: Promi
   });
   const { marca } = await searchParams;
   const brand = brands.find((b) => b.slug === marca) ?? brands[0];
-  if (!brand) return <main className="px-6 py-10 text-sm">Nenhuma marca.</main>;
+  if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   const { rows, creators, progress } = await couponReview(db(), actor, brand.id);
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold">Conferência de cupons</h1>
+    <>
+      <PageHeader title="Conferência de cupons">
+        Tipo do cupom, dona e taxa. Cupom sem tipo ou com dona a confirmar deixa os pedidos dele pendentes; PROMO nunca leva pedido.
+      </PageHeader>
       {brands.length > 1 && (
-        <nav className="flex gap-3 text-sm">
+        <nav className="flex flex-wrap gap-2">
           {brands.map((b) => (
-            <Link key={b.id} href={`/admin/cupons?marca=${b.slug}`} className={b.id === brand.id ? "font-semibold" : "underline"}>{b.name}</Link>
+            <Link key={b.id} href={`/admin/cupons?marca=${b.slug}`} className={b.id === brand.id ? ui.pillOn : ui.pill}>{b.name}</Link>
           ))}
         </nav>
       )}
-      <p className="text-sm">
-        <strong>{progress.confirmed}</strong> de {progress.activeCreators} creators ativas com cupom, dona e taxa confirmados.
-        Cupom sem tipo ou dona a confirmar deixa os pedidos dele pendentes; PROMO nunca leva pedido.
-      </p>
-
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-stone-300 text-left">
-            <th className="py-2 pr-3">Cupom</th>
-            <th className="py-2 pr-3">Pedidos</th>
-            <th className="py-2 pr-3">Tipo</th>
-            <th className="py-2 pr-3">Dona</th>
-            <th className="py-2">Taxa</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Card>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <Kpi label="Creators confirmadas" value={`${progress.confirmed} de ${progress.activeCreators}`} hint="cupom, dona e taxa" />
+          <Kpi label="Cupons sem tipo" value={rows.filter((r) => r.kind === null).length} tone={rows.some((r) => r.kind === null) ? "amber" : undefined} />
+          <Kpi label="Cupons" value={rows.length} />
+        </div>
+      </Card>
+      <section className={ui.card}>
+        <div className="hidden grid-cols-[8rem_4rem_1fr_1.4fr_1fr] gap-4 text-xs font-medium uppercase tracking-wide text-stone-500 md:grid">
+          <span>Cupom</span><span>Pedidos</span><span>Tipo</span><span>Dona</span><span>Taxa</span>
+        </div>
+        <ul className={ui.list}>
           {rows.map((r) => (
-            <tr key={r.id} className="border-b border-stone-100 align-top">
-              <td className="py-2 pr-3 font-mono">{r.code}</td>
-              <td className="py-2 pr-3">{r.uses}</td>
-              <td className="py-2 pr-3">
-                {r.kind === null && <div className="mb-1 text-xs text-amber-700">sem tipo</div>}
+            <li key={r.id} className="grid gap-3 py-4 first:pt-0 md:grid-cols-[8rem_4rem_1fr_1.4fr_1fr] md:items-start md:gap-4">
+              <div className="flex items-center justify-between md:block">
+                <span className="font-mono font-semibold">{r.code}</span>
+                <span className={`${ui.hint} md:hidden`}>{r.uses} pedidos</span>
+              </div>
+              <span className="hidden text-sm tabular-nums md:block">{r.uses}</span>
+              <div className="flex flex-col gap-1">
+                <MobileLabel>Tipo</MobileLabel>
+                {r.kind === null && <span className={`${badge.amber} self-start`}>sem tipo</span>}
                 <ClassifyForm couponId={r.id} kind={r.kind} />
-              </td>
-              <td className="py-2 pr-3">
+              </div>
+              <div className="flex flex-col gap-1">
+                <MobileLabel>Dona</MobileLabel>
                 {r.kind !== "CREATOR" ? (
-                  <span className="text-xs text-stone-500">{r.owner ? `${r.owner.name} (do app antigo; ignorada)` : "—"}</span>
+                  <span className={ui.hint}>{r.owner ? `${r.owner.name} (do app antigo; ignorada)` : "—"}</span>
                 ) : r.owner?.confirmed ? (
-                  <span><Link href={`/admin/creators/${r.owner.creatorId}`} className="underline">{r.owner.name}</Link> <span className="text-xs text-green-800">confirmada</span></span>
+                  <span className="flex flex-wrap items-center gap-1.5 text-sm">
+                    <Link href={`/admin/creators/${r.owner.creatorId}`} className={ui.link}>{r.owner.name}</Link>
+                    <span className={badge.green}>confirmada</span>
+                  </span>
                 ) : (
                   <>
-                    {r.owner && <div className="mb-1 text-xs text-amber-700">a confirmar: {r.owner.name}</div>}
+                    {r.owner && <span className={`${badge.amber} self-start`}>a confirmar: {r.owner.name}</span>}
                     <OwnerForm couponId={r.id} currentCreatorId={r.owner?.creatorId ?? null} needsSince={!r.owner} creators={creators} />
                   </>
                 )}
-              </td>
-              <td className="py-2">
+              </div>
+              <div className="flex flex-col gap-1">
+                <MobileLabel>Taxa</MobileLabel>
                 {r.kind !== "CREATOR" || !r.rate ? (
-                  <span className="text-xs text-stone-500">—</span>
+                  <span className={ui.hint}>—</span>
                 ) : r.rate.confirmed ? (
-                  <span>{(r.rate.rateBps / 100).toString().replace(".", ",")}% <span className="text-xs text-green-800">confirmada</span></span>
+                  <span className="flex items-center gap-1.5 text-sm">
+                    {(r.rate.rateBps / 100).toString().replace(".", ",")}% <span className={badge.green}>confirmada</span>
+                  </span>
                 ) : (
                   <>
-                    <div className="mb-1 text-xs text-amber-700">a confirmar</div>
+                    <span className={`${badge.amber} self-start`}>a confirmar</span>
                     <RateForm policyId={r.rate.policyId} rateBps={r.rate.rateBps} />
                   </>
                 )}
-              </td>
-            </tr>
+              </div>
+            </li>
           ))}
-        </tbody>
-      </table>
-    </main>
+        </ul>
+      </section>
+    </>
   );
 }

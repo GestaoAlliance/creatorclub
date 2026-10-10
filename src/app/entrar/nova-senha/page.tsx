@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AuthFrame } from "@/components/auth-frame";
 import { supabaseServer } from "@/lib/supabase/server";
 import { NewPasswordForm } from "../forms";
 
@@ -9,9 +10,8 @@ export default async function NovaSenhaPage() {
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/entrar/esqueci");
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-6">
-      <h1 className="text-2xl font-bold">Nova senha</h1>
+    <AuthFrame title="Nova senha">
       <NewPasswordForm />
-    </main>
+    </AuthFrame>
   );
 }

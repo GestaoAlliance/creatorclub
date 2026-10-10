@@ -1,12 +1,12 @@
+import Link from "next/link";
+import { AuthFrame } from "@/components/auth-frame";
+import { ui } from "@/components/ui/styles";
+
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-3 px-6">
-      <p className="text-sm font-semibold uppercase tracking-wide text-brand">Creator Club</p>
-      <h1 className="text-3xl font-bold">Em construção</h1>
-      <p className="text-stone-500">
-        O portal das creators da Botanika está sendo preparado. Em breve você recebe um convite
-        para acessar suas vendas, seu saldo e seus saques.
-      </p>
-    </main>
+    <AuthFrame title="Creator Club" subtitle="Suas vendas, seu saldo e seus saques num lugar só.">
+      <p className={ui.muted}>O acesso é por convite da equipe da marca.</p>
+      <Link href="/entrar" className={`${ui.btn} w-full`}>Entrar</Link>
+    </AuthFrame>
   );
 }

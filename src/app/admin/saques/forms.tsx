@@ -1,16 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { payAction, rejectAction, type ActionState } from "./actions";
-
-const btn = "rounded border border-stone-300 px-2 py-1 text-xs font-semibold disabled:opacity-50";
-const field = "rounded border border-stone-300 px-2 py-1 text-xs";
-
-function Msg({ state }: { state: ActionState }) {
-  if (state?.error) return <span role="alert" className="text-xs text-red-700">{state.error}</span>;
-  if (state?.ok) return <span className="text-xs text-green-800">{state.ok}</span>;
-  return null;
-}
+import { Msg } from "@/components/ui/msg";
+import { ui } from "@/components/ui/styles";
+import { payAction, rejectAction } from "./actions";
 
 export function PayForm({ withdrawalId, label }: { withdrawalId: string; label: string }) {
   const [state, action, pending] = useActionState(payAction, undefined);
@@ -20,10 +13,10 @@ export function PayForm({ withdrawalId, label }: { withdrawalId: string; label: 
       onSubmit={(e) => {
         if (!confirm(`Confirmar que o Pix de ${label} foi feito?`)) e.preventDefault();
       }}
-      className="inline-flex items-center gap-1"
+      className="flex flex-col gap-1.5"
     >
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
-      <button className={`${btn} bg-stone-800 text-white`} disabled={pending}>Marcar pago</button>
+      <button className={`${ui.btn} w-full`} disabled={pending}>{pending ? "Salvando…" : "Pix feito: marcar como pago"}</button>
       <Msg state={state} />
     </form>
   );
@@ -32,10 +25,12 @@ export function PayForm({ withdrawalId, label }: { withdrawalId: string; label: 
 export function RejectForm({ withdrawalId }: { withdrawalId: string }) {
   const [state, action, pending] = useActionState(rejectAction, undefined);
   return (
-    <form action={action} className="flex flex-wrap items-center gap-1">
+    <form action={action} className="flex flex-col gap-1.5">
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
-      <input name="reason" required maxLength={300} placeholder="motivo (a creator vê)" className={`${field} w-56`} />
-      <button className={`${btn} text-red-700`} disabled={pending}>Recusar</button>
+      <div className="flex gap-2">
+        <input name="reason" required maxLength={300} placeholder="Motivo da recusa (a creator vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
+        <button className={ui.dangerSm} disabled={pending}>Recusar</button>
+      </div>
       <Msg state={state} />
     </form>
   );

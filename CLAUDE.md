@@ -97,6 +97,7 @@ Next.js 16.3.8 (App Router, Turbopack), React 19.3.0, Tailwind 4, TypeScript 5.9
 
 Tela nova só vai ao ar com o OK do responsável sobre capturas no PR (D-REVIEW).
 
+Todas as telas (creator e equipe) usam o mesmo visual (D-DESIGNALL): peças em `src/components/ui/`.
 Antes de construir qualquer tela, ler `docs/design/DESIGN.md`: *liquid glass*, base monocromática, cor de destaque
 da marca vinda do banco (troca conforme a marca). Referências de código em `docs/design/referencias/` (só referência).
 

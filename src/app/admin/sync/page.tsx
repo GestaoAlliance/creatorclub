@@ -3,11 +3,13 @@ import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { syncHealth } from "@/lib/shopify/health";
+import { Card, Kpi, PageHeader } from "@/components/ui/page";
+import { ui } from "@/components/ui/styles";
 import { BackfillForm, ConnectForm, SyncNowForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
-// Tela simples (D-SYNCUI): o visual do design entra quando as telas do portal começarem.
+// Saúde do sync com a Shopify, no visual do sistema (D-DESIGNALL).
 const fmt = (d: Date | null | undefined) =>
   d ? d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "—";
 
@@ -21,68 +23,76 @@ export default async function SyncPage() {
   const health = await syncHealth(db(), actor);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-10">
-      <h1 className="text-2xl font-bold">Saúde do sync</h1>
-      {health.length === 0 && <p className="text-sm text-stone-500">Nenhuma marca cadastrada.</p>}
+    <>
+      <PageHeader title="Shopify">Conexão com a loja, reconciliação de pedidos e o que falhou nas últimas 24 horas.</PageHeader>
+      {health.length === 0 && <p className={ui.muted}>Nenhuma marca cadastrada.</p>}
       {health.map((h) => (
-        <section key={h.brand.id} className="flex flex-col gap-4 rounded border border-stone-200 p-4">
-          <h2 className="text-lg font-semibold">{h.brand.name}</h2>
-
-          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <div><div className="text-stone-500">Shopify</div>{h.shopify?.status === "CONNECTED" ? h.shopify.externalId : h.shopify?.externalId ? `${h.shopify.externalId} (desconectada)` : "não conectado"}</div>
-            <div><div className="text-stone-500">Última reconciliação</div>{fmt(h.shopify?.lastSyncAt)}</div>
-            <div><div className="text-stone-500">Pedidos no banco</div>{h.orders}</div>
-            <div><div className="text-stone-500">Tarefas na fila</div>{h.jobs.pending}</div>
-            <div><div className="text-stone-500">Falhas (24 h)</div><span className={h.jobs.failed24h ? "font-semibold text-red-700" : ""}>{h.jobs.failed24h}</span></div>
-            <div className="col-span-2 sm:col-span-3"><div className="text-stone-500">Webhooks (24 h)</div>
-              {Object.keys(h.webhooks24h).length === 0 ? "nenhum" : Object.entries(h.webhooks24h).map(([s, n]) => `${s}: ${n}`).join(" · ")}
+        <div key={h.brand.id} className="flex flex-col gap-6">
+          <Card title={h.brand.name}>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <Kpi
+                label="Loja"
+                value={<span className="text-base">{h.shopify?.externalId ?? "não conectada"}</span>}
+                hint={h.shopify?.status === "CONNECTED" ? "conectada" : h.shopify ? "desconectada" : undefined}
+              />
+              <Kpi label="Última reconciliação" value={<span className="text-base">{fmt(h.shopify?.lastSyncAt)}</span>} />
+              <Kpi label="Pedidos no banco" value={h.orders} />
+              <Kpi label="Tarefas na fila" value={h.jobs.pending} />
+              <Kpi label="Falhas (24 h)" value={h.jobs.failed24h} tone={h.jobs.failed24h ? "red" : undefined} />
+              <Kpi
+                label="Webhooks (24 h)"
+                value={<span className="text-base">{Object.keys(h.webhooks24h).length === 0 ? "nenhum" : Object.entries(h.webhooks24h).map(([s, n]) => `${s}: ${n}`).join(" · ")}</span>}
+              />
             </div>
-          </div>
-          {h.shopify?.scopes && <p className="text-xs text-stone-500">Permissões do app: {h.shopify.scopes}</p>}
-
-          {h.shopify?.status === "CONNECTED" && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SyncNowForm brandId={h.brand.id} />
-              <BackfillForm brandId={h.brand.id} />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1">
-            <h3 className="font-semibold">Passadas</h3>
-            {h.runs.length === 0 && <p className="text-sm text-stone-500">Nenhuma ainda.</p>}
-            {h.runs.map((r) => (
-              <div key={r.id} className="text-sm">
-                {KIND[r.kind] ?? r.kind} · {fmt(r.startedAt)} · {r.finishedAt ? `${r.ordersSeen} vistos, ${r.ordersFixed} gravados` : "em andamento"}
-                {r.error && <span className="text-red-700"> · erro: {r.error}</span>}
+            {h.shopify?.scopes && <p className={ui.hint}>Permissões do app: {h.shopify.scopes}</p>}
+            {h.shopify?.status === "CONNECTED" && (
+              <div className="grid gap-4 border-t border-stone-200/70 pt-4 sm:grid-cols-2 dark:border-white/10">
+                <SyncNowForm brandId={h.brand.id} />
+                <BackfillForm brandId={h.brand.id} />
               </div>
-            ))}
-          </div>
+            )}
+          </Card>
+
+          <Card title="Passadas">
+            {h.runs.length === 0 && <p className={ui.muted}>Nenhuma ainda.</p>}
+            <ul className={ui.list}>
+              {h.runs.map((r) => (
+                <li key={r.id} className="py-2.5 text-sm first:pt-0 last:pb-0">
+                  <span className="font-medium">{KIND[r.kind] ?? r.kind}</span>
+                  <span className="text-stone-500"> · {fmt(r.startedAt)} · {r.finishedAt ? `${r.ordersSeen} vistos, ${r.ordersFixed} gravados` : "em andamento"}</span>
+                  {r.error && <span className="text-red-700 dark:text-red-400"> · erro: {r.error}</span>}
+                </li>
+              ))}
+            </ul>
+          </Card>
 
           {h.jobs.recentFailures.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <h3 className="font-semibold">Tarefas que falharam</h3>
-              {h.jobs.recentFailures.map((j) => (
-                <div key={j.id} className="text-sm text-red-800">{fmt(j.finishedAt)} · {j.type} · {j.attempts} tentativas · {j.lastError}</div>
-              ))}
-            </div>
+            <Card title="Tarefas que falharam">
+              <ul className={ui.list}>
+                {h.jobs.recentFailures.map((j) => (
+                  <li key={j.id} className="py-2.5 text-sm text-red-800 first:pt-0 last:pb-0 dark:text-red-300">{fmt(j.finishedAt)} · {j.type} · {j.attempts} tentativas · {j.lastError}</li>
+                ))}
+              </ul>
+            </Card>
           )}
 
           {h.warnings.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <h3 className="font-semibold">Avisos de pedidos</h3>
-              {h.warnings.map((w) => {
-                const a = (w.after ?? {}) as { name?: string; warnings?: string[] };
-                return <div key={w.id} className="text-sm">{fmt(w.createdAt)} · {a.name} · {(a.warnings ?? []).join(", ")}</div>;
-              })}
-            </div>
+            <Card title="Avisos de pedidos">
+              <ul className={ui.list}>
+                {h.warnings.map((w) => {
+                  const a = (w.after ?? {}) as { name?: string; warnings?: string[] };
+                  return <li key={w.id} className="py-2.5 text-sm first:pt-0 last:pb-0">{fmt(w.createdAt)} · {a.name} · {(a.warnings ?? []).join(", ")}</li>;
+                })}
+              </ul>
+            </Card>
           )}
 
-          <details>
-            <summary className="cursor-pointer text-sm font-semibold">{h.shopify ? "Reconectar loja" : "Conectar loja"}</summary>
-            <div className="mt-3"><ConnectForm brandId={h.brand.id} shop={h.shopify?.externalId ?? null} /></div>
+          <details className={ui.card}>
+            <summary className="cursor-pointer font-semibold">{h.shopify ? "Reconectar loja" : "Conectar loja"}</summary>
+            <ConnectForm brandId={h.brand.id} shop={h.shopify?.externalId ?? null} />
           </details>
-        </section>
+        </div>
       ))}
-    </main>
+    </>
   );
 }

@@ -1,4 +1,7 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page";
+import { ui } from "@/components/ui/styles";
 import { redirect } from "next/navigation";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
@@ -28,13 +31,22 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   ]);
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold">Envios</h1>
-      {form && <NewShipmentForm creators={form.creators} products={form.products} />}
-      <nav className="flex flex-wrap gap-3 text-sm">
-        <Link href="/admin/envios" className={!status ? "font-semibold" : "underline"}>Todos</Link>
+    <>
+      <PageHeader title="Envios">Produtos enviados às creators. Registre o envio, marque como enviado com o rastreio e acompanhe a entrega.</PageHeader>
+      {form && (
+        <details className="group" open={shipments.length === 0}>
+          <summary className={`${ui.btn} cursor-pointer list-none self-start`}>
+            <Plus className="size-4 transition-transform group-open:rotate-45" /> Novo envio
+          </summary>
+          <div className="mt-4">
+            <NewShipmentForm creators={form.creators} products={form.products} />
+          </div>
+        </details>
+      )}
+      <nav aria-label="Situação" className="flex flex-wrap gap-2">
+        <Link href="/admin/envios" className={!status ? ui.pillOn : ui.pill}>Todos</Link>
         {STATUSES.map((s) => (
-          <Link key={s} href={`/admin/envios?situacao=${s}`} className={status === s ? "font-semibold" : "underline"}>{SHIPMENT_STATUS_LABEL[s]}</Link>
+          <Link key={s} href={`/admin/envios?situacao=${s}`} className={status === s ? ui.pillOn : ui.pill}>{SHIPMENT_STATUS_LABEL[s]}</Link>
         ))}
       </nav>
       <ShipmentsTable
@@ -44,6 +56,6 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
           address: can(actor.grants, "personal.address", s.brandId) ? (s.address as Address) : null,
         }))}
       />
-    </main>
+    </>
   );
 }

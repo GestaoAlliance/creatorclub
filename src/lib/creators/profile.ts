@@ -38,6 +38,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     status: c.status as CreatorStatusValue,
     fakeEmail: c.account.email.endsWith(FAKE_EMAIL_DOMAIN),
     hasLogin: c.account.userId !== null,
+    reviewed: c.reviewedAt !== null,
   }));
 }
 
