@@ -76,6 +76,9 @@ model Brand {
   legacyPayments     LegacyPayment[]
   contractTemplates  ContractTemplate[]
   kitGrants          KitGrant[]
+  hunterLinks        HunterLink[]
+  hunterClicks       HunterClick[]
+  formLinks          FormLink[]
 }
 
 enum IntegrationKind {
@@ -122,6 +125,7 @@ model User {
 
   roleGrants     RoleGrant[]
   creatorAccount CreatorAccount?
+  hunterLinks    HunterLink[]
 }
 
 enum StaffRole {
@@ -806,6 +810,8 @@ model CreatorApplication {
   brandsWanted    String? // D-CAPTACAO: "Tenho interesse em representar:" (Botanika / Botanika e VermeFree)
   collabInterest  String? // D-CAPTACAO: interesse em collab com o perfil da marca (Sim/Não)
   note            String? // observação da equipe (ex.: status da planilha antiga)
+  hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
+  hunterLinkId    String?
   raw             Json
   status          ApplicationStatus @default(NEW)
   decidedAt       DateTime?
@@ -814,7 +820,8 @@ model CreatorApplication {
   creatorId       String?
   createdAt       DateTime          @default(now())
 
-  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  hunterLink HunterLink? @relation(fields: [hunterLinkId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, source, externalKey])
   @@index([brandId, status, submittedAt])
@@ -920,4 +927,54 @@ model KitGrant {
 
   @@unique([creatorId, month])
   @@index([brandId, status])
+}
+
+// ───────────────────────────── Links dos hunters (D-HUNTERLINK) ─────────────────────────────
+
+/// Link de um hunter na marca: `/f/[marca]/[formulario]/[codigo]` abre o formulário com "Código de quem te convidou"
+/// pré-preenchido; a candidata chega marcada com quem a trouxe. O código não muda (links já divulgados).
+model HunterLink {
+  id        String   @id @default(uuid())
+  brandId   String
+  userId    String
+  code      String // só letras minúsculas e números
+  createdAt DateTime @default(now())
+
+  brand        Brand                @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  clicks       HunterClick[]
+  applications CreatorApplication[]
+
+  @@unique([brandId, code])
+  @@unique([brandId, userId])
+}
+
+/// Clique no link do hunter (só recebe inserções). IP guardado só como hash do dia.
+model HunterClick {
+  id           String   @id @default(uuid())
+  brandId      String
+  hunterLinkId String
+  form         String // hunter | captacao
+  ipHash       String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  hunterLink HunterLink @relation(fields: [hunterLinkId], references: [id], onDelete: Restrict)
+
+  @@index([hunterLinkId, createdAt])
+}
+
+/// Link pré-preenchido do Google Forms de cada formulário da marca, com CODIGO no lugar do código do hunter.
+model FormLink {
+  id          String   @id @default(uuid())
+  brandId     String
+  form        String // hunter | captacao
+  urlTemplate String
+  updatedById String
+  updatedAt   DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, form])
 }

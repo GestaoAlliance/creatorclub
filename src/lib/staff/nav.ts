@@ -8,6 +8,7 @@ import { brandsWith, type Grant, type Permission } from "@/lib/auth/permissions"
 const ITEMS: (NavItem & { needs: Permission; global?: boolean })[] = [
   { href: "/candidatas", label: "Candidatas", icon: "inbox", needs: "creators.view" },
   { href: "/creators", label: "Creators", icon: "creators", needs: "creators.view" },
+  { href: "/hunters", label: "Hunters", icon: "hunter", needs: "creators.edit" },
   { href: "/cupons", label: "Cupons", icon: "review", needs: "creators.edit" },
   { href: "/envios", label: "Envios", icon: "package", needs: "shipping.view" },
   { href: "/saques", label: "Saques", icon: "payout", needs: "withdrawals.manage" },

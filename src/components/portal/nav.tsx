@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Scale,
   ShoppingBag,
+  Target,
   Ticket,
   Users,
   UsersRound,
@@ -39,6 +40,7 @@ const ICONS = {
   import: Download,
   terms: FileSignature,
   inbox: Inbox,
+  hunter: Target,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;

@@ -4,6 +4,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
 import { isValidCpf } from "@/lib/terms/terms";
+import { hunterLinkIdFor } from "./hunters";
 
 /**
  * Candidatas dos formulários Hunter (D-ONBOARD) e de Captação (D-CAPTACAO). O script do Google Forms manda cada
@@ -33,6 +34,7 @@ export type HunterFields = {
   storiesViews: string | null;
   brandsWanted: string | null;
   collabInterest: string | null;
+  hunterCode: string | null;
 };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -56,6 +58,8 @@ const QUESTIONS: [keyof HunterFields, string][] = [
   ["storiesViews", "quantos visualizacoes tem seus stories"],
   ["brandsWanted", "tenho interesse em representar"],
   ["collabInterest", "estamos selecionando alguns parceiros"],
+  // D-HUNTERLINK: vem pré-preenchida pelo link do hunter
+  ["hunterCode", "codigo de quem te convidou"],
 ];
 
 /** Campo a que a pergunta corresponde (ou `null` se é uma pergunta sem campo próprio, que fica só na resposta original). */
@@ -103,6 +107,7 @@ export function parseHunterAnswers(answers: Record<string, unknown>): HunterFiel
     storiesViews: out.storiesViews ?? null,
     brandsWanted: out.brandsWanted ?? null,
     collabInterest: out.collabInterest ?? null,
+    hunterCode: out.hunterCode ?? null,
   };
 }
 
@@ -151,7 +156,15 @@ export async function receiveApplication(
   if (imported) return { id: imported.id, created: false };
   try {
     const a = await prisma.creatorApplication.create({
-      data: { brandId: brand.id, source: input.source, externalKey: key, submittedAt: input.submittedAt, ...fields, raw: input.answers as object },
+      data: {
+        brandId: brand.id,
+        source: input.source,
+        externalKey: key,
+        submittedAt: input.submittedAt,
+        ...fields,
+        hunterLinkId: await hunterLinkIdFor(prisma, brand.id, fields.hunterCode),
+        raw: input.answers as object,
+      },
     });
     return { id: a.id, created: true };
   } catch (error) {
@@ -176,6 +189,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), status, brand: { archivedAt: null } },
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
     take: 200,
+    include: { hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
   const counts = await prisma.creatorApplication.groupBy({
     by: ["status"],
@@ -217,6 +231,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         alsoVermeFree: /vermefree/i.test(r.brandsWanted ?? ""),
         note: r.note,
         extras: extraAnswers(r.raw),
+        hunter: r.hunterLink ? { name: r.hunterLink.user.name, code: r.hunterLink.code } : null,
       };
     }),
   };
