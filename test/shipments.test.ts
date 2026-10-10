@@ -22,6 +22,8 @@ describe("endereço da creator", () => {
     const cols = { addrZip: "01310100", addrStreet: "Av. Paulista", addrNumber: "1000", addrComplement: "ap 12", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP" };
     expect(addressOf({ ...cols, addrCity: null })).toBeNull();
     expect(formatAddress(addressOf(cols)!)).toEqual(["Av. Paulista, 1000 — ap 12", "Bela Vista · São Paulo/SP", "CEP 01310-100"]);
+    // Envio importado das planilhas (D-SHIPIMPORT): o endereço é o texto livre da planilha.
+    expect(formatAddress({ raw: "Rua X, 10 - Centro, Cidade/UF" })).toEqual(["Rua X, 10 - Centro, Cidade/UF"]);
   });
 });
 

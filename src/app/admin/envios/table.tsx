@@ -1,11 +1,11 @@
 import { ExternalLink, MapPin } from "lucide-react";
 import Link from "next/link";
 import { badge, ui } from "@/components/ui/styles";
-import { formatAddress, type Address } from "@/lib/shipments/address";
+import { formatAddress, type ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type staffShipments } from "@/lib/shipments/shipments";
 import { CancelForm, DeliveredForm, ShippedForm } from "./forms";
 
-type Row = Omit<Awaited<ReturnType<typeof staffShipments>>[number], "address"> & { canManage: boolean; address: Address | null };
+type Row = Omit<Awaited<ReturnType<typeof staffShipments>>[number], "address"> & { canManage: boolean; address: ShipmentAddress | null };
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 const STATUS_BADGE = { PREPARING: badge.amber, SHIPPED: badge.sky, DELIVERED: badge.green, CANCELLED: badge.neutral } as const;

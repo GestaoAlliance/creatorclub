@@ -55,7 +55,11 @@ export function addressOf(a: {
   return { zip: a.addrZip, street: a.addrStreet, number: a.addrNumber, complement: a.addrComplement, district: a.addrDistrict, city: a.addrCity, state: a.addrState };
 }
 
-export function formatAddress(a: Address): string[] {
+/** Cópia do endereço num envio: estruturado, ou o texto livre de um envio importado das planilhas (D-SHIPIMPORT). */
+export type ShipmentAddress = Address | { raw: string };
+
+export function formatAddress(a: ShipmentAddress): string[] {
+  if ("raw" in a) return [a.raw];
   const zip = `${a.zip.slice(0, 5)}-${a.zip.slice(5)}`;
   return [`${a.street}, ${a.number}${a.complement ? ` — ${a.complement}` : ""}`, `${a.district} · ${a.city}/${a.state}`, `CEP ${zip}`];
 }
