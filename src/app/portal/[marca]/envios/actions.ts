@@ -5,6 +5,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { AddressError } from "@/lib/shipments/address";
+import { chooseKit } from "@/lib/shipments/kits";
 import { confirmReceived, ShipmentError, updateMyAddress } from "@/lib/shipments/shipments";
 
 export type EnviosState = { error?: string; ok?: string } | undefined;
@@ -52,5 +53,20 @@ export async function confirmReceivedAction(_prev: EnviosState, form: FormData):
       await confirmReceived(db(), ctx, userId, String(form.get("shipmentId") ?? ""));
     },
     "Recebimento confirmado. Obrigada!",
+  );
+}
+
+export async function chooseKitAction(_prev: EnviosState, form: FormData): Promise<EnviosState> {
+  const marca = String(form.get("marca") ?? "");
+  const items = [...form.entries()]
+    .filter(([k]) => k.startsWith("qty:"))
+    .map(([k, v]) => ({ productId: k.slice(4), quantity: Number(v) || 0 }));
+  return run(
+    marca,
+    async (userId) => {
+      const ctx = await currentPortalContext(marca);
+      await chooseKit(db(), ctx, userId, String(form.get("kitId") ?? ""), items);
+    },
+    "Kit escolhido! A equipe já vai preparar o envio.",
   );
 }

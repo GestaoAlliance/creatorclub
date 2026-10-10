@@ -47,6 +47,7 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
           <Tile href="/admin/envios" icon={<Package className="size-4" />} title="Envios">
             <Kpi label="Preparando" value={h.shipments.preparing} hint="a enviar" tone={h.shipments.preparing ? "amber" : undefined} />
             <Kpi label="A caminho" value={h.shipments.shipped} hint="esperando a entrega" />
+            <Kpi label="Kits a escolher" value={h.shipments.kitsPending} hint="a creator escolhe no portal" />
           </Tile>
         )}
         {h.coupons && (

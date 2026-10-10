@@ -8,3 +8,4 @@ export * from "./withdrawal";
 export * from "./time";
 export * from "./release";
 export * from "./contract";
+export * from "./kit";

@@ -7,8 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** envio sugerido do kit mensal pelas faixas do contrato de cada creator (D-CONTRACT, D-CONTRACTVER);
-  perguntas abertas do inventário do Drive (doc "Inventário do Drive — Creator Club Botanika"). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** perguntas abertas do inventário do Drive (doc "Inventário do Drive — Creator Club Botanika"). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -172,6 +171,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-67 — 2026-10-10 — Kit mensal: a creator escolhe os produtos no portal
+- **Decidido:** D-KIT (o fechamento do mês concede o kit pela faixa de vendas do mês no contrato da creator; ela
+  escolhe os produtos no portal; o kit espera sem prazo).
+- **Feito:** migração `kit_grants` (tabela `KitGrant` com RLS e travas `KitGrant_month_format`, `KitGrant_values`,
+  `KitGrant_chosen`). Regra pura `kitProductsFor` (faixa mais alta alcançada; faixa com teto só até o teto) e
+  `validateKitChoice`. O fechamento (`closeBrandMonth`) grava o kit de cada creator ativa cujo modelo tem faixas.
+  Portal, aba Envios: cartão "Você ganhou N suplementos", escolha com + e −, pede o endereço completo; confirmar cria
+  o envio "Preparando" com a cópia do endereço e marca o kit como escolhido (uma vez só; auditado). Equipe: o painel
+  mostra "Kits a escolher" no cartão de Envios; o envio aparece em `/admin/envios` como qualquer outro.
+  Migração `kit_tier_gap`: no modelo influencer out/26, de R$ 4.000 a R$ 9.999,99 continua com 2 suplementos.
+- **Observação:** setembro já fechou; os primeiros kits saem no fechamento de 01/11 (vendas de outubro).
+- **Verificado:** 4 unitários novos; 3 de integração novos (fluxo completo, faixa mais alta e quem não ganha, travas
+  pelo nome); migração × schema sem divergência; typecheck; build.
 
 ### CP-66 — 2026-10-10 — Cada creator segue o contrato que assinou
 - **Decidido:** D-CONTRACTVER (cada creator segue a versão de contrato que assinou; quem não tem contrato no Drive

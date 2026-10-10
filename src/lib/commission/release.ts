@@ -3,8 +3,10 @@ import {
   accumulatedSales,
   computeBalance,
   entryMonth,
+  kitProductsFor,
   monthClosesAt,
   monthKey,
+  parseKitTiers,
   planReleases,
   previousMonthKey,
   releaseMinFor,
@@ -18,6 +20,7 @@ import {
  * `CommissionRelease` e a comissão desses meses fica disponível para o saque (NF do dia 1 ao 10).
  * Vendas = subtotal atual dos pedidos elegíveis atribuídos (pagos ou parcialmente reembolsados, não cancelados, não
  * teste), pelo mês do pagamento (D-MONTH). Roda pelo worker (`/api/jobs/run`); `MonthClosing` impede refazer.
+ * No mesmo fechamento, a creator ativa cujo contrato tem faixas de kit ganha o kit do mês (D-KIT, `KitGrant`).
  */
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -145,7 +148,7 @@ async function closeBrandMonth(
       if (await tx.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } })) return 0;
       const creators = await tx.creator.findMany({
         where: { brandId: brand.id },
-        select: { id: true, categories: true, contractTemplate: { select: { releaseMinCents: true } } },
+        select: { id: true, status: true, categories: true, contractTemplate: { select: { releaseMinCents: true, kitTiers: true } } },
       });
       const ids = creators.map((c) => c.id);
       const [sales, released] = await Promise.all([salesByMonth(tx, ids, brand.timezone), releasedThroughFor(tx, ids)]);
@@ -157,6 +160,14 @@ async function closeBrandMonth(
         );
       });
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });
+      // D-KIT: kit do mês pela faixa de vendas do contrato; a creator escolhe os produtos no portal.
+      const kits = creators.flatMap((c) => {
+        if (c.status !== "ACTIVE" || !c.contractTemplate) return [];
+        const salesCents = sales.get(c.id)!.get(month) ?? 0;
+        const products = kitProductsFor(parseKitTiers(c.contractTemplate.kitTiers), salesCents);
+        return products > 0 ? [{ brandId: brand.id, creatorId: c.id, month, salesCents, products, createdAt: now }] : [];
+      });
+      if (kits.length) await tx.kitGrant.createMany({ data: kits, skipDuplicates: true });
       const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
       await tx.auditLog.create({
         data: {
@@ -165,7 +176,7 @@ async function closeBrandMonth(
           action: "month.close",
           entity: "MonthClosing",
           entityId: closing.id,
-          after: { month, releases: rows.length, creators: [...new Set(rows.map((r) => r.creatorId))].length },
+          after: { month, releases: rows.length, creators: [...new Set(rows.map((r) => r.creatorId))].length, kits: kits.length },
         },
       });
       return rows.length;

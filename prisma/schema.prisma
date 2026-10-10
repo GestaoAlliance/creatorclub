@@ -74,6 +74,7 @@ model Brand {
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
   contractTemplates  ContractTemplate[]
+  kitGrants          KitGrant[]
 }
 
 enum IntegrationKind {
@@ -271,6 +272,7 @@ model Creator {
   termsAcceptances   TermsAcceptance[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
+  kitGrants          KitGrant[]
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@unique([brandId, accountId])
@@ -682,6 +684,7 @@ model Shipment {
   brand   Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   items   ShipmentItem[]
+  kit     KitGrant?
 
   @@unique([id, brandId])
   @@index([brandId, status, createdAt])
@@ -858,4 +861,31 @@ model ContractTemplate {
 
   @@unique([brandId, key])
   @@unique([id, brandId])
+}
+
+enum KitStatus {
+  PENDING // aguardando a creator escolher os produtos
+  CHOSEN // envio criado
+}
+
+/// D-KIT: kit mensal do contrato. No fechamento do mês, a faixa de vendas do mês (contrato da creator) dá N
+/// suplementos; a creator escolhe os produtos no portal e o envio é criado "Preparando". Sem prazo.
+model KitGrant {
+  id         String    @id @default(uuid())
+  brandId    String
+  creatorId  String
+  month      String // AAAA-MM das vendas
+  salesCents Int
+  products   Int
+  status     KitStatus @default(PENDING)
+  shipmentId String?   @unique
+  chosenAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator  Creator   @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@unique([creatorId, month])
+  @@index([brandId, status])
 }
