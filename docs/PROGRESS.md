@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** U3 (tela da hunter: candidatas que trouxe, cliques e aprovadas), da fila "Uso real". U1 em andamento com o
+- **Próxima tarefa:** U4 (painel do mês para a Gestão: vendas, mínimo, faixa do kit e ranking), da fila "Uso real". U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -180,7 +180,7 @@ já existem antes de desenhar.
   Falta (responsável): convidar Juci (Pagamento), Álvaro (Envio) e uma hunter; 3 a 5 creators de teste no portal;
   juntar as anotações no fim da semana.
 - [x] **U2** Kit de boas-vindas do contrato (D-WELCOMEKIT): liberado ao assinar, escolhido no portal, cai na fila do Envio.
-- [ ] **U3** Tela da hunter: candidatas que trouxe, cliques e aprovadas.
+- [x] **U3** Tela da hunter "Minhas indicações" (D-HUNTERVIEW): link, cliques e situação de quem trouxe.
 - [ ] **U4** Painel do mês para a Gestão: vendas, mínimo, faixa do kit e ranking (base da gamificação).
 - [ ] **U5** Avisos para as creators (e-mail depois do domínio; até lá, WhatsApp pronto para a equipe).
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
@@ -215,6 +215,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-94 — 2026-10-10 — Tela da hunter (U3)
+- **Decidido:** D-HUNTERVIEW (nome, @, seguidores, data e situação; sem contato, sem motivo da recusa, sem vendas).
+- **Feito:** `myHunterPanel` em `src/lib/onboarding/hunters.ts`; página `/admin/indicacoes` e item "Minhas indicações"
+  no menu só para quem é hunter; cartão no Início da equipe com cliques e candidatas em análise.
+- **Verificado:** integração nova (só o próprio link; sem WhatsApp, e-mail nem motivo; Gestão não abre) e menu da
+  hunter atualizado. Capturas com banco local. `npm test`, `npm run test:integration`, `npm run typecheck` e
+  `npm run build` passando.
 
 ### CP-93 — 2026-10-10 — Kit de boas-vindas do contrato (U2)
 - **Decidido:** D-WELCOMEKIT (quantidade na versão do contrato; liberado ao assinar; a creator escolhe; vai para a

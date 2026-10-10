@@ -16,6 +16,8 @@ export type StaffHome = {
   coupons?: { unclassified: number; ownerPending: number };
   shipments?: { preparing: number; shipped: number; kitsPending: number };
   withdrawals?: { open: number; openCents: number; openingsPending: number };
+  /** U3: a hunter vê as próprias indicações. */
+  hunter?: { clicks30: number; inReview: number; approved: number; hasLink: boolean };
 };
 
 function scope(actor: Actor, p: Permission) {
@@ -43,7 +45,24 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
   const edit = scope(actor, "creators.edit");
   const ship = scope(actor, "shipping.view");
   const pay = scope(actor, "withdrawals.manage");
+  const isHunter = actor.grants.some((g) => g.role === "HUNTER");
   await Promise.all([
+    isHunter &&
+      prisma.hunterLink
+        .findMany({ where: { userId: actor.userId }, select: { id: true, applications: { select: { status: true } } } })
+        .then(async (links) => {
+          const ids = links.map((l) => l.id);
+          const clicks30 = ids.length
+            ? await prisma.hunterClick.count({ where: { hunterLinkId: { in: ids }, createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } })
+            : 0;
+          const apps = links.flatMap((l) => l.applications);
+          out.hunter = {
+            clicks30,
+            inReview: apps.filter((a) => a.status === "NEW").length,
+            approved: apps.filter((a) => a.status === "APPROVED").length,
+            hasLink: links.length > 0,
+          };
+        }),
     view &&
       Promise.all([
         prisma.creator.count({ where: { ...view, status: "ACTIVE" } }),

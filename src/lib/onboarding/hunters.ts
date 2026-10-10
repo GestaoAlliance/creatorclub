@@ -154,3 +154,51 @@ export async function hunterLinkIdFor(prisma: PrismaClient, brandId: string, raw
   const link = await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId, code } }, select: { id: true } });
   return link?.id ?? null;
 }
+
+/**
+ * Painel da própria hunter (U3, D-HUNTERVIEW): o link dela em cada marca, cliques e as candidatas que trouxe, só com
+ * nome, @, seguidores, data e situação (sem contato, CPF, endereço nem o motivo de recusa, que é anotação da equipe).
+ */
+export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, now = new Date()) {
+  if (!actor || !actor.grants.some((g) => g.role === "HUNTER")) throw new HunterError("Sem permissão.");
+  const links = await prisma.hunterLink.findMany({
+    where: { userId: actor.userId, brand: { archivedAt: null } },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      code: true,
+      brand: { select: { name: true } },
+      _count: { select: { clicks: true } },
+      applications: {
+        orderBy: { submittedAt: "desc" },
+        select: { id: true, fullName: true, instagram: true, followers: true, submittedAt: true, status: true },
+      },
+    },
+  });
+  const recent = await prisma.hunterClick.groupBy({
+    by: ["hunterLinkId"],
+    where: { hunterLinkId: { in: links.map((l) => l.id) }, createdAt: { gte: new Date(now.getTime() - 30 * DAY) } },
+    _count: true,
+  });
+  const recentBy = new Map(recent.map((r) => [r.hunterLinkId, r._count]));
+  return links.map((l) => ({
+    code: l.code,
+    brandName: l.brand.name,
+    clicks: l._count.clicks,
+    clicks30: recentBy.get(l.id) ?? 0,
+    counts: {
+      total: l.applications.length,
+      inReview: l.applications.filter((a) => a.status === "NEW").length,
+      approved: l.applications.filter((a) => a.status === "APPROVED").length,
+      rejected: l.applications.filter((a) => a.status === "REJECTED").length,
+    },
+    applications: l.applications.map((a) => ({
+      id: a.id,
+      name: a.fullName,
+      instagram: a.instagram?.replace(/^@/, "") ?? null,
+      followers: a.followers,
+      submittedAt: a.submittedAt,
+      status: a.status,
+    })),
+  }));
+}

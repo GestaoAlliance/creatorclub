@@ -5,7 +5,9 @@ import { brandsWith, type Grant, type Permission } from "@/lib/auth/permissions"
  * Menu do painel da equipe (D-DESIGNALL): o mesmo da creator, com os itens que o papel pode usar.
  * Regra pura (testada). Cada página continua conferindo o acesso sozinha.
  */
-const ITEMS: (NavItem & { needs: Permission; global?: boolean })[] = [
+const ITEMS: (NavItem & { needs: Permission; global?: boolean; hunterOnly?: boolean })[] = [
+  // U3: a própria hunter vê as indicações dela (super admin acompanha pela tela Hunters).
+  { href: "/indicacoes", label: "Minhas indicações", icon: "hunter", needs: "prospects.own", hunterOnly: true },
   { href: "/candidatas", label: "Candidatas", icon: "inbox", needs: "creators.view" },
   { href: "/creators", label: "Creators", icon: "creators", needs: "creators.view" },
   { href: "/hunters", label: "Hunters", icon: "hunter", needs: "creators.edit" },
@@ -22,6 +24,7 @@ const ITEMS: (NavItem & { needs: Permission; global?: boolean })[] = [
 
 export function staffNav(grants: readonly Grant[]): NavItem[] {
   const allowed = ITEMS.filter((i) => {
+    if (i.hunterOnly) return grants.some((g) => g.role === "HUNTER");
     const b = brandsWith(grants, i.needs);
     return i.global ? b === "ALL" : b === "ALL" || b.length > 0;
   }).map(({ href, label, icon }) => ({ href, label, icon }));

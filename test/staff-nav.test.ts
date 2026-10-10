@@ -10,6 +10,6 @@ describe("menu da equipe por papel", () => {
     expect(labels("GESTAO")).toEqual(["Início", "Candidatas", "Creators", "Hunters", "Cupons", "Envios"]);
     expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
     expect(labels("PAGAMENTO")).toEqual(["Início", "Candidatas", "Creators", "Saques", "Abertura"]);
-    expect(labels("HUNTER")).toEqual(["Início"]);
+    expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações"]);
   });
 });
