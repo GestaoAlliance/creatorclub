@@ -48,9 +48,11 @@ export function ShipmentsView({
   shipments,
   kits,
   viewOnly,
+  informedAddress = null,
 }: {
   marca: string;
   address: Address | null;
+  informedAddress?: string | null;
   shipments: Shipment[];
   kits: PendingKits;
   viewOnly: boolean;
@@ -58,9 +60,9 @@ export function ShipmentsView({
   return (
     <div className="flex flex-col gap-6">
       {kits.kits.map((k) => (
-        <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
+        <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
       ))}
-      <AddressCard marca={marca} address={address} viewOnly={viewOnly} />
+      <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
       <section className="glass rounded-3xl p-5">
         <h2 className="mb-3 flex items-center gap-2 font-semibold"><Package className="size-4" /> Meus envios</h2>
         {shipments.length === 0 ? (

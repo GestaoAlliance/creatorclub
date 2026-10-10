@@ -4,6 +4,8 @@ import { addMonthsToDay, dayKey, longDate } from "@/domain";
 import { loadActor } from "@/lib/auth/actor";
 import { contractsOverview, creatorContractSignature, pendingContract, publishContract, signContract, signedContractText } from "@/lib/contracts/sign";
 import { approveApplication, receiveApplication } from "@/lib/onboarding/applications";
+import { chooseKit, myPendingKits } from "@/lib/shipments/kits";
+import { informedAddress, updateMyAddress } from "@/lib/shipments/shipments";
 import { portalContext } from "@/lib/portal/context";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
@@ -26,7 +28,7 @@ async function setup() {
   const { brand } = await seedBrand(prisma);
   const sa = await userWith("SUPER_ADMIN", null);
   const template = await prisma.contractTemplate.create({
-    data: { brandId: brand.id, key: `influencer-${letters(4)}`, name: "Influencer teste", releaseMinCents: 50_000, months: 6, kitTiers: [{ fromCents: 100_000, products: 1 }] },
+    data: { brandId: brand.id, key: `influencer-${letters(4)}`, name: "Influencer teste", releaseMinCents: 50_000, months: 6, kitTiers: [{ fromCents: 100_000, products: 1 }], welcomeProducts: 2 },
   });
   const email = `${randomUUID()}@exemplo.com`;
   const app = await receiveApplication(prisma, {
@@ -82,6 +84,15 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
     });
     expect(await pendingContract(prisma, s.ctx)).toBeNull();
     await expect(signContract(prisma, s.ctx, sign(s, v2.documentId))).rejects.toThrow(/Não há contrato/);
+
+    // D-WELCOMEKIT: assinar libera o kit de boas-vindas da versão do contrato; a escolha vira envio na fila do Envio.
+    const { kits } = await myPendingKits(prisma, s.ctx);
+    expect(kits).toMatchObject([{ kind: "WELCOME", products: 2, salesCents: 0 }]);
+    expect(await informedAddress(prisma, s.ctx)).toBe("Rua A, 10, Centro, São Paulo - SP");
+    const product = await prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title: "Whey", active: true } });
+    await updateMyAddress(prisma, s.ctx, s.userId, { zip: "01000-000", street: "Rua A", number: "10", complement: "", district: "Centro", city: "São Paulo", state: "SP" });
+    const shipmentId = await chooseKit(prisma, s.ctx, s.userId, kits[0]!.id, [{ productId: product.id, quantity: 2 }]);
+    expect(await prisma.shipment.findUniqueOrThrow({ where: { id: shipmentId } })).toMatchObject({ status: "PREPARING", note: "Kit de boas-vindas (2 suplementos)" });
     expect((await creatorContractSignature(prisma, s.r.creatorId)).signature).toMatchObject({ version: 2, kind: "INFLUENCER", cpf: "***.982.247-**" });
     await expect(signedContractText(prisma, await userWith("PAGAMENTO", s.brand.id), sig.id)).resolves.toMatchObject({ body: sig.body });
     expect(await prisma.auditLog.count({ where: { action: "contract.signed", entityId: sig.id } })).toBe(1);
@@ -108,5 +119,11 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
     const ok = await prisma.contractSignature.create({ data: row });
     await expectDbError(prisma.contractSignature.update({ where: { id: ok.id }, data: { body: "outro" } }), /somente inserção/);
     await expectDbError(prisma.contractDocument.delete({ where: { id: doc.id } }), /somente inserção/);
+    await expectDbError(prisma.kitGrant.create({ data: { brandId: brand.id, creatorId: creator.id, kind: "OUTRO", month: "2026-10", salesCents: 0, products: 1 } }), /KitGrant_kind/);
+    await expectDbError(prisma.kitGrant.create({ data: { brandId: brand.id, creatorId: creator.id, kind: "WELCOME", month: "2026-10", salesCents: 100, products: 1 } }), /KitGrant_kind/);
+    await expectDbError(prisma.contractTemplate.create({ data: { brandId: brand.id, key: `w-${letters(4)}`, name: "w", months: 6, welcomeProducts: 21 } }), /ContractTemplate_welcomeProducts/);
+    // Kit do mês e de boas-vindas no mesmo mês convivem.
+    await prisma.kitGrant.create({ data: { brandId: brand.id, creatorId: creator.id, kind: "WELCOME", month: "2026-10", salesCents: 0, products: 1 } });
+    await prisma.kitGrant.create({ data: { brandId: brand.id, creatorId: creator.id, month: "2026-10", salesCents: 100_000, products: 1 } });
   });
 });

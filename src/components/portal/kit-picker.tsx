@@ -6,11 +6,12 @@ import { chooseKitAction } from "@/app/portal/[marca]/envios/actions";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 
-/** Kit mensal (D-KIT): a creator escolhe os N suplementos que ganhou pelas vendas do mês. */
+/** Kit mensal (D-KIT) ou de boas-vindas (D-WELCOMEKIT): a creator escolhe os N suplementos que ganhou. */
 export function KitPicker({
   marca,
   kit,
   monthLabel,
+  welcome = false,
   products,
   hasAddress,
   viewOnly,
@@ -18,6 +19,7 @@ export function KitPicker({
   marca: string;
   kit: { id: string; products: number };
   monthLabel: string;
+  welcome?: boolean;
   products: { id: string; title: string }[];
   hasAddress: boolean;
   viewOnly: boolean;
@@ -32,11 +34,15 @@ export function KitPicker({
   return (
     <section className={`${ui.card} ring-1 ring-brand/30`}>
       <div className="flex flex-col gap-1">
-        <h2 className={ui.h2}><Gift className="size-4 text-brand dark:text-brand-2" /> Você ganhou {kit.products} {plural(kit.products)}!</h2>
-        <p className={ui.muted}>Pelas suas vendas de {monthLabel}. Escolha os produtos e a equipe prepara o envio para o seu endereço.</p>
+        <h2 className={ui.h2}>
+          <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
+        </h2>
+        <p className={ui.muted}>
+          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} Escolha os produtos e a equipe prepara o envio para o seu endereço.
+        </p>
       </div>
       {!hasAddress ? (
-        <p className={ui.hint}>Cadastre o endereço completo acima para escolher o kit.</p>
+        <p className={ui.hint}>Cadastre o endereço completo logo abaixo para escolher o kit.</p>
       ) : (
         <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="marca" value={marca} />

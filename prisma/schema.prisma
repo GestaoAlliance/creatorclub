@@ -912,6 +912,8 @@ model ContractTemplate {
   months          Int
   /// D-SIGNCONTRACT: qual texto de contrato esta versão usa (INFLUENCER, PRESCRITOR ou UGC).
   documentKind    String   @default("INFLUENCER")
+  /// D-WELCOMEKIT: suplementos do início da parceria (escolhidos no portal depois de assinar); 0 = sem kit.
+  welcomeProducts Int      @default(0)
   createdAt       DateTime @default(now())
 
   brand      Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
@@ -933,7 +935,9 @@ model KitGrant {
   id         String    @id @default(uuid())
   brandId    String
   creatorId  String
-  month      String // AAAA-MM das vendas
+  /// MONTHLY = kit do mês pelas vendas (D-KIT); WELCOME = kit de boas-vindas do contrato, ao assinar (D-WELCOMEKIT).
+  kind       String    @default("MONTHLY")
+  month      String // AAAA-MM das vendas (boas-vindas: mês da assinatura)
   salesCents Int
   products   Int
   status     KitStatus @default(PENDING)
@@ -945,7 +949,7 @@ model KitGrant {
   creator  Creator   @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
 
-  @@unique([creatorId, month])
+  @@unique([creatorId, kind, month])
   @@index([brandId, status])
 }
 

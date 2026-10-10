@@ -22,7 +22,8 @@ import { isValidCpf, maskCpf } from "@/lib/terms/terms";
  * portal depois de assinar o contrato da versão escolhida na aprovação. O texto do tipo (influencer, prescritor, UGC)
  * é preenchido com os dados dela; ela confere nome, CPF, endereço e, se tiver, CNPJ e razão social, e assina. Fica
  * guardado o texto exatamente como foi assinado (com hash), nome, CPF, data, IP e navegador. Assinar marca
- * "contrato assinado" na ficha e, se estiverem vazios, o início (data da assinatura) e o fim do contrato.
+ * "contrato assinado" na ficha e, se estiverem vazios, o início (data da assinatura) e o fim do contrato, e libera o
+ * kit de boas-vindas da versão do contrato (D-WELCOMEKIT), que ela escolhe em Envios.
  */
 
 export class ContractSignError extends Error {}
@@ -146,7 +147,11 @@ export async function signContract(
   const pending = await pendingContract(prisma, ctx, now);
   if (!pending) throw new ContractSignError("Não há contrato para assinar.");
   if (pending.documentId !== input.documentId) throw new ContractSignError("O contrato foi atualizado. Recarregue a página e leia a versão nova.");
-  const account = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { brandId: true, contractStart: true, contractEnd: true, account: { select: { id: true, cpf: true } } } });
+  const account = await prisma.creator.findUniqueOrThrow({
+    where: { id: ctx.creatorId },
+    select: { brandId: true, contractStart: true, contractEnd: true, account: { select: { id: true, cpf: true } }, contractTemplate: { select: { welcomeProducts: true } } },
+  });
+  const welcome = account.contractTemplate?.welcomeProducts ?? 0;
   const saved = account.account.cpf?.replace(/\D/g, "") || null;
   if (saved && saved !== cpf) throw new ContractSignError("Este CPF é diferente do que está no seu cadastro. Fale com a equipe.");
 
@@ -186,6 +191,11 @@ export async function signContract(
         },
       });
       if (!saved) await tx.creatorAccount.update({ where: { id: account.account.id }, data: { cpf } });
+      // D-WELCOMEKIT: o kit do início da parceria fica para ela escolher em Envios; a escolha vai para a fila do Envio.
+      if (welcome > 0)
+        await tx.kitGrant.create({
+          data: { brandId: account.brandId, creatorId: ctx.creatorId, kind: "WELCOME", month: dayKey(now).slice(0, 7), salesCents: 0, products: welcome },
+        });
       await tx.auditLog.create({
         data: {
           brandId: account.brandId,
@@ -194,7 +204,7 @@ export async function signContract(
           action: "contract.signed",
           entity: "ContractSignature",
           entityId: s.id,
-          after: { documentId: pending.documentId, templateId: pending.templateId, bodySha256 },
+          after: { documentId: pending.documentId, templateId: pending.templateId, bodySha256, welcomeKit: welcome },
         },
       });
     });
