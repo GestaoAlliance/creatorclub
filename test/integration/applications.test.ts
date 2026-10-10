@@ -2,10 +2,20 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { approveApplication, listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
+import { COUPON_CREATE_MUTATION } from "@/lib/coupons/create";
+import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
+
+/** Shopify falso: nunca toca a loja real (D-REALSTORE). Grava as chamadas e responde o que o teste mandar. */
+function fakeShopify(reply: () => unknown = () => ({ discountCodeBasicCreate: { codeDiscountNode: { id: "gid://shopify/DiscountCodeNode/9" }, userErrors: [] } })) {
+  const calls: { query: string; variables: unknown }[] = [];
+  const client = { shop: "x", graphql: async (query: string, variables: unknown) => (calls.push({ query, variables }), reply()) } as unknown as ShopifyClient;
+  return { clientFor: async () => client, calls };
+}
+const shop = fakeShopify();
 
 async function userWith(role: "GESTAO" | "PAGAMENTO" | "ENVIO", brandId: string) {
   const id = randomUUID();
@@ -42,7 +52,7 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     expect(list.rows.find((r) => r.id === first.id)).toMatchObject({ couponProposal: "MARIA", categoryProposal: "INFLUENCER", cpf: "529.982.247-25", canDecide: true });
 
     const code = letters(6);
-    const r = await approveApplication(prisma, gestao, { applicationId: first.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500 });
+    const r = await approveApplication(prisma, gestao, { applicationId: first.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor);
     const creator = await prisma.creator.findUniqueOrThrow({
       where: { id: r.creatorId },
       include: { account: true, couponAssignments: { include: { coupon: true } }, commissionPolicies: true },
@@ -50,11 +60,16 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     expect(creator).toMatchObject({ status: "ACTIVE", categories: ["INFLUENCER"], source: "hunter_form", account: { email, cpf: "52998224725", pixKey: "maria@pix.com" } });
     expect(creator.withdrawalsUnlockedAt).not.toBeNull();
     expect(creator.reviewedAt).not.toBeNull();
-    expect(creator.couponAssignments[0]).toMatchObject({ coupon: { code, kind: "CREATOR", discountBps: 500 } });
+    expect(creator.couponAssignments[0]).toMatchObject({ coupon: { code, kind: "CREATOR", discountBps: 500, shopifyId: "gid://shopify/DiscountCodeNode/9" } });
+    // F3: o cupom foi criado na Shopify (falsa), combinável e com o desconto escolhido.
+    expect(shop.calls.at(-1)).toMatchObject({
+      query: COUPON_CREATE_MUTATION,
+      variables: { input: { code, customerGets: { value: { percentage: 0.05 } }, combinesWith: { orderDiscounts: true, productDiscounts: true, shippingDiscounts: true } } },
+    });
     expect(creator.couponAssignments[0]!.confirmedAt).not.toBeNull();
     expect(creator.commissionPolicies[0]).toMatchObject({ rateBps: 1500 });
     expect(creator.commissionPolicies[0]!.confirmedAt).not.toBeNull();
-    await expect(approveApplication(prisma, gestao, { applicationId: first.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 })).rejects.toThrow(/já foi decidida/);
+    await expect(approveApplication(prisma, gestao, { applicationId: first.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/já foi decidida/);
     expect(await prisma.auditLog.count({ where: { action: "application.approved", entityId: first.id } })).toBe(1);
   });
 
@@ -64,14 +79,14 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     const a = await received(brand.slug);
     const existing = letters(6);
     await prisma.coupon.create({ data: { brandId: brand.id, code: existing, kind: "PROMO", classifiedAt: new Date(), classifiedById: "x" } });
-    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: existing, category: "INFLUENCER", rateBps: 1500, discountBps: 500 })).rejects.toThrow(/já existe/);
-    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: "AB12", category: "INFLUENCER", rateBps: 1500, discountBps: 500 })).rejects.toThrow(/só letras/);
-    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: "x" })).rejects.toThrow(/e-mail/);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: existing, category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/já existe/);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: "AB12", category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/só letras/);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: "x" }, shop.clientFor)).rejects.toThrow(/e-mail/);
 
     const pagamento = await userWith("PAGAMENTO", brand.id);
     const seen = (await listApplications(prisma, pagamento)).rows;
     expect(seen.find((r) => r.id === a.id)?.canDecide).toBe(false);
-    await expect(approveApplication(prisma, pagamento, { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 })).rejects.toThrow(/permissão/);
+    await expect(approveApplication(prisma, pagamento, { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/permissão/);
     await expect(listApplications(prisma, await userWith("ENVIO", brand.id))).rejects.toThrow(/permissão/);
 
     await rejectApplication(prisma, gestao, a.id, "perfil fora do nicho");
@@ -81,8 +96,33 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     const email = `${randomUUID()}@exemplo.com`;
     const b1 = await received(brand.slug, email);
     const b2 = await received(brand.slug, email);
-    await approveApplication(prisma, gestao, { applicationId: b1.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 });
-    await expect(approveApplication(prisma, gestao, { applicationId: b2.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 })).rejects.toThrow(/já é creator/);
+    await approveApplication(prisma, gestao, { applicationId: b1.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor);
+    await expect(approveApplication(prisma, gestao, { applicationId: b2.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/já é creator/);
+  });
+
+  it("F3: Shopify recusa → nada é gravado e a candidata segue Nova; conferências antes de ir à Shopify", async () => {
+    const { brand } = await seedBrand(prisma);
+    const gestao = await userWith("GESTAO", brand.id);
+    const email = `${randomUUID()}@exemplo.com`;
+    const a = await received(brand.slug, email);
+    const refuses = fakeShopify(() => ({ discountCodeBasicCreate: { codeDiscountNode: null, userErrors: [{ field: ["code"], code: "TAKEN", message: "Code must be unique" }] } }));
+    const code = letters(6);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: code, category: "UGC", rateBps: 0, discountBps: 500 }, refuses.clientFor))
+      .rejects.toThrow(/já existe na loja.*Nada foi gravado/);
+    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ status: "NEW", creatorId: null });
+    expect(await prisma.coupon.count({ where: { brandId: brand.id, code } })).toBe(0);
+    expect(await prisma.creatorAccount.count({ where: { email } })).toBe(0);
+
+    // Desconto fora de 0,01%–50% e cupom repetido no banco: recusa sem chamar a Shopify.
+    const spy = fakeShopify();
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: letters(6), category: "UGC", rateBps: 0, discountBps: 5100 }, spy.clientFor)).rejects.toThrow(/50%/);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: letters(6), category: "UGC", rateBps: 0, discountBps: 0 }, spy.clientFor)).rejects.toThrow(/0,01%/);
+    expect(spy.calls).toHaveLength(0);
+
+    // Com a Shopify aceitando, a mesma candidata é aprovada (UGC com a taxa que a equipe escolheu).
+    const r = await approveApplication(prisma, gestao, { applicationId: a.id, couponCode: code, category: "UGC", rateBps: 0, discountBps: 1000 }, spy.clientFor);
+    expect(spy.calls).toHaveLength(1);
+    expect(await prisma.commissionPolicy.findFirstOrThrow({ where: { creatorId: r.creatorId } })).toMatchObject({ rateBps: 0 });
   });
 
   it("trava do banco: decisão coerente e nome preenchido", async () => {
