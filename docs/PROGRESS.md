@@ -7,8 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** só pendências de pessoas. Responsável: permissões de cupom na
-  Shopify e reconectar; pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
+- **Próxima tarefa:** só pendências de pessoas. Responsável: pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -197,6 +196,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-85 — 2026-10-10 — Permissões novas da Shopify e recuperação de chave cancelada
+- **Feito (responsável):** versão `creator-club-v2-2` do app com `read_orders`, `read_all_orders`, `read_discounts`,
+  `write_discounts`, `read_products`, `read_draft_orders`, `write_draft_orders` e `read_inventory`; app reinstalado e
+  loja reconectada em `/admin/sync` (5 webhooks cadastrados de novo).
+- **Achado:** a reinstalação cancelou a chave de acesso guardada em memória (até 24 h) e a reconciliação passou a dar
+  401 sem se recuperar. **Correção:** `refreshingClient` (em 401 esquece a chave, pede outra e tenta de novo uma vez).
+  E o aviso de permissões entende que `write_x` já inclui `read_x` (o Shopify não lista o `read_x` nesse caso).
+- **Verificado:** 2 unitários novos (recupera de 401; não entra em laço se a chave nova também for recusada).
+  `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-84 — 2026-10-10 — Backup ligado (P1)
 - **Feito:** segredos `BACKUP_PASSPHRASE`, `BACKUP_OLD_DATABASE_URL` e `BACKUP_DATABASE_URL` no GitHub (pelo
