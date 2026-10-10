@@ -7,9 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** resolver as pendências com o responsável (segredos do backup e cópia do app antigo; permissões de
-  cupom na Shopify; início do contrato das UGC; pergunta do hunter nos formulários; convidar os hunters). P2 espera o
-  domínio do P3 e a conta do Resend.
+- **Próxima tarefa:** só pendências de pessoas. Responsável: pergunta do hunter nos formulários e convite dos hunters; início do contrato das UGC; domínio
+  (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
+  antigas (I7).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
@@ -29,10 +29,11 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
   Fonte: consultas de leitura rodadas por quem tem acesso (D-E0SRC). Resultado em `docs/CONTEXTO.md`.
   Backup: nenhum (plano Free).
 - [ ] **E0.2** Lista de saques já pagos a cada creator, por qualquer meio. *Depende do Pagamento (Juci/Pâmela).*
-- [ ] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
+- [x] **E0.3** Shopify da Botanika: scopes concedidos ao app atual, `taxesIncluded`, volume de pedidos com cupom.
   Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
   `taxesIncluded = false` lido no Shopify em 2026-10-09 (D-TAX). Scopes do app novo: D-SHOPAPP.
-  Falta: volume de pedidos com cupom (levantado na E3.5).
+  Volume (2026-10-10, pedidos pagos, mês do pagamento em São Paulo): jul 880 pagos, 643 com cupom, 204 de creator
+  (23%, R$ 65,3 mil); ago 1.307 / 919 / 338 (26%, R$ 112,5 mil); set 1.587 / 896 / 291 (18%, R$ 103,0 mil).
 - [x] **E0.4** Formulário de cadastro: é o "Formulário creators - Hunter" (Google Forms) que a Ana manda; ligado ao painel em CP-59 (D-ONBOARD).
 
 > E0 foi definida no plano como primeira etapa, mas ficou fora desta fila até 2026-10-09 (corrigido).
@@ -159,9 +160,8 @@ Bônus por metas (benefícios desbloqueados), gamificação, competições de ve
 já existem antes de desenhar.
 
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
-- [~] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions, pronta (CP-82). Para ligar: o
-  responsável põe `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE` e `BACKUP_OLD_DATABASE_URL` nos segredos do GitHub; rodar
-  uma vez à mão para cada alvo e testar a restauração de uma cópia real.
+- [x] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions (CP-82), ligada em 2026-10-10
+  (CP-84): primeira cópia do banco novo (74 tabelas com dados) e cópia única do app antigo, as duas com sucesso.
 - [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
   Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
   (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
@@ -196,6 +196,23 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-85 — 2026-10-10 — Permissões novas da Shopify e recuperação de chave cancelada
+- **Feito (responsável):** versão `creator-club-v2-2` do app com `read_orders`, `read_all_orders`, `read_discounts`,
+  `write_discounts`, `read_products`, `read_draft_orders`, `write_draft_orders` e `read_inventory`; app reinstalado e
+  loja reconectada em `/admin/sync` (5 webhooks cadastrados de novo).
+- **Achado:** a reinstalação cancelou a chave de acesso guardada em memória (até 24 h) e a reconciliação passou a dar
+  401 sem se recuperar. **Correção:** `refreshingClient` (em 401 esquece a chave, pede outra e tenta de novo uma vez).
+  E o aviso de permissões entende que `write_x` já inclui `read_x` (o Shopify não lista o `read_x` nesse caso).
+- **Verificado:** 2 unitários novos (recupera de 401; não entra em laço se a chave nova também for recusada).
+  `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
+
+### CP-84 — 2026-10-10 — Backup ligado (P1)
+- **Feito:** segredos `BACKUP_PASSPHRASE`, `BACKUP_OLD_DATABASE_URL` e `BACKUP_DATABASE_URL` no GitHub (pelo
+  responsável). No banco novo, usuário `backup_reader` só de leitura (`pg_read_all_data` + `BYPASSRLS`; conferido: lê
+  dados, logins e Storage; não insere, altera, apaga nem cria), para não usar a senha principal. Primeiras cópias:
+  app antigo (execução 38074439007) e banco novo (execução 38074894461, 74 tabelas com dados, 1,2 MB cifrado).
+- **Falta (responsável):** baixar a cópia do app antigo e guardar no Drive da empresa (o artefato expira em 08/01/2027).
 
 ### CP-83 — 2026-10-10 — Conferência de setembro contra o Shopify (E5.5) e rede de segurança da comissão
 - **Feito:** as 10 creators com mais pedidos pagos em setembro (fuso de São Paulo) conferidas pedido a pedido contra a

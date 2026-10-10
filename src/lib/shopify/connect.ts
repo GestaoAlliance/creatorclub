@@ -28,7 +28,8 @@ export const SCOPE_PURPOSE: Record<string, string> = {
 
 export function missingRecommendedScopes(scopes: string | null | undefined): string[] {
   const have = (scopes ?? "").split(",").map((s) => s.trim());
-  return RECOMMENDED_SCOPES.filter((s) => !have.includes(s));
+  // O Shopify não lista read_x quando o app tem write_x: escrever já inclui ler.
+  return RECOMMENDED_SCOPES.filter((s) => !have.includes(s) && !(s.startsWith("read_") && have.includes(`write_${s.slice(5)}`)));
 }
 
 const TOPIC_ENUM: Record<string, string> = {

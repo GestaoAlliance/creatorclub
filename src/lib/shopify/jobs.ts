@@ -1,8 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { ClaimedJob, JobHandler } from "@/lib/jobs/queue";
-import { createShopifyClient, type ShopifyClient } from "./client";
+import { createShopifyClient, ShopifyError, type ShopifyClient } from "./client";
 import { loadShopifyConnection } from "./credentials";
-import { accessTokenFor } from "./token";
+import { accessTokenFor, forgetAccessToken } from "./token";
 import { settleOrder } from "@/lib/commission/ledger";
 import { fetchOrder, processOrder, type ProcessOrderResult } from "./orders";
 
@@ -14,9 +14,38 @@ export type ClientFactory = (prisma: PrismaClient, brandId: string) => Promise<S
 export const defaultClientFactory: ClientFactory = async (prisma, brandId) => {
   const conn = await loadShopifyConnection(prisma, brandId);
   if (!conn) throw new Error("Marca sem Shopify conectado.");
-  const accessToken = await accessTokenFor(brandId, conn);
-  return createShopifyClient({ shop: conn.shop, accessToken, apiVersion: conn.apiVersion });
+  return refreshingClient(brandId, conn);
 };
+
+/**
+ * Cliente que se recupera de chave cancelada: a chave fica em memória por até 24 h, mas o Shopify a cancela quando o
+ * app é reinstalado. Em 401, esquece a chave, pede uma nova e tenta de novo uma vez.
+ */
+export async function refreshingClient(
+  key: string,
+  conn: { shop: string; clientId: string; clientSecret: string; apiVersion?: string },
+  deps: { fetch?: typeof fetch } = {},
+): Promise<ShopifyClient> {
+  const make = async () =>
+    createShopifyClient({
+      shop: conn.shop,
+      accessToken: await accessTokenFor(key, conn, deps),
+      ...(conn.apiVersion ? { apiVersion: conn.apiVersion } : {}),
+      ...(deps.fetch ? { fetch: deps.fetch } : {}),
+    });
+  let client = await make();
+  const graphql = (async (query: string, variables?: Record<string, unknown>) => {
+    try {
+      return await client.graphql(query, variables);
+    } catch (error) {
+      if (!(error instanceof ShopifyError) || error.status !== 401) throw error;
+      forgetAccessToken(key);
+      client = await make();
+      return client.graphql(query, variables);
+    }
+  }) as ShopifyClient["graphql"];
+  return { ...client, graphql };
+}
 
 export function orderSyncHandler(prisma: PrismaClient, clientFor: ClientFactory = defaultClientFactory): JobHandler {
   return async (job: ClaimedJob) => {

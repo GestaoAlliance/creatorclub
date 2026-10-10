@@ -17,7 +17,7 @@ Cópia que precisa durar mais (ex.: a do app antigo): baixar e guardar no Drive 
 
 | Segredo | O que é |
 |---|---|
-| `BACKUP_DATABASE_URL` | Conexão do banco novo, *session pooler* (porta 5432), a mesma do `DIRECT_URL` da Vercel |
+| `BACKUP_DATABASE_URL` | Conexão do banco novo pelo *session pooler* (porta 5432) com o usuário **`backup_reader`**, que só lê (membro de `pg_read_all_data`, `BYPASSRLS` para copiar tabelas com RLS, sem escrita; criado em 2026-10-10). A senha dele fica só no segredo do GitHub. Para trocar: `ALTER ROLE backup_reader PASSWORD '...'` e atualizar o segredo |
 | `BACKUP_OLD_DATABASE_URL` | Conexão do `creator-hub` (Supabase → Connect → Session pooler) |
 | `BACKUP_PASSPHRASE` | Senha da cifra, 32 caracteres ou mais (`openssl rand -base64 36`) |
 

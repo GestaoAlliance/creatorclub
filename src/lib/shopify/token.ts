@@ -60,6 +60,11 @@ export async function accessTokenFor(
   return fresh.accessToken;
 }
 
+/** Esquece a chave da marca (ex.: o Shopify recusou com 401 porque o app foi reinstalado). */
+export function forgetAccessToken(key: string) {
+  cache.delete(key);
+}
+
 export function clearAccessTokenCache() {
   cache.clear();
 }

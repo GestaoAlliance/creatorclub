@@ -12,6 +12,8 @@ export class ShopifyError extends Error {
   constructor(
     message: string,
     readonly retryable: boolean,
+    /** Status HTTP quando a recusa veio do Shopify (ex.: 401 = chave de acesso cancelada). */
+    readonly status?: number,
   ) {
     super(message);
   }
@@ -81,7 +83,7 @@ export function createShopifyClient(opts: ShopifyClientOptions) {
         continue;
       }
       if (res.status === 401 || res.status === 403) {
-        throw new ShopifyError(`Shopify recusou o acesso (${res.status}): token inválido ou sem permissão.`, false);
+        throw new ShopifyError(`Shopify recusou o acesso (${res.status}): token inválido ou sem permissão.`, false, res.status);
       }
       if (!res.ok) throw new ShopifyError(`Shopify respondeu ${res.status}.`, false);
 

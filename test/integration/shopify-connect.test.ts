@@ -74,6 +74,7 @@ describe("conectar loja (banco real)", () => {
     expect(r.missingRecommended).toEqual(["read_discounts", "write_discounts"]);
     expect(missingRecommendedScopes("read_orders, read_all_orders,read_discounts,write_discounts")).toEqual([]);
     expect(missingRecommendedScopes(null)).toEqual(["read_all_orders", "read_discounts", "write_discounts"]);
+    expect(missingRecommendedScopes("read_orders,read_all_orders,write_discounts")).toEqual([]);
     expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid-salvo", scopes: "read_orders,read_all_orders" });
 
     const { brand: empty } = await seedBrand(prisma);
