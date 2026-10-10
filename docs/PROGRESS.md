@@ -197,6 +197,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-86 — 2026-10-10 — Ficha da creator organizada para o dia a dia
+- **Decidido:** D-FICHA (pedido do responsável: tirar os blocos que não servem e organizar para o uso diário).
+- **Feito:** `view.tsx` em duas colunas independentes; blocos sem uso para quem é só UGC escondidos; `ChecklistForm`
+  com `noPayout` (campo oculto mantém o "Recebe como" guardado); cartão "Vídeos (UGC)" recebe o bloco da Central com o
+  link da pasta; "Taxa de comissão" vazia diz "Nenhuma taxa definida".
+- **Verificado:** capturas de UGC e influencer (computador e celular) sem erros no console. `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
+
 ### CP-85 — 2026-10-10 — Permissões novas da Shopify e recuperação de chave cancelada
 - **Feito (responsável):** versão `creator-club-v2-2` do app com `read_orders`, `read_all_orders`, `read_discounts`,
   `write_discounts`, `read_products`, `read_draft_orders`, `write_draft_orders` e `read_inventory`; app reinstalado e

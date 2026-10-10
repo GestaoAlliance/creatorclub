@@ -75,7 +75,8 @@ const CHECK_ITEMS: { name: keyof Checklist; label: string }[] = [
 const tri = (v: unknown) => (v === true ? "sim" : v === false ? "nao" : "");
 
 /** Contrato e checklist (D-CHECKLIST): fim vazio = início + 6 meses (UGC 3). */
-export function ChecklistForm({ creatorId, c, templates }: { creatorId: string; c: Checklist; templates: { id: string; name: string }[] }) {
+/** `noPayout`: só UGC (sem comissão nem saque) não vê "Recebe como"; o valor guardado segue igual (campo oculto). */
+export function ChecklistForm({ creatorId, c, templates, noPayout = false }: { creatorId: string; c: Checklist; templates: { id: string; name: string }[]; noPayout?: boolean }) {
   const [state, action, pending] = useActionState(checklistAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -89,13 +90,17 @@ export function ChecklistForm({ creatorId, c, templates }: { creatorId: string; 
           ))}
         </select>
       </label>
-      <label className={ui.label}>
-        Recebe como
-        <select name="receivesAsIndividual" defaultValue={c.receivesAsIndividual ? "pf" : "pj"} className={ui.input}>
-          <option value="pj">Empresa (CNPJ, com nota fiscal)</option>
-          <option value="pf">Pessoa física (CPF, com recibo no portal)</option>
-        </select>
-      </label>
+      {noPayout ? (
+        <input type="hidden" name="receivesAsIndividual" value={c.receivesAsIndividual ? "pf" : "pj"} />
+      ) : (
+        <label className={ui.label}>
+          Recebe como
+          <select name="receivesAsIndividual" defaultValue={c.receivesAsIndividual ? "pf" : "pj"} className={ui.input}>
+            <option value="pj">Empresa (CNPJ, com nota fiscal)</option>
+            <option value="pf">Pessoa física (CPF, com recibo no portal)</option>
+          </select>
+        </label>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <label className={ui.label}>
           Início

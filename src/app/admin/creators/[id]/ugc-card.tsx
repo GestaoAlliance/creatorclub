@@ -7,12 +7,14 @@ import { UgcGoalForm, UgcVideoForm, UgcVideoRemoveButton } from "./forms";
 const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
 
 /** Ficha → Vídeos (UGC) (D-UGCVIDEOS): contador do ciclo (período do contrato), vídeos registrados, registrar e meta. */
-export function UgcVideosCard({ creatorId, status, canEdit, cycle, videos }: {
+export function UgcVideosCard({ creatorId, status, canEdit, cycle, videos, legacy }: {
   creatorId: string;
   status: string;
   canEdit: boolean;
   cycle: UgcCycle;
   videos: { id: string; day: string; url: string; product: string | null }[];
+  /** O que veio da planilha Central (D-CENTRAL): situação, pedido e a pasta dos vídeos. */
+  legacy?: { folderUrl: string | null; videoStatus: string | null; order: string | null } | null;
 }) {
   return (
     <Card title="Vídeos (UGC)" icon={<Clapperboard className="size-4" />}>
@@ -48,6 +50,16 @@ export function UgcVideosCard({ creatorId, status, canEdit, cycle, videos }: {
             </li>
           ))}
         </ul>
+      )}
+      {legacy && (legacy.folderUrl || legacy.videoStatus || legacy.order) && (
+        <div className={`${ui.inset} grid gap-1 text-sm`}>
+          {legacy.folderUrl && <a href={legacy.folderUrl} target="_blank" rel="noreferrer" className={`${ui.link} font-medium`}>Abrir a pasta dos vídeos no Drive</a>}
+          {(legacy.videoStatus || legacy.order) && (
+            <p className={ui.hint}>
+              Da planilha Central: {[legacy.videoStatus, legacy.order && `pedido: ${legacy.order}`].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        </div>
       )}
       {canEdit && status !== "DEACTIVATED" && <UgcVideoForm creatorId={creatorId} today={dayKey(new Date())} />}
       {canEdit && <UgcGoalForm creatorId={creatorId} goal={cycle.goal} />}
