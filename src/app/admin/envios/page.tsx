@@ -5,6 +5,7 @@ import { ui } from "@/components/ui/styles";
 import { redirect } from "next/navigation";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import type { ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, type ShipmentStatusValue } from "@/lib/shipments/shipments";
@@ -25,9 +26,11 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   const status = STATUSES.find((s) => s === situacao);
   const manage = brandsWith(actor.grants, "shipping.manage");
   const canManage = manage === "ALL" || manage.length > 0;
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
   const [shipments, form] = await Promise.all([
-    staffShipments(db(), actor, status ? { status } : {}),
-    canManage ? shipmentFormData(db(), actor) : null,
+    staffShipments(db(), inBrand, status ? { status } : {}),
+    canManage ? shipmentFormData(db(), inBrand) : null,
   ]);
 
   return (

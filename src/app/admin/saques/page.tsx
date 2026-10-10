@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { formatBRL } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { WITHDRAWAL_STATUS_LABEL } from "@/lib/portal/withdrawals";
 import { withdrawalQueue } from "@/lib/withdrawals/decide";
@@ -20,7 +21,9 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
   const { ver } = await searchParams;
   const decided = ver === "decididos";
-  const rows = await withdrawalQueue(db(), actor, decided ? "DECIDED" : "REQUESTED");
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
+  const rows = await withdrawalQueue(db(), inBrand, decided ? "DECIDED" : "REQUESTED");
   const total = rows.reduce((s, r) => s + r.amountCents, 0);
 
   return (

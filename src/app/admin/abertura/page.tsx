@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { openingList } from "@/lib/withdrawals/opening";
 import { PageHeader } from "@/components/ui/page";
@@ -14,7 +15,9 @@ export default async function OpeningPage() {
   if (!actor) redirect("/entrar?next=/admin/abertura");
   const allowed = brandsWith(actor.grants, "withdrawals.manage");
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
-  const rows = await openingList(db(), actor);
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
+  const rows = await openingList(db(), inBrand);
   return (
     <>
       <PageHeader title="Saldo de abertura">
