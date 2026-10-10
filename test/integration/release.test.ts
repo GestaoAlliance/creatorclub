@@ -70,6 +70,31 @@ describe("fechamento mensal (D-CONTRACT, banco real)", () => {
     expect((await releaseProgress(prisma, a.creator.id, now)).minCents).toBe(100_000);
   });
 
+  it("D-CONTRACTVER: o mínimo do modelo assinado vale; modelo sem comissão não libera", async () => {
+    const a = await seedBrand(prisma);
+    const t1000 = await prisma.contractTemplate.create({ data: { brandId: a.brand.id, key: "inf-1000", name: "Influencer R$ 1.000", releaseMinCents: 100_000, months: 6 } });
+    await prisma.creator.update({ where: { id: a.creator.id }, data: { contractTemplateId: t1000.id } });
+    await sale(a, "2026-09-10T12:00:00Z", 80_000);
+    const now = T("2026-10-01T08:00:00Z");
+    expect(await close(a.brand.id, now)).toBe(0); // marca diz R$ 500, mas o contrato dela diz R$ 1.000
+    expect((await releaseProgress(prisma, a.creator.id, now)).minCents).toBe(100_000);
+
+    const b = await seedBrand(prisma);
+    const permuta = await prisma.contractTemplate.create({ data: { brandId: b.brand.id, key: "ugc", name: "UGC permuta", releaseMinCents: null, months: 3 } });
+    await prisma.creator.update({ where: { id: b.creator.id }, data: { contractTemplateId: permuta.id } });
+    await sale(b, "2026-09-10T12:00:00Z", 80_000);
+    expect(await close(b.brand.id, now)).toBe(0);
+    expect((await releaseProgress(prisma, b.creator.id, now)).minCents).toBeNull();
+  });
+
+  it("trava do modelo de contrato e modelo de outra marca", async () => {
+    const a = await seedBrand(prisma);
+    await expectDbError(prisma.contractTemplate.create({ data: { brandId: a.brand.id, key: "x", name: "x", releaseMinCents: 0, months: 6 } }), /ContractTemplate_values/);
+    const other = await seedBrand(prisma);
+    const t = await prisma.contractTemplate.create({ data: { brandId: other.brand.id, key: "y", name: "y", releaseMinCents: 100_000, months: 6 } });
+    await expectDbError(prisma.creator.update({ where: { id: a.creator.id }, data: { contractTemplateId: t.id } }), /Creator_contractTemplateId_brandId_fkey/);
+  });
+
   it("travas do banco: mês no formato, liberação só com o mínimo, somente inserção", async () => {
     const a = await seedBrand(prisma);
     const base = { brandId: a.brand.id, creatorId: a.creator.id, salesCents: 50_000, minCents: 50_000 };

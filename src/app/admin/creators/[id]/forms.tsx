@@ -60,6 +60,7 @@ type Checklist = {
   inGroup: boolean | null;
   tagged: boolean | null;
   note: string | null;
+  templateId: string | null;
 };
 
 const CHECK_ITEMS: { name: keyof Checklist; label: string }[] = [
@@ -73,11 +74,20 @@ const CHECK_ITEMS: { name: keyof Checklist; label: string }[] = [
 const tri = (v: unknown) => (v === true ? "sim" : v === false ? "nao" : "");
 
 /** Contrato e checklist (D-CHECKLIST): fim vazio = início + 6 meses (UGC 3). */
-export function ChecklistForm({ creatorId, c }: { creatorId: string; c: Checklist }) {
+export function ChecklistForm({ creatorId, c, templates }: { creatorId: string; c: Checklist; templates: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(checklistAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="creatorId" value={creatorId} />
+      <label className={ui.label}>
+        Modelo de contrato assinado
+        <select name="templateId" defaultValue={c.templateId ?? ""} className={ui.input}>
+          <option value="">— (padrão da marca)</option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      </label>
       <div className="grid grid-cols-2 gap-3">
         <label className={ui.label}>
           Início

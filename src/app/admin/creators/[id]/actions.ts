@@ -73,6 +73,7 @@ export async function checklistAction(_p: State, form: FormData): Promise<State>
         inGroup: triState(form.get("inGroup")),
         tagged: triState(form.get("tagged")),
         note: String(form.get("note") ?? ""),
+        templateId: String(form.get("templateId") ?? "") || null,
       });
       return { ok: r.end ? `Salvo. Contrato até ${r.end.split("-").reverse().join("/")}.` : "Salvo." };
     },

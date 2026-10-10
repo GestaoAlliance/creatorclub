@@ -27,7 +27,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
     ? WITHDRAWAL_BLOCK_TEXT[block]
         .replace("{start}", String(policy.windowStartDay))
         .replace("{end}", String(policy.windowEndDay))
-        .replace("{min}", formatBRL(tab.release.minCents))
+        .replace("{min}", tab.release.minCents === null ? "o mínimo do contrato" : formatBRL(tab.release.minCents))
     : null;
   const st = tab.statement;
 
@@ -69,8 +69,9 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
         </div>
         <ReleaseProgressBar r={tab.release} />
         <p className="text-xs text-stone-500">
-          A comissão do mês é liberada no dia 1 do mês seguinte quando suas vendas acumuladas chegam a {formatBRL(tab.release.minCents)}; se não
-          chegarem, elas somam com as do mês seguinte. Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
+          {tab.release.minCents !== null &&
+            `A comissão do mês é liberada no dia 1 do mês seguinte quando suas vendas acumuladas chegam a ${formatBRL(tab.release.minCents)}; se não chegarem, elas somam com as do mês seguinte. `}
+          Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
           liberado, com a nota fiscal em PDF · pagamento por Pix até o dia 15.
         </p>
       </section>

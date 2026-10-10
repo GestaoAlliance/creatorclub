@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** importar as respostas dos formulários (Hunter: rodar `enviarTodas` no script; demais
-  formulários a decidir) e depois o envio sugerido do kit mensal pela faixa de vendas do mês anterior (D-CONTRACT). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** envio sugerido do kit mensal pelas faixas do contrato de cada creator (D-CONTRACT, D-CONTRACTVER);
+  perguntas abertas do inventário do Drive (doc "Inventário do Drive — Creator Club Botanika"). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -172,6 +172,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-66 — 2026-10-10 — Cada creator segue o contrato que assinou
+- **Decidido:** D-CONTRACTVER (cada creator segue a versão de contrato que assinou; quem não tem contrato no Drive
+  segue o modelo de R$ 1.000 até a equipe trocar na ficha; DRANAI, prescritora com contrato de influencer, segue o
+  de influencer). Inventário completo do Drive no doc "Inventário do Drive — Creator Club Botanika".
+- **Feito:** migração `contract_templates` (tabela `ContractTemplate` com RLS e trava `ContractTemplate_values`;
+  5 versões da Botanika: influencer set/26 R$ 1.000, influencer com faixas próprias, influencer out/26 R$ 500,
+  prescritor, UGC permuta sem comissão; `Creator.contractTemplateId`; padrão da marca passa a R$ 1.000; cada creator
+  ligada ao modelo pelo tipo). O fechamento mensal e o progresso usam o mínimo do modelo (sem comissão = não libera).
+  Ficha: "Modelo de contrato assinado" no cartão de contrato.
+- **Falta (produção, depois do deploy):** ligar RAFA ao modelo de faixas próprias e DRANAI ao de influencer.
+- **Verificado:** unitário novo; 3 de integração novos (mínimo do modelo, permuta sem liberação, trava pelo nome,
+  modelo de outra marca); migração × schema sem divergência; dados da migração conferidos num banco local; typecheck.
 
 ### CP-65 — 2026-10-10 — Histórico de envios importado das planilhas
 - **Decidido:** D-SHIPIMPORT (envios com rastreio entram como entregues; data = "último pedido" da Central quando

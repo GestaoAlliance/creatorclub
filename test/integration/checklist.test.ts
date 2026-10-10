@@ -32,6 +32,19 @@ describe("contrato e checklist (D-CHECKLIST, banco real)", () => {
     expect(await updateChecklist(prisma, gestao, a.creator.id, { ...empty, start: "2026-10-01", end: "2026-12-31" })).toEqual({ end: "2026-12-31" });
   });
 
+  it("D-CONTRACTVER: escolhe o modelo de contrato da mesma marca", async () => {
+    const a = await seedBrand(prisma);
+    const gestao = await userWith("GESTAO", a.brand.id);
+    const t = await prisma.contractTemplate.create({ data: { brandId: a.brand.id, key: "inf", name: "Influencer", releaseMinCents: 100_000, months: 6 } });
+    await updateChecklist(prisma, gestao, a.creator.id, { ...empty, templateId: t.id });
+    expect((await creatorProfile(prisma, gestao, a.creator.id)).contract.templateId).toBe(t.id);
+    const other = await seedBrand(prisma);
+    const t2 = await prisma.contractTemplate.create({ data: { brandId: other.brand.id, key: "inf", name: "Outra", releaseMinCents: 100_000, months: 6 } });
+    await expect(updateChecklist(prisma, gestao, a.creator.id, { ...empty, templateId: t2.id })).rejects.toThrow(/Modelo de contrato inválido/);
+    await updateChecklist(prisma, gestao, a.creator.id, { ...empty, templateId: null });
+    expect((await creatorProfile(prisma, gestao, a.creator.id)).contract.templateId).toBeNull();
+  });
+
   it("recusa: sem permissão, data inválida, fim antes do início; trava do banco", async () => {
     const a = await seedBrand(prisma);
     await expect(updateChecklist(prisma, await userWith("PAGAMENTO", a.brand.id), a.creator.id, empty)).rejects.toThrow(/permissão/);

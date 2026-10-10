@@ -73,6 +73,7 @@ model Brand {
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
+  contractTemplates  ContractTemplate[]
 }
 
 enum IntegrationKind {
@@ -239,6 +240,8 @@ model Creator {
   reviewedById            String?
   source                  String? // hunter | site | instagram | legacy_import | central
   legacyId                String?
+  /// D-CONTRACTVER: modelo de contrato que a creator assinou (mínimo de vendas, faixas de kit, prazo).
+  contractTemplateId      String?
   /// D-CHECKLIST: contrato (vigência; aviso 30 dias antes e no fim, nunca desliga sozinho) e checklist da Central.
   /// Booleano nulo = não informado.
   contractStart           DateTime?         @db.Date
@@ -268,6 +271,7 @@ model Creator {
   termsAcceptances   TermsAcceptance[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
+  contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -834,4 +838,24 @@ model LegacyPayment {
 
   @@unique([brandId, source, sourceRef])
   @@index([creatorId])
+}
+
+/// D-CONTRACTVER: versão de contrato de uma marca. Cada creator segue a versão que assinou: mínimo de vendas no mês
+/// para liberar a comissão (nulo = sem comissão, ex.: UGC permuta), faixas do kit mensal e prazo.
+model ContractTemplate {
+  id              String   @id @default(uuid())
+  brandId         String
+  key             String // ex.: influencer-2026-09
+  name            String
+  releaseMinCents Int?
+  /// Faixas do kit pelas vendas do mês anterior: [{ fromCents, toCents?, products }], em ordem crescente.
+  kitTiers        Json     @default("[]")
+  months          Int
+  createdAt       DateTime @default(now())
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creators Creator[]
+
+  @@unique([brandId, key])
+  @@unique([id, brandId])
 }

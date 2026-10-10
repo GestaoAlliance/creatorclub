@@ -20,6 +20,8 @@ export type ChecklistInput = {
   inGroup: boolean | null;
   tagged: boolean | null;
   note: string | null;
+  /** D-CONTRACTVER: modelo de contrato assinado (da mesma marca); `undefined` = não mexe. */
+  templateId?: string | null;
 };
 
 const toDate = (day: string | null) => (day ? new Date(`${day}T00:00:00Z`) : null);
@@ -33,6 +35,10 @@ export async function updateChecklist(prisma: PrismaClient, actor: Actor | null,
   const end = input.end ?? (input.start ? addMonthsToDay(input.start, contractMonthsFor(creator.categories)) : null);
   if (input.start && end && end <= input.start) throw new ContractError("O fim do contrato precisa ser depois do início.");
   const note = input.note?.trim().replace(/\s+/g, " ").slice(0, 300) || null;
+  if (input.templateId) {
+    const t = await prisma.contractTemplate.findFirst({ where: { id: input.templateId, brandId: creator.brandId }, select: { id: true } });
+    if (!t) throw new ContractError("Modelo de contrato inválido.");
+  }
   const data = {
     contractStart: toDate(input.start),
     contractEnd: toDate(end),
@@ -42,8 +48,10 @@ export async function updateChecklist(prisma: PrismaClient, actor: Actor | null,
     inGroup: input.inGroup,
     tagged: input.tagged,
     checklistNote: note,
+    ...(input.templateId !== undefined ? { contractTemplateId: input.templateId } : {}),
   };
   const before = {
+    contractTemplateId: creator.contractTemplateId,
     contractStart: dayOf(creator.contractStart),
     contractEnd: dayOf(creator.contractEnd),
     contractSigned: creator.contractSigned,

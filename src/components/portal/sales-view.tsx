@@ -111,8 +111,9 @@ export function SalesView({ page, base }: { page: SalesPage; base: string }) {
         )}
       </section>
       <p className="px-1 text-xs text-stone-500">
-        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago. A comissão é liberada
-        no dia 1 do mês seguinte quando as vendas acumuladas chegam a {formatBRL(page.release.minCents)}.
+        Base = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago.
+        {page.release.minCents !== null &&
+          ` A comissão é liberada no dia 1 do mês seguinte quando as vendas acumuladas chegam a ${formatBRL(page.release.minCents)}.`}
       </p>
     </div>
   );

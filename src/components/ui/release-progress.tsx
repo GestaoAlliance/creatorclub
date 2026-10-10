@@ -5,12 +5,14 @@ const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_
 
 /** Frase curta do próximo fechamento (D-CONTRACT): libera no dia 1 se as vendas acumuladas chegarem ao mínimo. */
 export function releaseNote(r: ReleaseProgress): string {
+  if (r.minCents === null) return "contrato sem comissão";
   const missing = r.minCents - r.accumulatedCents;
   return missing <= 0 ? `libera em ${day(r.nextClosingAt)}` : `faltam ${formatBRL(missing)} em vendas para liberar`;
 }
 
 /** Barra "vendas acumuladas X de mínimo" para o fechamento do mês. */
 export function ReleaseProgressBar({ r }: { r: ReleaseProgress }) {
+  if (r.minCents === null) return null;
   const pct = Math.min(100, Math.round((r.accumulatedCents / r.minCents) * 100));
   const reached = r.accumulatedCents >= r.minCents;
   return (
