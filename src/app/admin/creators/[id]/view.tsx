@@ -1,4 +1,4 @@
-import { ArrowLeft, ClipboardCheck, Eye, Mail, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Card, Kpi } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
@@ -6,6 +6,7 @@ import { formatBRL } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
+import type { creatorTermsStatus } from "@/lib/terms/terms";
 import { AdjustForm, ContactForm, InviteButton, RateChangeForm, ReviewedButton, StatusForm } from "./forms";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -14,9 +15,10 @@ const STATUS_BADGE = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: 
 
 type Profile = Awaited<ReturnType<typeof creatorProfile>>;
 type Statement = Awaited<ReturnType<typeof creatorStatement>>;
+type Terms = Awaited<ReturnType<typeof creatorTermsStatus>>;
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, requestId }: { p: Profile; st: Statement | null; requestId: string }) {
+export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st: Statement | null; terms: Terms; requestId: string }) {
   return (
     <>
       <div className="flex flex-col gap-3">
@@ -70,6 +72,19 @@ export function CreatorProfileView({ p, st, requestId }: { p: Profile; st: State
             </>
           )}
         </Card>
+
+        {terms.currentVersion !== null && (
+          <Card title="Termo de aceite" icon={<FileSignature className="size-4" />}>
+            {terms.last?.version === terms.currentVersion ? (
+              <p className={ui.ok}>Aceitou a versão {terms.last.version} em {date(terms.last.at)}.</p>
+            ) : (
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Ainda não aceitou a versão {terms.currentVersion}{terms.last ? ` (aceitou a ${terms.last.version} em ${date(terms.last.at)})` : ""}. O portal pede o aceite no próximo acesso.
+              </p>
+            )}
+            {terms.last && <p className={ui.hint}>Registro: {terms.last.name} · CPF {terms.last.cpf}{terms.last.ip ? ` · IP ${terms.last.ip}` : ""}</p>}
+          </Card>
+        )}
 
         <Card title="Contato" icon={<UserRound className="size-4" />}>
           {p.canEdit ? (

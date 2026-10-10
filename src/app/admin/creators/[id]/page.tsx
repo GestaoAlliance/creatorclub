@@ -4,6 +4,7 @@ import { currentActor } from "@/lib/auth/current";
 import { creatorStatement, StatementError } from "@/lib/commission/statement";
 import { creatorProfile, ProfileError } from "@/lib/creators/profile";
 import { db } from "@/lib/db";
+import { creatorTermsStatus } from "@/lib/terms/terms";
 import { CreatorProfileView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -31,5 +32,6 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     }
   }
 
-  return <CreatorProfileView p={p} st={st} requestId={randomUUID()} />;
+  const terms = await creatorTermsStatus(db(), p.id, p.brandId);
+  return <CreatorProfileView p={p} st={st} terms={terms} requestId={randomUUID()} />;
 }
