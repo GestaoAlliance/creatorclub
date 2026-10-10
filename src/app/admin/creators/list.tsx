@@ -15,12 +15,12 @@ type Row = {
   reviewed: boolean;
   contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null };
   idle: { days: number; idle: boolean; lastSaleDay: string | null } | null;
-  ugcCycle: { count: number; goal: number; status: "NO_CONTRACT" | "OPEN" | "DONE" | "MISSED" } | null;
+  ugcCycle: { count: number; goal: number; outside: number; status: "NO_CONTRACT" | "OPEN" | "DONE" | "MISSED" } | null;
 };
 
 /** Selo dos vídeos da UGC no ciclo (D-UGCVIDEOS). */
 function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
-  if (c.status === "NO_CONTRACT") return <span className={badge.amber}>vídeos: sem datas do contrato</span>;
+  if (c.status === "NO_CONTRACT") return <span className={badge.amber}>{c.outside > 0 ? `${c.outside} ${c.outside === 1 ? "vídeo" : "vídeos"} · ` : "vídeos: "}sem datas do contrato</span>;
   const cls = c.status === "DONE" ? badge.green : c.status === "MISSED" ? badge.red : badge.neutral;
   return <span className={cls}>vídeos {c.count}/{c.goal}{c.status === "MISSED" ? " · meta não batida" : ""}</span>;
 }
