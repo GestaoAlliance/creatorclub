@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** F3 (aprovar com um clique: creator, cupom na Shopify e convite), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
+- **Próxima tarefa:** F4 (contrato: Autentique ou outro, e liberação do painel depois da assinatura), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -176,7 +176,7 @@ já existem antes de desenhar.
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
 - [x] **F2** Organizar as candidatas: busca, filtros, lista compacta e aviso de repetida (D-CANDLIST).
-- [ ] **F3** Aprovar com um clique: creator, cupom na Shopify (D-COUPONCREATE) e convite do portal; recusar com resposta.
+- [x] **F3** Aprovar com um clique: creator, cupom na Shopify (D-COUPONCREATE) e convite do portal; recusar com resposta.
 - [ ] **F4** Contrato (Autentique ou outro) e liberação do painel depois da assinatura.
 
 ### Inventário do Drive (decidido pelo responsável em 2026-10-10; uma por vez, nesta ordem)
@@ -203,6 +203,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-90 — 2026-10-10 — Aprovar candidata com um clique (F3)
+- **Decidido:** D-APPROVE (cupom na Shopify primeiro; se recusar, nada é gravado; comissão sempre escolhida pela
+  equipe; WhatsApp de boas-vindas e de recusa com mensagem pronta, a equipe revisa e envia).
+- **Feito:** `createDiscountInShopify` separado em `src/lib/coupons/create.ts` (usado pela ficha e pela aprovação; loja
+  desconectada vira mensagem clara); `approveApplication` confere tudo, cria o desconto na Shopify e só então grava
+  creator, cupom (com `shopifyId`), dona e taxa; a ação manda o convite por e-mail (D-EMAIL); mensagens e link
+  `wa.me` em `src/domain/whatsapp.ts`; na tela, decidido um lado o outro some e a linha sai da lista no "Concluir".
+- **Verificado:** 2 unitários e 1 de integração novos (Shopify falsa recusa → nada gravado; desconto fora da faixa não
+  chama a Shopify; chamada combinável). Capturas com Shopify falsa e banco local (D-REALSTORE). `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-89 — 2026-10-10 — Inscrição sem marca no endereço
 - **Decidido:** D-SIGNUP atualizada (endereço `/inscricao` neutro "Creator Club"; marcas Botanika, VermeFree e Revita

@@ -35,6 +35,40 @@ export function couponInput(code: string, discountBps: number, startsAt: Date) {
   };
 }
 
+/**
+ * Só a parte da Shopify: cria o desconto (regras de `couponInput`) e devolve o id. Erros viram mensagens para a equipe.
+ * Usada pela ficha e pela aprovação de candidata (F3), que gravam o cupom no banco só depois do OK da Shopify.
+ */
+export async function createDiscountInShopify(
+  prisma: PrismaClient,
+  brandId: string,
+  code: string,
+  discountBps: number,
+  clientFor: ClientFactory = defaultClientFactory,
+  now = new Date(),
+): Promise<string> {
+  try {
+    const client = await clientFor(prisma, brandId);
+    const res = await client.graphql<CreateResult>(COUPON_CREATE_MUTATION, { input: couponInput(code, discountBps, now) });
+    const { codeDiscountNode, userErrors } = res.discountCodeBasicCreate;
+    if (userErrors.length || !codeDiscountNode) {
+      const taken = userErrors.some((e) => /unique|taken|já/i.test(e.message));
+      throw new CouponCreateError(taken ? `O cupom ${code} já existe na loja. Escolha outro.` : `A Shopify recusou: ${userErrors.map((e) => e.message).join("; ")}`);
+    }
+    return codeDiscountNode.id;
+  } catch (error) {
+    if (error instanceof CouponCreateError) throw error;
+    if (error instanceof ShopifyError && /403|permissão/i.test(error.message))
+      throw new CouponCreateError("O app da Shopify ainda não tem permissão para criar cupons (write_discounts). Libere no app e reconecte a loja.");
+    if (error instanceof ShopifyError) throw new CouponCreateError(error.message);
+    if (error instanceof Error && /sem Shopify conectado/.test(error.message)) throw new CouponCreateError("A loja Shopify desta marca não está conectada.");
+    throw error;
+  }
+}
+
+/** Desconto que a Shopify aceita para cupom de creator: de 0,01% a 50%. */
+export const validCouponDiscount = (bps: number) => Number.isInteger(bps) && bps > 0 && bps <= 5000;
+
 export async function createCouponInShopify(
   prisma: PrismaClient,
   actor: Actor | null,
@@ -62,29 +96,13 @@ export async function createCouponInShopify(
   } catch {
     throw new CouponCreateError("Desconto inválido.");
   }
-  if (input.discountBps <= 0 || input.discountBps > 5000) throw new CouponCreateError("O desconto precisa ficar entre 0,01% e 50%.");
+  if (!validCouponDiscount(input.discountBps)) throw new CouponCreateError("O desconto precisa ficar entre 0,01% e 50%.");
   const permuta = creator.contractTemplate !== null && creator.contractTemplate.releaseMinCents === null;
   if (creator.commissionPolicies.length === 0 && !permuta) throw new CouponCreateError("Defina a taxa de comissão da creator antes de criar o cupom.");
   if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: creator.brandId, code: v.code } }, select: { id: true } }))
     throw new CouponCreateError(`O cupom ${v.code} já existe nesta marca. Escolha outro.`);
 
-  let shopifyId: string;
-  try {
-    const client = await clientFor(prisma, creator.brandId);
-    const res = await client.graphql<CreateResult>(COUPON_CREATE_MUTATION, { input: couponInput(v.code, input.discountBps, now) });
-    const { codeDiscountNode, userErrors } = res.discountCodeBasicCreate;
-    if (userErrors.length || !codeDiscountNode) {
-      const taken = userErrors.some((e) => /unique|taken|já/i.test(e.message));
-      throw new CouponCreateError(taken ? `O cupom ${v.code} já existe na loja. Escolha outro.` : `A Shopify recusou: ${userErrors.map((e) => e.message).join("; ")}`);
-    }
-    shopifyId = codeDiscountNode.id;
-  } catch (error) {
-    if (error instanceof CouponCreateError) throw error;
-    if (error instanceof ShopifyError && /403|permissão/i.test(error.message))
-      throw new CouponCreateError("O app da Shopify ainda não tem permissão para criar cupons (write_discounts). Libere no app e reconecte a loja.");
-    if (error instanceof ShopifyError) throw new CouponCreateError(error.message);
-    throw error;
-  }
+  const shopifyId = await createDiscountInShopify(prisma, creator.brandId, v.code, input.discountBps, clientFor, now);
 
   return prisma.$transaction(async (tx) => {
     const coupon = await tx.coupon.create({

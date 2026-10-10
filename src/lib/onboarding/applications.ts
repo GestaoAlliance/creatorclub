@@ -4,6 +4,8 @@ import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
 import { isValidCpf } from "@/lib/terms/terms";
+import { CouponCreateError, createDiscountInShopify, validCouponDiscount } from "@/lib/coupons/create";
+import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { hunterLinkIdFor } from "./hunters";
 
 /**
@@ -192,7 +194,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     where: { ...scope, status },
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
     take: 1000,
-    include: { hunterLink: { select: { code: true, user: { select: { name: true } } } } },
+    include: { brand: { select: { name: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
   const counts = await prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true });
   // F2: repetidas — mesmo e-mail, CPF ou @ em outra candidata (qualquer situação) ou numa creator da marca.
@@ -214,6 +216,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
       return {
         id: r.id,
         brandId: r.brandId,
+        brandName: r.brand.name,
         status: r.status,
         submittedAt: r.submittedAt,
         decidedAt: r.decidedAt,
@@ -258,6 +261,7 @@ export async function approveApplication(
   prisma: PrismaClient,
   actor: Actor | null,
   input: { applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string },
+  clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
 ): Promise<{ creatorId: string; accountId: string; couponCode: string }> {
   const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId } });
@@ -273,10 +277,24 @@ export async function approveApplication(
   } catch {
     throw new ApplicationError("Taxa ou desconto inválido.");
   }
+  if (!validCouponDiscount(input.discountBps)) throw new ApplicationError("O desconto precisa ficar entre 0,01% e 50%.");
   const email = normalizeEmail(input.email ?? app.email ?? "");
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApplicationError("Informe um e-mail válido para o convite.");
   const cpfDigits = app.cpf?.replace(/\D/g, "") ?? "";
   const cnpjDigits = app.cnpj?.replace(/\D/g, "") ?? "";
+
+  // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.
+  if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
+    throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca. Escolha outro.`);
+  const known = await prisma.creatorAccount.findUnique({ where: { email }, select: { creators: { where: { brandId: app.brandId }, select: { id: true } } } });
+  if (known?.creators.length) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
+  let shopifyId: string;
+  try {
+    shopifyId = await createDiscountInShopify(prisma, app.brandId, coupon.code, input.discountBps, clientFor, now);
+  } catch (error) {
+    if (error instanceof CouponCreateError) throw new ApplicationError(`Cupom não criado na Shopify: ${error.message} Nada foi gravado.`);
+    throw error;
+  }
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -315,7 +333,7 @@ export async function approveApplication(
         },
       });
       const c = await tx.coupon.create({
-        data: { brandId: app.brandId, code: coupon.code, kind: "CREATOR", classifiedAt: now, classifiedById: actor.userId, discountBps: input.discountBps },
+        data: { brandId: app.brandId, code: coupon.code, kind: "CREATOR", classifiedAt: now, classifiedById: actor.userId, discountBps: input.discountBps, shopifyId },
       });
       await tx.couponAssignment.create({
         data: { brandId: app.brandId, couponId: c.id, creatorId: creator.id, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
@@ -336,14 +354,16 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };
     });
   } catch (error) {
-    if (error instanceof ApplicationError) throw error;
-    if (String(error).includes("Coupon_brandId_code_key")) throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca. Escolha outro.`);
+    // Raro (outra pessoa decidiu ao mesmo tempo): o desconto já existe na loja e precisa ser apagado lá.
+    const orphan = ` O cupom ${coupon.code} chegou a ser criado na Shopify: apague-o lá antes de tentar de novo.`;
+    if (error instanceof ApplicationError) throw new ApplicationError(error.message + orphan);
+    if (String(error).includes("Coupon_brandId_code_key")) throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca.${orphan}`);
     throw error;
   }
 }

@@ -2,7 +2,7 @@ import { AtSign, Eye, MapPin, Phone, Users } from "lucide-react";
 import Link from "next/link";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
-import { ApproveForm, RejectForm } from "./forms";
+import { DecisionForms } from "./forms";
 
 type Row = Awaited<ReturnType<typeof listApplications>>["rows"][number];
 
@@ -60,8 +60,7 @@ export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilt
       )}
       {status === "NEW" && a.canDecide && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
-          <ApproveForm applicationId={a.id} name={a.fullName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} />
-          <RejectForm applicationId={a.id} />
+          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} />
         </div>
       )}
       {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
