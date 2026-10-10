@@ -39,6 +39,8 @@ model Brand {
   nfInstructions           String?
   nfTakerDocument          String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legacyId                 String?  @unique
+  /// D-ARCHIVE: marca arquivada some de todas as telas (nada é apagado).
+  archivedAt               DateTime?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

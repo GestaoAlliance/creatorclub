@@ -131,4 +131,12 @@ describe("tela de saúde", () => {
     await prisma.user.create({ data: { id: gid, email: `${gid}@x.com`, name: "G", roleGrants: { create: { role: "GESTAO", brandId: brand.id } } } });
     await expect(syncHealth(prisma, (await loadActor(prisma, gid))!)).rejects.toThrow(/Sem permissão/);
   });
+
+  it("marca arquivada (D-ARCHIVE) some da tela de saúde", async () => {
+    const admin = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    expect((await syncHealth(prisma, admin)).some((h) => h.brand.id === brand.id)).toBe(true);
+    await prisma.brand.update({ where: { id: brand.id }, data: { archivedAt: new Date() } });
+    expect((await syncHealth(prisma, admin)).some((h) => h.brand.id === brand.id)).toBe(false);
+  });
 });

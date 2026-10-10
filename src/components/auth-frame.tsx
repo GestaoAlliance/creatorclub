@@ -6,7 +6,7 @@ import { brandCssVars } from "@/lib/portal/context";
 /** Cor das telas de entrada (D-LOGINCOLOR): com uma marca só, a cor dela; com várias, o cinza neutro. */
 async function loginColors(): Promise<Record<string, string>> {
   try {
-    const brands = await db().brand.findMany({ take: 2, select: { primaryColor: true, secondaryColor: true } });
+    const brands = await db().brand.findMany({ where: { archivedAt: null }, take: 2, select: { primaryColor: true, secondaryColor: true } });
     return brands.length === 1 ? brandCssVars(brands[0]!) : {};
   } catch {
     return {};

@@ -16,7 +16,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   const allowed = brandsWith(actor.grants, "creators.view");
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
   const brands = await db().brand.findMany({
-    where: allowed === "ALL" ? {} : { id: { in: allowed } },
+    where: { archivedAt: null, ...(allowed === "ALL" ? {} : { id: { in: allowed } }) },
     orderBy: { name: "asc" },
     select: { id: true, slug: true, name: true },
   });

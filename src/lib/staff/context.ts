@@ -14,7 +14,7 @@ export async function staffContext(actor: Actor) {
   const ids = [...new Set(actor.grants.map((g) => g.brandId).filter((b): b is string => b !== null))];
   const [brands, user] = await Promise.all([
     db().brand.findMany({
-      where: global ? {} : { id: { in: ids } },
+      where: { archivedAt: null, ...(global ? {} : { id: { in: ids } }) },
       orderBy: { name: "asc" },
       select: { id: true, slug: true, name: true, primaryColor: true, secondaryColor: true },
     }),

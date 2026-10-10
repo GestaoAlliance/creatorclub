@@ -13,7 +13,7 @@ export default async function ImportarPage() {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/importar");
   if (brandsWith(actor.grants, "integrations.manage") !== "ALL") redirect("/conta");
-  const brands = await db().brand.findMany({ where: { legacyId: { not: null } }, orderBy: { name: "asc" }, select: { id: true, name: true } });
+  const brands = await db().brand.findMany({ where: { legacyId: { not: null }, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   return (
     <>

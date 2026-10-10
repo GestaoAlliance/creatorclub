@@ -10,7 +10,7 @@ export async function syncHealth(prisma: PrismaClient, actor: Actor, now = new D
   const since24h = new Date(now.getTime() - 24 * 3600_000);
 
   const brands = await prisma.brand.findMany({
-    where: brandWhere,
+    where: { ...brandWhere, archivedAt: null },
     orderBy: { name: "asc" },
     select: {
       id: true,

@@ -200,7 +200,7 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
       select: { id: true, email: true, name: true, role: true, brandId: true, expiresAt: true },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.brand.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   return { users, invites, brands };
 }
