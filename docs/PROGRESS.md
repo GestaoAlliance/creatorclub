@@ -173,6 +173,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-64 — 2026-10-10 — Contrato e checklist na ficha (Central), com aviso de vencimento
+- **Decidido:** D-CHECKLIST e D-CENTRAL. Cartão "Contrato e checklist" na ficha (início, fim — vazio = início + 6
+  meses, UGC 3 —, contrato assinado, cupom cadastrado, seguimos no Instagram, grupo, etiquetada, observação), editável
+  por quem edita creators. Aviso: cartão "Contratos" no Início (vencem em 30 dias / vencidos), selo na lista de
+  creators e filtro "Só contratos vencendo ou vencidos"; nunca desliga sozinho. Importação da Central: criar as 20
+  creators que não existem (ativas, cupom de creator 15% / desconto 5% confirmados, saque liberado), para quem existe
+  só preencher dados vazios, e a aba UGC como creators tipo UGC (sem cupom) com pasta, situação dos vídeos e pedido.
+- **Feito:** migração `contract_checklist` (colunas na `Creator`, `CreatorAccount.instagram`, trava
+  `Creator_contract_period`). `src/domain/contract.ts` (meses por tipo, soma de meses, situação do contrato) e
+  `src/lib/creators/contract.ts` (`updateChecklist`, com auditoria `creator.checklist`). Instagram na ficha.
+- **Falta:** importar a Central em produção depois do deploy (direto Drive → banco).
+- **Verificado:** 3 unitários e 3 de integração novos (trava pelo nome, contagem do Início); typecheck; testes.
+
 ### CP-63 — 2026-10-10 — Pagamentos da planilha no sistema e sugestão do saldo de abertura
 - **Decidido:** D-LEGACYPAY (a planilha "Pagamentos influencers" entra no sistema, pagamento por pagamento, só com os
   valores; tudo nela foi pago, segundo o responsável; a linha da LUDMILLA de R$ 14,16 repetida em julho e agosto foi
@@ -184,7 +197,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   LUDMILLA; agosto de 9 cupons; setembro de 6. Diferem: JOINGLE (jul, ago, set), VICTORIA (jul, ago, set),
   JULIACOLARES (ago, set), FESTEVES, COLHER, LUCCA, LUDI, BRAUHER, ANAAMARAL (set). Fora da planilha: JULIANAROSA
   em julho e BARBIERI em agosto e setembro. As diferenças viram saldo (a receber ou a abater).
-- **Falta:** importar as linhas em produção depois do deploy desta migração.
+- **Importado em produção (2026-10-10):** 34 linhas (jul–set), R$ 31.807,80; resumo do saldo por cupom passado ao
+  responsável (diferenças viram saldo a receber ou a abater).
 - **Verificado:** integração (1 novo, travas pelo nome); migração × schema sem divergência; typecheck.
 
 ### CP-62 — 2026-10-10 — Correção de taxa desde o início (planilha de pagamentos × sistema)

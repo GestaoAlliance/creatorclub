@@ -1,13 +1,17 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
+import { CONTRACT_WARN_DAYS, dayKey } from "@/domain";
 import { brandsWith, type Permission } from "@/lib/auth/permissions";
+
+/** Hoje (dia de São Paulo) + n dias, como data UTC à meia-noite (formato das colunas `@db.Date`). */
+const today = (plusDays = 0) => new Date(Date.parse(`${dayKey(new Date())}T00:00:00Z`) + plusDays * 86_400_000);
 
 /**
  * Início do painel da equipe (D-DESIGNALL): o que cada papel tem para fazer agora, com o atalho para a tela.
  * Só os números que a pessoa pode ver; nada de dado pessoal.
  */
 export type StaffHome = {
-  creators?: { active: number; toReview: number; applications: number };
+  creators?: { active: number; toReview: number; applications: number; contractsExpiring: number; contractsExpired: number };
   coupons?: { unclassified: number; ownerPending: number };
   shipments?: { preparing: number; shipped: number };
   withdrawals?: { open: number; openCents: number; openingsPending: number };
@@ -31,7 +35,13 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
         prisma.creator.count({ where: { ...view, status: "ACTIVE" } }),
         prisma.creator.count({ where: { ...view, status: { not: "DEACTIVATED" }, reviewedAt: null } }),
         prisma.creatorApplication.count({ where: { ...view, status: "NEW" } }),
-      ]).then(([active, toReview, applications]) => (out.creators = { active, toReview, applications })),
+        // D-CHECKLIST: fim do contrato em até 30 dias / já chegou (pelo dia de São Paulo).
+        prisma.creator.count({ where: { ...view, status: { not: "DEACTIVATED" }, contractEnd: { gt: today(), lte: today(CONTRACT_WARN_DAYS) } } }),
+        prisma.creator.count({ where: { ...view, status: { not: "DEACTIVATED" }, contractEnd: { lte: today() } } }),
+      ]).then(
+        ([active, toReview, applications, contractsExpiring, contractsExpired]) =>
+          (out.creators = { active, toReview, applications, contractsExpiring, contractsExpired }),
+      ),
     edit &&
       Promise.all([
         prisma.coupon.count({ where: { ...edit, kind: null, active: true } }),

@@ -10,7 +10,7 @@ import { CreatorList } from "./list";
 
 export const dynamic = "force-dynamic";
 
-export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ marca?: string; portal?: string }> }) {
+export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ marca?: string; portal?: string; contrato?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/creators");
   const allowed = brandsWith(actor.grants, "creators.view");
@@ -20,7 +20,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
     orderBy: { name: "asc" },
     select: { id: true, slug: true, name: true },
   });
-  const { marca, portal } = await searchParams;
+  const { marca, portal, contrato } = await searchParams;
   const brand = brands.find((b) => b.slug === marca) ?? brands[0];
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   const creators = await listCreators(db(), actor, brand.id);
@@ -44,7 +44,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
           ))}
         </nav>
       )}
-      <CreatorList rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} />
+      <CreatorList rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} />
     </>
   );
 }
