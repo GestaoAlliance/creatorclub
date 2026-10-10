@@ -7,8 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** F2 (triagem e organização das candidatas), da fila "Captação no sistema" — só quando o
-  responsável pedir. Pendente do responsável: divulgar o link novo `/inscricao/botanika` e os links dos hunters
+- **Próxima tarefa:** F3 (aprovar com um clique: creator, cupom na Shopify e convite), da fila "Captação no sistema". Pendente do responsável: divulgar o link novo `/inscricao/botanika` e os links dos hunters
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -176,7 +175,7 @@ já existem antes de desenhar.
 
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
-- [ ] **F2** Triagem: organizar as candidatas (sem critérios automáticos por enquanto; evitar repetidas).
+- [x] **F2** Organizar as candidatas: busca, filtros, lista compacta e aviso de repetida (D-CANDLIST).
 - [ ] **F3** Aprovar com um clique: creator, cupom na Shopify (D-COUPONCREATE) e convite do portal; recusar com resposta.
 - [ ] **F4** Contrato (Autentique ou outro) e liberação do painel depois da assinatura.
 
@@ -204,6 +203,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-88 — 2026-10-10 — Candidatas organizadas (F2)
+- **Decidido:** D-CANDLIST (busca, filtros, lista compacta e aviso de repetida; sem "Em conversa").
+- **Feito:** regras puras em `src/domain/applications.ts` (`parseFollowers`, `findDuplicates`, `filterApplications`);
+  `listApplications` aceita filtros e devolve repetidas, total e os hunters do filtro; tela em `view.tsx` (abas, busca,
+  filtros) e `row.tsx` (linha compacta que abre o cartão, com o aviso de repetida e link para a creator).
+- **Verificado:** 3 unitários e 1 de integração novos (repetida por e-mail e por @ de creator, outra marca fora,
+  filtros e ordem). Capturas com dados de exemplo num banco local. `npm test`, `npm run test:integration`,
+  `npm run typecheck` e `npm run build` passando.
 
 ### CP-87 — 2026-10-10 — Formulário de inscrição do próprio sistema (F1)
 - **Decidido:** D-SIGNUP (um formulário só, mesmas perguntas, CNPJ e razão social opcionais, aceite obrigatório, sem

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, normalizeCouponCode, validateNewCouponCode } from "@/domain";
+import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, validateNewCouponCode, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -183,24 +183,32 @@ export async function receiveApplication(
 
 export type ApplicationFilter = "NEW" | "APPROVED" | "REJECTED";
 
-export async function listApplications(prisma: PrismaClient, actor: Actor | null, status: ApplicationFilter = "NEW") {
+export async function listApplications(prisma: PrismaClient, actor: Actor | null, status: ApplicationFilter = "NEW", filters: ApplicationFilters = {}) {
   if (!actor) throw new ApplicationError("Sem permissão.");
   const brands = brandsWith(actor.grants, "creators.view");
   if (brands !== "ALL" && brands.length === 0) throw new ApplicationError("Sem permissão.");
+  const scope = { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), brand: { archivedAt: null } };
   const rows = await prisma.creatorApplication.findMany({
-    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), status, brand: { archivedAt: null } },
+    where: { ...scope, status },
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
-    take: 200,
+    take: 1000,
     include: { hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
-  const counts = await prisma.creatorApplication.groupBy({
-    by: ["status"],
-    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), brand: { archivedAt: null } },
-    _count: true,
-  });
-  return {
-    counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>,
-    rows: rows.map((r) => {
+  const counts = await prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true });
+  // F2: repetidas — mesmo e-mail, CPF ou @ em outra candidata (qualquer situação) ou numa creator da marca.
+  const brandIds = [...new Set(rows.map((r) => r.brandId))];
+  const [others, accounts] = await Promise.all([
+    prisma.creatorApplication.findMany({ where: { brandId: { in: brandIds } }, select: { id: true, brandId: true, fullName: true, status: true, email: true, cpf: true, instagram: true } }),
+    prisma.creator.findMany({ where: { brandId: { in: brandIds } }, select: { id: true, brandId: true, account: { select: { name: true, email: true, cpf: true, instagram: true } } } }),
+  ]);
+  const pool = (brandId: string): DupSource[] => [
+    ...others.filter((o) => o.brandId === brandId).map((o) => ({ id: o.id, kind: "candidata" as const, name: o.fullName, status: o.status, email: o.email, cpf: o.cpf, instagram: o.instagram })),
+    ...accounts.filter((c) => c.brandId === brandId).map((c) => ({ id: c.id, kind: "creator" as const, name: c.account.name, email: c.account.email, cpf: c.account.cpf, instagram: c.account.instagram })),
+  ];
+  const hunters = [...new Map(rows.filter((r) => r.hunterLink).map((r) => [r.hunterLink!.code, r.hunterLink!.user.name])).entries()]
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const mapped = rows.map((r) => {
       const fiscal = can(actor.grants, "personal.fiscal", r.brandId);
       const address = can(actor.grants, "personal.address", r.brandId);
       return {
@@ -234,8 +242,15 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         note: r.note,
         extras: extraAnswers(r.raw),
         hunter: r.hunterLink ? { name: r.hunterLink.user.name, code: r.hunterLink.code } : null,
+        followersCount: parseFollowers(r.followers),
+        duplicates: findDuplicates(r, pool(r.brandId)).filter((d) => !(d.kind === "creator" && d.id === r.creatorId)),
       };
-    }),
+  });
+  return {
+    counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>,
+    total: mapped.length,
+    hunters,
+    rows: filterApplications(mapped, filters),
   };
 }
 
