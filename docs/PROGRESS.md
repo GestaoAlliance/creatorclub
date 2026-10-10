@@ -7,7 +7,9 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** a definir com o responsável (fila "Captação no sistema" concluída). Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
+- **Próxima tarefa:** U2 (envio inicial do contrato criado na aprovação), da fila "Uso real". U1 em andamento com o
+  responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
+  `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
   (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
   antigas (I7).
@@ -173,6 +175,16 @@ já existem antes de desenhar.
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
+### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
+- [~] **U1** Acessos certos e semana de teste real com roteiro (`docs/ROTEIRO-TESTE.md`). Feito: Ana como Gestão.
+  Falta (responsável): convidar Juci (Pagamento), Álvaro (Envio) e uma hunter; 3 a 5 creators de teste no portal;
+  juntar as anotações no fim da semana.
+- [ ] **U2** Envio inicial do contrato criado na aprovação (fila do Envio), com o endereço da inscrição.
+- [ ] **U3** Tela da hunter: candidatas que trouxe, cliques e aprovadas.
+- [ ] **U4** Painel do mês para a Gestão: vendas, mínimo, faixa do kit e ranking (base da gamificação).
+- [ ] **U5** Avisos para as creators (e-mail depois do domínio; até lá, WhatsApp pronto para a equipe).
+- [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
+
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
 - [x] **F2** Organizar as candidatas: busca, filtros, lista compacta e aviso de repetida (D-CANDLIST).
@@ -203,6 +215,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-92 — 2026-10-10 — Alinhamento de uso real (U1 começa)
+- **Decidido:** D-USOREAL (fila U1 a U6 a partir da rotina de cada pessoa; Ana como Gestão).
+- **Feito:** papel da Ana trocado em produção (super admin → Gestão da Botanika, com auditoria); roteiro da semana de
+  teste por pessoa em `docs/ROTEIRO-TESTE.md`.
+- **Verificado:** papel conferido no banco (só Gestão na Botanika). Sem mudança de código.
 
 ### CP-91 — 2026-10-10 — Contrato assinado no portal (F4)
 - **Decidido:** D-SIGNCONTRACT (assinatura no próprio portal, portal travado até assinar, só as novas, versão escolhida
