@@ -8,6 +8,7 @@ import {
   Ellipsis,
   FileSignature,
   House,
+  Inbox,
   Package,
   RefreshCw,
   Scale,
@@ -37,6 +38,7 @@ const ICONS = {
   sync: RefreshCw,
   import: Download,
   terms: FileSignature,
+  inbox: Inbox,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;

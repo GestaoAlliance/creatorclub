@@ -21,28 +21,28 @@ datasource db {
 // ───────────────────────────── Marca e integrações ─────────────────────────────
 
 model Brand {
-  id                       String   @id @default(uuid())
-  slug                     String   @unique
+  id                       String    @id @default(uuid())
+  slug                     String    @unique
   name                     String
-  enabled                  Boolean  @default(false)
-  timezone                 String   @default("America/Sao_Paulo")
-  currency                 String   @default("BRL")
+  enabled                  Boolean   @default(false)
+  timezone                 String    @default("America/Sao_Paulo")
+  currency                 String    @default("BRL")
   storeUrl                 String?
-  primaryColor             String   @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
+  primaryColor             String    @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
   secondaryColor           String?
-  defaultCommissionBps     Int      @default(1500) // DECISÃO-ABERTA: D-RATE
-  defaultDiscountBps       Int      @default(500)
-  withdrawalMinCents       Int      @default(50000)
-  withdrawalWindowStartDay Int      @default(10)
-  withdrawalWindowEndDay   Int      @default(15)
-  commissionHoldDays       Int      @default(7) // D-HOLD: 7 dias depois do pagamento
+  defaultCommissionBps     Int       @default(1500) // DECISÃO-ABERTA: D-RATE
+  defaultDiscountBps       Int       @default(500)
+  withdrawalMinCents       Int       @default(50000)
+  withdrawalWindowStartDay Int       @default(10)
+  withdrawalWindowEndDay   Int       @default(15)
+  commissionHoldDays       Int       @default(7) // D-HOLD: 7 dias depois do pagamento
   nfInstructions           String?
   nfTakerDocument          String? // D-NF: CNPJ do tomador da nota fiscal da creator
-  legacyId                 String?  @unique
+  legacyId                 String?   @unique
   /// D-ARCHIVE: marca arquivada some de todas as telas (nada é apagado).
   archivedAt               DateTime?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   integrations       BrandIntegration[]
   roleGrants         RoleGrant[]
@@ -65,6 +65,7 @@ model Brand {
   products           Product[]
   shipments          Shipment[]
   termsVersions      TermsVersion[]
+  applications       CreatorApplication[]
   termsAcceptances   TermsAcceptance[]
 }
 
@@ -711,4 +712,47 @@ model TermsAcceptance {
 
   @@unique([creatorId, termsVersionId])
   @@index([termsVersionId])
+}
+
+// ───────────────────────────── Candidatas (formulário Hunter) ─────────────────────────────
+
+enum ApplicationStatus {
+  NEW
+  APPROVED
+  REJECTED
+}
+
+/// Resposta do formulário de cadastro (D-ONBOARD). Chega pelo script do Google Forms; a equipe aprova (vira creator,
+/// cupom, taxa e convite) ou recusa. A resposta original fica em `raw`.
+model CreatorApplication {
+  id              String            @id @default(uuid())
+  brandId         String
+  source          String // hunter_form
+  externalKey     String // id da resposta no Google Forms
+  submittedAt     DateTime
+  fullName        String
+  email           String?
+  phone           String?
+  instagram       String?
+  followers       String?
+  niche           String?
+  kindAnswer      String? // resposta do "Sou:"
+  address         String?
+  suggestedCoupon String?
+  cpf             String?
+  cnpj            String?
+  companyName     String?
+  pixKey          String?
+  raw             Json
+  status          ApplicationStatus @default(NEW)
+  decidedAt       DateTime?
+  decidedById     String?
+  decisionNote    String?
+  creatorId       String?
+  createdAt       DateTime          @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, source, externalKey])
+  @@index([brandId, status, submittedAt])
 }

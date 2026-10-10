@@ -32,7 +32,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
   Scopes já conhecidos pelo E0.1: `read_orders,write_discounts,read_products` (sem `read_all_orders`).
   `taxesIncluded = false` lido no Shopify em 2026-10-09 (D-TAX). Scopes do app novo: D-SHOPAPP.
   Falta: volume de pedidos com cupom (levantado na E3.5).
-- [ ] **E0.4** Formulário do Vitor: onde roda e como pode enviar cadastros. *Depende do Vitor.*
+- [x] **E0.4** Formulário de cadastro: é o "Formulário creators - Hunter" (Google Forms) que a Ana manda; ligado ao painel em CP-59 (D-ONBOARD).
 
 > E0 foi definida no plano como primeira etapa, mas ficou fora desta fila até 2026-10-09 (corrigido).
 > As tarefas E1.1–E1.3 já feitas não dependiam dela.
@@ -171,6 +171,24 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-59 — 2026-10-10 — Candidatas do formulário Hunter no painel (onboarding, parte 1)
+- **Decidido:** D-ONBOARD (o formulário Hunter que a Ana manda alimenta o sistema por um script do Google Forms que
+  envia cada resposta na hora; a equipe aprova no painel com cupom, tipo, comissão 15% e desconto 5% editáveis;
+  aprovar cria conta (ou reaproveita pelo e-mail), creator ativa, cupom de creator, dona e taxa confirmadas, saque
+  liberado e conferência dispensada (creator nova não tem pagamento antigo) e gera o convite do portal; recusar
+  guarda o motivo). Adianta parte do L2 por pedido do responsável: automatizar o máximo.
+- **Feito:** migração `applications` (tabela `CreatorApplication` com RLS e travas `CreatorApplication_decided` e
+  `CreatorApplication_name`). `src/lib/onboarding/applications.ts` (leitura das perguntas pelo título, tipo pelo
+  "Sou:", cupom sugerido ajustado para só letras e até 8, aprovação em transação, recusa). Rota
+  `POST /api/forms/[marca]/hunter` com `Authorization: Bearer $FORMS_SECRET` (mesma resposta não duplica). Script
+  `docs/forms/hunter-apps-script.gs` (instalar + enviar as respostas antigas). Tela `/admin/candidatas` (menu
+  "Candidatas") e cartão no Início quando há novas.
+- **Falta (próximas partes):** criar o cupom sozinho na Shopify ao aprovar (precisa `write_discounts` no app e
+  reconectar); checklist da Central na ficha (contrato de 6 meses, grupo, etiquetada, seguimos no Insta). Para ligar:
+  `FORMS_SECRET` na Vercel e o script colado no formulário.
+- **Verificado:** 115 unitários (4 novos); 138 de integração (3 novos, travas pelo nome); migração × schema sem
+  divergência; typecheck; build. Capturas para o OK.
 
 ### CP-58 — 2026-10-10 — Feedback do responsável: cupons em abas e "Loja de teste" arquivada
 - **Decidido:** D-COUPONTABS (Cupons separados em "A conferir", "Creators" e "Promocionais", com busca; trocar o
