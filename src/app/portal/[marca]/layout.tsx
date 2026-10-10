@@ -16,8 +16,10 @@ export default async function PortalLayout({ children, params }: { children: Rea
   try {
     ctx = await currentPortalContext(marca);
   } catch (error) {
-    if (error instanceof PortalError) notFound();
-    throw error;
+    if (!(error instanceof PortalError)) throw error;
+    // Equipe sem a visualização ativa (ex.: abriu o link do portal em outro aparelho): manda escolher a creator.
+    if (actor.grants.length > 0) redirect("/admin/creators?portal=1");
+    notFound();
   }
   return <PortalShell ctx={ctx}>{children}</PortalShell>;
 }
