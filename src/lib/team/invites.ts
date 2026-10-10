@@ -132,6 +132,27 @@ export async function revokeStaffInvite(prisma: PrismaClient, actor: Actor | nul
 }
 
 /** Tira um papel. Ninguém tira o próprio super admin, e sempre sobra ao menos um super admin. */
+/** A1b (D-ALLIANCE): dá mais um papel a quem já está na equipe (ex.: Gestão também na VermeFree). */
+export async function grantRole(prisma: PrismaClient, actor: Actor | null, input: { userId: string; role: unknown; brandId: unknown }) {
+  const manager = requireStaffManager(actor);
+  const role = STAFF_ROLES.find((r) => r === input.role);
+  const brandId = typeof input.brandId === "string" && input.brandId ? input.brandId : null;
+  if (!role) throw new TeamError("Papel inválido.");
+  if (role === "SUPER_ADMIN" && brandId) throw new TeamError("Super admin vale para todas as marcas.");
+  if (role !== "SUPER_ADMIN" && !brandId) throw new TeamError("Escolha a marca.");
+  const user = await prisma.user.findUnique({ where: { id: input.userId }, select: { id: true, disabledAt: true } });
+  if (!user || user.disabledAt) throw new TeamError("Pessoa não encontrada na equipe.");
+  if (brandId && !(await prisma.brand.findUnique({ where: { id: brandId }, select: { id: true } }))) throw new TeamError("Marca não encontrada.");
+  const exists = await prisma.roleGrant.findFirst({ where: { userId: user.id, role, brandId }, select: { id: true } });
+  if (exists) throw new TeamError("Essa pessoa já tem esse papel nessa marca.");
+  await prisma.$transaction(async (tx) => {
+    await tx.roleGrant.create({ data: { userId: user.id, role, brandId } });
+    await tx.auditLog.create({
+      data: { brandId, actorType: "USER", actorId: manager.userId, action: "role.grant", entity: "User", entityId: user.id, after: { role, brandId } },
+    });
+  });
+}
+
 export async function revokeRoleGrant(prisma: PrismaClient, actor: Actor | null, grantId: string) {
   const manager = requireStaffManager(actor);
   await prisma.$transaction(async (tx) => {

@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { createStaffInvite, disableStaffUser, revokeRoleGrant, revokeStaffInvite, TeamError } from "@/lib/team/invites";
+import { createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revokeStaffInvite, TeamError } from "@/lib/team/invites";
 import { emailStaffInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
 
@@ -51,4 +51,18 @@ export async function revokeGrantAction(form: FormData) {
 
 export async function disableUserAction(form: FormData) {
   await run(async () => disableStaffUser(db(), await currentActor(), String(form.get("id"))));
+}
+
+export type GrantState = { error?: string; ok?: string } | undefined;
+
+/** A1b: mais um papel para quem já está na equipe (ex.: Gestão também na VermeFree). */
+export async function grantRoleAction(_prev: GrantState, form: FormData): Promise<GrantState> {
+  try {
+    await grantRole(db(), await currentActor(), { userId: String(form.get("userId") ?? ""), role: form.get("role"), brandId: form.get("brandId") });
+    revalidatePath("/admin/equipe");
+    return { ok: "Papel adicionado." };
+  } catch (error) {
+    if (error instanceof TeamError) return { error: error.message };
+    throw error;
+  }
 }
