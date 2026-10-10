@@ -18,3 +18,4 @@ export * from "./signup";
 export * from "./whatsapp";
 export * from "./contract-text";
 export * from "./applications";
+export * from "./performance";

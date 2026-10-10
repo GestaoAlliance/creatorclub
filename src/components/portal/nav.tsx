@@ -8,6 +8,7 @@ import {
   Ellipsis,
   FileSignature,
   ScrollText,
+  Trophy,
   House,
   Inbox,
   Package,
@@ -41,6 +42,7 @@ const ICONS = {
   import: Download,
   terms: FileSignature,
   contract: ScrollText,
+  trophy: Trophy,
   inbox: Inbox,
   hunter: Target,
 } satisfies Record<string, LucideIcon>;
