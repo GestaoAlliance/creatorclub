@@ -24,3 +24,13 @@ describe("rota do formulário Hunter", () => {
     expect((await POST(req(`Bearer ${SECRET}`, JSON.stringify({ responseId: "1", submittedAt: "x", answers: {} })), ctx)).status).toBe(400);
   });
 });
+
+describe("rota do formulário de Captação (D-CAPTACAO)", () => {
+  it("mesma proteção: 401 sem o segredo, 400 com corpo inválido", async () => {
+    const { POST: CAPTACAO } = await import("@/app/api/forms/[marca]/captacao/route");
+    const c = { params: Promise.resolve({ marca: "botanika" }) } as Parameters<typeof CAPTACAO>[1];
+    expect((await CAPTACAO(req(`Bearer ${SECRET}`, "{}"), c)).status).toBe(401);
+    process.env.FORMS_SECRET = SECRET;
+    expect((await CAPTACAO(req(`Bearer ${SECRET}`, "não é json"), c)).status).toBe(400);
+  });
+});

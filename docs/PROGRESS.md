@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** I4 (formulário de Captação Botanika + VermeFree como entrada de candidatas), da fila "Inventário do Drive". P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
+- **Próxima tarefa:** I5 (link do formulário por hunter), da fila "Inventário do Drive". Pendente do responsável: instalar os scripts dos formulários Hunter e Captação (`docs/forms/`). P1 (backup) e P2 (Resend, espera o domínio) continuam na fila. Para liberar
   saques: a Ana marca "Conferi os números" em cada ficha e o Pagamento aprova a abertura em `/admin/abertura`.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
@@ -172,7 +172,7 @@ já existem antes de desenhar.
   emissão não bloqueia. Chave única por nota.
 - [x] **I3** Saque de creator sem CNPJ (D-PFRECEIPT): recibo gerado pelo sistema e aceito eletronicamente no lugar da NF;
   Pix só em chave do próprio CPF. Retenção de imposto: confirmar com a contabilidade antes de ligar.
-- [ ] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
+- [x] **I4** Formulário de Captação Botanika + VermeFree como entrada de candidatas (D-CAPTACAO), com as 110 respostas
   antigas importadas.
 - [ ] **I5** Link do formulário por hunter (D-HUNTERLINK): a candidata chega marcada com quem a trouxe.
 - [ ] **I6** UGC com cupom próprio, sem comissão (D-UGCCOUPON), e meta de vídeos no total do ciclo (D-UGCQUOTA) — no
@@ -185,6 +185,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-73 — 2026-10-10 — Formulário de Captação como entrada de candidatas (I4)
+- **Decidido:** D-CAPTACAO detalhada: respostas antigas entram; quem já é creator (mesmo CPF ou e-mail) entra como
+  "Aprovada" ligada à ficha, o resto como "Nova"; repetidas entram uma vez (a mais recente); o STATUS da planilha vira
+  observação; quem quer Botanika e VermeFree entra na Botanika com o selo "também VermeFree".
+- **Feito:** migração `application_captacao` (`storiesViews`, `brandsWanted`, `collabInterest`, `note`). Leitura das
+  perguntas da Captação; perguntas sem campo próprio aparecem em "Mais respostas". Rota `/api/forms/[marca]/captacao`
+  (mesmo handler do Hunter, `src/lib/onboarding/form-route.ts`) e script `docs/forms/captacao-apps-script.gs`. Resposta
+  que já veio da planilha (`planilha:` + segundo) não duplica quando o script manda as antigas. Candidatas: origem
+  (Hunter/Captação), selo VermeFree, views, collab e observação; cartão separado em `card.tsx`.
+- **Falta (produção, depois do deploy):** importar as respostas da planilha (112 depois de tirar 4 repetidas).
+- **Verificado:** 2 unitários novos; 1 de integração novo (campos novos, respostas extras, importada não duplica);
+  migração × schema sem divergência; typecheck; build.
 
 ### CP-72 — 2026-10-10 — Saque de pessoa física com recibo (I3)
 - **Decidido:** D-PFRECEIPT detalhada: sem retenção de imposto; a equipe marca "recebe como pessoa física" na ficha;

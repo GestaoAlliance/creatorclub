@@ -62,7 +62,7 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - `npm run build` — build de produção do Next
 - `npm run dev` — app local em http://localhost:3000
 - `GET /api/health` (app no ar) e `GET /api/ready` (app alcança o banco)
-- `POST /api/forms/[marca]/hunter` — respostas do formulário Hunter (script em `docs/forms/`), com `Authorization: Bearer $FORMS_SECRET`
+- `POST /api/forms/[marca]/hunter` e `/captacao` — respostas dos formulários Hunter e Captação (scripts em `docs/forms/`), com `Authorization: Bearer $FORMS_SECRET`
 - `POST /api/jobs/run` — worker da fila (`src/lib/jobs/`), só com `Authorization: Bearer $JOBS_SECRET` (D-CRON)
 - `node scripts/grant-super-admin.mjs "email:Nome"` — dá SUPER_ADMIN a quem já tem usuário no Supabase Auth
 

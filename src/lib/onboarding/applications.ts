@@ -6,8 +6,8 @@ import { normalizeEmail } from "@/lib/auth/rules";
 import { isValidCpf } from "@/lib/terms/terms";
 
 /**
- * Candidatas do formulário Hunter (D-ONBOARD). O script do Google Forms manda cada resposta para
- * `/api/forms/[marca]/hunter`; a resposta vira uma candidata "Nova". A equipe (quem edita creators: Gestão e super
+ * Candidatas dos formulários Hunter (D-ONBOARD) e de Captação (D-CAPTACAO). O script do Google Forms manda cada
+ * resposta para `/api/forms/[marca]/hunter` ou `/api/forms/[marca]/captacao`; a resposta vira uma candidata "Nova". A equipe (quem edita creators: Gestão e super
  * admin) aprova, com cupom, tipo, taxa e desconto (padrão 15% e 5%, editáveis), ou recusa. Aprovar cria, numa
  * transação: conta (ou reaproveita pelo e-mail), creator ativa, cupom de creator, dona e taxa já confirmadas e o
  * saque liberado (creator nova não tem pagamentos antigos a abater). O convite do portal sai logo depois.
@@ -30,6 +30,9 @@ export type HunterFields = {
   cnpj: string | null;
   companyName: string | null;
   pixKey: string | null;
+  storiesViews: string | null;
+  brandsWanted: string | null;
+  collabInterest: string | null;
 };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -49,16 +52,36 @@ const QUESTIONS: [keyof HunterFields, string][] = [
   ["cnpj", "cnpj"],
   ["companyName", "razao social"],
   ["pixKey", "pix para pagamento"],
+  // D-CAPTACAO: perguntas do formulário de Captação Botanika + VermeFree
+  ["storiesViews", "quantos visualizacoes tem seus stories"],
+  ["brandsWanted", "tenho interesse em representar"],
+  ["collabInterest", "estamos selecionando alguns parceiros"],
 ];
+
+/** Campo a que a pergunta corresponde (ou `null` se é uma pergunta sem campo próprio, que fica só na resposta original). */
+function matchQuestion(title: string): keyof HunterFields | null {
+  const t = norm(title).replace(/:$/, "");
+  const hit = QUESTIONS.find(([, q]) => t === q || t.startsWith(`${q} `) || t.startsWith(`${q}:`) || (q.length > 4 && t.startsWith(q)));
+  return hit ? hit[0] : null;
+}
+
+/** Perguntas sem campo próprio (conteúdo, por que faz sentido…), para a equipe ler na candidata. */
+export function extraAnswers(raw: unknown): { question: string; answer: string }[] {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+  return Object.entries(raw as Record<string, unknown>).flatMap(([q, v]) => {
+    if (matchQuestion(q)) return [];
+    const answer = (Array.isArray(v) ? v.join(", ") : String(v ?? "")).trim();
+    return answer ? [{ question: q.trim(), answer: answer.slice(0, 1000) }] : [];
+  });
+}
 
 /** Lê as respostas pelo título das perguntas (tolerante a acento, maiúsculas e ":" no fim). */
 export function parseHunterAnswers(answers: Record<string, unknown>): HunterFields {
   const out: Record<string, string | null> = {};
   for (const [title, value] of Object.entries(answers)) {
-    const t = norm(title).replace(/:$/, "");
     const text = (Array.isArray(value) ? value.join(", ") : String(value ?? "")).trim().slice(0, 1000);
-    const hit = QUESTIONS.find(([, q]) => t === q || t.startsWith(`${q} `) || t.startsWith(`${q}:`) || (q.length > 4 && t.startsWith(q)));
-    if (hit && !out[hit[0]]) out[hit[0]] = text || null;
+    const field = matchQuestion(title);
+    if (field && !out[field]) out[field] = text || null;
   }
   const fullName = (out.fullName ?? "").replace(/\s+/g, " ").trim();
   if (!fullName) throw new ApplicationError("Resposta sem nome.");
@@ -77,6 +100,9 @@ export function parseHunterAnswers(answers: Record<string, unknown>): HunterFiel
     cnpj: out.cnpj ?? null,
     companyName: out.companyName ?? null,
     pixKey: out.pixKey ?? null,
+    storiesViews: out.storiesViews ?? null,
+    brandsWanted: out.brandsWanted ?? null,
+    collabInterest: out.collabInterest ?? null,
   };
 }
 
@@ -110,6 +136,19 @@ export async function receiveApplication(
   });
   if (existing) return { id: existing.id, created: false };
   const fields = parseHunterAnswers(input.answers);
+  // Resposta já importada da planilha (D-CAPTACAO): mesmo formulário, mesmo segundo e mesmo nome não duplica.
+  const second = new Date(Math.floor(input.submittedAt.getTime() / 1000) * 1000);
+  const imported = await prisma.creatorApplication.findFirst({
+    where: {
+      brandId: brand.id,
+      source: input.source,
+      externalKey: { startsWith: "planilha:" },
+      fullName: fields.fullName,
+      submittedAt: { gte: second, lt: new Date(second.getTime() + 1000) },
+    },
+    select: { id: true },
+  });
+  if (imported) return { id: imported.id, created: false };
   try {
     const a = await prisma.creatorApplication.create({
       data: { brandId: brand.id, source: input.source, externalKey: key, submittedAt: input.submittedAt, ...fields, raw: input.answers as object },
@@ -172,6 +211,12 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         companyName: fiscal ? r.companyName : null,
         pixKey: fiscal ? r.pixKey : null,
         canDecide: can(actor.grants, "creators.edit", r.brandId),
+        source: r.source,
+        storiesViews: r.storiesViews,
+        collabInterest: r.collabInterest,
+        alsoVermeFree: /vermefree/i.test(r.brandsWanted ?? ""),
+        note: r.note,
+        extras: extraAnswers(r.raw),
       };
     }),
   };
