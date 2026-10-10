@@ -172,6 +172,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-68 — 2026-10-10 — Termo v3 publicado
+- **Decidido:** texto do termo v3 aprovado pelo responsável (D-TERMS): mínimo de vendas do contrato de cada creator
+  (no lugar de R$ 500/R$ 1.000 fixos), permuta sem comissão (3.6), kit mensal escolhido no portal (6) e vigência (8).
+- **Feito:** migração `terms_v3` (nova versão do termo da Botanika + auditoria `terms.published`). Todas as creators
+  aceitam de novo no próximo acesso.
+- **Verificado:** migração testada num banco local (versão criada com o texto novo); migração × schema sem divergência.
+
 ### CP-67 — 2026-10-10 — Kit mensal: a creator escolhe os produtos no portal
 - **Decidido:** D-KIT (o fechamento do mês concede o kit pela faixa de vendas do mês no contrato da creator; ela
   escolhe os produtos no portal; o kit espera sem prazo).
