@@ -16,7 +16,7 @@ export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilt
         <div>
           <p className="font-semibold">{a.fullName}</p>
           <p className={ui.hint}>
-            {a.source === "captacao_form" ? "Captação" : "Hunter"} · respondeu em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
+            {a.source === "site_form" ? "Inscrição pelo site" : a.source === "captacao_form" ? "Captação (Google)" : "Hunter (Google)"} · respondeu em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
           </p>
         </div>
         <span className="flex flex-wrap justify-end gap-1.5">

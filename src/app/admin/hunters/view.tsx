@@ -5,22 +5,18 @@ import { Card, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
 import { hunterCodeFrom } from "@/domain";
 import type { hunterPanel } from "@/lib/onboarding/hunters";
-import { CreateLinkForm, FormLinkForm } from "./forms";
+import { CreateLinkForm } from "./forms";
 
 type Brands = Awaited<ReturnType<typeof hunterPanel>>;
 
-const FORMS = [
-  { form: "hunter", label: "Formulário Hunter" },
-  { form: "captacao", label: "Formulário de Captação" },
-] as const;
 
 /** Tela Hunters (D-HUNTERLINK): link de cada hunter, cliques e candidatas; links pré-preenchidos dos formulários. */
 export function HuntersView({ brands, origin }: { brands: Brands; origin: string }) {
   return (
     <>
       <PageHeader title="Hunters">
-        Cada hunter tem o próprio link para os formulários: a candidata chega marcada com quem a trouxe. Para ter um
-        hunter aqui, convide a pessoa em Equipe com o papel Hunter.
+        Cada hunter tem o próprio link para o formulário de inscrição: a candidata chega marcada com quem a trouxe. Para
+        ter um hunter aqui, convide a pessoa em Equipe com o papel Hunter.
       </PageHeader>
       {brands.map((b) => (
         <div key={b.id} className="flex flex-col gap-6">
@@ -48,19 +44,12 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
                       )}
                     </div>
                     {x.link ? (
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {FORMS.map((f) => {
-                          const url = `${origin}/f/${b.slug}/${f.form}/${x.link!.code}`;
-                          return (
-                            <div key={f.form} className={`${ui.inset} flex items-center justify-between gap-2`}>
-                              <div className="min-w-0">
-                                <p className="text-xs text-stone-500">{f.label}{!b.forms[f.form] && " · link do formulário não configurado"}</p>
-                                <p className="truncate font-mono text-xs">{url}</p>
-                              </div>
-                              <CopyButton value={url} label="Copiar" />
-                            </div>
-                          );
-                        })}
+                      <div className={`${ui.inset} flex items-center justify-between gap-2`}>
+                        <div className="min-w-0">
+                          <p className="text-xs text-stone-500">Link de inscrição do hunter</p>
+                          <p className="truncate font-mono text-xs">{`${origin}/f/${b.slug}/inscricao/${x.link.code}`}</p>
+                        </div>
+                        <CopyButton value={`${origin}/f/${b.slug}/inscricao/${x.link.code}`} label="Copiar" />
                       </div>
                     ) : (
                       <CreateLinkForm brandId={b.id} userId={x.userId} suggestion={hunterCodeFrom(x.name)} />
@@ -70,14 +59,13 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
               </ul>
             )}
           </Card>
-          <Card title="Links dos formulários" icon={<Link2 className="size-4" />}>
-            <p className={ui.muted}>
-              No Google Forms, adicione a pergunta &quot;Código de quem te convidou&quot; (resposta curta, opcional). Depois, em
-              ⋮ &gt; &quot;Obter link pré-preenchido&quot;, escreva CODIGO nessa pergunta, clique em &quot;Gerar link&quot; e cole aqui.
-            </p>
-            {FORMS.map((f) => (
-              <FormLinkForm key={f.form} brandId={b.id} form={f.form} current={b.forms[f.form]} label={f.label} />
-            ))}
+          <Card title="Formulário de inscrição" icon={<Link2 className="size-4" />}>
+            <p className={ui.muted}>Link geral (sem hunter), para divulgar em qualquer lugar:</p>
+            <div className={`${ui.inset} flex items-center justify-between gap-2`}>
+              <p className="truncate font-mono text-xs">{`${origin}/inscricao/${b.slug}`}</p>
+              <CopyButton value={`${origin}/inscricao/${b.slug}`} label="Copiar" />
+            </div>
+            <p className={ui.hint}>As respostas viram candidatas em Candidatas. Os formulários antigos do Google continuam chegando lá também.</p>
           </Card>
         </div>
       ))}

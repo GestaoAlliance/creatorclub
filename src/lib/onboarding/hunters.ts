@@ -114,9 +114,18 @@ export async function setFormLink(prisma: PrismaClient, actor: Actor | null, inp
 
 /** Destino do link do hunter. Código desconhecido: abre o formulário sem código (o link nunca quebra), sem contar clique. */
 export async function resolveHunterLink(prisma: PrismaClient, brandSlug: string, form: string, rawCode: string) {
-  if (!isHunterForm(form)) return null;
-  const brand = await prisma.brand.findUnique({ where: { slug: brandSlug.toLowerCase() }, select: { id: true, archivedAt: true } });
+  if (form !== "inscricao" && !isHunterForm(form)) return null;
+  const brand = await prisma.brand.findUnique({ where: { slug: brandSlug.toLowerCase() }, select: { id: true, slug: true, archivedAt: true } });
   if (!brand || brand.archivedAt) return null;
+  if (form === "inscricao") {
+    // D-SIGNUP: formulário do próprio sistema; o código vai no endereço e chega marcado na candidata.
+    const code = normalizeHunterCode(decodeURIComponent(rawCode));
+    const link = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: { id: true } }) : null;
+    return {
+      url: link ? `/inscricao/${brand.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${brand.slug}`,
+      click: link ? { brandId: brand.id, hunterLinkId: link.id, form } : null,
+    };
+  }
   const template = await prisma.formLink.findUnique({ where: { brandId_form: { brandId: brand.id, form } }, select: { urlTemplate: true } });
   if (!template) return null;
   const code = normalizeHunterCode(decodeURIComponent(rawCode));

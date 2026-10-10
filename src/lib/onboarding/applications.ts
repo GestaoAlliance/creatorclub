@@ -129,7 +129,7 @@ export function couponFromSuggestion(suggestion: string | null): string {
 
 export async function receiveApplication(
   prisma: PrismaClient,
-  input: { brandSlug: string; source: string; externalKey: string; submittedAt: Date; answers: Record<string, unknown> },
+  input: { brandSlug: string; source: string; externalKey: string; submittedAt: Date; answers: Record<string, unknown>; consentAt?: Date; ipHash?: string | null },
 ): Promise<{ id: string; created: boolean }> {
   const brand = await prisma.brand.findUnique({ where: { slug: input.brandSlug }, select: { id: true, archivedAt: true } });
   if (!brand || brand.archivedAt) throw new ApplicationError("Marca não encontrada.");
@@ -163,6 +163,8 @@ export async function receiveApplication(
         submittedAt: input.submittedAt,
         ...fields,
         hunterLinkId: await hunterLinkIdFor(prisma, brand.id, fields.hunterCode),
+        ...(input.consentAt ? { consentAt: input.consentAt } : {}),
+        ...(input.ipHash ? { ipHash: input.ipHash } : {}),
         raw: input.answers as object,
       },
     });
