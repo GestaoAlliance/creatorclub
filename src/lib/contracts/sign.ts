@@ -5,6 +5,7 @@ import {
   CONTRACT_KINDS,
   dayKey,
   isContractKind,
+  notices,
   parseKitTiers,
   renderContract,
   UGC_DEFAULT_VIDEO_GOAL,
@@ -14,6 +15,7 @@ import {
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { notify } from "@/lib/notifications/notify";
 import type { PortalContext } from "@/lib/portal/context";
 import { isValidCpf, maskCpf } from "@/lib/terms/terms";
 
@@ -192,10 +194,11 @@ export async function signContract(
       });
       if (!saved) await tx.creatorAccount.update({ where: { id: account.account.id }, data: { cpf } });
       // D-WELCOMEKIT: o kit do início da parceria fica para ela escolher em Envios; a escolha vai para a fila do Envio.
-      if (welcome > 0)
-        await tx.kitGrant.create({
-          data: { brandId: account.brandId, creatorId: ctx.creatorId, kind: "WELCOME", month: dayKey(now).slice(0, 7), salesCents: 0, products: welcome },
-        });
+      if (welcome > 0) {
+        const month = dayKey(now).slice(0, 7);
+        await tx.kitGrant.create({ data: { brandId: account.brandId, creatorId: ctx.creatorId, kind: "WELCOME", month, salesCents: 0, products: welcome } });
+        await notify(tx, [{ brandId: account.brandId, creatorId: ctx.creatorId, notice: notices.kitAvailable("WELCOME", month, welcome) }]);
+      }
       await tx.auditLog.create({
         data: {
           brandId: account.brandId,

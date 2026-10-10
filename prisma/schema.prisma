@@ -73,6 +73,7 @@ model Brand {
   termsAcceptances   TermsAcceptance[]
   contractDocuments  ContractDocument[]
   contractSignatures ContractSignature[]
+  notifications      Notification[]
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
@@ -289,6 +290,7 @@ model Creator {
   shipments          Shipment[]
   termsAcceptances   TermsAcceptance[]
   contractSignatures ContractSignature[]
+  notifications      Notification[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
   kitGrants          KitGrant[]
@@ -1069,4 +1071,26 @@ model ContractSignature {
 
   @@unique([creatorId, contractDocumentId])
   @@index([contractDocumentId])
+}
+
+/// U5 (D-NOTICES): aviso para a creator no portal (sininho) e, quando houver remetente, por e-mail. Um aviso por
+/// acontecimento: `dedupeKey` não repete para a mesma creator (o worker pode rodar de novo sem duplicar).
+model Notification {
+  id        String    @id @default(uuid())
+  brandId   String
+  creatorId String
+  kind      String
+  dedupeKey String
+  title     String
+  body      String
+  href      String?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  emailedAt DateTime?
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([creatorId, dedupeKey])
+  @@index([creatorId, createdAt])
 }

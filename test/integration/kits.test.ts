@@ -59,6 +59,7 @@ describe("kit mensal (D-KIT, banco real)", () => {
     await close(s.brand.id, T("2026-11-01T09:00:00Z")); // não refaz
     const { kits, products } = await myPendingKits(prisma, s.ctx);
     expect(kits).toMatchObject([{ month: "2026-10", products: 3, salesCents: 450_000 }]);
+    expect(await prisma.notification.count({ where: { creatorId: s.creator.id, kind: "KIT_AVAILABLE", dedupeKey: "kit:MONTHLY:2026-10" } })).toBe(1);
     expect(products.map((p) => p.title)).toEqual(["Creatina", "Whey"]); // só ativos
     const kitId = kits[0]!.id;
 

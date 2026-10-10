@@ -52,6 +52,10 @@ describe("fechamento mensal (D-CONTRACT, banco real)", () => {
 
     expect(await close(a.brand.id, T("2026-11-01T08:00:00Z"))).toBe(1);
     expect(await close(a.brand.id, T("2026-11-01T09:00:00Z"))).toBe(0); // não refaz
+    // U5: um aviso de comissão liberada, sem repetir.
+    expect(await prisma.notification.findMany({ where: { creatorId: a.creator.id }, select: { kind: true, dedupeKey: true } })).toEqual([
+      { kind: "COMMISSION_RELEASED", dedupeKey: "release:2026-10" },
+    ]);
     const rel = await prisma.commissionRelease.findMany({ where: { creatorId: a.creator.id } });
     expect(rel).toMatchObject([{ month: "2026-10", salesCents: 85_000, minCents: 50_000 }]);
     b = await creatorBalance(prisma, a.creator, "America/Sao_Paulo", T("2026-11-02T12:00:00Z"));

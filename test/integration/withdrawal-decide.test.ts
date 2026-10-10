@@ -59,6 +59,10 @@ describe("decisão do saque (banco real)", () => {
     await expect(rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, "  ")).rejects.toThrow(/motivo/);
     await rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, " Valor da nota   diferente do pedido ");
     expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ status: "REJECTED", note: "Valor da nota diferente do pedido" });
+    expect(await prisma.notification.findFirstOrThrow({ where: { dedupeKey: `withdrawal:${s.withdrawalId}:rejected` } })).toMatchObject({
+      kind: "WITHDRAWAL_REJECTED",
+      body: expect.stringContaining("Motivo: Valor da nota diferente do pedido. O valor continua"),
+    });
     expect(await sum(s.creator.id)).toBe(80_000);
     const again = await requestWithdrawal(prisma, s.ctx, { actorUserId: s.userId, requestId: randomUUID(), amountCents: 80_000, pdf: PDF }, IN_WINDOW);
     expect(again.created).toBe(true);
@@ -87,6 +91,7 @@ describe("decisão do saque (banco real)", () => {
     expect((await withdrawalQueue(prisma, pagOutra)).some((r) => r.id === s.withdrawalId)).toBe(false);
     const sa = await userWith("SUPER_ADMIN", null);
     await payWithdrawal(prisma, sa, s.withdrawalId);
+    expect(await prisma.notification.count({ where: { dedupeKey: `withdrawal:${s.withdrawalId}:paid`, kind: "WITHDRAWAL_PAID" } })).toBe(1);
   });
 
   it("travas do banco: recusa sem motivo, decisão sem autor, dois lançamentos do mesmo saque", async () => {
