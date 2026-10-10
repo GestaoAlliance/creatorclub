@@ -160,7 +160,7 @@ export function InviteButton({ creatorId, accountId }: { creatorId: string; acco
       <Msg state={state} />
       {state?.link && (
         <div className={ui.label}>
-          <p>Link de uso único (vale 7 dias). Envie pelo WhatsApp; ele não aparece de novo.</p>
+          <p>Link de uso único (vale 7 dias); ele não aparece de novo. {state.ok ? "Se quiser, mande também pelo WhatsApp." : "Envie pelo WhatsApp."}</p>
           <code className={`${ui.inset} break-all font-mono text-xs`}>{state.link}</code>
           <button type="button" className={ui.ghostSm + " self-start"} onClick={() => { void navigator.clipboard.writeText(state.link!); setCopied(true); }}>
             {copied ? "Copiado" : "Copiar link"}

@@ -44,7 +44,9 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
       </form>
       {state?.link && (
         <div className="flex flex-col gap-2 rounded-2xl border border-emerald-400/50 bg-emerald-100/70 p-4 text-sm text-emerald-950 dark:bg-emerald-900/30 dark:text-emerald-100">
-          <p>Convite para <strong>{state.email}</strong>. Copie e envie (aparece só agora; vale 7 dias, uma vez):</p>
+          {state.mailed && <p className="font-medium">Enviado por e-mail para {state.email}.</p>}
+          {state.mailError && <p role="alert" className="font-medium text-red-700 dark:text-red-300">O e-mail não foi enviado ({state.mailError}) Mande o link pelo WhatsApp.</p>}
+          <p>Convite para <strong>{state.email}</strong>. {state.mailed ? "Se quiser, mande também pelo WhatsApp" : "Copie e envie"} (aparece só agora; vale 7 dias, uma vez):</p>
           <code className="break-all font-mono text-xs">{state.link}</code>
           <button
             type="button"
