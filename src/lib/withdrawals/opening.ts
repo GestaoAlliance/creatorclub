@@ -27,6 +27,8 @@ export type OpeningRow = {
   unlockedAt: Date | null;
   openingCents: number | null;
   openingNote: string | null;
+  /** Pagamentos da planilha da equipe (D-LEGACYPAY), por mês: sugerem o "já pago". */
+  legacyPayments: { month: string; amountCents: number }[];
 };
 
 function assertManage(actor: Actor | null, brandId: string): asserts actor is Actor {
@@ -64,9 +66,10 @@ export async function openingList(prisma: PrismaClient, actor: Actor | null): Pr
     },
   });
   const ids = creators.map((c) => c.id);
-  const [sums, openings] = await Promise.all([
+  const [sums, openings, legacy] = await Promise.all([
     prisma.ledgerEntry.groupBy({ by: ["creatorId"], where: { creatorId: { in: ids } }, _sum: { amountCents: true } }),
     prisma.ledgerEntry.findMany({ where: { creatorId: { in: ids }, type: "OPENING_BALANCE" }, select: { creatorId: true, amountCents: true, note: true } }),
+    prisma.legacyPayment.groupBy({ by: ["creatorId", "month"], where: { creatorId: { in: ids } }, _sum: { amountCents: true }, orderBy: { month: "asc" } }),
   ]);
   const sum = new Map(sums.map((s) => [s.creatorId, s._sum.amountCents ?? 0]));
   const opening = new Map(openings.map((o) => [o.creatorId, o]));
@@ -82,6 +85,7 @@ export async function openingList(prisma: PrismaClient, actor: Actor | null): Pr
     unlockedAt: c.withdrawalsUnlockedAt,
     openingCents: opening.get(c.id)?.amountCents ?? null,
     openingNote: opening.get(c.id)?.note ?? null,
+    legacyPayments: legacy.filter((l) => l.creatorId === c.id).map((l) => ({ month: l.month, amountCents: l._sum.amountCents ?? 0 })),
   }));
 }
 

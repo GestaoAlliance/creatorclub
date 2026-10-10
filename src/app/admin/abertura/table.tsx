@@ -29,7 +29,7 @@ export function OpeningTable({ rows }: { rows: OpeningRow[] }) {
                     <strong className="tabular-nums">{formatBRL(r.ledgerCents)}</strong>
                   </span>
                 </div>
-                <OpeningForm creatorId={r.creatorId} name={r.name} ledgerCents={r.ledgerCents} />
+                <OpeningForm creatorId={r.creatorId} name={r.name} ledgerCents={r.ledgerCents} legacyPayments={r.legacyPayments} />
               </li>
             ))}
           </ul>
@@ -43,6 +43,9 @@ export function OpeningTable({ rows }: { rows: OpeningRow[] }) {
               <li key={r.creatorId}>
                 <Link href={`/admin/creators/${r.creatorId}`} className={ui.pill}>
                   {r.name} · <span className="tabular-nums">{formatBRL(r.ledgerCents)}</span>
+                  {r.legacyPayments.length > 0 && (
+                    <span className="text-stone-500"> · pago antes {formatBRL(r.legacyPayments.reduce((s, p) => s + p.amountCents, 0))}</span>
+                  )}
                 </Link>
               </li>
             ))}

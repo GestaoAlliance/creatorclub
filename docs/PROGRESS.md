@@ -173,6 +173,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-63 — 2026-10-10 — Pagamentos da planilha no sistema e sugestão do saldo de abertura
+- **Decidido:** D-LEGACYPAY (a planilha "Pagamentos influencers" entra no sistema, pagamento por pagamento, só com os
+  valores; tudo nela foi pago, segundo o responsável; a linha da LUDMILLA de R$ 14,16 repetida em julho e agosto foi
+  paga uma vez). Importação direta pelo Claude (Drive → banco), sem dados pessoais no repositório.
+- **Feito:** migração `legacy_payments` (tabela `LegacyPayment` com RLS, somente inserção e travas
+  `LegacyPayment_month_format` e `LegacyPayment_amounts`). `/admin/abertura` já vem preenchida com o total pago e a
+  descrição por mês; a equipe confere com os comprovantes e aprova.
+- **Comparação planilha × sistema (por cupom, mês do pagamento):** batem julho de JULIACOLARES, FESTEVES, ORTOP e
+  LUDMILLA; agosto de 9 cupons; setembro de 6. Diferem: JOINGLE (jul, ago, set), VICTORIA (jul, ago, set),
+  JULIACOLARES (ago, set), FESTEVES, COLHER, LUCCA, LUDI, BRAUHER, ANAAMARAL (set). Fora da planilha: JULIANAROSA
+  em julho e BARBIERI em agosto e setembro. As diferenças viram saldo (a receber ou a abater).
+- **Falta:** importar as linhas em produção depois do deploy desta migração.
+- **Verificado:** integração (1 novo, travas pelo nome); migração × schema sem divergência; typecheck.
+
 ### CP-62 — 2026-10-10 — Correção de taxa desde o início (planilha de pagamentos × sistema)
 - **Decidido:** D-RATEFIX. Comparando a planilha "Pagamentos influencers" com o sistema, duas taxas provisórias do app
   antigo (D-RATEPROV) estavam erradas: VICTORIA é 10% (sistema 15%) e CEMBRANELLI é 15% (sistema 20%). O responsável
@@ -181,7 +195,9 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   uma taxa no histórico; muda a taxa e a taxa congelada dos pedidos e lança a diferença de cada pedido como
   estorno/comissão com nota e chave própria; auditoria `commission.correct`). Botão "Corrigir desde o início" no
   cartão de taxa da ficha.
-- **Falta:** aplicar nas duas creators em produção (botão na ficha, depois do deploy).
+- **Aplicado em produção (2026-10-10, a pedido do responsável):** VICTORIA 15% → 10% (661 pedidos, −R$ 11.283,78) e
+  CEMBRANELLI 20% → 15% (4 pedidos, −R$ 40,89), pela mesma regra da função, em SQL numa transação, com auditoria
+  `commission.correct` (autor `claude-a-pedido-do-responsavel`). Conferido: CEMBRANELLI agosto = R$ 122,72, igual à planilha.
 - **Verificado:** integração (2 novos: estorno da diferença, reprocessar não duplica, permissões e travas); typecheck.
 
 ### CP-61 — 2026-10-10 — Termo v2 publicado (regras do contrato)

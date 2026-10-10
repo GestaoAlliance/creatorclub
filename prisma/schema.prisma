@@ -72,6 +72,7 @@ model Brand {
   termsAcceptances   TermsAcceptance[]
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
+  legacyPayments     LegacyPayment[]
 }
 
 enum IntegrationKind {
@@ -250,6 +251,7 @@ model Creator {
   shipments          Shipment[]
   termsAcceptances   TermsAcceptance[]
   commissionReleases CommissionRelease[]
+  legacyPayments     LegacyPayment[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -793,4 +795,27 @@ model MonthClosing {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, month])
+}
+
+/// D-LEGACYPAY: pagamento feito antes do Creator Club, importado da planilha da equipe ("Pagamentos influencers").
+/// Só valores (sem Pix nem documento). Serve de evidência e sugere o "já pago" do saldo de abertura. Somente inserção.
+model LegacyPayment {
+  id           String   @id @default(uuid())
+  brandId      String
+  creatorId    String
+  month        String // AAAA-MM das vendas pagas
+  periodLabel  String // como a planilha chama o período (ex.: "23/06 a 31/07")
+  salesCents   Int
+  rateBps      Int
+  amountCents  Int
+  source       String // ex.: "planilha-pagamentos"
+  sourceRef    String // aba e linha da planilha
+  importedAt   DateTime @default(now())
+  importedById String
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([brandId, source, sourceRef])
+  @@index([creatorId])
 }
