@@ -65,3 +65,13 @@ describe("escopo por marca", () => {
     expect(can([{ role: "GESTAO", brandId: null }], "creators.view", B)).toBe(false);
   });
 });
+
+describe("papéis dentro da marca escolhida (A1, D-ALLIANCE)", () => {
+  it("super admin vale só na marca escolhida; papéis de outras marcas saem", async () => {
+    const { scopeGrants, brandsWith } = await import("@/lib/auth/permissions");
+    const grants = [{ role: "SUPER_ADMIN" as const, brandId: null }, { role: "GESTAO" as const, brandId: "b2" }, { role: "ENVIO" as const, brandId: "b1" }];
+    expect(scopeGrants(grants, "b1")).toEqual([{ role: "SUPER_ADMIN", brandId: "b1" }, { role: "ENVIO", brandId: "b1" }]);
+    expect(brandsWith(scopeGrants(grants, "b1"), "creators.view")).toEqual(["b1"]);
+    expect(brandsWith(scopeGrants([{ role: "GESTAO", brandId: "b2" }], "b1"), "creators.view")).toEqual([]);
+  });
+});

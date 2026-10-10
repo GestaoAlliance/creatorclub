@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import type { Actor } from "@/lib/auth/actor";
+import { scopeGrants } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 
 /** Cookie da marca escolhida no painel da equipe (só muda a cor e a marca mostrada no topo). */
@@ -23,4 +24,9 @@ export async function staffContext(actor: Actor) {
   const chosen = (await cookies()).get(STAFF_BRAND_COOKIE)?.value;
   const brand: StaffBrand | null = brands.find((b) => b.slug === chosen) ?? brands[0] ?? null;
   return { brands: brands as StaffBrand[], brand, firstName: (user?.name ?? "").split(" ")[0] || "equipe", isCreator: Object.keys(actor.creatorIds).length > 0 };
+}
+
+/** A1 (D-ALLIANCE): a pessoa vista dentro da marca escolhida no topo (para as listas mostrarem só ela). */
+export function scopedActor(actor: Actor, brandId: string | null | undefined): Actor {
+  return brandId ? { ...actor, grants: scopeGrants(actor.grants, brandId) } : actor;
 }

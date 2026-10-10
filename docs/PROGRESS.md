@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** U6 (conteúdo das influencers e prospecção antes do formulário), da fila "Uso real": perguntar
-  ao responsável se a equipe quer. U1 em andamento com o
+- **Próxima tarefa:** A1b (cadastro de marca e papel em mais de uma marca na Equipe), da fila "Alliance". Depois A2
+  (VermeFree). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -176,6 +176,14 @@ já existem antes de desenhar.
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
 
+### Alliance: várias marcas (decidido pelo responsável em 2026-10-11, D-ALLIANCE; uma por vez, nesta ordem)
+- [x] **A1a** Painel da Alliance: topo "Creator Club · Alliance", visão geral com um cartão por marca, telas só da
+  marca escolhida, troca de marca mantendo a tela.
+- [ ] **A1b** Cadastro de marca pela tela (super admin) e papel em mais de uma marca na Equipe.
+- [ ] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
+  cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
+- [ ] **A3** Revita Derma: o mesmo processo.
+
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
 - [~] **U1** Acessos certos e semana de teste real com roteiro (`docs/ROTEIRO-TESTE.md`). Feito: Ana como Gestão.
   Falta (responsável): convidar Juci (Pagamento), Álvaro (Envio) e uma hunter; 3 a 5 creators de teste no portal;
@@ -220,6 +228,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-98 — 2026-10-11 — Painel da Alliance (A1a)
+- **Decidido:** D-ALLIANCE (Alliance como guarda-chuva; marcas com loja própria; visão geral; equipe marca por marca;
+  uma candidatura por marca; aceite da Alliance). Nova fila A1 a A3.
+- **Feito:** `scopeGrants` (papéis dentro da marca escolhida) e `scopedActor`; Candidatas, Hunters, Envios, Saques,
+  Abertura e o Início filtram pela marca do topo; visão geral `allianceOverview` com cartão por marca e atalhos que
+  entram na marca já na tela; topo "Creator Club" / "Alliance · marca" com a troca de marca mantendo a tela.
+- **Verificado:** unitário de `scopeGrants` e integração (cartão por marca com loja e candidatas; lista só da marca).
+  Capturas com uma VermeFree de exemplo só no banco local. `npm test`, `npm run test:integration`,
+  `npm run typecheck` e `npm run build` passando.
 
 ### CP-97 — 2026-10-11 — Avisos por data e e-mail (U5b)
 - **Decidido:** D-NOTICES completada (rodada diária a partir das 9h; e-mail só com remetente, só avisos das últimas

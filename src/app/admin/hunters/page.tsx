@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { hunterPanel } from "@/lib/onboarding/hunters";
 import { HuntersView } from "./view";
@@ -14,7 +15,9 @@ export default async function HuntersPage() {
   if (!actor) redirect("/entrar?next=/admin/hunters");
   const allowed = brandsWith(actor.grants, "creators.edit");
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
-  const brands = await hunterPanel(db(), actor);
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
+  const brands = await hunterPanel(db(), inBrand);
   const h = await headers();
   return <HuntersView brands={brands} origin={`${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`} />;
 }

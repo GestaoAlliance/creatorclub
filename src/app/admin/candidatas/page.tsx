@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ApplicationFilters } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { listApplications } from "@/lib/onboarding/applications";
 import { CandidatasView, SORTS, TABS, type Search } from "./view";
@@ -24,6 +25,8 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
     ...(sp.marca ? { brand: sp.marca } : {}),
     sort: SORTS.find(([s]) => s === sp.ordem)?.[0] ?? "antigas",
   };
-  const data = await listApplications(db(), actor, status, filters);
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
+  const data = await listApplications(db(), inBrand, status, filters);
   return <CandidatasView status={status} sp={sp} filters={filters} data={data} />;
 }

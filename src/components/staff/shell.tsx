@@ -1,6 +1,7 @@
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { chooseBrandAction } from "@/app/admin/actions";
+import { BrandSwitchOption } from "./brand-switch";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, SideNav, type NavItem } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
@@ -27,26 +28,25 @@ export function StaffShell({
   const others = brands.filter((b) => b.slug !== brand?.slug);
   return (
     <div style={vars as CSSProperties} className="portal-bg flex min-h-screen">
-      <SideNav base="/admin" brandName={brand?.name ?? "Creator Club"} items={items} />
+      <SideNav base="/admin" brandName="Creator Club" items={items} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-brand-2">{brand?.name ?? "Creator Club"} · equipe</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-brand-2">Alliance{brand ? ` · ${brand.name}` : ""}</p>
             <p className="truncate text-lg font-semibold">Olá, {firstName}</p>
           </div>
           <div className="flex items-center gap-2">
-            {others.length > 0 && (
+            {brand && (
               <details className="relative">
-                <summary className="glass cursor-pointer list-none rounded-full px-4 py-2 text-sm">Trocar marca</summary>
-                <div className="glass absolute right-0 z-30 mt-2 flex min-w-40 flex-col rounded-2xl p-2">
+                <summary className="glass flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2 text-sm">
+                  <span className="size-3 rounded-full" style={{ background: brandCssVars(brand)["--brand"] }} />
+                  {brand.name}
+                  {others.length > 0 && <ChevronDown className="size-3.5 text-stone-500" />}
+                </summary>
+                <div className="glass absolute right-0 z-30 mt-2 flex min-w-48 flex-col rounded-2xl p-2">
+                  <p className="px-3 pb-1 pt-2 text-xs text-stone-500">{others.length ? "Trocar de marca" : "Única marca do seu acesso"}</p>
                   {others.map((b) => (
-                    <form key={b.slug} action={chooseBrandAction}>
-                      <input type="hidden" name="slug" value={b.slug} />
-                      <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/60 dark:hover:bg-white/10">
-                        <span className="size-3 rounded-full" style={{ background: brandCssVars(b)["--brand"] }} />
-                        {b.name}
-                      </button>
-                    </form>
+                    <BrandSwitchOption key={b.slug} slug={b.slug} name={b.name} color={brandCssVars(b)["--brand"] ?? b.primaryColor} />
                   ))}
                 </div>
               </details>

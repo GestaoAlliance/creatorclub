@@ -67,3 +67,12 @@ export function can(grants: readonly Grant[], permission: Permission, brandId: s
   const allowed = brandsWith(grants, permission);
   return allowed === "ALL" || allowed.includes(brandId);
 }
+
+/**
+ * A1 (D-ALLIANCE): papéis vistos dentro de uma marca. Quem é global (super admin) passa a valer só nela; papéis de
+ * outras marcas saem. Usado para cada tela da equipe mostrar só a marca escolhida no topo. Não serve para decidir
+ * acesso a telas globais (Equipe, Termo, Contratos, Shopify): essas continuam usando os papéis completos.
+ */
+export function scopeGrants(grants: readonly Grant[], brandId: string): Grant[] {
+  return grants.flatMap((g) => (g.brandId === null ? [{ role: g.role, brandId }] : g.brandId === brandId ? [g] : []));
+}
