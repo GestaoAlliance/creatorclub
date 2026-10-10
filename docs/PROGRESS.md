@@ -165,6 +165,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-54 — 2026-10-10 — Portal aberto pela equipe sem "ver como" não dá mais 404
+- **Corrigido:** o responsável abriu o link `/portal/botanika` no celular e, depois de entrar como super admin, caiu
+  num 404: a visualização "ver como creator" (D-VIEWAS) fica num cookie deste aparelho, e sem ela a equipe não tem
+  portal próprio. Agora quem é da equipe vai para `/admin/creators` com o aviso de como abrir o portal de uma
+  creator; creator sem acesso à marca continua com 404.
+- **Feito também:** conta de teste "Creator Teste" (Botanika, e-mail do responsável, saldo fictício de R$ 1.000 por
+  ajuste e saque liberado) para testar o portal de ponta a ponta; registrada na auditoria
+  (`creator.test_account`). Passar para Desligada quando os testes terminarem.
+- **Verificado:** typecheck, testes unitários e de integração, build.
+
 ### CP-53 — 2026-10-09 — Saques no painel do Pagamento (E8)
 - **Decidido:** D-WDDECIDE (recusa com motivo obrigatório, que a creator vê; pago no dia do clique, sem comprovante;
   a creator pode cancelar o próprio pedido em análise; decidem Pagamento e super admin, Gestão não vê a fila),
