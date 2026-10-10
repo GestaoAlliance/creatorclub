@@ -249,7 +249,13 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         duplicates: findDuplicates(r, pool(r.brandId)).filter((d) => !(d.kind === "creator" && d.id === r.creatorId)),
       };
   });
+  const templates = await prisma.contractTemplate.findMany({
+    where: { brandId: { in: brandIds } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, brandId: true, name: true, documentKind: true, key: true },
+  });
   return {
+    templates,
     counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>,
     total: mapped.length,
     hunters,
@@ -260,7 +266,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
 export async function approveApplication(
   prisma: PrismaClient,
   actor: Actor | null,
-  input: { applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string },
+  input: { applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string; contractTemplateId?: string | null },
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
 ): Promise<{ creatorId: string; accountId: string; couponCode: string }> {
@@ -282,6 +288,12 @@ export async function approveApplication(
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApplicationError("Informe um e-mail válido para o convite.");
   const cpfDigits = app.cpf?.replace(/\D/g, "") ?? "";
   const cnpjDigits = app.cnpj?.replace(/\D/g, "") ?? "";
+
+  // F4 (D-SIGNCONTRACT): versão do contrato que ela vai assinar no portal (da mesma marca).
+  const template = input.contractTemplateId
+    ? await prisma.contractTemplate.findFirst({ where: { id: input.contractTemplateId, brandId: app.brandId }, select: { id: true } })
+    : null;
+  if (input.contractTemplateId && !template) throw new ApplicationError("Versão de contrato inválida.");
 
   // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.
   if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
@@ -330,6 +342,9 @@ export async function approveApplication(
           withdrawalsUnlockedById: actor.userId,
           reviewedAt: now,
           reviewedById: actor.userId,
+          // Assina o contrato no portal antes de usar (D-SIGNCONTRACT).
+          contractTemplateId: template?.id ?? null,
+          contractRequiredAt: template ? now : null,
         },
       });
       const c = await tx.coupon.create({
@@ -354,7 +369,7 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, contractTemplateId: template?.id ?? null, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };

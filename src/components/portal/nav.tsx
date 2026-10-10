@@ -7,6 +7,7 @@ import {
   Download,
   Ellipsis,
   FileSignature,
+  ScrollText,
   House,
   Inbox,
   Package,
@@ -39,6 +40,7 @@ const ICONS = {
   sync: RefreshCw,
   import: Download,
   terms: FileSignature,
+  contract: ScrollText,
   inbox: Inbox,
   hunter: Target,
 } satisfies Record<string, LucideIcon>;

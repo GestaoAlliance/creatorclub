@@ -4,6 +4,7 @@ import { checkNf, checkWithdrawalRequest, dayKey, parseNfseText, receiptText, ty
 import { creatorBalance, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { isValidCpf, pendingTerms } from "@/lib/terms/terms";
+import { pendingContract } from "@/lib/contracts/sign";
 import { pdfText } from "./nf";
 
 /**
@@ -53,6 +54,7 @@ export async function assertCanStart(prisma: PrismaClient, ctx: PortalContext) {
   if (ctx.ugcOnly) throw new WithdrawalRequestError("Contrato de UGC não tem saque.");
   const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { withdrawalsUnlockedAt: true } });
   if (!creator.withdrawalsUnlockedAt) throw new WithdrawalRequestError("Seu saldo está em conferência; o saque ainda não foi liberado.");
+  if (await pendingContract(prisma, ctx)) throw new WithdrawalRequestError("Assine o contrato no portal antes de pedir saque.");
   if (await pendingTerms(prisma, ctx)) throw new WithdrawalRequestError("Aceite o termo do Creator Club antes de pedir saque.");
 }
 

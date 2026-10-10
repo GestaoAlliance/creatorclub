@@ -16,4 +16,5 @@ export * from "./ugc";
 export * from "./email";
 export * from "./signup";
 export * from "./whatsapp";
+export * from "./contract-text";
 export * from "./applications";

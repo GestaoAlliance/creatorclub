@@ -12,6 +12,11 @@ import { approveAction, rejectAction } from "./actions";
 const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
 
 type Person = { applicationId: string; name: string; phone: string | null; brand: string };
+export type TemplateOption = { id: string; name: string; documentKind: string; key: string };
+
+/** Versão de contrato sugerida pelo tipo: a mais nova (pela chave) do mesmo tipo de texto. */
+const defaultTemplate = (templates: readonly TemplateOption[], category: string) =>
+  [...templates].filter((t) => t.documentKind === category).sort((a, b) => b.key.localeCompare(a.key))[0]?.id ?? templates[0]?.id ?? "";
 
 /** Abre o WhatsApp da pessoa com a mensagem pronta; sem número reconhecido, copia a mensagem. */
 function WhatsAppButton({ phone, text, label }: { phone: string | null; text: string; label: string }) {
@@ -47,14 +52,16 @@ function Done({ children }: { children: React.ReactNode }) {
  * Aprovar com um clique (F3): cria o cupom na Shopify, a creator e o convite do portal (por e-mail quando houver
  * remetente) e oferece o WhatsApp de boas-vindas pronto.
  */
-function ApproveForm(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; onDone: () => void }) {
+function ApproveForm(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; onDone: () => void }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
   const { onDone } = p;
   useEffect(() => { if (state?.ok) onDone(); }, [state, onDone]);
   const [copied, setCopied] = useState(false);
+  const [category, setCategory] = useState<string>(p.category);
+  const [template, setTemplate] = useState(() => defaultTemplate(p.templates, p.category));
   if (state?.ok) {
     const o = state.ok;
-    const pct = (o.discountBps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+    const pct = (o.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     return (
       <Done>
         <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos).</p>
@@ -62,7 +69,7 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
           <>
             {o.mail && <p>Convite enviado por e-mail para {o.mail}.</p>}
             {o.mailError && <p>O e-mail do convite não foi enviado ({o.mailError}). Mande pelo WhatsApp.</p>}
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: o.link })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: o.link, contract: o.contract })} />
             <p className={ui.hint}>Link do convite (aparece só agora; vale 7 dias, uma vez):</p>
             <code className="break-all font-mono text-xs">{o.link}</code>
             <button type="button" className={`${ui.ghostSm} self-start`} onClick={() => { void navigator.clipboard.writeText(o.link!); setCopied(true); }}>
@@ -72,7 +79,7 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
         ) : (
           <>
             <p>Convite não gerado: {o.inviteError}</p>
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, contract: o.contract })} />
           </>
         )}
         <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
@@ -89,7 +96,12 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
         </label>
         <label className={ui.label}>
           Tipo
-          <select name="category" defaultValue={p.category} className={ui.inputSm}>
+          <select
+            name="category"
+            value={category}
+            onChange={(e) => { setCategory(e.target.value); setTemplate(defaultTemplate(p.templates, e.target.value)); }}
+            className={ui.inputSm}
+          >
             {Object.entries(CATEGORY).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </label>
@@ -101,7 +113,15 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
           Desconto %
           <input name="discount" defaultValue="5" inputMode="decimal" required className={ui.inputSm} />
         </label>
-        <label className={`${ui.label} col-span-full`}>
+        {p.templates.length > 0 && (
+          <label className={`${ui.label} col-span-full sm:col-span-2`}>
+            Contrato (ela assina no portal)
+            <select name="contractTemplateId" value={template} onChange={(e) => setTemplate(e.target.value)} className={ui.inputSm}>
+              {p.templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+        )}
+        <label className={`${ui.label} col-span-full ${p.templates.length > 0 ? "sm:col-span-2" : ""}`}>
           E-mail do convite
           <input name="email" type="email" defaultValue={p.email ?? ""} required className={ui.inputSm} />
         </label>
@@ -139,7 +159,7 @@ function RejectForm(p: Person & { onDone: () => void }) {
 }
 
 /** Aprovar e recusar juntos: decidido um, o outro some (a linha só sai da lista no "Concluir"). */
-export function DecisionForms(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY }) {
+export function DecisionForms(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[] }) {
   const [done, setDone] = useState<"approved" | "rejected" | null>(null);
   const approved = useCallback(() => setDone("approved"), []);
   const rejected = useCallback(() => setDone("rejected"), []);

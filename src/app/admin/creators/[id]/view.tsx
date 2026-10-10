@@ -8,6 +8,8 @@ import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
+import type { creatorContractSignature } from "@/lib/contracts/sign";
+import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
 import { AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
@@ -19,9 +21,10 @@ const STATUS_BADGE = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: 
 type Profile = Awaited<ReturnType<typeof creatorProfile>>;
 type Statement = Awaited<ReturnType<typeof creatorStatement>>;
 type Terms = Awaited<ReturnType<typeof creatorTermsStatus>>;
+type ContractSig = Awaited<ReturnType<typeof creatorContractSignature>>;
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st: Statement | null; terms: Terms; requestId: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId }: { p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -230,6 +233,23 @@ export function CreatorProfileView({ p, st, terms, requestId }: { p: Profile; st
                   </p>
                   <RateFixForm creatorId={p.id} />
                 </div>
+              )}
+            </Card>
+          )}
+          {(contract.required || contract.signature) && (
+            <Card title="Contrato no portal" icon={<FileSignature className="size-4" />}>
+              {contract.signature ? (
+                <>
+                  <p className={ui.ok}>
+                    Assinou o contrato {CONTRACT_KIND_LABEL[contract.signature.kind as ContractKind] ?? contract.signature.kind} (versão {contract.signature.version}) em {date(contract.signature.at)}.
+                  </p>
+                  <p className={ui.hint}>Registro: {contract.signature.name} · CPF {contract.signature.cpf}{contract.signature.ip ? ` · IP ${contract.signature.ip}` : ""}</p>
+                  {p.fiscal && <Link href={`/admin/creators/${p.id}/contrato`} className={`${ui.link} text-sm`}>Ler o contrato assinado</Link>}
+                </>
+              ) : (
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Ainda não assinou. O portal pede a assinatura no primeiro acesso{p.contract.templateId ? "" : " (escolha a versão do contrato em \"Contrato e checklist\")"}.
+                </p>
               )}
             </Card>
           )}

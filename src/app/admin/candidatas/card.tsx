@@ -2,14 +2,14 @@ import { AtSign, Eye, MapPin, Phone, Users } from "lucide-react";
 import Link from "next/link";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
-import { DecisionForms } from "./forms";
+import { DecisionForms, type TemplateOption } from "./forms";
 
 type Row = Awaited<ReturnType<typeof listApplications>>["rows"][number];
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 
 /** Cartão de uma candidata (Hunter ou Captação), com aprovar/recusar quando está "Nova". */
-export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilter }) {
+export function ApplicationCard({ a, status, templates }: { a: Row; status: ApplicationFilter; templates: readonly TemplateOption[] }) {
   return (
     <article className={ui.card}>
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -60,7 +60,7 @@ export function ApplicationCard({ a, status }: { a: Row; status: ApplicationFilt
       )}
       {status === "NEW" && a.canDecide && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
-          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} />
+          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} templates={templates} />
         </div>
       )}
       {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}

@@ -71,6 +71,8 @@ model Brand {
   termsVersions      TermsVersion[]
   applications       CreatorApplication[]
   termsAcceptances   TermsAcceptance[]
+  contractDocuments  ContractDocument[]
+  contractSignatures ContractSignature[]
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
@@ -255,6 +257,8 @@ model Creator {
   legacyId                String?
   /// D-CONTRACTVER: modelo de contrato que a creator assinou (mínimo de vendas, faixas de kit, prazo).
   contractTemplateId      String?
+  /// D-SIGNCONTRACT: creator aprovada em Candidatas precisa assinar o contrato no portal (o portal fica travado até lá).
+  contractRequiredAt      DateTime?
   /// D-CHECKLIST: contrato (vigência; aviso 30 dias antes e no fim, nunca desliga sozinho) e checklist da Central.
   /// Booleano nulo = não informado.
   contractStart           DateTime?         @db.Date
@@ -284,6 +288,7 @@ model Creator {
   withdrawals        Withdrawal[]
   shipments          Shipment[]
   termsAcceptances   TermsAcceptance[]
+  contractSignatures ContractSignature[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
   kitGrants          KitGrant[]
@@ -905,10 +910,13 @@ model ContractTemplate {
   /// Faixas do kit pelas vendas do mês anterior: [{ fromCents, toCents?, products }], em ordem crescente.
   kitTiers        Json     @default("[]")
   months          Int
+  /// D-SIGNCONTRACT: qual texto de contrato esta versão usa (INFLUENCER, PRESCRITOR ou UGC).
+  documentKind    String   @default("INFLUENCER")
   createdAt       DateTime @default(now())
 
-  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  creators Creator[]
+  brand      Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creators   Creator[]
+  signatures ContractSignature[]
 
   @@unique([brandId, key])
   @@unique([id, brandId])
@@ -1009,4 +1017,52 @@ model UgcVideo {
   creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([creatorId, deliveredOn])
+}
+
+/// D-SIGNCONTRACT: texto do contrato por marca e tipo (INFLUENCER, PRESCRITOR, UGC), em versões que só recebem
+/// inserções. Os campos entre chaves duplas ({{NOME}}, {{CUPOM}}...) são preenchidos com os dados de cada creator.
+model ContractDocument {
+  id          String   @id @default(uuid())
+  brandId     String
+  kind        String
+  version     Int
+  title       String
+  body        String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand      Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  signatures ContractSignature[]
+
+  @@unique([brandId, kind, version])
+  @@unique([id, brandId])
+}
+
+/// Assinatura eletrônica do contrato no portal: o texto preenchido exatamente como foi assinado (e o hash dele),
+/// com os dados digitados, data, IP e navegador. Só recebe inserções.
+model ContractSignature {
+  id                 String   @id @default(uuid())
+  brandId            String
+  creatorId          String
+  contractDocumentId String
+  contractTemplateId String
+  userId             String
+  fullName           String
+  cpf                String
+  cnpj               String?
+  companyName        String?
+  address            String
+  body               String
+  bodySha256         String
+  ip                 String?
+  userAgent          String?
+  signedAt           DateTime @default(now())
+
+  brand            Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator          Creator          @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractDocument ContractDocument @relation(fields: [contractDocumentId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractTemplate ContractTemplate @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([creatorId, contractDocumentId])
+  @@index([contractDocumentId])
 }
