@@ -16,6 +16,7 @@ const ITEMS: (NavItem & { needs: Permission; global?: boolean; hunterOnly?: bool
   { href: "/envios", label: "Envios", icon: "package", needs: "shipping.view" },
   { href: "/saques", label: "Saques", icon: "payout", needs: "withdrawals.manage" },
   { href: "/abertura", label: "Abertura", icon: "opening", needs: "withdrawals.manage" },
+  { href: "/marcas", label: "Marcas", icon: "store", needs: "staff.manage", global: true },
   { href: "/equipe", label: "Equipe", icon: "team", needs: "staff.manage", global: true },
   { href: "/termo", label: "Termo", icon: "terms", needs: "staff.manage", global: true },
   { href: "/contratos", label: "Contratos", icon: "contract", needs: "staff.manage", global: true },

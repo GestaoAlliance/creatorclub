@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** A1b (cadastro de marca e papel em mais de uma marca na Equipe), da fila "Alliance". Depois A2
-  (VermeFree). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance". Pendente do responsável para começar: razão social, CNPJ,
+  cor e endereço da loja (`xxx.myshopify.com`) da VermeFree. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -179,7 +179,7 @@ já existem antes de desenhar.
 ### Alliance: várias marcas (decidido pelo responsável em 2026-10-11, D-ALLIANCE; uma por vez, nesta ordem)
 - [x] **A1a** Painel da Alliance: topo "Creator Club · Alliance", visão geral com um cartão por marca, telas só da
   marca escolhida, troca de marca mantendo a tela.
-- [ ] **A1b** Cadastro de marca pela tela (super admin) e papel em mais de uma marca na Equipe.
+- [x] **A1b** Cadastro de marca pela tela (super admin) e papel em mais de uma marca na Equipe.
 - [ ] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
   cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
 - [ ] **A3** Revita Derma: o mesmo processo.
@@ -228,6 +228,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-99 — 2026-10-11 — Marcas e papel em mais de uma marca (A1b)
+- **Feito:** `src/lib/brands/manage.ts` (criar e editar marca: nome, endereço, cor, razão social, CNPJ; lista com o que
+  falta para começar: loja, termo, contratos, versões de contrato, CNPJ); página `/admin/marcas` e item "Marcas" no
+  menu do super admin; `grantRole` e "Adicionar papel em outra marca" na Equipe, para quem já está na equipe.
+- **Verificado:** integração nova (criar e editar com validações e endereço único; Gestão não cria; papel em outra
+  marca sem repetir; super admin sem marca; pessoa removida não ganha papel). Capturas com banco local. `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-98 — 2026-10-11 — Painel da Alliance (A1a)
 - **Decidido:** D-ALLIANCE (Alliance como guarda-chuva; marcas com loja própria; visão geral; equipe marca por marca;

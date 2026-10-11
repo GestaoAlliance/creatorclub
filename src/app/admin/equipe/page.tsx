@@ -7,6 +7,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { teamOverview } from "@/lib/team/invites";
 import { disableUserAction, revokeGrantAction, revokeInviteAction } from "./actions";
+import { GrantForm } from "./grant-form";
 import { InviteForm } from "./invite-form";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export default async function EquipePage() {
 
   return (
     <>
-      <PageHeader title="Equipe">Quem acessa o painel e com qual papel. O convite gera um link de uso único.</PageHeader>
+      <PageHeader title="Equipe">Quem acessa o painel e com qual papel, marca por marca. O convite gera um link de uso único; quem já está na equipe ganha papel em outra marca sem novo convite.</PageHeader>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <Card title="Convidar" icon={<UserPlus className="size-4" />}>
           <InviteForm brands={brands} />
@@ -63,6 +64,7 @@ export default async function EquipePage() {
                       </li>
                     ))}
                   </ul>
+                  {u.id !== actor.userId && !u.roleGrants.some((g) => g.role === "SUPER_ADMIN") && brands.length > 0 && <GrantForm userId={u.id} brands={brands} />}
                 </li>
               ))}
             </ul>
