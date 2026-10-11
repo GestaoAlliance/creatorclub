@@ -165,6 +165,8 @@ model StaffInvite {
   name           String
   role           StaffRole
   brandId        String? // nulo só para SUPER_ADMIN
+  /// D-INVITEBRANDS: outras marcas em que o mesmo papel é dado ao aceitar (ex.: Envio nas três marcas).
+  extraBrandIds  String[] @default([])
   tokenHash      String    @unique
   expiresAt      DateTime
   createdById    String

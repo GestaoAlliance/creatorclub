@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { ui } from "@/components/ui/styles";
 import { inviteAction } from "./actions";
 
@@ -9,6 +9,13 @@ const input = ui.input;
 export function InviteForm({ brands }: { brands: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(inviteAction, undefined);
   const [role, setRole] = useState("SUPER_ADMIN");
+  const [mainBrand, setMainBrand] = useState(brands[0]?.id ?? "");
+  // Depois de gerar, o formulário é limpo: papel e marca voltam ao início junto com os campos.
+  useEffect(() => {
+    if (!state?.link) return;
+    setRole("SUPER_ADMIN");
+    setMainBrand(brands[0]?.id ?? "");
+  }, [state, brands]);
   const [copied, setCopied] = useState(false);
   const noBrands = brands.length === 0;
   return (
@@ -31,11 +38,24 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
           </select>
         </label>
         {role !== "SUPER_ADMIN" && (
-          <label className={ui.label}>Marca
-            <select className={input} name="brandId" required>
-              {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </label>
+          <>
+            <label className={ui.label}>Marca
+              <select className={input} name="brandId" required value={mainBrand} onChange={(e) => setMainBrand(e.target.value)}>
+                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </label>
+            {brands.length > 1 && (
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className={`${ui.hint} mb-1`}>Mesmo papel também em:</legend>
+                {brands.filter((b) => b.id !== mainBrand).map((b) => (
+                  <label key={b.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="extraBrandIds" value={b.id} className="size-4 accent-[var(--brand)]" />
+                    {b.name}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </>
         )}
         {noBrands && <p className={ui.hint}>Os outros papéis aparecem quando a marca for cadastrada.</p>}
         {state?.error && <p role="alert" className={ui.error}>{state.error}</p>}

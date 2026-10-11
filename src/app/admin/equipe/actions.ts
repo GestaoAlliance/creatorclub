@@ -18,6 +18,7 @@ export async function inviteAction(_prev: InviteState, form: FormData): Promise<
       name: form.get("name"),
       role: form.get("role"),
       brandId: form.get("brandId"),
+      extraBrandIds: form.getAll("extraBrandIds"),
     });
     const origin = (await headers()).get("origin") ?? "";
     const link = `${origin}/convite/${token}`;

@@ -239,6 +239,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-108 — 2026-10-11 — Convite em várias marcas; acessos do dia 1 de teste (U1)
+- **Decidido:** D-INVITEBRANDS.
+- **Feito:** migração `invite_extra_brands` (`StaffInvite.extraBrandIds`); convite com "Mesmo papel também em"; aceitar
+  dá o papel em todas; o link mostra as marcas. Corrigido: depois de gerar o convite, o papel voltava a "Super admin"
+  com a marca ainda aparecendo.
+- **Acessos (produção, a pedido do responsável):** senha temporária para a Ana (nunca tinha entrado; auditoria
+  `auth.temp_password`); convites abertos do Álvaro (Envio) e da Juci (Pagamento), nas três marcas.
+- **Verificado:** integração nova (convite em três marcas, marca inexistente recusada); migração × schema sem
+  divergência; capturas com banco local. `npm test`, `npm run test:integration` (197), `npm run typecheck`,
+  `npm run build` passando.
+
 ### CP-107 — 2026-10-11 — Convite aberto da equipe: a pessoa escolhe o e-mail (U1)
 - **Decidido:** D-OPENINVITE.
 - **Feito:** migração `open_staff_invite` (`StaffInvite.email` opcional e trava `StaffInvite_open_not_super_admin`);

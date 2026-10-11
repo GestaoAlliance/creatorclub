@@ -14,7 +14,7 @@ function requireStaffManager(actor: Actor | null): Actor {
   return actor;
 }
 
-export type InviteInput = { email: unknown; name: unknown; role: unknown; brandId: unknown };
+export type InviteInput = { email: unknown; name: unknown; role: unknown; brandId: unknown; extraBrandIds?: unknown[] };
 
 /**
  * Cria um convite e devolve o token (mostrar o link uma vez; só o hash fica no banco). E-mail em branco = convite
@@ -36,12 +36,18 @@ export async function createStaffInvite(prisma: PrismaClient, actor: Actor | nul
   if (brandId && !(await prisma.brand.findUnique({ where: { id: brandId }, select: { id: true } }))) {
     throw new TeamError("Marca não encontrada.");
   }
+  // D-INVITEBRANDS: o mesmo papel em outras marcas, dado junto ao aceitar.
+  const extra = [...new Set((input.extraBrandIds ?? []).filter((b): b is string => typeof b === "string" && b !== "" && b !== brandId))];
+  if (extra.length && role === "SUPER_ADMIN") throw new TeamError("Super admin vale para todas as marcas.");
+  if (extra.length && (await prisma.brand.count({ where: { id: { in: extra }, archivedAt: null } })) !== extra.length) {
+    throw new TeamError("Marca não encontrada.");
+  }
 
   const { token, tokenHash } = newInviteToken();
   const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
   const invite = await prisma.$transaction(async (tx) => {
     const created = await tx.staffInvite.create({
-      data: { email, name, role, brandId, tokenHash, expiresAt, createdById: manager.userId },
+      data: { email, name, role, brandId, extraBrandIds: extra, tokenHash, expiresAt, createdById: manager.userId },
     });
     await tx.auditLog.create({
       data: {
@@ -51,7 +57,7 @@ export async function createStaffInvite(prisma: PrismaClient, actor: Actor | nul
         action: "invite.create",
         entity: "StaffInvite",
         entityId: created.id,
-        after: { email: email ?? "(escolhido no primeiro acesso)", role, brandId, expiresAt: expiresAt.toISOString() },
+        after: { email: email ?? "(escolhido no primeiro acesso)", role, brandId, extraBrandIds: extra, expiresAt: expiresAt.toISOString() },
       },
     });
     return created;
@@ -103,11 +109,9 @@ export async function acceptStaffInvite(
     } else if (existing.disabledAt) {
       await tx.user.update({ where: { id: auth.userId }, data: { disabledAt: null } });
     }
-    const already = await tx.roleGrant.findFirst({
-      where: { userId: auth.userId, role: invite.role, brandId: invite.brandId },
-    });
-    if (!already) {
-      await tx.roleGrant.create({ data: { userId: auth.userId, role: invite.role, brandId: invite.brandId } });
+    for (const brandId of [invite.brandId, ...invite.extraBrandIds]) {
+      const already = await tx.roleGrant.findFirst({ where: { userId: auth.userId, role: invite.role, brandId } });
+      if (!already) await tx.roleGrant.create({ data: { userId: auth.userId, role: invite.role, brandId } });
     }
     await tx.auditLog.create({
       data: {
@@ -117,7 +121,7 @@ export async function acceptStaffInvite(
         action: "invite.accept",
         entity: "StaffInvite",
         entityId: invite.id,
-        after: { role: invite.role, brandId: invite.brandId, ...(invite.email ? {} : { email: accountEmail, open: true }) },
+        after: { role: invite.role, brandId: invite.brandId, extraBrandIds: invite.extraBrandIds, ...(invite.email ? {} : { email: accountEmail, open: true }) },
       },
     });
     return { role: invite.role, brandId: invite.brandId };
@@ -225,7 +229,7 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
     }),
     prisma.staffInvite.findMany({
       where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
-      select: { id: true, email: true, name: true, role: true, brandId: true, expiresAt: true, emailedAt: true },
+      select: { id: true, email: true, name: true, role: true, brandId: true, extraBrandIds: true, expiresAt: true, emailedAt: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),

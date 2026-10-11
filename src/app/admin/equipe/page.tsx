@@ -77,7 +77,7 @@ export default async function EquipePage() {
                   <div className="min-w-0 text-sm">
                     <p className="font-medium">{i.name}</p>
                     <p className={ui.hint}>
-                      {i.email ?? "e-mail no primeiro acesso"} · {ROLE_LABEL[i.role]} ({brandName(i.brandId)}) · vence {i.expiresAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      {i.email ?? "e-mail no primeiro acesso"} · {ROLE_LABEL[i.role]} ({[i.brandId, ...i.extraBrandIds].map((b) => brandName(b)).join(", ")}) · vence {i.expiresAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                       {i.emailedAt && " · enviado por e-mail"}
                     </p>
                   </div>
