@@ -8,7 +8,7 @@
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
 - **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
-  textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar); depois, A3 Revita Derma. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+  textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -190,7 +190,9 @@ já existem antes de desenhar.
   (importar de novo desde 01/06); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
   revisão dos textos de contrato e termo da VermeFree (rascunho em `docs/contratos/vermefree/`). Catálogo, envios e
   inscrição por marca: feitos (CP-103 a CP-105).
-- [ ] **A3** Revita Derma: o mesmo processo.
+- [~] **A3** Revita Derma: o mesmo processo. Feito: marca criada com as regras da VermeFree (D-RDRULES), 3 versões de
+  contrato, Ana Gestão, 5 creators a confirmar (CP-106). Falta (responsável): site e domínio `xxx.myshopify.com`, app na
+  loja e conexão; depois, carga dos pedidos, catálogo e cupons.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
 - [~] **U1** Acessos certos e semana de teste real com roteiro (`docs/ROTEIRO-TESTE.md`). Feito: Ana como Gestão.
@@ -236,6 +238,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-106 — 2026-10-11 — Revita Derma criada (A3, parte 1)
+- **Decidido:** D-RDRULES. Varredura do Drive da Revita (relatório privado, fora do repositório).
+- **Aplicado em produção (SQL atômico, auditoria `claude-pedido-do-responsavel`):** marca `revita-derma` (Sintonia
+  Pharma, CNPJ, cor `#425466`, 10%/5%, sem mínimo para influencer, prescritor R$ 1.000, saque 1–15); versões de contrato
+  influencer, prescritor e UGC com kit inicial de 2; Ana Gestão; 5 creators (4 contas novas, 1 já da Botanika) com
+  contrato "não informado" e taxa de 10% a confirmar.
+- **Falta (responsável):** site, domínio da loja, app e conexão.
 
 ### CP-105 — 2026-10-11 — Inscrição por marca e aceite da Alliance; rascunho dos textos da VermeFree (A2, parte 5)
 - **Decidido:** D-SIGNUPBRANDS (já pedido pelo responsável em A1: uma candidatura por marca, aceite com a Alliance).
