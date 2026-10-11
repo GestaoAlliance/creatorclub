@@ -7,11 +7,16 @@ import { acceptInviteAction } from "./actions";
 
 const input = ui.input;
 
-export function AcceptForm({ token, needsPassword }: { token: string; needsPassword: boolean }) {
+export function AcceptForm({ token, needsPassword, askEmail = false }: { token: string; needsPassword: boolean; askEmail?: boolean }) {
   const [state, action, pending] = useActionState(acceptInviteAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="token" value={token} />
+      {askEmail && (
+        <label className={ui.label}>Seu e-mail (é com ele que você vai entrar)
+          <input className={input} name="email" type="email" autoComplete="email" required />
+        </label>
+      )}
       {needsPassword && (
         <>
           <label className={ui.label}>Crie sua senha (mínimo {PASSWORD_MIN_LENGTH} caracteres)

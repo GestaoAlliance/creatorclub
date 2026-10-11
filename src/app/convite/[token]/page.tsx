@@ -26,7 +26,7 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getClaims();
   const sessionEmail = typeof data?.claims?.email === "string" ? data.claims.email.toLowerCase() : null;
-  if (sessionEmail && sessionEmail !== invite.email) {
+  if (sessionEmail && invite.email && sessionEmail !== invite.email) {
     return shell(
       <p className={ui.muted}>
         Este convite é para <strong>{invite.email}</strong>, mas você entrou como {sessionEmail}.{" "}
@@ -37,10 +37,16 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
   return shell(
     <>
       <p className={ui.muted}>
-        Seu acesso ao Creator Club: <strong>{invite.grantText}</strong>. Entrada com o e-mail{" "}
-        <strong>{invite.email}</strong>.
+        Seu acesso ao Creator Club: <strong>{invite.grantText}</strong>.{" "}
+        {invite.email ? (
+          <>Entrada com o e-mail <strong>{invite.email}</strong>.</>
+        ) : sessionEmail ? (
+          <>Entrada com o e-mail <strong>{sessionEmail}</strong>.</>
+        ) : (
+          <>Digite o seu e-mail e crie a sua senha: é com eles que você vai entrar.</>
+        )}
       </p>
-      <AcceptForm token={token} needsPassword={!sessionEmail} />
+      <AcceptForm token={token} needsPassword={!sessionEmail} askEmail={!invite.email && !sessionEmail} />
     </>,
     `Olá, ${invite.name.split(" ")[0]}`,
   );

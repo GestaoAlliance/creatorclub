@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { passwordProblem } from "@/lib/auth/rules";
+import { normalizeEmail, passwordProblem } from "@/lib/auth/rules";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -22,23 +22,25 @@ export async function acceptInviteAction(_prev: AcceptState, form: FormData): Pr
   let email = typeof data?.claims?.email === "string" ? data.claims.email : null;
 
   if (!userId) {
-    // Sem sessão: cria o login com o e-mail do convite e a senha escolhida.
+    // Sem sessão: cria o login com o e-mail do convite (ou o digitado, no convite aberto) e a senha escolhida.
+    const loginEmail = invite.email ?? normalizeEmail(form.get("email"));
+    if (!loginEmail) return { error: "Informe um e-mail válido." };
     const password = form.get("password");
     const problem = passwordProblem(password);
     if (problem) return { error: problem };
     if (password !== form.get("confirm")) return { error: "As duas senhas não são iguais." };
     const created = await supabaseAdmin().auth.admin.createUser({
-      email: invite.email,
+      email: loginEmail,
       password: password as string,
       email_confirm: true,
     });
     if (created.error || !created.data.user) {
       return { error: "Já existe uma conta com este e-mail. Entre com ela e abra o convite de novo." };
     }
-    const signedIn = await supabase.auth.signInWithPassword({ email: invite.email, password: password as string });
+    const signedIn = await supabase.auth.signInWithPassword({ email: loginEmail, password: password as string });
     if (signedIn.error) return { error: "Conta criada, mas não foi possível entrar. Tente pelo login." };
     userId = created.data.user.id;
-    email = invite.email;
+    email = loginEmail;
   }
 
   try {

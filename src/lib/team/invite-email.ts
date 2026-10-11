@@ -69,6 +69,7 @@ export async function emailStaffInvite(prisma: PrismaClient, sender: EmailSender
     where: { id: input.inviteId },
     select: { email: true, name: true, role: true, brandId: true, expiresAt: true, brand: { select: { name: true } } },
   });
+  if (!invite.email) return null; // convite aberto (D-OPENINVITE): só pelo WhatsApp
   return deliver(
     prisma,
     sender,

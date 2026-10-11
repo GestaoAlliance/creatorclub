@@ -17,8 +17,9 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
         <label className={ui.label}>Nome
           <input className={input} name="name" required />
         </label>
-        <label className={ui.label}>E-mail
-          <input className={input} name="email" type="email" required />
+        <label className={ui.label}>E-mail{role === "SUPER_ADMIN" ? "" : " (opcional)"}
+          <input className={input} name="email" type="email" required={role === "SUPER_ADMIN"} />
+          {role !== "SUPER_ADMIN" && <span className={ui.hint}>Em branco: a pessoa digita o próprio e-mail ao abrir o link. Mande o link só no privado.</span>}
         </label>
         <label className={ui.label}>Papel
           <select className={input} name="role" value={role} onChange={(e) => setRole(e.target.value)}>
@@ -46,7 +47,7 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
         <div className="flex flex-col gap-2 rounded-2xl border border-emerald-400/50 bg-emerald-100/70 p-4 text-sm text-emerald-950 dark:bg-emerald-900/30 dark:text-emerald-100">
           {state.mailed && <p className="font-medium">Enviado por e-mail para {state.email}.</p>}
           {state.mailError && <p role="alert" className="font-medium text-red-700 dark:text-red-300">O e-mail não foi enviado ({state.mailError}) Mande o link pelo WhatsApp.</p>}
-          <p>Convite para <strong>{state.email}</strong>. {state.mailed ? "Se quiser, mande também pelo WhatsApp" : "Copie e envie"} (aparece só agora; vale 7 dias, uma vez):</p>
+          <p>Convite para <strong>{state.email ?? "quem abrir o link (e-mail escolhido no primeiro acesso)"}</strong>. {state.mailed ? "Se quiser, mande também pelo WhatsApp" : "Copie e envie"} (aparece só agora; vale 7 dias, uma vez):</p>
           <code className="break-all font-mono text-xs">{state.link}</code>
           <button
             type="button"

@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-107 — 2026-10-11 — Convite aberto da equipe: a pessoa escolhe o e-mail (U1)
+- **Decidido:** D-OPENINVITE.
+- **Feito:** migração `open_staff_invite` (`StaffInvite.email` opcional e trava `StaffInvite_open_not_super_admin`);
+  `createStaffInvite` aceita e-mail em branco (não para super admin); `acceptStaffInvite` usa o e-mail da conta no
+  convite aberto; `/convite/[token]` pede e-mail e senha; Equipe com "E-mail (opcional)" e "e-mail no primeiro acesso" nos
+  pendentes; convite aberto não vai por e-mail.
+- **Verificado:** integração nova (aceite com o e-mail escolhido, uso único, super admin recusado, trava pelo nome);
+  migração × schema sem divergência; capturas com banco local. `npm test`, `npm run test:integration` (196),
+  `npm run typecheck`, `npm run build` passando.
+
 ### CP-106 — 2026-10-11 — Revita Derma criada (A3, parte 1)
 - **Decidido:** D-RDRULES. Varredura do Drive da Revita (relatório privado, fora do repositório).
 - **Aplicado em produção (SQL atômico, auditoria `claude-pedido-do-responsavel`):** marca `revita-derma` (Sintonia

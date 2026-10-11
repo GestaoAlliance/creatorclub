@@ -160,7 +160,8 @@ model RoleGrant {
 /// Convite de uso único para a equipe (E2.4). Só o hash do token fica no banco; o link é mostrado uma vez.
 model StaffInvite {
   id             String    @id @default(uuid())
-  email          String
+  /// D-OPENINVITE: nulo = convite aberto (a pessoa digita o próprio e-mail no primeiro acesso); nunca para super admin.
+  email          String?
   name           String
   role           StaffRole
   brandId        String? // nulo só para SUPER_ADMIN
