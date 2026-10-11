@@ -16,19 +16,40 @@ const ITEMS: (NavItem & { needs: Permission; global?: boolean; hunterOnly?: bool
   { href: "/envios", label: "Envios", icon: "package", needs: "shipping.view" },
   { href: "/saques", label: "Saques", icon: "payout", needs: "withdrawals.manage" },
   { href: "/abertura", label: "Abertura", icon: "opening", needs: "withdrawals.manage" },
-  { href: "/marcas", label: "Marcas", icon: "store", needs: "staff.manage", global: true },
-  { href: "/equipe", label: "Equipe", icon: "team", needs: "staff.manage", global: true },
   { href: "/termo", label: "Termo", icon: "terms", needs: "staff.manage", global: true },
   { href: "/contratos", label: "Contratos", icon: "contract", needs: "staff.manage", global: true },
   { href: "/sync", label: "Shopify", icon: "sync", needs: "integrations.manage", global: true },
   { href: "/importar", label: "Importar", icon: "import", needs: "integrations.manage", global: true },
 ];
 
+/** Menu dentro de uma marca (A1, D-ALLIANCE): o Início da marca e as telas do papel. */
 export function staffNav(grants: readonly Grant[]): NavItem[] {
   const allowed = ITEMS.filter((i) => {
     if (i.hunterOnly) return grants.some((g) => g.role === "HUNTER");
     const b = brandsWith(grants, i.needs);
     return i.global ? b === "ALL" : b === "ALL" || b.length > 0;
   }).map(({ href, label, icon }) => ({ href, label, icon }));
-  return [{ href: "", label: "Início", icon: "home" }, ...allowed];
+  return [{ href: "/marca", label: "Início", icon: "home" }, ...allowed];
 }
+
+/** Quem tem o painel da Alliance acima das marcas: super admin ou quem atende mais de uma marca. */
+export function hasAlliancePanel(grants: readonly Grant[], brandCount: number): boolean {
+  return grants.some((g) => g.role === "SUPER_ADMIN" && g.brandId === null) || brandCount > 1;
+}
+
+/** Menu do painel da Alliance: só as marcas e, para o super admin, o cadastro de marcas e a equipe. */
+export function allianceNav(grants: readonly Grant[]): NavItem[] {
+  const admin = brandsWith(grants, "staff.manage") === "ALL";
+  return [
+    { href: "", label: "Marcas da Alliance", icon: "home" },
+    ...(admin
+      ? [
+          { href: "/marcas", label: "Cadastro de marcas", icon: "store" as const },
+          { href: "/equipe", label: "Equipe", icon: "team" as const },
+        ]
+      : []),
+  ];
+}
+
+/** Telas do painel da Alliance (o resto é dentro de uma marca). */
+export const ALLIANCE_PATHS = ["/admin", "/admin/marcas", "/admin/equipe"];

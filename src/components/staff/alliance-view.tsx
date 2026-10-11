@@ -28,7 +28,7 @@ function Go({ slug, next, label, value, tone }: { slug: string; next: string; la
 export function AllianceView({ brands }: { brands: Brands }) {
   return (
     <>
-      <PageHeader title="Alliance">As marcas da Alliance no Creator Club. Escolha uma linha para entrar na marca já na tela certa.</PageHeader>
+      <PageHeader title="Marcas da Alliance">Escolha a marca para entrar no painel dela, com tudo dela: candidatas, creators, cupons, envios, saques, contratos e a loja.</PageHeader>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {brands.map((b) => {
           const c = b.home.creators;
@@ -60,6 +60,11 @@ export function AllianceView({ brands }: { brands: Brands }) {
                   {c && c.idle > 0 && <p className={ui.hint}>{c.idle} sem vender há 60 dias</p>}
                 </div>
               </div>
+              <form action={chooseBrandAction}>
+                <input type="hidden" name="slug" value={b.slug} />
+                <input type="hidden" name="next" value="/admin/marca" />
+                <button className={`${ui.btn} w-full`}>Entrar na {b.name}</button>
+              </form>
               <div className="flex flex-col">
                 {c && <Go slug={b.slug} next="/admin/candidatas" label="Candidatas novas" value={c.applications} tone={c.applications ? "amber" : undefined} />}
                 {c && <Go slug={b.slug} next="/admin/desempenho" label="Desempenho do mês" value="ver" />}

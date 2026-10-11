@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { dayKey } from "@/domain";
 import { loadActor } from "@/lib/auth/actor";
 import { creatorProfile, listCreators } from "@/lib/creators/profile";
 import { staffHome } from "@/lib/staff/home";
@@ -9,6 +10,8 @@ const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
 const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
+// Coluna de data (sem hora): grava o dia de São Paulo, como a ficha faz; senão, entre 0h e 3h UTC o dia muda.
+const dayAgo = (days: number) => new Date(`${dayKey(ago(days))}T00:00:00Z`);
 
 describe("aviso de 60 dias sem vender (D-IDLE60, banco real)", () => {
   it("última venda elegível conta; nunca vendeu conta do início; pausada e permuta ficam de fora", async () => {
@@ -20,7 +23,7 @@ describe("aviso de 60 dias sem vender (D-IDLE60, banco real)", () => {
 
     const mk = async (extra: Record<string, unknown> = {}) => {
       const acc = await prisma.creatorAccount.create({ data: { name: "X", email: `${randomUUID()}@x.com` } });
-      return prisma.creator.create({ data: { brandId: a.brand.id, accountId: acc.id, categories: [], contractStart: ago(90), ...extra } });
+      return prisma.creator.create({ data: { brandId: a.brand.id, accountId: acc.id, categories: [], contractStart: dayAgo(90), ...extra } });
     };
     const sale = async (creatorId: string, daysAgo: number, extra: Record<string, unknown> = {}) => {
       const at = ago(daysAgo);
@@ -42,7 +45,7 @@ describe("aviso de 60 dias sem vender (D-IDLE60, banco real)", () => {
     await sale(stale.id, 65);
     await sale(stale.id, 3, { cancelledAt: ago(2) }); // cancelado não conta
     const never = await mk(); // contrato começou há 90 dias, nunca vendeu
-    const newbie = await mk({ contractStart: ago(10) });
+    const newbie = await mk({ contractStart: dayAgo(10) });
     await mk({ status: "INACTIVE" });
     await mk({ contractTemplateId: permuta.id });
 

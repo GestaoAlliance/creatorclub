@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { StaffShell } from "@/components/staff/shell";
+import { StaffFrame } from "@/components/staff/frame";
 import { currentActor } from "@/lib/auth/current";
 import { staffContext } from "@/lib/staff/context";
-import { staffNav } from "@/lib/staff/nav";
+import { allianceNav, hasAlliancePanel, staffNav } from "@/lib/staff/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +12,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!actor || actor.grants.length === 0) return <>{children}</>;
   const ctx = await staffContext(actor);
   return (
-    <StaffShell brand={ctx.brand} brands={ctx.brands} firstName={ctx.firstName} isCreator={ctx.isCreator} items={staffNav(actor.grants)}>
+    <StaffFrame
+      brand={ctx.brand}
+      brands={ctx.brands}
+      firstName={ctx.firstName}
+      isCreator={ctx.isCreator}
+      alliance={hasAlliancePanel(actor.grants, ctx.brands.length)}
+      brandItems={staffNav(actor.grants)}
+      allianceItems={allianceNav(actor.grants)}
+    >
       {children}
-    </StaffShell>
+    </StaffFrame>
   );
 }
