@@ -6,6 +6,14 @@ ao desenvolvimento. O objetivo é descobrir o que não funciona **antes** do cor
 
 Endereço: https://creatorclub-six.vercel.app (entrar com o e-mail do convite).
 
+**Marcas (desde 2026-10-11):** o painel abre na visão da Alliance; escolha a marca no cartão ("Entrar na marca") ou no
+seletor do topo. Cada tela mostra só a marca escolhida. Botanika está completa; VermeFree tem loja, pedidos, catálogo,
+envios e 65 creators **a confirmar** (cupom, dona e taxa); Revita Derma tem marca, regras e 5 creators a confirmar,
+falta a loja.
+
+**Acessos (comando para o Claude):** "manda acesso de [nome]" → o Claude gera o convite e devolve um texto de
+WhatsApp de até 4 linhas com link, login e primeiro acesso (o link vale 7 dias e uma vez só).
+
 ## Antes de começar (responsável, super admin)
 
 1. Em **Equipe**, gerar o convite de cada pessoa com o papel certo e mandar o link pelo WhatsApp
@@ -19,6 +27,10 @@ Endereço: https://creatorclub-six.vercel.app (entrar com o e-mail do convite).
 3. Combinar um horário no fim da semana para juntar as anotações.
 
 ## Ana (Gestão): captação, curadoria e acompanhamento
+
+Ana é Gestão nas três marcas. Primeiro dia: **VermeFree → Cupons**, classificar cada cupom (creator ou promocional),
+confirmar a dona e a taxa (10%), usando a planilha de auditoria Botanika × VermeFree; depois **Revita → Creators**.
+Em cada marca, conferir também **agosto da VermeFree** (a planilha antiga copiou junho/julho) com a Juci.
 
 Dia a dia:
 1. **Início**: o que há para fazer (candidatas novas, contratos vencendo, creators sem vender há 60 dias).
