@@ -52,7 +52,7 @@ function Done({ children }: { children: React.ReactNode }) {
  * Aprovar com um clique (F3): cria o cupom na Shopify, a creator e o convite do portal (por e-mail quando houver
  * remetente) e oferece o WhatsApp de boas-vindas pronto.
  */
-function ApproveForm(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; onDone: () => void }) {
+function ApproveForm(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
   const { onDone } = p;
   useEffect(() => { if (state?.ok) onDone(); }, [state, onDone]);
@@ -107,11 +107,11 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
         </label>
         <label className={ui.label}>
           Comissão %
-          <input name="rate" defaultValue="15" inputMode="decimal" required className={ui.inputSm} />
+          <input name="rate" defaultValue={String(p.ratePct).replace(".", ",")} inputMode="decimal" required className={ui.inputSm} />
         </label>
         <label className={ui.label}>
           Desconto %
-          <input name="discount" defaultValue="5" inputMode="decimal" required className={ui.inputSm} />
+          <input name="discount" defaultValue={String(p.discountPct).replace(".", ",")} inputMode="decimal" required className={ui.inputSm} />
         </label>
         {p.templates.length > 0 && (
           <label className={`${ui.label} col-span-full sm:col-span-2`}>
@@ -159,7 +159,7 @@ function RejectForm(p: Person & { onDone: () => void }) {
 }
 
 /** Aprovar e recusar juntos: decidido um, o outro some (a linha só sai da lista no "Concluir"). */
-export function DecisionForms(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[] }) {
+export function DecisionForms(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number }) {
   const [done, setDone] = useState<"approved" | "rejected" | null>(null);
   const approved = useCallback(() => setDone("approved"), []);
   const rejected = useCallback(() => setDone("rejected"), []);
