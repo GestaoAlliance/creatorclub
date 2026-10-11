@@ -5,7 +5,7 @@ import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { createBrandAction, updateBrandAction } from "./actions";
 
-type Values = { brandId?: string; name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string };
+type Values = { brandId?: string; name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string; storeUrl: string };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
 export function BrandForm({ initial, create = false }: { initial: Values; create?: boolean }) {
@@ -37,6 +37,10 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
         <label className={ui.label}>
           CNPJ (tomador da nota fiscal)
           <input name="cnpj" defaultValue={initial.cnpj} inputMode="numeric" placeholder="00.000.000/0000-00" className={ui.input} />
+        </label>
+        <label className={ui.label}>
+          Site da loja (para onde vai o link da creator)
+          <input name="storeUrl" defaultValue={initial.storeUrl} placeholder="https://vermefree.com.br" inputMode="url" className={ui.input} />
         </label>
         <label className={ui.label}>
           Cor da marca

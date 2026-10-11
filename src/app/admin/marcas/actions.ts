@@ -13,6 +13,7 @@ const input = (form: FormData) => ({
   primaryColor: String(form.get("primaryColor") ?? ""),
   legalName: String(form.get("legalName") ?? ""),
   cnpj: String(form.get("cnpj") ?? ""),
+  storeUrl: String(form.get("storeUrl") ?? ""),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

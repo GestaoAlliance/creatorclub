@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance". Pendente do responsável para começar: razão social, CNPJ,
-  cor e endereço da loja (`xxx.myshopify.com`) da VermeFree. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": carga dos pedidos da loja e auditoria das contradições
+  (quem é de qual marca e o que faz), nada aplicado antes do OK do responsável. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -18,7 +18,7 @@
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
   (Pagamento: Juci/Pâmela), E0.4 (Vitor).
-- **Bloqueios e riscos:** limite de 100 deploys/dia da Vercel no plano grátis (prévias desligadas, D-PREVIEW);
+- **Bloqueios e riscos:** Vercel no plano Pro (reativado em 2026-10-11 depois de suspensão; prévias seguem desligadas, D-PREVIEW);
   `read_all_orders` ainda não concedido ao app (carga histórica de pedidos com mais de 60 dias); `creator-hub` sem
   backup (guardar um dump privado).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -181,8 +181,12 @@ já existem antes de desenhar.
   marca escolhida, troca de marca mantendo a tela.
 - [x] **A1b** Cadastro de marca pela tela (super admin) e papel em mais de uma marca na Equipe.
 - [x] **A1c** Dois níveis: painel da Alliance só com as marcas; dentro da marca, todas as telas (pedido do responsável).
-- [ ] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
+- [~] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
   cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
+  Feito: marca criada e loja `q0pfbm-az.myshopify.com` conectada pelo responsável (sem `read_all_orders`, recusado na
+  criação como na Botanika); varredura do Drive da VermeFree (relatório privado, fora do repositório); telas só da marca
+  escolhida (CP-101). Falta: carga dos pedidos; auditoria das contradições (quem é de qual marca, cupons, taxas, contratos,
+  pagamentos) para o responsável e a Ana decidirem linha por linha; só então cadastrar.
 - [ ] **A3** Revita Derma: o mesmo processo.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
@@ -229,6 +233,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-101 — 2026-10-11 — Telas só da marca escolhida e site da loja (A2, parte 1)
+- **Pedido do responsável:** "tela da VermeFree somente com dados da VermeFree" (no print, Cupons dentro da VermeFree
+  abria a Botanika); campo de site da loja no cadastro de marcas.
+- **Feito:** Creators e Cupons seguem a marca do topo (sem botões de marca); ficha da creator e contrato assinado de
+  outra marca mostram o aviso com "Entrar na [marca]" (`OtherBrandNotice`); Importar só na marca escolhida. Marca com
+  `storeUrl` (normalizado para `https://`, sem barra no fim) e selo "site da loja" no cadastro; razão social só com
+  números é recusada. Conferidas as outras telas: Início, Candidatas, Hunters, Envios, Saques, Abertura, Shopify,
+  Desempenho, Termo e Contratos já eram só da marca escolhida.
+- **No ar (responsável):** VermeFree criada e loja conectada; Vercel reativada depois de suspensão do plano
+  (site fora das 3h06 às 9h15 de 2026-10-11; fila e reconciliação recuperaram sozinhas).
+- **Verificado:** unitário novo (site da loja), integração de marcas ampliada (site salvo, razão social com CNPJ recusada).
+  Capturas com banco local. `npm test`, `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-100 — 2026-10-11 — Painel da Alliance em dois níveis (A1c)
 - **Decidido:** ajuste da D-ALLIANCE (painel da Alliance só com as marcas; telas só dentro da marca).

@@ -6,6 +6,8 @@ import { creatorProfile, ProfileError } from "@/lib/creators/profile";
 import { db } from "@/lib/db";
 import { creatorTermsStatus } from "@/lib/terms/terms";
 import { creatorContractSignature } from "@/lib/contracts/sign";
+import { staffContext } from "@/lib/staff/context";
+import { OtherBrandNotice } from "@/components/staff/other-brand";
 import { CreatorProfileView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,12 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   } catch (error) {
     if (error instanceof ProfileError) notFound();
     throw error;
+  }
+  // A1 (D-ALLIANCE): a ficha só abre dentro da marca da creator.
+  const { brand } = await staffContext(actor);
+  if (brand && brand.id !== p.brandId) {
+    const own = await db().brand.findUniqueOrThrow({ where: { id: p.brandId }, select: { slug: true, name: true } });
+    return <OtherBrandNotice title="Creator" brand={own} next={`/admin/creators/${id}`} />;
   }
   let st = null;
   if (p.adjustments) {
