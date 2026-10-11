@@ -236,6 +236,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-103 — 2026-10-11 — Catálogo de produtos de cada loja pelo app (A2, parte 3)
+- **Por quê:** a VermeFree não tinha produtos no sistema (o conector da Shopify só alcança a Botanika); sem catálogo,
+  não há envios nem kit de boas-vindas.
+- **Feito:** `src/lib/shopify/products.ts` (`syncProducts`: pagina os produtos, cria, atualiza nome/ativo e desativa o
+  que sumiu, sem apagar; tarefa `shopify.products.sync`; agenda diária pelo worker; pedido manual com permissão de
+  conectar lojas). Conectar a loja já pede o catálogo. Tela Shopify: contagem de produtos ativos e "Atualizar catálogo".
+- **Verificado:** 2 de integração novos (criar/atualizar/desativar; agenda diária e permissão). Capturas com banco
+  local. `npm test`, `npm run test:integration` (194), `npm run typecheck`, `npm run build` passando.
+
 ### CP-102 — 2026-10-11 — VermeFree preparada para a Ana (A2, parte 2)
 - **Decidido:** D-VFRULES e D-VFIMPORT (pedido do responsável: "deixar o máximo da nossa parte preparado"; Ana revisa,
   Juci paga; VICTORIA segue 10% na Botanika, já confirmado pela planilha de pagamentos em CP-62).

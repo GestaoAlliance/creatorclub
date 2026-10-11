@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Msg as Status } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { backfillAction, connectAction, syncNowAction } from "./actions";
+import { backfillAction, connectAction, productSyncAction, syncNowAction } from "./actions";
 
 const input = ui.input;
 const button = `${ui.btn} self-start`;
@@ -35,6 +35,18 @@ export function SyncNowForm({ brandId }: { brandId: string }) {
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="brandId" value={brandId} />
       <button className={button} disabled={pending}>Sincronizar agora</button>
+      <Status state={state} />
+    </form>
+  );
+}
+
+export function ProductSyncForm({ brandId, count }: { brandId: string; count: number }) {
+  const [state, action, pending] = useActionState(productSyncAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="brandId" value={brandId} />
+      <p className="text-sm">Catálogo para envios e kits: {count} produtos ativos (atualiza sozinho uma vez por dia).</p>
+      <button className={button} disabled={pending}>Atualizar catálogo</button>
       <Status state={state} />
     </form>
   );

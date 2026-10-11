@@ -7,7 +7,7 @@ import { syncHealth } from "@/lib/shopify/health";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { BackfillForm, ConnectForm, SyncNowForm } from "./forms";
+import { BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +61,10 @@ export default async function SyncPage() {
             )}
             {h.shopify?.status === "CONNECTED" && (
               <div className="grid gap-4 border-t border-stone-200/70 pt-4 sm:grid-cols-2 dark:border-white/10">
-                <SyncNowForm brandId={h.brand.id} />
+                <div className="flex flex-col gap-4">
+                  <SyncNowForm brandId={h.brand.id} />
+                  <ProductSyncForm brandId={h.brand.id} count={h.products} />
+                </div>
                 <BackfillForm brandId={h.brand.id} />
               </div>
             )}
