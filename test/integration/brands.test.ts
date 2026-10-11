@@ -24,8 +24,9 @@ describe("marcas e papéis por marca (A1b, banco real)", () => {
     await expect(createBrand(prisma, sa, { name, primaryColor: "#000000", legalName: "", cnpj: "" })).rejects.toThrow(/Já existe/);
     await expect(createBrand(prisma, sa, { name: "X Y", primaryColor: "verde", legalName: "", cnpj: "" })).rejects.toThrow(/#RRGGBB/);
     await expect(createBrand(prisma, sa, { name: "X Z", primaryColor: "#000000", legalName: "", cnpj: "123" })).rejects.toThrow(/14 números/);
-    await updateBrand(prisma, sa, b.id, { name: `${name} Nova`, primaryColor: "#111111", legalName: "", cnpj: "" });
-    expect(await prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ name: `${name} Nova`, slug: b.slug, nfTakerDocument: null });
+    await expect(createBrand(prisma, sa, { name: "X W", primaryColor: "#000000", legalName: "37.560.104/0001-60", cnpj: "" })).rejects.toThrow(/Razão social/);
+    await updateBrand(prisma, sa, b.id, { name: `${name} Nova`, primaryColor: "#111111", legalName: "", cnpj: "", storeUrl: "verme.com.br/" });
+    expect(await prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ name: `${name} Nova`, slug: b.slug, nfTakerDocument: null, storeUrl: "https://verme.com.br" });
     const card = (await brandList(prisma, sa)).find((x) => x.id === b.id)!;
     expect(card).toMatchObject({ store: null, activeCreators: 0, _count: { termsVersions: 0, contractDocuments: 0 } });
     const { brand } = await seedBrand(prisma);

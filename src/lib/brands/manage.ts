@@ -4,7 +4,7 @@ import { brandsWith } from "@/lib/auth/permissions";
 
 /**
  * Marcas da Alliance (A1b, D-ALLIANCE): o super admin cadastra e edita nome, endereço (slug), cor, razão social e CNPJ
- * (tomador da nota fiscal das creators, D-NF). As regras de comissão e saque nascem com o padrão das outras marcas.
+ * (tomador da nota fiscal das creators, D-NF) e o site da loja (destino do link da creator, `/r/...`). As regras de comissão e saque nascem com o padrão das outras marcas.
  * Nada é apagado (D-ARCHIVE).
  */
 
@@ -15,7 +15,7 @@ function requireSuperAdmin(actor: Actor | null): Actor {
   return actor;
 }
 
-export type BrandInput = { name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string };
+export type BrandInput = { name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string; storeUrl?: string };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
 export function slugFrom(name: string): string {
@@ -30,7 +30,23 @@ function clean(input: BrandInput) {
   const cnpj = input.cnpj.replace(/\D/g, "") || null;
   if (cnpj && cnpj.length !== 14) throw new BrandError("CNPJ precisa ter 14 números (ou deixe em branco por enquanto).");
   const legalName = input.legalName.trim().replace(/\s+/g, " ").slice(0, 160) || null;
-  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName };
+  if (legalName && !/[A-Za-zÀ-ÿ]/.test(legalName)) throw new BrandError("Razão social é o nome da empresa (o CNPJ vai no campo ao lado).");
+  const storeUrl = normalizeStoreUrl(input.storeUrl ?? "");
+  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl };
+}
+
+/** "vermefree.com.br" → "https://vermefree.com.br" (sem barra no fim); vazio = sem site. */
+export function normalizeStoreUrl(raw: string): string | null {
+  const t = raw.trim().replace(/\/+$/, "");
+  if (!t) return null;
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(t) ? t : `https://${t}`);
+  } catch {
+    throw new BrandError("Site da loja inválido (ex.: https://vermefree.com.br).");
+  }
+  if (url.protocol !== "https:" || !url.hostname.includes(".") || url.search || url.hash) throw new BrandError("Site da loja inválido (ex.: https://vermefree.com.br).");
+  return `https://${url.hostname.toLowerCase()}${url.pathname.replace(/\/+$/, "")}`;
 }
 
 export async function createBrand(prisma: PrismaClient, actor: Actor | null, input: BrandInput) {
@@ -50,7 +66,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true } });
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true } });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
   await prisma.$transaction(async (tx) => {
@@ -73,6 +89,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       secondaryColor: true,
       legalName: true,
       nfTakerDocument: true,
+      storeUrl: true,
       createdAt: true,
       integrations: { where: { kind: "SHOPIFY" }, select: { status: true, externalId: true } },
       _count: { select: { roleGrants: true, termsVersions: true, contractDocuments: true, contractTemplates: true } },

@@ -6,6 +6,8 @@ import { ui } from "@/components/ui/styles";
 import { currentActor } from "@/lib/auth/current";
 import { ContractSignError, creatorContractSignature, signedContractText } from "@/lib/contracts/sign";
 import { db } from "@/lib/db";
+import { staffContext } from "@/lib/staff/context";
+import { OtherBrandNotice } from "@/components/staff/other-brand";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,12 @@ export default async function ContratoAssinadoPage({ params }: PageProps<"/admin
     throw error;
   }
   if (s.creatorId !== id) notFound();
+  // A1 (D-ALLIANCE): só dentro da marca da creator.
+  const { brand } = await staffContext(actor);
+  if (brand && brand.id !== s.brandId) {
+    const own = await db().brand.findUniqueOrThrow({ where: { id: s.brandId }, select: { slug: true, name: true } });
+    return <OtherBrandNotice title="Contrato assinado" brand={own} next={`/admin/creators/${id}/contrato`} />;
+  }
   return (
     <>
       <PageHeader title="Contrato assinado">

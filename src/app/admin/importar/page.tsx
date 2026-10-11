@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
+import { staffContext } from "@/lib/staff/context";
 import { Card, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { ImportForm } from "./form";
@@ -13,7 +14,9 @@ export default async function ImportarPage() {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/importar");
   if (brandsWith(actor.grants, "integrations.manage") !== "ALL") redirect("/conta");
-  const brands = await db().brand.findMany({ where: { legacyId: { not: null }, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true } });
+  // A1 (D-ALLIANCE): só a marca escolhida no topo.
+  const { brand } = await staffContext(actor);
+  const brands = brand ? await db().brand.findMany({ where: { id: brand.id, legacyId: { not: null } }, select: { id: true, name: true } }) : [];
 
   return (
     <>
@@ -21,7 +24,7 @@ export default async function ImportarPage() {
         Cria contas, participações, cupons (sem tipo), donas e taxas a confirmar pela Ana. Pode rodar de novo: nada é sobrescrito, e o
         resultado mostra o que mudou no app antigo.
       </PageHeader>
-      <Card>{brands.length === 0 ? <p className={ui.muted}>Nenhuma marca ligada ao app antigo.</p> : <ImportForm brands={brands} />}</Card>
+      <Card>{brands.length === 0 ? <p className={ui.muted}>{brand ? `A ${brand.name} não está ligada ao app antigo.` : "Nenhuma marca."}</p> : <ImportForm brands={brands} />}</Card>
     </>
   );
 }

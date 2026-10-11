@@ -31,6 +31,7 @@ export default async function MarcasPage() {
           { done: b._count.contractDocuments > 0, label: "contratos publicados" },
           { done: b._count.contractTemplates > 0, label: "versões de contrato" },
           { done: Boolean(b.nfTakerDocument), label: "CNPJ para a nota" },
+          { done: Boolean(b.storeUrl), label: "site da loja" },
         ];
         return (
           <Card key={b.id} title={b.name} icon={<span className="size-4 rounded-full" style={{ background: b.primaryColor }} />}>
@@ -42,14 +43,14 @@ export default async function MarcasPage() {
             <details>
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "" }} />
+                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "" }} />
               </div>
             </details>
           </Card>
         );
       })}
       <Card title="Nova marca" icon={<Plus className="size-4" />}>
-        <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "" }} />
+        <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "" }} />
       </Card>
     </>
   );
