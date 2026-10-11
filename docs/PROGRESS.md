@@ -7,8 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": carga dos pedidos da loja e auditoria das contradições
-  (quem é de qual marca e o que faz), nada aplicado antes do OK do responsável. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
+  depois, contrato e termo da VermeFree e envios da planilha. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -185,8 +185,10 @@ já existem antes de desenhar.
   cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
   Feito: marca criada e loja `q0pfbm-az.myshopify.com` conectada pelo responsável (sem `read_all_orders`, recusado na
   criação como na Botanika); varredura do Drive da VermeFree (relatório privado, fora do repositório); telas só da marca
-  escolhida (CP-101). Falta: carga dos pedidos; auditoria das contradições (quem é de qual marca, cupons, taxas, contratos,
-  pagamentos) para o responsável e a Ana decidirem linha por linha; só então cadastrar.
+  escolhida (CP-101); pedidos desde 01/07 (2.047); auditoria Botanika × VermeFree (planilha privada); regras, versões de
+  contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102). Falta: a Ana confirmar cupons, donas e taxas; junho
+  (importar de novo desde 01/06); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
+  textos do contrato e do termo da VermeFree; envios da planilha "Envios - Vermefree".
 - [ ] **A3** Revita Derma: o mesmo processo.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
@@ -233,6 +235,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-102 — 2026-10-11 — VermeFree preparada para a Ana (A2, parte 2)
+- **Decidido:** D-VFRULES e D-VFIMPORT (pedido do responsável: "deixar o máximo da nossa parte preparado"; Ana revisa,
+  Juci paga; VICTORIA segue 10% na Botanika, já confirmado pela planilha de pagamentos em CP-62).
+- **Aplicado em produção (SQL atômico, auditoria `claude-pedido-do-responsavel`):** regras da VermeFree (10%, 5%, sem
+  mínimo para influencer, R$ 1.000 para prescritor, saque 1–15, site); 3 versões de contrato; Ana Gestão na VermeFree;
+  65 creators (43 contas novas, 22 já da Botanika), 32 cupons sem tipo com dona a confirmar, 45 taxas de 10% a confirmar.
+  Conferido: nenhum pedido da VermeFree atribuído nem lançado no extrato.
+- **Achados (planilha de auditoria ao responsável):** setembro da VermeFree bate com a planilha de pagamentos; agosto da
+  planilha é cópia de junho–julho (comissões de agosto nunca calculadas); pedidos importados começam em 01/07.
+- **Código:** aprovação de candidata usa a taxa e o desconto padrão da marca.
+- **Verificado:** `npm test`, `npm run test:integration` (192), `npm run typecheck` passando.
 
 ### CP-101 — 2026-10-11 — Telas só da marca escolhida e site da loja (A2, parte 1)
 - **Pedido do responsável:** "tela da VermeFree somente com dados da VermeFree" (no print, Cupons dentro da VermeFree
