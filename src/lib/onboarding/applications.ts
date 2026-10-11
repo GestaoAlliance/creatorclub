@@ -194,7 +194,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     where: { ...scope, status },
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
     take: 1000,
-    include: { brand: { select: { name: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
+    include: { brand: { select: { name: true, defaultCommissionBps: true, defaultDiscountBps: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
   const counts = await prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true });
   // F2: repetidas — mesmo e-mail, CPF ou @ em outra candidata (qualquer situação) ou numa creator da marca.
@@ -217,6 +217,9 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         id: r.id,
         brandId: r.brandId,
         brandName: r.brand.name,
+        /** Padrão da marca para a aprovação (VermeFree 10%, Botanika 15%). */
+        defaultRateBps: r.brand.defaultCommissionBps,
+        defaultDiscountBps: r.brand.defaultDiscountBps,
         status: r.status,
         submittedAt: r.submittedAt,
         decidedAt: r.decidedAt,

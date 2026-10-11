@@ -60,7 +60,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       )}
       {status === "NEW" && a.canDecide && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
-          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} templates={templates} />
+          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} />
         </div>
       )}
       {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
