@@ -51,7 +51,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 ];
 
 export const SIGNUP_CONSENT_TEXT =
-  "Concordo que a Botanika use estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.";
+  "Concordo que a Alliance e as marcas que escolhi acima usem estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.";
 
 export type SignupResult = { ok: true; answers: Record<string, string> } | { ok: false; errors: Record<string, string> };
 
@@ -89,6 +89,11 @@ export function validateSignup(values: Record<string, string | undefined>, conse
   }
   if (!consent) errors.consent = "É preciso concordar para enviar.";
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, answers };
+}
+
+/** Endereço (slug) de uma marca da inscrição no sistema: "Revita Derma" → "revita-derma". */
+export function signupBrandSlug(name: string): string {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
 }
 
 /** Marcas que a candidata quer representar, de qualquer formato de resposta ("Botanika e VermeFree", "Botanika, Revita Derma"). */

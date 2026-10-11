@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { normalizeHunterCode, SIGNUP_CONSENT_TEXT, validateSignup } from "@/domain";
+import { normalizeHunterCode, SIGNUP_CONSENT_TEXT, signupBrandSlug, validateSignup, wantedBrands } from "@/domain";
 import { normalizeEmail } from "@/lib/auth/rules";
 import { hashIp } from "@/lib/links/tracked";
 import { ApplicationError, receiveApplication } from "./applications";
 
 /**
  * Inscrição pelo formulário do próprio sistema (D-SIGNUP): vira uma candidata "Nova" como as do Google, com o aceite
- * de uso dos dados e o hunter do link. Proteções do formulário aberto: campo invisível que só robô preenche, limite
+ * de uso dos dados e o hunter do link. Uma candidatura em cada marca escolhida que já está no sistema (D-SIGNUPBRANDS);
+ * se nenhuma estiver, fica na marca do endereço. Proteções do formulário aberto: campo invisível que só robô preenche, limite
  * de envios por IP (hash do dia) e o mesmo e-mail em 24 h não duplica.
  */
 
@@ -30,33 +31,42 @@ export async function submitSignup(
   const checked = validateSignup(input.values, input.consent);
   if (!checked.ok) return checked;
 
-  const ipHash = hashIp(input.ip, brand.id, now);
-  if (ipHash) {
+  const wanted = wantedBrands(input.values.brands).map(signupBrandSlug);
+  const chosen = wanted.length
+    ? await prisma.brand.findMany({ where: { slug: { in: wanted }, archivedAt: null }, select: { id: true, slug: true }, orderBy: { slug: "asc" } })
+    : [];
+  const targets = chosen.length ? chosen : [{ id: brand.id, slug: brand.slug }];
+
+  // Limite por aparelho: vale para qualquer marca de destino (nada é gravado se uma delas já passou do limite).
+  for (const t of targets) {
+    const ipHash = hashIp(input.ip, t.id, now);
+    if (!ipHash) continue;
     const recent = await prisma.creatorApplication.count({
-      where: { brandId: brand.id, ipHash, createdAt: { gte: new Date(now.getTime() - 3_600_000) } },
+      where: { brandId: t.id, ipHash, createdAt: { gte: new Date(now.getTime() - 3_600_000) } },
     });
     if (recent >= SIGNUP_LIMIT_PER_HOUR) return { ok: false, errors: { _form: "Recebemos muitas inscrições deste aparelho agora. Tente de novo mais tarde." } };
   }
 
   const email = normalizeEmail(input.values.email);
-  if (email) {
-    const twin = await prisma.creatorApplication.findFirst({
-      where: { brandId: brand.id, source: SIGNUP_SOURCE, email, createdAt: { gte: new Date(now.getTime() - 86_400_000) } },
-      select: { id: true },
-    });
-    if (twin) return { ok: true }; // mesma pessoa enviando de novo no mesmo dia: já está com a equipe
-  }
-
   const code = normalizeHunterCode(input.hunterCode);
   const answers: Record<string, string> = { ...checked.answers, ...(code ? { [HUNTER_QUESTION]: code } : {}), "Aceite": SIGNUP_CONSENT_TEXT };
-  await receiveApplication(prisma, {
-    brandSlug: brand.slug,
-    source: SIGNUP_SOURCE,
-    externalKey: `site:${randomUUID()}`,
-    submittedAt: now,
-    answers,
-    consentAt: now,
-    ipHash,
-  });
+  for (const t of targets) {
+    if (email) {
+      const twin = await prisma.creatorApplication.findFirst({
+        where: { brandId: t.id, source: SIGNUP_SOURCE, email, createdAt: { gte: new Date(now.getTime() - 86_400_000) } },
+        select: { id: true },
+      });
+      if (twin) continue; // mesma pessoa enviando de novo no mesmo dia: já está com a equipe desta marca
+    }
+    await receiveApplication(prisma, {
+      brandSlug: t.slug,
+      source: SIGNUP_SOURCE,
+      externalKey: `site:${randomUUID()}`,
+      submittedAt: now,
+      answers,
+      consentAt: now,
+      ipHash: hashIp(input.ip, t.id, now),
+    });
+  }
   return { ok: true };
 }

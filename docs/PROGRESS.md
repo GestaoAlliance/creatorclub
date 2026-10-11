@@ -8,7 +8,7 @@
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
 - **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
-  depois, contrato e termo da VermeFree (texto para o responsável revisar). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+  textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar); depois, A3 Revita Derma. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -188,7 +188,8 @@ já existem antes de desenhar.
   escolhida (CP-101); pedidos desde 01/07 (2.047); auditoria Botanika × VermeFree (planilha privada); regras, versões de
   contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102). Falta: a Ana confirmar cupons, donas e taxas; junho
   (importar de novo desde 01/06); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
-  textos do contrato e do termo da VermeFree (revisão do responsável). Catálogo e envios: feitos (CP-103, CP-104).
+  revisão dos textos de contrato e termo da VermeFree (rascunho em `docs/contratos/vermefree/`). Catálogo, envios e
+  inscrição por marca: feitos (CP-103 a CP-105).
 - [ ] **A3** Revita Derma: o mesmo processo.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
@@ -235,6 +236,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-105 — 2026-10-11 — Inscrição por marca e aceite da Alliance; rascunho dos textos da VermeFree (A2, parte 5)
+- **Decidido:** D-SIGNUPBRANDS (já pedido pelo responsável em A1: uma candidatura por marca, aceite com a Alliance).
+- **Feito:** `submitSignup` cria uma candidatura em cada marca escolhida que existe (sem nenhuma, na marca do endereço);
+  limite por aparelho e "mesmo e-mail no dia" valem por marca; aceite novo. Rascunho do termo e dos 3 contratos da
+  VermeFree em `docs/contratos/vermefree/` (com as diferenças e as dúvidas); o responsável não revisa, aguarda quem ele
+  indicar. Nada publicado.
+- **Verificado:** unitário (endereço das marcas) e integração nova (duas marcas, reenvio, só marca fora do sistema).
+  `npm test`, `npm run test:integration` (195), `npm run typecheck`, `npm run build` passando.
 
 ### CP-104 — 2026-10-11 — Catálogo e envios da VermeFree em produção (A2, parte 4)
 - **No ar:** catálogo da VermeFree carregado pelo app no primeiro minuto depois do deploy (5 produtos ativos: Adulto,
