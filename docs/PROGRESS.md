@@ -8,7 +8,7 @@
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
 - **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
-  depois, contrato e termo da VermeFree e envios da planilha. U6 fica para depois das anotações da semana de teste. U1 em andamento com o
+  depois, contrato e termo da VermeFree (texto para o responsável revisar). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
   (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
@@ -188,7 +188,7 @@ já existem antes de desenhar.
   escolhida (CP-101); pedidos desde 01/07 (2.047); auditoria Botanika × VermeFree (planilha privada); regras, versões de
   contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102). Falta: a Ana confirmar cupons, donas e taxas; junho
   (importar de novo desde 01/06); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
-  textos do contrato e do termo da VermeFree; envios da planilha "Envios - Vermefree".
+  textos do contrato e do termo da VermeFree (revisão do responsável). Catálogo e envios: feitos (CP-103, CP-104).
 - [ ] **A3** Revita Derma: o mesmo processo.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
@@ -235,6 +235,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-104 — 2026-10-11 — Catálogo e envios da VermeFree em produção (A2, parte 4)
+- **No ar:** catálogo da VermeFree carregado pelo app no primeiro minuto depois do deploy (5 produtos ativos: Adulto,
+  Kids 2 a 4, Kids 5 a 9, Kit Família, Óleo de alho; 2 inativos). Botanika: 21 produtos, sem mudança.
+- **Importado em produção (D-SHIPIMPORT, SQL atômico com auditoria `shipment.import`):** 28 envios da planilha
+  "Envios - Vermefree" (27 entregues com data aproximada 01/09, 1 preparando: Keizy), 44 itens casados com o catálogo
+  ("kids 4 anos"/"2 anos" = Kids 2 a 4; "kids 5" = Kids 5 a 9); entrega em mãos de Balneário Camboriú com o código
+  "ENTREGA BC".
 
 ### CP-103 — 2026-10-11 — Catálogo de produtos de cada loja pelo app (A2, parte 3)
 - **Por quê:** a VermeFree não tinha produtos no sistema (o conector da Shopify só alcança a Botanika); sem catálogo,
