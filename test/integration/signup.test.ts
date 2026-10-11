@@ -68,4 +68,34 @@ describe("inscrição pelo formulário do sistema (D-SIGNUP, banco real)", () =>
     const link = await prisma.hunterLink.findFirst({ select: { id: true, brandId: true } });
     if (link) await expectDbError(prisma.hunterClick.create({ data: { brandId: link.brandId, hunterLinkId: link.id, form: "outro" } }), /HunterClick_form/);
   });
+
+  it("uma candidatura em cada marca escolhida que está no sistema; sem nenhuma, fica na marca do endereço", async () => {
+    const { brand } = await seedBrand(prisma);
+    // Marcas reais da inscrição (escolhidas pelo nome); arquivadas no fim para não mexer nos outros testes.
+    const [bk, vf] = await Promise.all(
+      ["botanika", "vermefree"].map((slug) => prisma.brand.upsert({ where: { slug }, update: { archivedAt: null }, create: { slug, name: slug } })),
+    );
+    try {
+      const now = new Date("2026-10-11T15:00:00Z");
+      const both = { ...base(brand.slug, "duas@x.com", "6.6.6.6"), values: { ...values("duas@x.com"), brands: "Botanika, VermeFree, Revita Derma" } };
+      expect(await submitSignup(prisma, both, now)).toEqual({ ok: true });
+      for (const b of [bk!, vf!]) {
+        const a = await prisma.creatorApplication.findFirstOrThrow({ where: { brandId: b.id, email: "duas@x.com" } });
+        expect(a).toMatchObject({ status: "NEW", brandsWanted: "Botanika, VermeFree, Revita Derma" });
+        expect(JSON.stringify(a.raw)).toContain("Alliance");
+      }
+      // Revita Derma ainda não está no sistema e a marca do endereço não foi escolhida: nada nelas.
+      expect(await prisma.creatorApplication.count({ where: { brandId: brand.id, email: "duas@x.com" } })).toBe(0);
+      // Reenvio no mesmo dia não duplica em nenhuma marca.
+      expect(await submitSignup(prisma, both, now)).toEqual({ ok: true });
+      expect(await prisma.creatorApplication.count({ where: { email: "duas@x.com" } })).toBe(2);
+
+      // Só marcas que não estão no sistema: fica na marca do endereço.
+      const revita = { ...base(brand.slug, "revita@x.com", "7.7.7.7"), values: { ...values("revita@x.com"), brands: "Revita Derma" } };
+      expect(await submitSignup(prisma, revita, now)).toEqual({ ok: true });
+      expect(await prisma.creatorApplication.count({ where: { brandId: brand.id, email: "revita@x.com" } })).toBe(1);
+    } finally {
+      await prisma.brand.updateMany({ where: { id: { in: [bk!.id, vf!.id] } }, data: { archivedAt: new Date() } });
+    }
+  });
 });

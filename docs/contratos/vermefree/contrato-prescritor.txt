@@ -1,0 +1,56 @@
+Contrato de parceria — prescritor
+CONTRATO DE PARCERIA PRESCRITOR
+
+Pelo presente instrumento particular de contrato, entre as partes abaixo qualificadas:
+
+na qualidade de CONTRATANTE: SINTONIA PHARMA FARMACIA COM MANIPULAÇAO LTDA, empresa inscrita no CNPJ sob o nº 37.560.104/0001-60, com sede à Rua 2870, 453 – Sala 6 – Centro, Balneário Camboriú/SC, titular da marca VermeFree, na forma de seu contrato social;
+
+na qualidade de CONTRATADA: {{CONTRATADA}}, doravante denominada simplesmente "CONTRATADA",
+
+Cláusula 1ª – Do Objeto:
+1. A CONTRATANTE tem interesse que a CONTRATADA preste serviços de prescritor e ceda seus direitos de imagem e conexos para realização de campanha publicitária da marca VermeFree, de acordo com as condições estipuladas neste instrumento.
+Diante disso, as partes têm entre si justo e contratado a prestação de serviços objeto do presente instrumento, mediante as seguintes condições:
+
+Cláusula 2ª – Da Parceria e do Pagamento:
+2.1. A CONTRATANTE enviará à CONTRATADA 02 (dois) kits VermeFree no início da parceria, que a CONTRATADA escolhe no portal Creator Club (plataforma da Alliance utilizada pela CONTRATANTE) depois da assinatura deste contrato. O envio ocorre depois da escolha, para o endereço de entrega cadastrado no portal.
+2.2. A CONTRATADA receberá comissão de {{COMISSAO}} sobre as vendas geradas pelo seu cupom {{CUPOM}} e/ou link promocional. O cupom dá {{DESCONTO}} de desconto a quem compra com ele.
+2.3. A venda conta no mês em que o pedido é pago. A comissão é calculada sobre o valor dos produtos do pedido, já com os descontos e sem frete, considerando apenas pedidos pagos e efetivamente atribuídos ao cupom ou link da CONTRATADA. Pedidos cancelados, devolvidos, estornados, contestados (chargeback) ou fraudulentos não geram comissão; se a comissão já tiver sido lançada, liberada ou paga, o valor correspondente é descontado das comissões seguintes.
+2.4. A comissão de cada mês fica "a liberar" e é liberada no fechamento do mês (dia 1 do mês seguinte), quando as vendas acumuladas desde a última liberação atingem o mínimo de {{MINIMO}}. Enquanto o mínimo não for atingido, a comissão continua acumulada para os meses seguintes.
+2.5. O valor liberado pode ser sacado pelo portal Creator Club do dia 1 ao dia 15 de cada mês, sempre pelo valor total disponível, mediante nota fiscal do valor total do saque, quando a CONTRATADA tiver CNPJ, ou recibo gerado pelo portal e aceito eletronicamente pela CONTRATADA, quando receber como pessoa física. O pagamento é feito por Pix, na chave cadastrada no portal, em conta de titularidade da CONTRATADA.
+2.6. As vendas, as comissões, quanto falta para a próxima liberação, o saldo e o extrato ficam disponíveis no portal Creator Club.
+
+Cláusula 3ª – Do Prazo:
+3.1. O presente contrato terá a duração de {{MESES}}, contados da data de sua assinatura, podendo ser renovado apenas mediante a assinatura de aditivo pelas partes contratantes.
+
+Cláusula 4ª – Das Obrigações da Contratante:
+4.1. A CONTRATANTE fornecerá à CONTRATADA todas as informações, características, exemplares, imagens e fotos pertinentes aos produtos e serviços que serão divulgados.
+4.2. A CONTRATANTE se compromete a efetuar o pagamento e a entrega dos produtos e valores descritos na cláusula 2ª deste instrumento.
+
+Cláusula 5ª – Das Obrigações da Contratada:
+5.1. Observar fielmente as condições descritas no OBJETO do presente contrato;
+5.2. A CONTRATADA é responsável por todo e qualquer tipo de postagem ou menção às PARTES que eventualmente realizar, e deve zelar pela integridade e idoneidade dos terceiros envolvidos, sendo passível de penalização e indenização à PARTE INOCENTE caso viole as condutas aceitáveis e as boas práticas, em especial aos artigos 139 e 140 do Código Penal, previstos como Crime Contra a Honra (Calúnia, Injúria ou Difamação).
+5.3. Fica expressamente acordado que não há quantidade mínima obrigatória de postagens ou publicações, ficando a frequência, o formato e o calendário da divulgação a critério exclusivo da CONTRATADA, observadas as diretrizes gerais da campanha e a legislação aplicável. O eventual não atingimento de metas de conteúdo não constitui inadimplemento contratual e não gera multa ou penalidade de qualquer natureza.
+
+Cláusula 6ª – De Não Exclusividade:
+6.1. O presente contrato não contempla cláusula de exclusividade. No entanto, durante sua vigência, a CONTRATADA compromete-se a não divulgar, promover ou realizar qualquer tipo de publicidade para empresas concorrentes, do mesmo segmento ou que comercializem produtos e/ou serviços similares aos da CONTRATANTE, salvo autorização expressa e por escrito desta última.
+
+Cláusula 7ª – Da Rescisão Contratual:
+7.1. O presente instrumento poderá ser rescindido a qualquer momento por comum acordo entre as partes, dando-se por quitadas as obrigações.
+7.2. O presente instrumento poderá ser rescindido unilateralmente, por qualquer das partes, através de notificação expressa à outra parte com antecedência mínima de 05 (cinco) dias, sem necessidade de justificativa e sem aplicação de multa, ônus ou indenização de qualquer natureza.
+7.3. Em caso de violação de qualquer cláusula deste instrumento, por dolo ou culpa, a parte prejudicada poderá rescindir o contrato de forma imediata, sem aplicação de multa contratual pré-fixada, resguardado o direito de pleitear, por vias próprias, a reparação de danos efetivamente comprovados.
+7.4. Com o encerramento, o cupom e o link são desativados, e a CONTRATADA continua com acesso ao seu saldo e ao seu extrato no portal Creator Club.
+
+Cláusula 8ª – Do Título Executivo e da Assinatura:
+8.1. O presente contrato constitui título executivo extrajudicial, nos termos do artigo 784, inciso III, do Código de Processo Civil, podendo ser executado judicialmente em caso de inadimplemento de quaisquer das obrigações aqui estipuladas.
+8.2. A CONTRATADA assina este instrumento eletronicamente no portal Creator Club, informando nome completo e CPF; a data, a hora, o IP e o navegador da assinatura e o texto assinado ficam registrados, produzindo os mesmos efeitos da assinatura física, na forma da legislação aplicável.
+
+Cláusula 9ª – Da Integração dos Documentos e da Proteção de Dados:
+9.1. O termo de adesão ao Creator Club e o briefing da campanha constituem parte integrante do presente instrumento, devendo ser considerados em sua totalidade para todos os fins de direito.
+9.2. As partes comprometem-se a cumprir integralmente a Lei nº 13.709/2018 (LGPD).
+
+Cláusula 10ª – Do Foro:
+10.1. Para dirimir quaisquer controvérsias oriundas do presente instrumento, as partes elegem o foro da comarca de Balneário Camboriú/SC, com renúncia expressa a qualquer outro, por mais privilegiado que seja.
+
+E por estarem assim, as partes justas e acertadas, firmam o presente contrato.
+
+Balneário Camboriú/SC, {{DATA}}.

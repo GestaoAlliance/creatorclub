@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, validateSignup, wantedBrands } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, validateSignup, wantedBrands, signupBrandSlug } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -45,6 +45,7 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
     expect(bad.ok ? null : bad.errors.brands).toBe("Escolha entre as opções.");
     expect(wantedBrands("Botanika, Revita Derma")).toEqual(["Botanika", "Revita Derma"]);
     expect(wantedBrands("Botanika e VermeFree")).toEqual(["Botanika", "VermeFree"]);
+    expect(SIGNUP_BRANDS.map(signupBrandSlug)).toEqual(["botanika", "vermefree", "revita-derma"]);
     expect(wantedBrands("Só a vermefree")).toEqual(["VermeFree"]);
     expect(wantedBrands("revita  derma")).toEqual(["Revita Derma"]);
     expect(wantedBrands(null)).toEqual([]);
