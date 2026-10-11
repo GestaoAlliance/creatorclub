@@ -13,7 +13,8 @@ const ROLE_LABEL: Record<string, string> = {
 export type ResolvedInvite = {
   kind: "staff" | "creator";
   state: "valid" | "invalid" | "expired" | "used" | "revoked";
-  email: string;
+  /** null = convite aberto (D-OPENINVITE): a pessoa digita o próprio e-mail. */
+  email: string | null;
   name: string;
   /** Texto do que a pessoa recebe ao aceitar. */
   grantText: string;

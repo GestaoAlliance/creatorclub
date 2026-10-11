@@ -8,7 +8,7 @@ import { createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revoke
 import { emailStaffInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
 
-export type InviteState = { error?: string; link?: string; email?: string; mailed?: boolean; mailError?: string } | undefined;
+export type InviteState = { error?: string; link?: string; email?: string | null; mailed?: boolean; mailError?: string } | undefined;
 
 export async function inviteAction(_prev: InviteState, form: FormData): Promise<InviteState> {
   try {

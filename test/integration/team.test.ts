@@ -68,6 +68,26 @@ describe("convite da equipe", () => {
     await expect(createStaffInvite(prisma, admin, { email: email(), name: "X", role: "ENVIO", brandId: "" })).rejects.toThrow(/Escolha a marca/);
   });
 
+  it("convite aberto (D-OPENINVITE): sem e-mail, quem abrir o link entra com o próprio e-mail; nunca super admin", async () => {
+    const admin = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    const { token, invite } = await createStaffInvite(prisma, admin, { email: "  ", name: "Álvaro", role: "ENVIO", brandId: brand.id });
+    expect(invite.email).toBeNull();
+    const userId = randomUUID();
+    const chosen = email();
+    await acceptStaffInvite(prisma, token, { userId, email: chosen.toUpperCase() });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: userId } })).toMatchObject({ email: chosen, name: "Álvaro" });
+    expect((await loadActor(prisma, userId))?.grants).toEqual([{ role: "ENVIO", brandId: brand.id }]);
+    await expect(acceptStaffInvite(prisma, token, { userId: randomUUID(), email: email() })).rejects.toThrow(/já usado/);
+
+    await expect(createStaffInvite(prisma, admin, { email: "", name: "X", role: "SUPER_ADMIN", brandId: "" })).rejects.toThrow(/super admin precisa do e-mail/);
+    await expect(createStaffInvite(prisma, admin, { email: "nao-e-email", name: "X", role: "ENVIO", brandId: brand.id })).rejects.toThrow(/E-mail inválido/);
+    await expectDbError(
+      prisma.staffInvite.create({ data: { email: null, name: "X", role: "SUPER_ADMIN", brandId: null, tokenHash: randomUUID(), expiresAt: new Date(), createdById: "x" } }),
+      /StaffInvite_open_not_super_admin/,
+    );
+  });
+
   it("o banco recusa convite global para papel que não é super admin", async () => {
     await expectDbError(
       prisma.staffInvite.create({

@@ -16,17 +16,22 @@ function requireStaffManager(actor: Actor | null): Actor {
 
 export type InviteInput = { email: unknown; name: unknown; role: unknown; brandId: unknown };
 
-/** Cria um convite e devolve o token (mostrar o link uma vez; só o hash fica no banco). */
+/**
+ * Cria um convite e devolve o token (mostrar o link uma vez; só o hash fica no banco). E-mail em branco = convite
+ * aberto (D-OPENINVITE): quem abrir o link digita o próprio e-mail; nunca para super admin.
+ */
 export async function createStaffInvite(prisma: PrismaClient, actor: Actor | null, input: InviteInput, now = new Date()) {
   const manager = requireStaffManager(actor);
-  const email = normalizeEmail(input.email);
+  const typed = typeof input.email === "string" ? input.email.trim() : "";
+  const email = typed ? normalizeEmail(typed) : null;
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const role = STAFF_ROLES.find((r) => r === input.role);
   const brandId = typeof input.brandId === "string" && input.brandId ? input.brandId : null;
-  if (!email) throw new TeamError("E-mail inválido.");
+  if (typed && !email) throw new TeamError("E-mail inválido.");
   if (!name) throw new TeamError("Informe o nome.");
   if (!role) throw new TeamError("Papel inválido.");
   if (role === "SUPER_ADMIN" && brandId) throw new TeamError("Super admin vale para todas as marcas.");
+  if (role === "SUPER_ADMIN" && !email) throw new TeamError("Convite de super admin precisa do e-mail.");
   if (role !== "SUPER_ADMIN" && !brandId) throw new TeamError("Escolha a marca.");
   if (brandId && !(await prisma.brand.findUnique({ where: { id: brandId }, select: { id: true } }))) {
     throw new TeamError("Marca não encontrada.");
@@ -46,7 +51,7 @@ export async function createStaffInvite(prisma: PrismaClient, actor: Actor | nul
         action: "invite.create",
         entity: "StaffInvite",
         entityId: created.id,
-        after: { email, role, brandId, expiresAt: expiresAt.toISOString() },
+        after: { email: email ?? "(escolhido no primeiro acesso)", role, brandId, expiresAt: expiresAt.toISOString() },
       },
     });
     return created;
@@ -71,7 +76,7 @@ export async function inviteByToken(prisma: PrismaClient, token: string, now = n
 
 /**
  * Aceita o convite para o usuário do Auth já autenticado. Uso único (a marcação é atômica), e-mail da conta
- * precisa ser o do convite. Cria o `User` (id = id do Auth) se não existir e concede o papel.
+ * precisa ser o do convite (convite aberto, D-OPENINVITE: qualquer e-mail, o da conta). Cria o `User` (id = id do Auth) se não existir e concede o papel.
  */
 export async function acceptStaffInvite(
   prisma: PrismaClient,
@@ -83,7 +88,9 @@ export async function acceptStaffInvite(
   return prisma.$transaction(async (tx) => {
     const invite = await tx.staffInvite.findUnique({ where: { tokenHash } });
     if (!invite) throw new TeamError("Convite inválido.");
-    if (normalizeEmail(auth.email) !== invite.email) throw new TeamError("Este convite é para outro e-mail.");
+    const accountEmail = normalizeEmail(auth.email);
+    if (!accountEmail) throw new TeamError("E-mail inválido.");
+    if (invite.email && accountEmail !== invite.email) throw new TeamError("Este convite é para outro e-mail.");
     const claimed = await tx.staffInvite.updateMany({
       where: { id: invite.id, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
       data: { acceptedAt: now, acceptedUserId: auth.userId },
@@ -92,7 +99,7 @@ export async function acceptStaffInvite(
 
     const existing = await tx.user.findUnique({ where: { id: auth.userId } });
     if (!existing) {
-      await tx.user.create({ data: { id: auth.userId, email: invite.email, name: invite.name } });
+      await tx.user.create({ data: { id: auth.userId, email: accountEmail, name: invite.name } });
     } else if (existing.disabledAt) {
       await tx.user.update({ where: { id: auth.userId }, data: { disabledAt: null } });
     }
@@ -110,7 +117,7 @@ export async function acceptStaffInvite(
         action: "invite.accept",
         entity: "StaffInvite",
         entityId: invite.id,
-        after: { role: invite.role, brandId: invite.brandId },
+        after: { role: invite.role, brandId: invite.brandId, ...(invite.email ? {} : { email: accountEmail, open: true }) },
       },
     });
     return { role: invite.role, brandId: invite.brandId };
