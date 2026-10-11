@@ -22,7 +22,7 @@ export async function syncHealth(prisma: PrismaClient, actor: Actor, now = new D
 
   return Promise.all(
     brands.map(async (b) => {
-      const [runs, pending, failed, failedJobs, webhooks, warnings, orders] = await Promise.all([
+      const [runs, pending, failed, failedJobs, webhooks, warnings, orders, products] = await Promise.all([
         prisma.syncRun.findMany({ where: { brandId: b.id }, orderBy: { startedAt: "desc" }, take: 10 }),
         prisma.job.count({ where: { brandId: b.id, status: { in: ["PENDING", "RUNNING"] } } }),
         prisma.job.count({ where: { brandId: b.id, status: "FAILED", finishedAt: { gte: since24h } } }),
@@ -40,6 +40,7 @@ export async function syncHealth(prisma: PrismaClient, actor: Actor, now = new D
           select: { id: true, entityId: true, after: true, createdAt: true },
         }),
         prisma.order.count({ where: { brandId: b.id } }),
+        prisma.product.count({ where: { brandId: b.id, active: true } }),
       ]);
       return {
         brand: { id: b.id, slug: b.slug, name: b.name },
@@ -49,6 +50,7 @@ export async function syncHealth(prisma: PrismaClient, actor: Actor, now = new D
         webhooks24h: Object.fromEntries(webhooks.map((w) => [w.status, w._count])) as Record<string, number>,
         warnings,
         orders,
+        products,
       };
     }),
   );

@@ -6,6 +6,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { startHistoricalImport } from "@/lib/shopify/backfill";
 import { ConnectError, connectShopifyStore } from "@/lib/shopify/connect";
+import { requestProductSync } from "@/lib/shopify/products";
 import { requestSyncNow } from "@/lib/shopify/reconcile";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -15,13 +16,16 @@ export async function connectAction(_prev: FormState, form: FormData): Promise<F
     const h = await headers();
     const prodHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
     const appUrl = prodHost ? `https://${prodHost}` : (h.get("origin") ?? "");
-    const r = await connectShopifyStore(db(), await currentActor(), {
-      brandId: String(form.get("brandId") ?? ""),
+    const actor = await currentActor();
+    const brandId = String(form.get("brandId") ?? "");
+    const r = await connectShopifyStore(db(), actor, {
+      brandId,
       shop: String(form.get("shop") ?? ""),
       clientId: String(form.get("clientId") ?? ""),
       clientSecret: String(form.get("clientSecret") ?? ""),
       appUrl,
     });
+    await requestProductSync(db(), actor, brandId); // catálogo da loja logo depois de conectar
     revalidatePath("/admin/sync");
     const extra = [
       r.missingRecommended.length ? `Faltam permissões recomendadas: ${r.missingRecommended.join(", ")}.` : "",
@@ -51,6 +55,16 @@ export async function backfillAction(_prev: FormState, form: FormData): Promise<
     await startHistoricalImport(db(), await currentActor(), String(form.get("brandId") ?? ""), since);
     revalidatePath("/admin/sync");
     return { ok: "Carga histórica pedida. Acompanhe nas passadas abaixo." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Erro." };
+  }
+}
+
+export async function productSyncAction(_prev: FormState, form: FormData): Promise<FormState> {
+  try {
+    const created = await requestProductSync(db(), await currentActor(), String(form.get("brandId") ?? ""));
+    revalidatePath("/admin/sync");
+    return { ok: created ? "Atualização do catálogo pedida; roda em até 1 minuto." : "Já foi pedida neste minuto." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Erro." };
   }
