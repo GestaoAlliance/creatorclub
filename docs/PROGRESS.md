@@ -180,6 +180,7 @@ já existem antes de desenhar.
 - [x] **A1a** Painel da Alliance: topo "Creator Club · Alliance", visão geral com um cartão por marca, telas só da
   marca escolhida, troca de marca mantendo a tela.
 - [x] **A1b** Cadastro de marca pela tela (super admin) e papel em mais de uma marca na Equipe.
+- [x] **A1c** Dois níveis: painel da Alliance só com as marcas; dentro da marca, todas as telas (pedido do responsável).
 - [ ] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
   cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
 - [ ] **A3** Revita Derma: o mesmo processo.
@@ -228,6 +229,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-100 — 2026-10-11 — Painel da Alliance em dois níveis (A1c)
+- **Decidido:** ajuste da D-ALLIANCE (painel da Alliance só com as marcas; telas só dentro da marca).
+- **Feito:** menus `allianceNav` e `staffNav` (Início da marca em `/admin/marca`); moldura `StaffFrame` escolhe menu,
+  título e cor pela tela; cartão de cada marca com "Entrar na marca"; tela Shopify só da marca escolhida. Corrigido o
+  teste de 60 dias, que falhava entre 0h e 3h UTC (gravava o dia em UTC, a regra conta no dia de São Paulo).
+- **Verificado:** testes do menu (dois níveis; quem tem o painel da Alliance). Capturas com banco local. `npm test`,
+  `npm run test:integration`, `npm run typecheck` e `npm run build` passando.
 
 ### CP-99 — 2026-10-11 — Marcas e papel em mais de uma marca (A1b)
 - **Feito:** `src/lib/brands/manage.ts` (criar e editar marca: nome, endereço, cor, razão social, CNPJ; lista com o que

@@ -12,6 +12,7 @@ import {
   Trophy,
   House,
   Inbox,
+  LayoutGrid,
   Package,
   RefreshCw,
   Scale,
@@ -45,6 +46,7 @@ const ICONS = {
   contract: ScrollText,
   trophy: Trophy,
   store: Store,
+  grid: LayoutGrid,
   inbox: Inbox,
   hunter: Target,
 } satisfies Record<string, LucideIcon>;

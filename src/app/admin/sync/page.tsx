@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { syncHealth } from "@/lib/shopify/health";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
@@ -21,7 +22,8 @@ export default async function SyncPage() {
   if (!actor) redirect("/entrar?next=/admin/sync");
   const allowed = brandsWith(actor.grants, "integrations.manage");
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
-  const health = await syncHealth(db(), actor);
+  // A1 (D-ALLIANCE): só a loja da marca escolhida.
+  const health = await syncHealth(db(), scopedActor(actor, (await staffContext(actor)).brand?.id));
 
   return (
     <>
