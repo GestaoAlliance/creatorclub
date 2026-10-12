@@ -24,7 +24,11 @@ export type ResolvedInvite = {
 export async function resolveInvite(token: string): Promise<ResolvedInvite | null> {
   const staff = await inviteByToken(db(), token);
   if (staff.invite) {
-    const where = staff.invite.brand ? `na marca ${staff.invite.brand.name}` : "(todas as marcas)";
+    const extra = staff.invite.extraBrandIds.length
+      ? (await db().brand.findMany({ where: { id: { in: staff.invite.extraBrandIds } }, select: { name: true }, orderBy: { name: "asc" } })).map((b) => b.name)
+      : [];
+    const names = [staff.invite.brand?.name, ...extra].filter(Boolean) as string[];
+    const where = names.length === 0 ? "(todas as marcas)" : names.length === 1 ? `na marca ${names[0]}` : `nas marcas ${names.slice(0, -1).join(", ")} e ${names.at(-1)}`;
     return {
       kind: "staff",
       state: staff.state,

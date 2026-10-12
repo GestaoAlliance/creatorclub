@@ -88,6 +88,18 @@ describe("convite da equipe", () => {
     );
   });
 
+  it("convite em várias marcas (D-INVITEBRANDS): ao aceitar, o mesmo papel em todas", async () => {
+    const admin = await superAdmin();
+    const [{ brand: a }, { brand: b }, { brand: c }] = await Promise.all([seedBrand(prisma), seedBrand(prisma), seedBrand(prisma)]);
+    const { token, invite } = await createStaffInvite(prisma, admin, { email: "", name: "Juci", role: "PAGAMENTO", brandId: a.id, extraBrandIds: [b.id, c.id, a.id, ""] });
+    expect(invite.extraBrandIds.sort()).toEqual([b.id, c.id].sort());
+    const userId = randomUUID();
+    await acceptStaffInvite(prisma, token, { userId, email: email() });
+    const grants = (await loadActor(prisma, userId))!.grants.map((g) => g.brandId).sort();
+    expect(grants).toEqual([a.id, b.id, c.id].sort());
+    await expect(createStaffInvite(prisma, admin, { email: email(), name: "X", role: "ENVIO", brandId: a.id, extraBrandIds: [randomUUID()] })).rejects.toThrow(/Marca não encontrada/);
+  });
+
   it("o banco recusa convite global para papel que não é super admin", async () => {
     await expectDbError(
       prisma.staffInvite.create({
