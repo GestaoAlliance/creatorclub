@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { startHistoricalImport } from "@/lib/shopify/backfill";
 import { ConnectError, connectShopifyStore } from "@/lib/shopify/connect";
 import { requestProductSync } from "@/lib/shopify/products";
+import { AutentiqueConnectError, connectAutentique } from "@/lib/autentique/credentials";
 import { requestSyncNow } from "@/lib/shopify/reconcile";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -67,5 +68,21 @@ export async function productSyncAction(_prev: FormState, form: FormData): Promi
     return { ok: created ? "Atualização do catálogo pedida; roda em até 1 minuto." : "Já foi pedida neste minuto." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Erro." };
+  }
+}
+
+/** D-AUTENTIQUE: conecta a conta do Autentique da marca (chave da API) e confere a chave na hora. */
+export async function autentiqueConnectAction(_prev: FormState, form: FormData): Promise<FormState> {
+  try {
+    const r = await connectAutentique(db(), await currentActor(), {
+      brandId: String(form.get("brandId") ?? ""),
+      token: String(form.get("token") ?? ""),
+      sandbox: form.get("sandbox") === "on",
+    });
+    revalidatePath("/admin/sync");
+    return { ok: `Autentique conectado (conta ${r.account}).` };
+  } catch (error) {
+    if (error instanceof AutentiqueConnectError) return { error: error.message };
+    throw error;
   }
 }
