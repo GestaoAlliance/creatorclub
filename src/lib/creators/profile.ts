@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractStatus } from "@/domain";
+import { assertBps, contractStatus, type CreatorCategoryValue } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { ugcCyclesFor, ugcVideosOf } from "./ugc";
@@ -43,6 +43,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     id: c.id,
     name: c.account.name,
     status: c.status as CreatorStatusValue,
+    categories: c.categories as CreatorCategoryValue[],
     fakeEmail: c.account.email.endsWith(FAKE_EMAIL_DOMAIN),
     hasLogin: c.account.userId !== null,
     reviewed: c.reviewedAt !== null,

@@ -239,6 +239,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-109 — 2026-10-13 — Seletor de categoria na lista Creators (U1)
+- **Decidido:** D-CREATORCAT (pedido do responsável no dia 1 de teste).
+- **Feito:** seletor "Todas as categorias / Influencer / UGC / Prescritor" com contagem, etiqueta da categoria em cada
+  creator, `?categoria=` na URL. Filtro puro em `src/domain/creator-category.ts`.
+- **Produção, a pedido do responsável:** Ana virou super admin (acesso igual ao do responsável; auditado). Vercel voltou
+  às 12:11 (Brasília) depois do pagamento; fila sem pendências.
+- **Verificado:** teste unitário novo; capturas com banco local. `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-108 — 2026-10-11 — Convite em várias marcas; acessos do dia 1 de teste (U1)
 - **Decidido:** D-INVITEBRANDS.
 - **Feito:** migração `invite_extra_brands` (`StaffInvite.extraBrandIds`); convite com "Mesmo papel também em"; aceitar

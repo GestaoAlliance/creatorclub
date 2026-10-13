@@ -20,3 +20,4 @@ export * from "./contract-text";
 export * from "./applications";
 export * from "./performance";
 export * from "./notices";
+export * from "./creator-category";
