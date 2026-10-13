@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview, signupCouponValid } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -71,5 +71,23 @@ describe("etapas da inscrição (D-SIGNUPSTEPS)", () => {
     expect(SIGNUP_STEPS).toHaveLength(2);
     const ids = SIGNUP_STEPS.flatMap((s) => s.sections);
     expect([...ids].sort()).toEqual(SIGNUP_SECTIONS.map((s) => s.id).sort());
+  });
+});
+
+describe("sugestão de cupom só com letras (D-SIGNUPCOUPON)", () => {
+  it("aceita letras (com acento) de 2 a 8 e recusa números, espaços e símbolos", () => {
+    expect(signupCouponValid("maria")).toBe(true);
+    expect(signupCouponValid("Júlia")).toBe(true);
+    expect(signupCouponValid("MARIA10")).toBe(false);
+    expect(signupCouponValid("ana maria")).toBe(false);
+    expect(signupCouponValid("ana-b")).toBe(false);
+    expect(signupCouponValid("A")).toBe(false);
+    expect(signupCouponValid("ABCDEFGHI")).toBe(false);
+  });
+
+  it("a inscrição recusa cupom com número e grava o válido em maiúsculas", () => {
+    expect(validateSignup({ ...full, coupon: "maria10" }, true)).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/só letras/) } });
+    const ok = validateSignup({ ...full, coupon: "júlia" }, true);
+    expect(ok.ok && Object.values(ok.answers)).toContain("JULIA");
   });
 });

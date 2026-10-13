@@ -148,10 +148,17 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
         <span className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             {...common}
-            maxLength={30}
+            maxLength={8}
+            pattern="[A-Za-z]{2,8}"
+            title="Só letras, de 2 a 8"
             autoComplete="off"
             placeholder="Ex.: MARIA"
-            onInput={(e) => setCoupon(signupCouponPreview(e.currentTarget.value))}
+            onInput={(e) => {
+              // Só letras, até 8: número, espaço e símbolo somem enquanto a pessoa digita (D-SIGNUPCOUPON).
+              const clean = signupCouponPreview(e.currentTarget.value);
+              e.currentTarget.value = clean;
+              setCoupon(clean);
+            }}
             className={`${input} uppercase sm:flex-1`}
           />
           <span

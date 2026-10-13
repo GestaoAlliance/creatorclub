@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractStatus, type CreatorCategoryValue } from "@/domain";
+import { assertBps, contractStatus, creatorPendings, dayKey, type CreatorCategoryValue } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
+import { lastOrderFor } from "./last-order";
 import { ugcCyclesFor, ugcVideosOf } from "./ugc";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -34,23 +35,46 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     prisma.creator.findMany({
       where: { brandId },
       orderBy: { account: { name: "asc" } },
-      include: { account: { select: { name: true, email: true, userId: true } }, contractTemplate: { select: { releaseMinCents: true } } },
+      include: {
+        account: { select: { name: true, email: true, userId: true } },
+        contractTemplate: { select: { releaseMinCents: true } },
+        couponAssignments: { where: { validTo: null }, select: { confirmedAt: true } },
+        commissionPolicies: { where: { validTo: null }, select: { confirmedAt: true } },
+      },
     }),
     prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } }),
   ]);
-  const [idle, ugc] = await Promise.all([idleFor(prisma, creators, brand.timezone), ugcCyclesFor(prisma, creators, brand.timezone)]);
-  return creators.map((c) => ({
-    id: c.id,
-    name: c.account.name,
-    status: c.status as CreatorStatusValue,
-    categories: c.categories as CreatorCategoryValue[],
-    fakeEmail: c.account.email.endsWith(FAKE_EMAIL_DOMAIN),
-    hasLogin: c.account.userId !== null,
-    reviewed: c.reviewedAt !== null,
-    contract: contractStatus(dayOf(c.contractEnd), new Date()),
-    idle: idle.get(c.id) ?? null,
-    ugcCycle: ugc.get(c.id) ?? null,
-  }));
+  const [idle, ugc, lastOrders] = await Promise.all([
+    idleFor(prisma, creators, brand.timezone),
+    ugcCyclesFor(prisma, creators, brand.timezone),
+    lastOrderFor(prisma, creators.map((c) => c.id)),
+  ]);
+  return creators.map((c) => {
+    const fakeEmail = c.account.email.endsWith(FAKE_EMAIL_DOMAIN);
+    const contract = contractStatus(dayOf(c.contractEnd), new Date());
+    const last = lastOrders.get(c.id);
+    return {
+      id: c.id,
+      name: c.account.name,
+      status: c.status as CreatorStatusValue,
+      categories: c.categories as CreatorCategoryValue[],
+      fakeEmail,
+      hasLogin: c.account.userId !== null,
+      reviewed: c.reviewedAt !== null,
+      contract,
+      idle: idle.get(c.id) ?? null,
+      ugcCycle: ugc.get(c.id) ?? null,
+      lastOrder: last ? { name: last.name, day: dayKey(last.paidAt, brand.timezone) } : null,
+      pendings: creatorPendings({
+        status: c.status,
+        reviewed: c.reviewedAt !== null,
+        ownerPending: c.couponAssignments.some((a) => a.confirmedAt === null),
+        ratePending: c.commissionPolicies.some((p) => p.confirmedAt === null),
+        fakeEmail,
+        contract: contract.status,
+      }),
+    };
+  });
 }
 
 export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, creatorId: string) {

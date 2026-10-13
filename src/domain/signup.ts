@@ -64,6 +64,12 @@ export const SIGNUP_STEPS: readonly { title: string; sections: readonly string[]
   { title: "Marcas e comissão", sections: ["marcas", "envio"] },
 ];
 
+/** Sugestão de cupom aceita (D-SIGNUPCOUPON): só letras (acento vale e cai), de 2 a 8. Número, espaço e símbolo, não. */
+export function signupCouponValid(raw: string): boolean {
+  const plain = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  return /^[A-Z]{2,8}$/.test(plain);
+}
+
 /** Cupom como ele aparece na prévia: só letras, maiúsculas, até 8 (a sugestão é conferida pela equipe na aprovação). */
 export function signupCouponPreview(raw: string): string {
   return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 8);
@@ -104,7 +110,8 @@ export function validateSignup(values: Record<string, string | undefined>, conse
     else if (q.kind === "tel" && v.replace(/\D/g, "").length < 10) errors[q.key] = "Informe o WhatsApp com DDD.";
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
-    answers[q.title] = q.key === "instagram" ? `@${v.replace(/^.*instagram\.com\//i, "").replace(/[/?#].*$/, "").replace(/^@+/, "")}` : v;
+    else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use só letras, de 2 a 8 (ex.: MARIA).";
+    answers[q.title] = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" ? `@${v.replace(/^.*instagram\.com\//i, "").replace(/[/?#].*$/, "").replace(/^@+/, "")}` : v;
   }
   if (!consent) errors.consent = "É preciso concordar para enviar.";
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, answers };

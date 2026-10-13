@@ -239,6 +239,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-114 — 2026-10-13 — Primeiro feedback da Ana: último pedido, pendências e cupom só com letras (U1)
+- **Decidido:** D-LASTORDER, D-CREATORPENDING, D-SIGNUPCOUPON. (O filtro por tipo pedido por ela já existia: D-CREATORCAT.)
+- **Feito:** `lastOrderFor` (`src/lib/creators/last-order.ts`) e `creatorPendings` (domínio) na lista Creators: último
+  pedido ao lado do nome, selos das pendências, filtro "Só com pendência". Inscrição: cupom só letras, 2 a 8.
+- **Verificado:** testes unitários novos (pendências, cupom); integração nova (último pedido no período da dona,
+  ignora cancelado e teste; pendências). `npm test`, `npm run test:integration` (198), `npm run typecheck`,
+  `npm run build` passando; capturas com banco local.
+
 ### CP-113 — 2026-10-13 — Textos da inscrição mais atraentes (U1)
 - **Feito (pedido do responsável):** topo "Sua influência vale dinheiro. Comece pelo seu cupom."; quatro vantagens
   (comissão em cada venda, cupom com o seu nome, produtos em casa, seu portal) e os 3 passos em linha; blocos com
