@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State } from "./actions";
+import { adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -277,5 +277,31 @@ export function UgcVideoRemoveButton({ creatorId, videoId }: { creatorId: string
       <button className={`${ui.link} text-xs`} disabled={pending}>Retirar</button>
       {state?.error && <Msg state={state} />}
     </form>
+  );
+}
+
+/** D-AUTENTIQUE: enviar o contrato pelo Autentique e conferir a assinatura na hora. */
+export function AutentiqueButtons({ creatorId, canSend, canCheck }: { creatorId: string; canSend: boolean; canCheck: boolean }) {
+  const [sendState, send, sending] = useActionState(sendContractAction, undefined);
+  const [checkState, check, checking] = useActionState(checkContractAction, undefined);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        {canSend && (
+          <form action={send}>
+            <input type="hidden" name="creatorId" value={creatorId} />
+            <button className={btn} disabled={sending}>{sending ? "Enviando…" : "Enviar contrato pelo Autentique"}</button>
+          </form>
+        )}
+        {canCheck && (
+          <form action={check}>
+            <input type="hidden" name="creatorId" value={creatorId} />
+            <button className={ui.ghostSm} disabled={checking}>{checking ? "Conferindo…" : "Conferir agora"}</button>
+          </form>
+        )}
+      </div>
+      <Msg state={sendState} />
+      <Msg state={checkState} />
+    </div>
   );
 }

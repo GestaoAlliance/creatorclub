@@ -6,6 +6,7 @@ import { creatorProfile, ProfileError } from "@/lib/creators/profile";
 import { db } from "@/lib/db";
 import { creatorTermsStatus } from "@/lib/terms/terms";
 import { creatorContractSignature } from "@/lib/contracts/sign";
+import { creatorAutentique } from "@/lib/autentique/contracts";
 import { staffContext } from "@/lib/staff/context";
 import { OtherBrandNotice } from "@/components/staff/other-brand";
 import { CreatorProfileView } from "./view";
@@ -41,6 +42,6 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     }
   }
 
-  const [terms, contract] = await Promise.all([creatorTermsStatus(db(), p.id, p.brandId), creatorContractSignature(db(), p.id)]);
-  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} />;
+  const [terms, contract, autentique] = await Promise.all([creatorTermsStatus(db(), p.id, p.brandId), creatorContractSignature(db(), p.id), creatorAutentique(db(), p.id, p.brandId)]);
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} />;
 }

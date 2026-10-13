@@ -53,9 +53,15 @@ export async function connectAutentique(
 }
 
 /** Conta do Autentique da marca, com a chave aberta; `null` se a marca não tem Autentique ligado. */
-export async function loadAutentique(prisma: PrismaClient, brandId: string, encKey: Buffer = key()): Promise<AutentiqueConnection | null> {
+export async function loadAutentique(prisma: PrismaClient, brandId: string, encKey?: Buffer): Promise<AutentiqueConnection | null> {
   const row = await prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } } });
   if (!row || row.status !== "CONNECTED" || !row.secretEncrypted) return null;
-  const s = JSON.parse(decryptSecret(row.secretEncrypted, encKey, context(brandId))) as { token: string; sandbox?: boolean };
+  const s = JSON.parse(decryptSecret(row.secretEncrypted, encKey ?? key(), context(brandId))) as { token: string; sandbox?: boolean };
   return { brandId, token: s.token, sandbox: s.sandbox === true, account: row.externalId };
+}
+
+/** A marca assina contratos pelo Autentique? (sem abrir a chave) */
+export async function hasAutentique(prisma: PrismaClient, brandId: string): Promise<boolean> {
+  const row = await prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } }, select: { status: true, secretEncrypted: true } });
+  return row?.status === "CONNECTED" && !!row.secretEncrypted;
 }

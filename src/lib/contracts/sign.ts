@@ -41,7 +41,7 @@ export async function currentContract(prisma: PrismaClient, brandId: string, kin
 const fold = (s: string | null | undefined) => (s ?? "").trim().replace(/\s+/g, " ");
 
 /** Dados que vêm do sistema (cupom, taxa, versão do contrato) e o que a creator confere (pré-preenchido). */
-async function contractBase(prisma: PrismaClient, creatorId: string, now: Date) {
+export async function contractBase(prisma: PrismaClient, creatorId: string, now: Date) {
   const c = await prisma.creator.findUniqueOrThrow({
     where: { id: creatorId },
     select: {
