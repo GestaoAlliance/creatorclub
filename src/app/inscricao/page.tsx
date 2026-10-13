@@ -1,3 +1,4 @@
+import { BadgeDollarSign, Gift, LayoutDashboard, Ticket } from "lucide-react";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { normalizeHunterCode, SIGNUP_BRANDS, signupBrandSlug } from "@/domain";
 import { db } from "@/lib/db";
@@ -15,11 +16,14 @@ async function brandColors(): Promise<SignupBrand[]> {
   return SIGNUP_BRANDS.map((name) => ({ name, color: color.get(signupBrandSlug(name)) ?? "#78716c" }));
 }
 
-const STEPS = [
-  ["Inscreva-se", "Dois passos rápidos, uns 5 minutos."],
-  ["Análise", "A equipe confere o seu perfil e chama no WhatsApp."],
-  ["Aprovada", "Você recebe o seu cupom e o acesso ao portal."],
+const PERKS = [
+  [BadgeDollarSign, "Comissão em cada venda", "Toda compra feita com o seu cupom vira dinheiro para você."],
+  [Ticket, "Cupom com o seu nome", "Um código exclusivo, com desconto para quem te acompanha."],
+  [Gift, "Produtos em casa", "Você recebe os produtos para usar e mostrar de verdade."],
+  [LayoutDashboard, "Seu portal", "Vendas, saldo e saque num lugar só, todo mês."],
 ] as const;
+
+const STEPS = ["Inscreva-se em 2 passos", "A equipe chama você no WhatsApp", "Receba seu cupom e comece a ganhar"] as const;
 
 // Inscrição pública (D-SIGNUP, D-SIGNUPDESIGN): base preto e branco da Alliance com detalhes na cor de cada marca.
 // Vira candidata em /admin/candidatas. O link do hunter (/i/[codigo]) traz ?h=código.
@@ -46,13 +50,14 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             </p>
             <ThemeToggle />
           </div>
-          <h1 className="rise mt-10 max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight [animation-delay:80ms] md:mt-14 md:text-6xl">
-            Divulgue marcas que você usa.
-            <span className="block text-white/45">Com o seu cupom.</span>
+          <h1 className="rise mt-10 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight [animation-delay:80ms] md:mt-14 md:text-[3.4rem]">
+            Sua influência
+            <span className="block">vale dinheiro.</span>
+            <span className="block text-white/45">Comece pelo seu cupom.</span>
           </h1>
           <p className="rise mt-5 max-w-lg text-[15px] leading-relaxed text-white/70 [animation-delay:160ms]">
-            Uma inscrição só para {brands.map((b) => b.name).join(", ").replace(/, ([^,]*)$/, " e $1")}. A equipe da Alliance analisa e fala com você
-            pelo WhatsApp.
+            Divulgue {brands.map((b) => b.name).join(", ").replace(/, ([^,]*)$/, " e $1")} com um cupom só seu. Quem te segue ganha desconto, você
+            ganha comissão em cada venda e acompanha tudo no seu portal.
           </p>
           <ul className="rise mt-6 flex flex-wrap gap-2 [animation-delay:240ms]">
             {brands.map((b) => (
@@ -62,12 +67,25 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
               </li>
             ))}
           </ul>
-          <ol className="rise mt-10 grid gap-3 [animation-delay:320ms] sm:grid-cols-3">
-            {STEPS.map(([title, text], i) => (
-              <li key={title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
-                <span className="text-xs font-semibold tabular-nums text-white/40">0{i + 1}</span>
-                <p className="mt-1 font-semibold">{title}</p>
-                <p className="mt-1 text-sm leading-snug text-white/60">{text}</p>
+          <ul className="rise mt-10 grid gap-3 [animation-delay:320ms] sm:grid-cols-2">
+            {PERKS.map(([Icon, title, text]) => (
+              <li key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
+                <span className="grid size-10 shrink-0 place-content-center rounded-xl bg-white text-black">
+                  <Icon className="size-5" />
+                </span>
+                <span>
+                  <span className="block font-semibold">{title}</span>
+                  <span className="mt-0.5 block text-sm leading-snug text-white/60">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <ol className="rise mt-6 flex flex-col gap-2 text-sm text-white/70 [animation-delay:400ms] sm:flex-row sm:items-center sm:gap-3">
+            {STEPS.map((t, i) => (
+              <li key={t} className="flex items-center gap-2 sm:gap-3">
+                <span className="grid size-6 shrink-0 place-content-center rounded-full bg-white/10 text-xs font-semibold tabular-nums text-white">{i + 1}</span>
+                {t}
+                {i < STEPS.length - 1 && <span aria-hidden className="hidden h-px w-6 bg-white/20 sm:block" />}
               </li>
             ))}
           </ol>

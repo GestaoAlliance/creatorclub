@@ -43,7 +43,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "brands", title: "Tenho interesse em representar:", label: "Tenho interesse em representar", kind: "multi", options: SIGNUP_BRANDS, required: true, hint: "Pode marcar mais de uma." },
   { key: "collab", title: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar o seu cupom, você tem interesse? ", label: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do Instagram da Botanika e da VermeFree para divulgar o seu cupom. Você tem interesse?", kind: "choice", options: YES_NO, required: true },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço para entrega dos suplementos", kind: "long", required: true, hint: "Rua/Av., número, bairro, cidade, estado, CEP e ponto de referência" },
-  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Sugestão de nome de cupom", kind: "text", required: true, hint: "Só letras, até 8 (ex.: MARIA)" },
+  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Sugestão de nome de cupom", kind: "text", required: true, hint: "Só letras, até 8 (ex.: MARIA). É o código que seus seguidores vão usar." },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
   { key: "cnpj", title: "CNPJ: ", label: "CNPJ (se tiver)", kind: "text", required: false },
   { key: "companyName", title: "RAZÃO SOCIAL:", label: "Razão social (se tiver CNPJ)", kind: "text", required: false },
@@ -52,16 +52,16 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 
 /** Blocos da página de inscrição (D-SIGNUPDESIGN): uma página só, dividida em assuntos. Cada pergunta está em um bloco. */
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint: string; keys: readonly string[] }[] = [
-  { id: "voce", title: "Quem é você", hint: "Para a equipe saber com quem vai falar.", keys: ["fullName", "kind", "phone", "email", "instagram"] },
-  { id: "conteudo", title: "Seu conteúdo", hint: "Como é o seu perfil e o que você publica.", keys: ["followers", "storiesViews", "niche", "content", "why"] },
-  { id: "marcas", title: "Marcas", hint: "Escolha com quais marcas quer trabalhar.", keys: ["brands", "knows", "commissioned", "accepts", "collab"] },
-  { id: "envio", title: "Envio e pagamento", hint: "Para mandar os produtos e pagar a sua comissão.", keys: ["address", "coupon", "cpf", "cnpj", "companyName", "pix"] },
+  { id: "voce", title: "Quem é você", hint: "Conta pra gente quem está por trás do perfil.", keys: ["fullName", "kind", "phone", "email", "instagram"] },
+  { id: "conteudo", title: "Suas redes", hint: "Seu público é o seu poder. Mostre como você conversa com ele.", keys: ["followers", "storiesViews", "niche", "content", "why"] },
+  { id: "marcas", title: "Suas marcas", hint: "Escolha com quem quer crescer. Mais marcas, mais chances de vender.", keys: ["brands", "knows", "commissioned", "accepts", "collab"] },
+  { id: "envio", title: "Receber e ganhar", hint: "Onde entregamos seus produtos e para onde vai a sua comissão.", keys: ["address", "coupon", "cpf", "cnpj", "companyName", "pix"] },
 ];
 
 /** Etapas da inscrição (D-SIGNUPSTEPS): duas telas, cada uma com dois blocos. */
 export const SIGNUP_STEPS: readonly { title: string; sections: readonly string[] }[] = [
   { title: "Você e suas redes", sections: ["voce", "conteudo"] },
-  { title: "Marcas e pagamento", sections: ["marcas", "envio"] },
+  { title: "Marcas e comissão", sections: ["marcas", "envio"] },
 ];
 
 /** Cupom como ele aparece na prévia: só letras, maiúsculas, até 8 (a sugestão é conferida pela equipe na aprovação). */

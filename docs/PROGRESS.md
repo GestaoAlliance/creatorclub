@@ -239,6 +239,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-113 — 2026-10-13 — Textos da inscrição mais atraentes (U1)
+- **Feito (pedido do responsável):** topo "Sua influência vale dinheiro. Comece pelo seu cupom."; quatro vantagens
+  (comissão em cada venda, cupom com o seu nome, produtos em casa, seu portal) e os 3 passos em linha; blocos com
+  textos novos (Quem é você, Suas redes, Suas marcas, Receber e ganhar); etapa 2 "Marcas e comissão"; botão "Quero
+  fazer parte"; tela final nova. Sem números de comissão (cada marca e contrato tem o seu).
+- **Verificado:** capturas (computador claro, celular escuro). `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-112 — 2026-10-13 — Inscrição em duas etapas (U1)
 - **Decidido:** D-SIGNUPSTEPS mudada para duas etapas: "Você e suas redes" e "Marcas e pagamento".
 - **Verificado:** teste das etapas ajustado; capturas das duas etapas. `npm test`, `npm run typecheck`, `npm run build`
