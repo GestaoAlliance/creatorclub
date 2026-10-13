@@ -4,12 +4,14 @@ import { ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { badge, ui } from "@/components/ui/styles";
+import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, matchesCategory, type CategoryFilter, type CreatorCategoryValue } from "@/domain";
 
 type Row = {
   id: string;
   name: string;
   status: string;
   statusLabel: string;
+  categories: CreatorCategoryValue[];
   fakeEmail: boolean;
   hasLogin: boolean;
   reviewed: boolean;
@@ -28,20 +30,29 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
 const STATUS_BADGE: Record<string, string> = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral };
 
 /** Lista de creators com busca por nome (no próprio navegador; a lista já vem filtrada pela permissão). */
-export function CreatorList({ rows, contractsOnly = false, idleOnly = false }: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean }) {
+export function CreatorList({ rows, contractsOnly = false, idleOnly = false, category: initialCategory = "" }: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean; category?: CategoryFilter }) {
   const [q, setQ] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>(initialCategory);
   const [onlyContracts, setOnlyContracts] = useState(contractsOnly);
   const [onlyIdle, setOnlyIdle] = useState(idleOnly);
   const isIdle = (r: Row) => r.idle?.idle === true;
   const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
   const warn = (r: Row) => r.status !== "DEACTIVATED" && (r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED");
-  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)) && (!onlyIdle || isIdle(r)));
+  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)) && (!onlyIdle || isIdle(r)) && matchesCategory(r.categories, category));
+  const count = (f: CategoryFilter) => rows.filter((r) => matchesCategory(r.categories, f)).length;
   return (
     <section className={ui.card}>
       <label className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar creator" aria-label="Buscar creator" className={`${ui.input} pl-9`} />
       </label>
+      <select value={category} onChange={(e) => setCategory(e.target.value as CategoryFilter)} aria-label="Categoria" className={`${ui.inputSm} self-start`}>
+        <option value="">Todas as categorias ({rows.length})</option>
+        {CREATOR_CATEGORIES.map((c) => (
+          <option key={c} value={c}>{CREATOR_CATEGORY_LABEL[c]} ({count(c)})</option>
+        ))}
+        {count("NONE") > 0 && <option value="NONE">Sem categoria ({count("NONE")})</option>}
+      </select>
       {rows.some(warn) && (
         <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
           <input type="checkbox" checked={onlyContracts} onChange={(e) => setOnlyContracts(e.target.checked)} className="size-4 accent-[var(--brand)]" />
@@ -68,6 +79,9 @@ export function CreatorList({ rows, contractsOnly = false, idleOnly = false }: {
                   <span className="block truncate text-sm font-medium">{c.name}</span>
                   <span className="mt-1 flex flex-wrap gap-1.5">
                     <span className={STATUS_BADGE[c.status] ?? badge.neutral}>{c.statusLabel}</span>
+                    {c.categories.map((k) => (
+                      <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>
+                    ))}
                     {c.hasLogin && <span className={badge.sky}>no portal</span>}
                     {c.reviewed && <span className={badge.green}>conferida</span>}
                     {c.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
