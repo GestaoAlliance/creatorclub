@@ -5,6 +5,7 @@ import { stopViewAsAction } from "@/app/portal/actions";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, PORTAL_ITEMS, SideNav } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
+import { TourButton, TutorialProvider } from "@/components/portal/tour";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
 /** Moldura do portal da creator (E7.1): cor da marca, menu lateral (computador) ou inferior (celular). Só exibe. */
@@ -46,6 +47,7 @@ export function PortalShell({
                 </div>
               </details>
             )}
+            <TourButton />
             <Link
               href={`${base}/avisos`}
               aria-label={unread ? `Avisos: ${unread} não ${unread === 1 ? "lido" : "lidos"}` : "Avisos"}
@@ -82,7 +84,10 @@ export function PortalShell({
             Sua participação na {ctx.brand.name} foi encerrada. {ctx.ugcOnly ? "Você continua vendo suas vendas." : "Você continua vendo seu saldo e seu extrato."}
           </p>
         )}
-        <main className="flex-1">{children}</main>
+        {/* D-TUTORIAL: passo a passo no primeiro acesso a cada tela (não abre sozinho para quem só visualiza, D-VIEWAS). */}
+        <TutorialProvider ugc={ctx.ugcOnly} auto={!ctx.viewAs}>
+          <main className="flex-1">{children}</main>
+        </TutorialProvider>
       </div>
       <BottomNav base={base} items={PORTAL_ITEMS} hidden={hidden} />
     </div>

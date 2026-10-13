@@ -5,6 +5,7 @@ import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
+import { HelpTip } from "./tour";
 import { ReceivedButton } from "./received-button";
 
 type Shipment = Awaited<ReturnType<typeof myShipments>>[number];
@@ -63,7 +64,7 @@ export function ShipmentsView({
     <div className="flex flex-col gap-6">
       {/* D-KITAPPROVAL: o pedido só existe com kit liberado; a escolha vai para a aprovação da equipe e depois para o envio. */}
       {kits.kits.length > 0 && (
-        <details className="group flex flex-col gap-4" open={kits.kits.length > 0 && shipments.length === 0}>
+        <details data-tour="solicitar-pedido" className="group flex flex-col gap-4" open={kits.kits.length > 0 && shipments.length === 0}>
           <summary className="inline-flex w-fit cursor-pointer list-none items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm">
             <Plus className="size-4 transition-transform group-open:rotate-45" /> Solicitar pedido
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{kits.kits.length === 1 ? "1 kit liberado" : `${kits.kits.length} kits liberados`}</span>
@@ -77,8 +78,11 @@ export function ShipmentsView({
         </details>
       )}
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
-      <section className="glass rounded-3xl p-5">
-        <h2 className="mb-3 flex items-center gap-2 font-semibold"><Package className="size-4" /> Meus envios</h2>
+      <section data-tour="meus-envios" className="glass rounded-3xl p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-semibold"><Package className="size-4" /> Meus envios</h2>
+          <HelpTip id="meus-envios" />
+        </div>
         {shipments.length === 0 ? (
           <p className="py-4 text-sm text-stone-500">Nenhum envio ainda. Quando a equipe mandar produtos para você, eles aparecem aqui.</p>
         ) : (

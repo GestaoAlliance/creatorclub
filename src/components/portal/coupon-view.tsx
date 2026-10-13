@@ -1,6 +1,7 @@
 import { Link2, MousePointerClick, Ticket } from "lucide-react";
 import type { PortalCoupon } from "@/lib/portal/coupons";
 import { CopyButton } from "./copy-button";
+import { HelpTip } from "./tour";
 import { ShareButton } from "./share-button";
 
 /** Aba Cupom (E7.5): código e link para copiar/compartilhar, e os cliques no link. Só exibe. */
@@ -18,10 +19,13 @@ export function CouponView({ coupons, origin, brandName, deactivated }: { coupon
         const link = `${origin}${c.path}`;
         return (
           <section key={c.code} className="glass flex flex-col gap-5 rounded-3xl p-5 md:p-6">
-            <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
-                <Ticket className="size-4" /> Seu cupom
-              </p>
+            <div data-tour="cupom-codigo" className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+                  <Ticket className="size-4" /> Seu cupom
+                </p>
+                <HelpTip id="cupom-codigo" />
+              </div>
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-4 dark:bg-white/5">
                 <span className="font-mono text-2xl font-semibold tracking-wider md:text-3xl">{c.code}</span>
                 <div className="flex gap-2">
@@ -31,10 +35,13 @@ export function CouponView({ coupons, origin, brandName, deactivated }: { coupon
               <p className="text-xs text-stone-500">A pessoa digita o cupom no carrinho da {brandName}.</p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
-                <Link2 className="size-4" /> Seu link
-              </p>
+            <div data-tour="cupom-link" className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+                  <Link2 className="size-4" /> Seu link
+                </p>
+                <HelpTip id="cupom-link" />
+              </div>
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-3 dark:bg-white/5">
                 <span className="min-w-0 break-all font-mono text-sm">{link}</span>
                 <div className="flex gap-2">
@@ -45,7 +52,8 @@ export function CouponView({ coupons, origin, brandName, deactivated }: { coupon
               <p className="text-xs text-stone-500">Quem abre o link já entra na loja com o cupom aplicado. Ótimo para a bio e os stories.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div data-tour="cupom-cliques" className="relative grid grid-cols-2 gap-3">
+              <HelpTip id="cupom-cliques" className="absolute right-1 top-1" />
               {[
                 ["Cliques este mês", c.clicksMonth],
                 ["Cliques no total", c.clicksTotal],

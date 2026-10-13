@@ -4,6 +4,7 @@ import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { CopyButton } from "./copy-button";
+import { HelpTip } from "./tour";
 import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
@@ -38,10 +39,12 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           Pedido de saque enviado! A equipe confere {tab.individual ? "o recibo" : "a nota fiscal"} e paga por Pix. Você acompanha em "Meus saques".
         </p>
       )}
-      <section className="glass flex flex-col gap-5 rounded-3xl p-5 md:p-6">
+      <section data-tour="saque-saldo" className="glass flex flex-col gap-5 rounded-3xl p-5 md:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500"><Wallet className="size-4" /> Disponível para saque</p>
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+              <Wallet className="size-4" /> Disponível para saque <HelpTip id="saque-saldo" className="-my-1" />
+            </p>
             <p className={`mt-1 text-4xl font-semibold tabular-nums ${balance.availableCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatBRL(balance.availableCents)}</p>
           </div>
           {blockText ? (
@@ -77,16 +80,22 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
       </section>
 
       {tab.individual ? (
-        <section className="glass flex flex-col gap-3 rounded-3xl p-5">
-          <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Você recebe como pessoa física</h2>
+        <section data-tour="saque-recibo" className="glass flex flex-col gap-3 rounded-3xl p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Você recebe como pessoa física</h2>
+            <HelpTip id="saque-recibo" />
+          </div>
           <p className="text-sm text-stone-600 dark:text-stone-400">
             Não precisa de nota fiscal. No pedido de saque você confere o recibo, digita nome completo e CPF e aceita. O Pix é feito na
             chave do seu cadastro.
           </p>
         </section>
       ) : (
-      <section className="glass flex flex-col gap-3 rounded-3xl p-5">
-        <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
+      <section data-tour="saque-nf" className="glass flex flex-col gap-3 rounded-3xl p-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
+          <HelpTip id="saque-nf" />
+        </div>
         <p className="text-sm text-stone-600 dark:text-stone-400">
           O pedido só é feito com a nota já emitida, no valor total disponível para saque. Use estes dados:
         </p>
@@ -106,8 +115,11 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
       </section>
       )}
 
-      <section className="glass rounded-3xl p-5">
-        <h2 className="mb-2 font-semibold">Meus saques</h2>
+      <section data-tour="meus-saques" className="glass rounded-3xl p-5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="font-semibold">Meus saques</h2>
+          <HelpTip id="meus-saques" />
+        </div>
         {tab.withdrawals.length === 0 ? (
           <p className="py-4 text-sm text-stone-500">Nenhum pedido de saque ainda.</p>
         ) : (
@@ -132,9 +144,9 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
         )}
       </section>
 
-      <section className="glass rounded-3xl p-5">
+      <section data-tour="extrato" className="glass rounded-3xl p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold">Movimentações</h2>
+          <h2 className="flex items-center gap-1 font-semibold">Movimentações <HelpTip id="extrato" /></h2>
           {st.months.length > 0 && (
             <nav aria-label="Mês" className="flex flex-wrap gap-2">
               {st.months.map((m) => (

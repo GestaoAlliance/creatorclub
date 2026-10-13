@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Clock, ShoppingBag, Wallet } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
+import { HelpTip } from "@/components/portal/tour";
+import type { HelpId } from "@/domain/tutorial";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { releaseNote } from "@/components/ui/release-progress";
@@ -15,19 +17,22 @@ export function HomeView({ s, base, ugc = false }: { s: PortalSummary; base: str
   if (ugc) return <UgcHome s={s} base={base} monthName={monthName} />;
 
   const cards = [
-    { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} em saque` : "já liberado para você", Icon: Wallet, accent: true },
-    { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.balance.heldCents > 0 ? releaseNote(s.release) : "nada em espera", Icon: Clock },
-    { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: `${s.salesCount} ${s.salesCount === 1 ? "pedido" : "pedidos"}`, Icon: ShoppingBag },
-    { label: `Comissão de ${monthName}`, value: formatBRL(s.commissionCents), note: "pela data do pagamento", Icon: ArrowUpRight },
+    { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} em saque` : "já liberado para você", Icon: Wallet, accent: true, help: "saldo" as HelpId },
+    { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.balance.heldCents > 0 ? releaseNote(s.release) : "nada em espera", Icon: Clock, help: "a-liberar" as HelpId },
+    { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: `${s.salesCount} ${s.salesCount === 1 ? "pedido" : "pedidos"}`, Icon: ShoppingBag, help: "vendas-mes" as HelpId },
+    { label: `Comissão de ${monthName}`, value: formatBRL(s.commissionCents), note: "pela data do pagamento", Icon: ArrowUpRight, help: "comissao-mes" as HelpId },
   ];
 
   return (
     <div className="flex flex-col gap-6">
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {cards.map(({ label, value, note, Icon, accent }) => (
-          <div key={label} className={`glass rounded-3xl p-4 md:p-5 ${accent ? "ring-2 ring-brand/40" : ""}`}>
-            <div className="mb-3 grid size-9 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2">
-              <Icon className="size-4" />
+        {cards.map(({ label, value, note, Icon, accent, help }) => (
+          <div key={label} data-tour={help} className={`glass rounded-3xl p-4 md:p-5 ${accent ? "ring-2 ring-brand/40" : ""}`}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="grid size-9 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2">
+                <Icon className="size-4" />
+              </div>
+              <HelpTip id={help} className="-mr-1.5 -mt-1.5" />
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400">{label}</p>
             <p className={`mt-1 text-xl font-semibold tabular-nums md:text-2xl ${value.startsWith("-") ? "text-red-700 dark:text-red-400" : ""}`}>{value}</p>
@@ -37,9 +42,10 @@ export function HomeView({ s, base, ugc = false }: { s: PortalSummary; base: str
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="glass rounded-3xl p-5 lg:col-span-2">
+        <section data-tour="movimentacoes" className="glass rounded-3xl p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold">Últimas movimentações</h2>
+            <HelpTip id="movimentacoes" />
           </div>
           {s.recent.length === 0 ? (
             <p className="py-6 text-center text-sm text-stone-500">Nenhuma movimentação ainda. Suas comissões aparecem aqui quando um pedido com seu cupom for pago.</p>
@@ -75,8 +81,11 @@ export function HomeView({ s, base, ugc = false }: { s: PortalSummary; base: str
 
 function Coupons({ codes, note, base }: { codes: string[]; note: string; base: string }) {
   return (
-    <section className="glass flex flex-col gap-3 rounded-3xl p-5">
-      <h2 className="font-semibold">{codes.length > 1 ? "Seus cupons" : "Seu cupom"}</h2>
+    <section data-tour="cupom-inicio" className="glass flex flex-col gap-3 rounded-3xl p-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">{codes.length > 1 ? "Seus cupons" : "Seu cupom"}</h2>
+        <HelpTip id="cupom-inicio" />
+      </div>
       {codes.map((code) => (
         <div key={code} className="flex items-center justify-between gap-2 rounded-2xl bg-white/50 px-4 py-3 dark:bg-white/5">
           <span className="font-mono text-lg font-semibold tracking-wide">{code}</span>
@@ -94,16 +103,19 @@ function Coupons({ codes, note, base }: { codes: string[]; note: string; base: s
 /** Início de quem é só UGC (D-UGCPORTAL): vendas do mês com o cupom e o cupom; sem saldo, comissão e saque. */
 function UgcHome({ s, base, monthName }: { s: PortalSummary; base: string; monthName: string | undefined }) {
   const cards = [
-    { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: "valor dos produtos, pela data do pagamento", Icon: ShoppingBag },
-    { label: `Pedidos de ${monthName}`, value: String(s.salesCount), note: "pagos com seu cupom", Icon: ArrowUpRight },
+    { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: "valor dos produtos, pela data do pagamento", Icon: ShoppingBag, help: "vendas-mes" as HelpId },
+    { label: `Pedidos de ${monthName}`, value: String(s.salesCount), note: "pagos com seu cupom", Icon: ArrowUpRight, help: "pedidos-mes" as HelpId },
   ];
   return (
     <div className="flex flex-col gap-6">
       <section className="grid grid-cols-2 gap-3">
-        {cards.map(({ label, value, note, Icon }) => (
-          <div key={label} className="glass rounded-3xl p-4 md:p-5">
-            <div className="mb-3 grid size-9 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2">
-              <Icon className="size-4" />
+        {cards.map(({ label, value, note, Icon, help }) => (
+          <div key={label} data-tour={help} className="glass rounded-3xl p-4 md:p-5">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="grid size-9 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2">
+                <Icon className="size-4" />
+              </div>
+              <HelpTip id={help} className="-mr-1.5 -mt-1.5" />
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400">{label}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums md:text-2xl">{value}</p>
