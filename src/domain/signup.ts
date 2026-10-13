@@ -58,6 +58,13 @@ export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint: string
   { id: "envio", title: "Envio e pagamento", hint: "Para mandar os produtos e pagar a sua comissão.", keys: ["address", "coupon", "cpf", "cnpj", "companyName", "pix"] },
 ];
 
+/** Etapas da inscrição (D-SIGNUPSTEPS): três telas, cada uma com um ou mais blocos. */
+export const SIGNUP_STEPS: readonly { title: string; sections: readonly string[] }[] = [
+  { title: "Você", sections: ["voce"] },
+  { title: "Perfil e marcas", sections: ["conteudo", "marcas"] },
+  { title: "Envio e pagamento", sections: ["envio"] },
+];
+
 /** Cupom como ele aparece na prévia: só letras, maiúsculas, até 8 (a sugestão é conferida pela equipe na aprovação). */
 export function signupCouponPreview(raw: string): string {
   return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 8);
