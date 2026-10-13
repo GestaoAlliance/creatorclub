@@ -27,6 +27,16 @@ export function welcomeMessage(p: { name: string; brand: string; coupon: string;
   ].join("\n\n");
 }
 
+/** Aprovada com contrato pelo Autentique (D-AUTENTIQUE): o contrato foi para o e-mail; o cupom vem depois da assinatura. */
+export function contractSentMessage(p: { name: string; brand: string; email: string }): string {
+  return [
+    `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada!`,
+    `O contrato da parceria foi enviado para o seu e-mail (${p.email}) pelo Autentique. Confira os seus dados com atenção e assine por lá.`,
+    "Assim que estiver assinado, a gente segue com o seu cupom, o acesso ao portal e o envio dos produtos.",
+    "Qualquer dúvida, é só chamar por aqui.",
+  ].join("\n\n");
+}
+
 /** Resposta gentil depois de recusar. */
 export function rejectionMessage(p: { name: string; brand: string }): string {
   return [

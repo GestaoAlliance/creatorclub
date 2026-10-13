@@ -17,6 +17,7 @@ import { ContractError, updateChecklist } from "@/lib/creators/contract";
 import { CouponCreateError, createCouponInShopify } from "@/lib/coupons/create";
 import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/creators/ugc";
 import { formatBRL } from "@/domain";
+import { checkCreatorContracts, ContractSendError, sendContract } from "@/lib/autentique/contracts";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -26,7 +27,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError) {
       return { error: error.message };
     }
     throw error;
@@ -154,4 +155,26 @@ export async function ugcVideoRemoveAction(_p: State, form: FormData): Promise<S
 export async function ugcGoalAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId") ?? "");
   return run(id, async () => setUgcVideoGoal(db(), await currentActor(), id, Number(String(form.get("goal") ?? "").trim() || NaN)), "Meta salva.");
+}
+
+/** D-AUTENTIQUE: envia o contrato da creator para assinar no Autentique. */
+export async function sendContractAction(_prev: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => {
+    const r = await sendContract(db(), await currentActor(), id);
+    return { ok: `Contrato enviado pelo Autentique para ${r.email}${r.sandbox ? " (modo teste)" : ""}. O sistema confere a assinatura a cada 5 minutos.` };
+  }, "Enviado.");
+}
+
+/** D-AUTENTIQUE: confere agora se ela assinou (sem esperar a rodada de 5 minutos). */
+export async function checkContractAction(_prev: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => {
+    const r = await checkCreatorContracts(db(), await currentActor(), id);
+    if (r.signed) return { ok: "Assinado! Contrato marcado na ficha e kit de boas-vindas liberado." + (r.coupons ? " Cupom criado na Shopify." : "") };
+    if (r.rejected) return { error: "Ela recusou o contrato no Autentique. Veja o motivo abaixo." };
+    if (r.coupons) return { ok: "Cupom criado na Shopify." };
+    if (r.errors) return { error: "Não foi possível conferir agora; veja o erro abaixo." };
+    return { ok: "Ainda não assinou." };
+  }, "Conferido.");
 }

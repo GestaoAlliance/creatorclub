@@ -73,6 +73,7 @@ model Brand {
   termsAcceptances   TermsAcceptance[]
   contractDocuments  ContractDocument[]
   contractSignatures ContractSignature[]
+  contractRequests   ContractRequest[]
   notifications      Notification[]
   noticeRuns         NoticeRun[]
   commissionReleases CommissionRelease[]
@@ -166,7 +167,7 @@ model StaffInvite {
   role           StaffRole
   brandId        String? // nulo só para SUPER_ADMIN
   /// D-INVITEBRANDS: outras marcas em que o mesmo papel é dado ao aceitar (ex.: Envio nas três marcas).
-  extraBrandIds  String[] @default([])
+  extraBrandIds  String[]  @default([])
   tokenHash      String    @unique
   expiresAt      DateTime
   createdById    String
@@ -294,6 +295,7 @@ model Creator {
   shipments          Shipment[]
   termsAcceptances   TermsAcceptance[]
   contractSignatures ContractSignature[]
+  contractRequests   ContractRequest[]
   notifications      Notification[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
@@ -925,6 +927,7 @@ model ContractTemplate {
   brand      Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creators   Creator[]
   signatures ContractSignature[]
+  requests   ContractRequest[]
 
   @@unique([brandId, key])
   @@unique([id, brandId])
@@ -1043,6 +1046,7 @@ model ContractDocument {
 
   brand      Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
   signatures ContractSignature[]
+  requests   ContractRequest[]
 
   @@unique([brandId, kind, version])
   @@unique([id, brandId])
@@ -1110,4 +1114,47 @@ model NoticeRun {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, day])
+}
+
+enum ContractRequestStatus {
+  SENT // enviado ao Autentique, esperando a assinatura
+  SIGNED // assinado pela creator
+  REJECTED // recusado pela creator no Autentique
+  CANCELLED // cancelado pela equipe (ex.: dado errado, reenviar)
+}
+
+/// Contrato enviado para assinatura no Autentique (D-AUTENTIQUE): o texto preenchido (com hash) que foi no PDF, o id do
+/// documento lá e a situação. Na aprovação nova, o cupom só é criado na Shopify depois da assinatura (`pendingCoupon*`).
+model ContractRequest {
+  id                 String                @id @default(uuid())
+  brandId            String
+  creatorId          String
+  contractDocumentId String
+  contractTemplateId String
+  provider           String                @default("AUTENTIQUE")
+  externalId         String                @unique
+  sandbox            Boolean               @default(false)
+  signerName         String
+  signerEmail        String
+  body               String
+  bodySha256         String
+  pendingCouponCode  String?
+  pendingDiscountBps Int?
+  couponCreatedAt    DateTime?
+  status             ContractRequestStatus @default(SENT)
+  sentAt             DateTime              @default(now())
+  signedAt           DateTime?
+  rejectedAt         DateTime?
+  rejectReason       String?
+  lastCheckedAt      DateTime?
+  lastError          String?
+  createdById        String
+
+  brand            Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator          Creator          @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractDocument ContractDocument @relation(fields: [contractDocumentId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractTemplate ContractTemplate @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([brandId, status])
+  @@index([creatorId])
 }

@@ -239,6 +239,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-117 — 2026-10-13 — Autentique, parte 2: aprovar → contrato → assinado → cupom e kit (U1)
+- **Decidido:** D-AUTENTIQUE (fluxo completo).
+- **Feito:** tabela `ContractRequest` (RLS; travas `ContractRequest_signed_has_date`, `_rejected_has_date`,
+  `_pending_coupon_discount`, `_one_open_per_creator`); `src/lib/autentique/contracts.ts` (envio, conferência, cupom
+  depois da assinatura, kit de boas-vindas); tarefa `autentique.check` a cada 5 min; aprovação com Autentique;
+  Candidatas mostra "contrato enviado" com WhatsApp novo; cartão "Contrato pelo Autentique" na ficha.
+- **Teste combinado:** creator de teste da Ana (Botanika, influencer out/26), em modo teste.
+- **Verificado:** integração nova (aprovação sem cupom até assinar, assinado cria cupom e kit de 3, recusado e
+  reenvio, sem Autentique segue o portal). `npm test`, `npm run test:integration` (203), `npm run typecheck`,
+  `npm run build` passando; migração × schema sem divergência; capturas com banco local.
+
 ### CP-116 — 2026-10-13 — Autentique, parte 1: conexão da conta por marca (U1)
 - **Decidido:** D-AUTENTIQUE (Autentique obrigatório; chave da API por marca).
 - **Feito:** `src/lib/autentique/` (cliente GraphQL JSON e multipart, conexão cifrada, PDF do contrato com `pdf-lib`

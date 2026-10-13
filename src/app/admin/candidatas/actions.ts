@@ -11,7 +11,14 @@ import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
 
 export type ApproveState =
-  | { error?: string; ok?: { coupon: string; discountBps: number; contract: boolean; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string } }
+  | {
+      error?: string;
+      ok?: {
+        coupon: string; discountBps: number; contract: boolean; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string;
+        /** D-AUTENTIQUE: contrato enviado pelo Autentique (o cupom e o convite vêm depois da assinatura). */
+        autentique?: { sent: true; email: string; sandbox: boolean } | { sent: false; error: string };
+      };
+    }
   | undefined;
 
 export async function approveAction(_prev: ApproveState, form: FormData): Promise<ApproveState> {
@@ -30,6 +37,8 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     });
     // Sem revalidatePath aqui: a linha sumiria da aba "Novas" junto com o convite e o botão de WhatsApp. A tela
     // atualiza quando a equipe clica em "Concluir" (router.refresh).
+    // D-AUTENTIQUE: pelo Autentique, o convite do portal só sai depois de assinado (pela ficha).
+    if (r.contract) return { ok: { coupon: r.couponCode, discountBps, contract: true, creatorId: r.creatorId, link: null, autentique: r.contract } };
     // O convite sai logo depois; se falhar (ex.: pessoa já tem login), a creator já está criada e o aviso aparece.
     let link: string | null = null;
     let inviteError: string | undefined;
