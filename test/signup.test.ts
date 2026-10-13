@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, validateSignup, wantedBrands, signupBrandSlug } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -49,5 +49,19 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
     expect(wantedBrands("Só a vermefree")).toEqual(["VermeFree"]);
     expect(wantedBrands("revita  derma")).toEqual(["Revita Derma"]);
     expect(wantedBrands(null)).toEqual([]);
+  });
+});
+
+describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
+  it("cada pergunta aparece em exatamente um bloco", () => {
+    const keys = SIGNUP_SECTIONS.flatMap((s) => s.keys);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect([...keys].sort()).toEqual(SIGNUP_QUESTIONS.map((q) => q.key).sort());
+  });
+
+  it("prévia do cupom: só letras, maiúsculas, até 8", () => {
+    expect(signupCouponPreview("maria 10")).toBe("MARIA");
+    expect(signupCouponPreview("Júlia_Colares")).toBe("JULIACOL");
+    expect(signupCouponPreview("")).toBe("");
   });
 });

@@ -239,6 +239,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-110 — 2026-10-13 — Novo visual da inscrição (U1)
+- **Decidido:** D-SIGNUPDESIGN (pedido do responsável: sem etapas, preto e branco da Alliance, detalhes das marcas,
+  animações, mais intuitiva).
+- **Feito:** `/inscricao` refeita: topo preto com brilho nas cores das marcas e "como funciona" em 3 passos; blocos
+  `SIGNUP_SECTIONS`; cartões de marca coloridos; opções com marcação animada; barra de progresso fixa; prévia do cupom
+  (`signupCouponPreview`); tela de "inscrição recebida" animada. Mesmas perguntas, mesmo envio.
+- **Verificado:** testes unitários novos (cada pergunta em um bloco; prévia do cupom); capturas com banco local (claro,
+  escuro, celular). `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-109 — 2026-10-13 — Seletor de categoria na lista Creators (U1)
 - **Decidido:** D-CREATORCAT (pedido do responsável no dia 1 de teste).
 - **Feito:** seletor "Todas as categorias / Influencer / UGC / Prescritor" com contagem, etiqueta da categoria em cada
