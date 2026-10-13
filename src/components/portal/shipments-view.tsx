@@ -5,7 +5,7 @@ import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
-import { HelpTip } from "./tour";
+import { HelpTip } from "@/components/ui/tour";
 import { ReceivedButton } from "./received-button";
 
 type Shipment = Awaited<ReturnType<typeof myShipments>>[number];

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
+import { HelpTip } from "@/components/ui/tour";
 import { SIGNUP_BRANDS, type ApplicationFilters, type ApplicationSort } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationRow } from "./row";
@@ -23,17 +24,21 @@ export function CandidatasView({ status, sp, filters, data }: { status: Applicat
         Inscrições pelo site e pelos formulários do Google. Clique numa linha para ver tudo e decidir: aprovar cria a creator com
         cupom, taxa e o convite do portal.
       </PageHeader>
-      <nav aria-label="Situação" className="flex flex-wrap gap-2">
+      <nav aria-label="Situação" data-tour="cand-abas" className="flex flex-wrap items-center gap-2">
         {TABS.map(([s, label]) => (
           <Link key={s} href={s === "NEW" ? "/admin/candidatas" : `/admin/candidatas?ver=${s}`} className={status === s ? ui.pillOn : ui.pill}>
             {label} <span className="tabular-nums opacity-80">{counts[s] ?? 0}</span>
           </Link>
         ))}
+        <HelpTip id="cand-abas" />
       </nav>
 
-      <form className="glass flex flex-col gap-3 rounded-3xl p-4" role="search">
+      <form data-tour="cand-filtros" className="glass relative flex flex-col gap-3 rounded-3xl p-4" role="search">
         {status !== "NEW" && <input type="hidden" name="ver" value={status} />}
-        <input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar por nome, @ ou e-mail" aria-label="Buscar" className={ui.input} />
+        <div className="flex items-center gap-2">
+          <input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar por nome, @ ou e-mail" aria-label="Buscar" className={ui.input} />
+          <HelpTip id="cand-filtros" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <select name="tipo" defaultValue={sp.tipo ?? ""} aria-label="Tipo" className={ui.inputSm}>
             {KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -58,11 +63,14 @@ export function CandidatasView({ status, sp, filters, data }: { status: Applicat
         </div>
       </form>
 
-      <p className={ui.hint}>{filtered ? `${rows.length} de ${total} candidatas` : `${total} candidatas`}</p>
+      <p className={`${ui.hint} flex items-center gap-1`}>
+        {filtered ? `${rows.length} de ${total} candidatas` : `${total} candidatas`}
+        {rows.length > 0 && <HelpTip id="cand-lista" className="-my-1" />}
+      </p>
       {rows.length === 0 ? (
         <p className={ui.muted}>{filtered ? "Nenhuma candidata com esses filtros." : status === "NEW" ? "Nenhuma candidata nova." : "Nenhuma aqui."}</p>
       ) : (
-        <ul className="glass divide-y divide-stone-200/70 rounded-3xl px-2 md:px-4 dark:divide-white/10">
+        <ul data-tour="cand-lista" className="glass divide-y divide-stone-200/70 rounded-3xl px-2 md:px-4 dark:divide-white/10">
           {rows.map((a) => (
             <ApplicationRow key={a.id} a={a} status={status} templates={data.templates.filter((t) => t.brandId === a.brandId)} />
           ))}

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import type { HelpId } from "@/domain/tutorial";
 import { ui } from "./styles";
+import { HelpTip } from "./tour";
 
 /** Título da tela com uma linha de explicação e ações à direita. */
 export function PageHeader({ title, children, actions }: { title: string; children?: ReactNode; actions?: ReactNode }) {
@@ -14,11 +16,17 @@ export function PageHeader({ title, children, actions }: { title: string; childr
   );
 }
 
-/** Cartão com título opcional. */
-export function Card({ title, icon, children, className = "" }: { title?: ReactNode; icon?: ReactNode; children: ReactNode; className?: string }) {
+/** Cartão com título opcional. `help`: "?" no canto e passo do tutorial da tela (D-TUTORIAL). */
+export function Card({ title, icon, children, className = "", help }: { title?: ReactNode; icon?: ReactNode; children: ReactNode; className?: string; help?: HelpId }) {
   return (
-    <section className={`${ui.card} ${className}`}>
-      {title && <h2 className={ui.h2}>{icon}{title}</h2>}
+    <section data-tour={help} className={`${ui.card} ${help && !title ? "relative" : ""} ${className}`}>
+      {title && (
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={ui.h2}>{icon}{title}</h2>
+          {help && <HelpTip id={help} className="-my-1" />}
+        </div>
+      )}
+      {help && !title && <HelpTip id={help} className="absolute right-3 top-3" />}
       {children}
     </section>
   );

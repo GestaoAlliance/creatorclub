@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import Link from "next/link";
+import { HelpTip } from "@/components/ui/tour";
 import { useState } from "react";
 import { badge, ui } from "@/components/ui/styles";
 import { ClassifyForm, OwnerForm, RateForm } from "./forms";
@@ -44,13 +45,14 @@ export function CouponsBoard({ rows, creators }: { rows: Row[]; creators: Creato
 
   return (
     <section className={ui.card}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Tipo de cupom" className="flex flex-wrap gap-2">
+      <div data-tour="cp-abas" className="flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Tipo de cupom" className="flex flex-wrap items-center gap-2">
           {tabs.map(([key, label, n]) => (
             <button key={key} type="button" onClick={() => setTab(key)} className={tab === key ? ui.pillOn : ui.pill}>
               {label} <span className="tabular-nums opacity-80">{n}</span>
             </button>
           ))}
+          <HelpTip id="cp-abas" />
         </nav>
         <label className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
@@ -62,10 +64,10 @@ export function CouponsBoard({ rows, creators }: { rows: Row[]; creators: Creato
 
       {tab === "pending" && list.length > 0 && (
         <ul className={ui.list}>
-          {list.map((r) => (
-            <li key={r.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+          {list.map((r, i) => (
+            <li key={r.id} data-tour="cp-conferir" className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono font-semibold">{r.code}</span>
+                <span className="flex items-center gap-1 font-mono font-semibold">{r.code}{i === 0 && <HelpTip id="cp-conferir" className="-my-1" />}</span>
                 <span className={ui.hint}>{r.uses} pedidos</span>
               </div>
               {r.kind === null ? (

@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Gift, Trophy, Video } from "lucide-react";
 import Link from "next/link";
+import { HelpTip } from "@/components/ui/tour";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
@@ -70,7 +71,7 @@ export function DesempenhoView({ data, sp }: { data: Data; sp: Search }) {
         creator ativa. Toque no nome para abrir a ficha.
       </PageHeader>
 
-      <form className="glass flex flex-wrap items-center gap-2 rounded-3xl p-4" role="search">
+      <form data-tour="de-filtros" className="glass flex flex-wrap items-center gap-2 rounded-3xl p-4" role="search">
         {ugcTab && <input type="hidden" name="aba" value="ugc" />}
         <select name="mes" defaultValue={data.month} aria-label="Mês" className={ui.inputSm}>
           {data.months.map((m) => <option key={m} value={m}>{monthName(m)}{m === data.current ? " (atual)" : ""}</option>)}
@@ -93,9 +94,10 @@ export function DesempenhoView({ data, sp }: { data: Data; sp: Search }) {
           </>
         )}
         <button className={ui.btnSm}>Ver</button>
+        <HelpTip id="de-filtros" className="ml-auto" />
       </form>
 
-      <Card>
+      <Card help="de-resumo">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Kpi label={`Vendas de ${monthName(data.month)}`} value={brl(s.salesCents)} hint={<Change bps={s.changeBps} />} />
           <Kpi label="Pedidos" value={s.orders} />
@@ -104,13 +106,14 @@ export function DesempenhoView({ data, sp }: { data: Data; sp: Search }) {
         </div>
       </Card>
 
-      <nav aria-label="Grupo" className="flex flex-wrap gap-2">
+      <nav aria-label="Grupo" data-tour="de-grupos" className="flex flex-wrap items-center gap-2">
         <Link href={q({ aba: undefined })} className={ugcTab ? ui.pill : ui.pillOn}>Influencers e prescritores <span className="opacity-80">{data.partners.length}</span></Link>
         <Link href={q({ aba: "ugc", tipo: undefined, semvenda: undefined, ordem: undefined })} className={ugcTab ? ui.pillOn : ui.pill}>UGC <span className="opacity-80">{data.ugc.length}</span></Link>
+        <HelpTip id="de-grupos" />
       </nav>
 
       {!ugcTab ? (
-        <Card title={`Ranking de ${monthName(data.month)}`} icon={<Trophy className="size-4" />}>
+        <Card title={`Ranking de ${monthName(data.month)}`} icon={<Trophy className="size-4" />} help="de-ranking">
           {!isCurrent && <p className={ui.hint}>O mínimo mostra o acumulado de hoje; vendas, pedidos e kit são do mês escolhido.</p>}
           {partners.length === 0 ? (
             <p className={ui.muted}>Ninguém com esses filtros.</p>

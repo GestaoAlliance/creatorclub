@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { HELP, helpText, placeBalloon, TOURS, tourScreenFor, tourSeenKey, tourSteps } from "@/domain/tutorial";
 
-describe("tutoriais do portal (D-TUTORIAL)", () => {
-  it("todo passo de tela tem texto curto (cabe no balão)", () => {
-    for (const ids of Object.values(TOURS))
-      for (const id of ids) {
-        expect(HELP[id].title.length).toBeGreaterThan(0);
-        expect(helpText(id).length).toBeLessThanOrEqual(170);
-        expect(helpText(id, true).length).toBeLessThanOrEqual(170);
-      }
+describe("tutoriais do portal e da equipe (D-TUTORIAL)", () => {
+  it("todo texto é curto (cabe no balão) e todo passo de tela tem texto", () => {
+    for (const ids of Object.values(TOURS)) for (const id of ids) expect(HELP[id]).toBeDefined();
+    for (const id of Object.keys(HELP) as (keyof typeof HELP)[]) {
+      expect(HELP[id].title.length).toBeGreaterThan(0);
+      expect(helpText(id).length).toBeLessThanOrEqual(170);
+      expect(helpText(id, true).length).toBeLessThanOrEqual(170);
+    }
   });
 
   it("UGC não lê sobre comissão (D-UGCPORTAL)", () => {
@@ -26,7 +26,27 @@ describe("tutoriais do portal (D-TUTORIAL)", () => {
     expect(tourScreenFor("/portal/botanika/saque/novo")).toBeNull();
     expect(tourScreenFor("/portal/botanika/avisos")).toBeNull();
     expect(tourScreenFor("/portal/botanika/inicio")).toBeNull();
-    expect(tourScreenFor("/admin/creators")).toBeNull();
+    expect(tourScreenFor("/admin")).toBeNull();
+  });
+
+  it("acha a tela da equipe pela URL", () => {
+    expect(tourScreenFor("/admin/marca")).toBe("equipe-inicio");
+    expect(tourScreenFor("/admin/candidatas")).toBe("equipe-candidatas");
+    expect(tourScreenFor("/admin/creators")).toBe("equipe-creators");
+    expect(tourScreenFor("/admin/creators/0b6c2a40-1111-4b8e-9d4e-2c1f00000000")).toBe("equipe-ficha");
+    expect(tourScreenFor("/admin/cupons")).toBe("equipe-cupons");
+    expect(tourScreenFor("/admin/envios")).toBe("equipe-envios");
+    expect(tourScreenFor("/admin/saques")).toBe("equipe-saques");
+    expect(tourScreenFor("/admin/desempenho")).toBe("equipe-desempenho");
+    // Telas de configuração ficam sem tutorial nesta leva.
+    expect(tourScreenFor("/admin/sync")).toBeNull();
+    expect(tourScreenFor("/admin/saques/nf/abc")).toBeNull();
+  });
+
+  it("passo de botão que o papel não tem some (o botão não está na tela)", () => {
+    // Álvaro (Envio): sem "Aprovar pedido"; Ana (Gestão) sem "Marcar enviado".
+    const alvaro = new Set(["en-situacao", "en-cartao", "en-enviado"]);
+    expect(tourSteps("equipe-envios", (id) => alvaro.has(id))).toEqual(["en-situacao", "en-cartao", "en-enviado"]);
   });
 
   it("pula o passo cujo cartão não está na tela, mantendo a ordem", () => {

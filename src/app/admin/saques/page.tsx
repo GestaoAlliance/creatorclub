@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HelpTip } from "@/components/ui/tour";
 import { redirect } from "next/navigation";
 import { formatBRL } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
@@ -32,12 +33,13 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
         Confira a nota (valor e CNPJ do tomador), faça o Pix e marque como pago. Se algo não bate, recuse com o motivo: a creator vê e pode
         pedir de novo.
       </PageHeader>
-      <nav aria-label="Situação" className="flex flex-wrap gap-2">
+      <nav aria-label="Situação" data-tour="sq-abas" className="flex flex-wrap items-center gap-2">
         <Link href="/admin/saques" className={!decided ? ui.pillOn : ui.pill}>{WITHDRAWAL_STATUS_LABEL.REQUESTED}</Link>
         <Link href="/admin/saques?ver=decididos" className={decided ? ui.pillOn : ui.pill}>Decididos</Link>
+        <HelpTip id="sq-abas" />
       </nav>
       {!decided && (
-        <Card>
+        <Card help="sq-resumo">
           <div className="grid grid-cols-2 gap-4">
             <Kpi label="Pedidos em análise" value={rows.length} tone={rows.length ? "amber" : undefined} />
             <Kpi label="Total a pagar" value={formatBRL(total)} />

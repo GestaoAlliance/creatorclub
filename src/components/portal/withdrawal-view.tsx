@@ -4,7 +4,7 @@ import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { CopyButton } from "./copy-button";
-import { HelpTip } from "./tour";
+import { HelpTip } from "@/components/ui/tour";
 import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
