@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, SideNav, type NavItem } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
+import { TourButton, TutorialProvider } from "@/components/ui/tour";
 import { brandCssVars } from "@/lib/portal/context";
 import type { StaffBrand } from "@/lib/staff/context";
 import { ALLIANCE_PATHS } from "@/lib/staff/nav";
@@ -61,13 +62,17 @@ export function StaffFrame(p: {
               </details>
             )}
             {p.isCreator && <Link href="/portal" className="glass hidden rounded-full px-4 py-2 text-sm sm:block">Meu portal</Link>}
+            <TourButton />
             <ThemeToggle />
             <form action={signOut}>
               <button className="glass rounded-full px-4 py-2 text-sm">Sair</button>
             </form>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-6">{p.children}</main>
+        {/* D-TUTORIAL: passo a passo no primeiro acesso às telas da rotina de cada papel. */}
+        <TutorialProvider ugc={false} auto>
+          <main className="flex flex-1 flex-col gap-6">{p.children}</main>
+        </TutorialProvider>
       </div>
       <BottomNav base="/admin" items={items} />
     </div>

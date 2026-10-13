@@ -1,5 +1,6 @@
 import { ExternalLink, MapPin } from "lucide-react";
 import Link from "next/link";
+import { HelpTip } from "@/components/ui/tour";
 import { badge, ui } from "@/components/ui/styles";
 import { formatAddress, type ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type staffShipments } from "@/lib/shipments/shipments";
@@ -15,16 +16,19 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
   if (shipments.length === 0) return <p className={ui.muted}>Nenhum envio.</p>;
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {shipments.map((s) => {
+      {shipments.map((s, i) => {
         const url = trackingUrl(s.carrier, s.trackingCode);
         return (
-          <article key={s.id} className={ui.card}>
+          <article key={s.id} data-tour="en-cartao" className={ui.card}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <Link href={`/admin/creators/${s.creator.id}`} className="font-semibold hover:underline">{s.creator.account.name}</Link>
                 <p className={ui.hint}>registrado em {day(s.createdAt)}</p>
               </div>
-              <span className={STATUS_BADGE[s.status]}>{SHIPMENT_STATUS_LABEL[s.status]}</span>
+              <span className="flex items-center gap-1">
+                <span className={STATUS_BADGE[s.status]}>{SHIPMENT_STATUS_LABEL[s.status]}</span>
+                {i === 0 && <HelpTip id="en-cartao" className="-my-1" />}
+              </span>
             </div>
             <ul className="text-sm">
               {s.items.map((it) => <li key={it.title}><span className="font-semibold tabular-nums">{it.quantity}×</span> {it.title}</li>)}
@@ -57,13 +61,25 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
             )}
             {s.status === "AWAITING_APPROVAL" && (
               <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
-                {s.canApprove ? <ApprovalForms shipmentId={s.id} /> : <p className={ui.hint}>Pedido da creator esperando a aprovação da Gestão.</p>}
+                {s.canApprove ? (
+                  <div data-tour="en-aprovar" className="flex items-start justify-between gap-2">
+                    <ApprovalForms shipmentId={s.id} />
+                    <HelpTip id="en-aprovar" />
+                  </div>
+                ) : (
+                  <p className={ui.hint}>Pedido da creator esperando a aprovação da Gestão.</p>
+                )}
               </div>
             )}
             {s.approvedAt && <p className={ui.hint}>Pedido da creator aprovado em {day(s.approvedAt)}.</p>}
             {s.canManage && (s.status === "PREPARING" || s.status === "SHIPPED") && (
               <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
-                {s.status === "PREPARING" && <ShippedForm shipmentId={s.id} />}
+                {s.status === "PREPARING" && (
+                  <div data-tour="en-enviado" className="flex items-start justify-between gap-2">
+                    <ShippedForm shipmentId={s.id} />
+                    <HelpTip id="en-enviado" />
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   {s.status === "SHIPPED" && <DeliveredForm shipmentId={s.id} />}
                   <CancelForm shipmentId={s.id} />

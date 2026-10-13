@@ -239,6 +239,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-121 — 2026-10-13 — Mini tutoriais nas telas da equipe (U1)
+- **Decidido:** D-TUTORIAL, parte da equipe (respostas do responsável: telas da rotina de cada um; balões por papel).
+- **Feito:** 37 textos novos em `src/domain/tutorial.ts` para Início da marca, Candidatas, Creators, ficha, Cupons, Envios,
+  Saques e Desempenho; "?" nos cartões (`Card` ganhou `help`) e botão "?" no topo da equipe; componente movido para
+  `src/components/ui/tour.tsx`. O botão do topo some nas telas sem tutorial.
+- **Falta:** o responsável revisar os textos nas capturas do PR.
+- **Verificado:** teste unitário ampliado (telas da equipe pela URL; passo de botão que o papel não tem some). Capturas
+  como Gestão, Envio e Pagamento com banco local. `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-120 — 2026-10-13 — Mini tutoriais em balão no portal da creator (U1)
 - **Decidido:** D-TUTORIAL (respostas do responsável: os dois formatos; portal das creators primeiro; nós escrevemos
   e ele revisa).

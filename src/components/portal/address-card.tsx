@@ -3,7 +3,7 @@
 import { MapPin } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { saveAddressAction } from "@/app/portal/[marca]/envios/actions";
-import { HelpTip } from "./tour";
+import { HelpTip } from "@/components/ui/tour";
 import { formatAddress, UFS, zipFromText, type Address } from "@/lib/shipments/address";
 
 const field = "w-full rounded-2xl border border-stone-300/70 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-brand dark:border-white/15 dark:bg-white/5";

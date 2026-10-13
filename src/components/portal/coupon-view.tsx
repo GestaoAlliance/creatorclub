@@ -1,7 +1,7 @@
 import { Link2, MousePointerClick, Ticket } from "lucide-react";
 import type { PortalCoupon } from "@/lib/portal/coupons";
 import { CopyButton } from "./copy-button";
-import { HelpTip } from "./tour";
+import { HelpTip } from "@/components/ui/tour";
 import { ShareButton } from "./share-button";
 
 /** Aba Cupom (E7.5): código e link para copiar/compartilhar, e os cliques no link. Só exibe. */

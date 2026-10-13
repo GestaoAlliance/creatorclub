@@ -5,7 +5,7 @@ import { stopViewAsAction } from "@/app/portal/actions";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, PORTAL_ITEMS, SideNav } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
-import { TourButton, TutorialProvider } from "@/components/portal/tour";
+import { TourButton, TutorialProvider } from "@/components/ui/tour";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
 /** Moldura do portal da creator (E7.1): cor da marca, menu lateral (computador) ou inferior (celular). Só exibe. */

@@ -2,19 +2,28 @@ import { ArrowRight, Banknote, ClipboardCheck, FileSignature, Inbox, Package, Ta
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Kpi, PageHeader } from "@/components/ui/page";
+import { HelpTip } from "@/components/ui/tour";
+import type { HelpId } from "@/domain/tutorial";
 import { ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
 import type { StaffHome } from "@/lib/staff/home";
 
-function Tile({ href, icon, title, children }: { href: string; icon: ReactNode; title: string; children: ReactNode }) {
+/** O cartão inteiro abre a tela (link esticado); o "?" fica por cima, sem abrir a tela (D-TUTORIAL). */
+function Tile({ href, icon, title, help, children }: { href: string; icon: ReactNode; title: string; help: HelpId; children: ReactNode }) {
   return (
-    <Link href={href} className={`${ui.card} group transition-transform hover:-translate-y-0.5`}>
-      <div className="flex items-center justify-between">
-        <h2 className={ui.h2}>{icon}{title}</h2>
-        <ArrowRight className="size-4 text-stone-400 transition-transform group-hover:translate-x-0.5" />
+    <div data-tour={help} className={`${ui.card} group relative transition-transform hover:-translate-y-0.5`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className={ui.h2}>
+          {icon}
+          <Link href={href} className="after:absolute after:inset-0 after:rounded-3xl after:content-['']">{title}</Link>
+        </h2>
+        <span className="flex items-center gap-1">
+          <HelpTip id={help} className="relative z-10" />
+          <ArrowRight className="size-4 text-stone-400 transition-transform group-hover:translate-x-0.5" />
+        </span>
       </div>
       <div className="grid grid-cols-2 gap-4">{children}</div>
-    </Link>
+    </div>
   );
 }
 
@@ -27,7 +36,7 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
       {empty && <p className={ui.muted}>Seu papel ainda não tem telas por aqui.</p>}
       <div className="grid gap-4 md:grid-cols-2">
         {h.hunter && (
-          <Tile href="/admin/indicacoes" icon={<Target className="size-4" />} title="Minhas indicações">
+          <Tile href="/admin/indicacoes" icon={<Target className="size-4" />} title="Minhas indicações" help="eq-indicacoes">
             {h.hunter.hasLink ? (
               <>
                 <Kpi label="Cliques em 30 dias" value={h.hunter.clicks30} hint="no seu link" />
@@ -39,29 +48,29 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
           </Tile>
         )}
         {h.creators && h.creators.applications > 0 && (
-          <Tile href="/admin/candidatas" icon={<Inbox className="size-4" />} title="Candidatas">
+          <Tile href="/admin/candidatas" icon={<Inbox className="size-4" />} title="Candidatas" help="eq-candidatas">
             <Kpi label="Novas" value={h.creators.applications} hint="responderam o formulário" tone="amber" />
           </Tile>
         )}
         {h.creators && h.creators.contractsExpiring + h.creators.contractsExpired > 0 && (
-          <Tile href="/admin/creators?contrato=1" icon={<FileSignature className="size-4" />} title="Contratos">
+          <Tile href="/admin/creators?contrato=1" icon={<FileSignature className="size-4" />} title="Contratos" help="eq-contratos">
             <Kpi label="Vencem em 30 dias" value={h.creators.contractsExpiring} tone={h.creators.contractsExpiring ? "amber" : undefined} />
             <Kpi label="Vencidos" value={h.creators.contractsExpired} hint="renovar ou encerrar" tone={h.creators.contractsExpired ? "red" : undefined} />
           </Tile>
         )}
         {h.creators && h.creators.idle > 0 && (
-          <Tile href="/admin/creators?semvenda=1" icon={<TrendingDown className="size-4" />} title="Sem vender">
+          <Tile href="/admin/creators?semvenda=1" icon={<TrendingDown className="size-4" />} title="Sem vender" help="eq-semvender">
             <Kpi label="Há 60 dias ou mais" value={h.creators.idle} hint="ativas: falar com a creator" tone="amber" />
           </Tile>
         )}
         {h.withdrawals && (
-          <Tile href="/admin/saques" icon={<Banknote className="size-4" />} title="Saques">
+          <Tile href="/admin/saques" icon={<Banknote className="size-4" />} title="Saques" help="eq-saques">
             <Kpi label="Em análise" value={h.withdrawals.open} hint={formatBRL(h.withdrawals.openCents)} tone={h.withdrawals.open ? "amber" : undefined} />
             <Kpi label="Aberturas a aprovar" value={h.withdrawals.openingsPending} hint="saque travado até aprovar" />
           </Tile>
         )}
         {h.shipments && (
-          <Tile href="/admin/envios" icon={<Package className="size-4" />} title="Envios">
+          <Tile href="/admin/envios" icon={<Package className="size-4" />} title="Envios" help="eq-envios">
             <Kpi label="Pedidos a aprovar" value={h.shipments.awaiting} hint="a Gestão aprova" tone={h.shipments.awaiting ? "amber" : undefined} />
             <Kpi label="Preparando" value={h.shipments.preparing} hint="a enviar" tone={h.shipments.preparing ? "amber" : undefined} />
             <Kpi label="A caminho" value={h.shipments.shipped} hint="esperando a entrega" />
@@ -69,13 +78,13 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
           </Tile>
         )}
         {h.coupons && (
-          <Tile href="/admin/cupons" icon={<ClipboardCheck className="size-4" />} title="Cupons">
+          <Tile href="/admin/cupons" icon={<ClipboardCheck className="size-4" />} title="Cupons" help="eq-cupons">
             <Kpi label="Cupons sem tipo" value={h.coupons.unclassified} tone={h.coupons.unclassified ? "amber" : undefined} />
             <Kpi label="Donas a confirmar" value={h.coupons.ownerPending} tone={h.coupons.ownerPending ? "amber" : undefined} />
           </Tile>
         )}
         {h.creators && (
-          <Tile href="/admin/creators" icon={<Users className="size-4" />} title="Creators">
+          <Tile href="/admin/creators" icon={<Users className="size-4" />} title="Creators" help="eq-creators">
             <Kpi label="Ativas" value={h.creators.active} />
             <Kpi label="A conferir pela Ana" value={h.creators.toReview} hint="libera o saldo de abertura" />
           </Tile>

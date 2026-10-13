@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
 import { badge, ui } from "@/components/ui/styles";
+import { HelpTip } from "@/components/ui/tour";
 import { formatBRL } from "@/domain";
 import { WITHDRAWAL_STATUS_LABEL } from "@/lib/portal/withdrawals";
 import type { withdrawalQueue } from "@/lib/withdrawals/decide";
@@ -16,10 +17,10 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
   if (rows.length === 0) return <p className={ui.muted}>Nenhum saque aqui.</p>;
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {rows.map((r) => {
+      {rows.map((r, i) => {
         const over = r.availableBeforeCents !== null && r.amountCents > r.availableBeforeCents;
         return (
-          <article key={r.id} className={ui.card}>
+          <article key={r.id} data-tour="sq-cartao" className={ui.card}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-semibold">{r.name}</p>
@@ -30,6 +31,7 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
                 {r.nfCheck === "OK" && <span className={badge.green}>nota conferida</span>}
                 {r.nfCheck === "MANUAL" && <span className={badge.amber}>conferir a nota</span>}
                 <span className={STATUS_BADGE[r.status]}>{WITHDRAWAL_STATUS_LABEL[r.status]}</span>
+                {i === 0 && <HelpTip id="sq-cartao" className="-my-1" />}
               </span>
             </div>
             <div>
@@ -68,7 +70,8 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
             )}
             {r.status === "REJECTED" && r.note && <p className="text-sm text-stone-600 dark:text-stone-400">Motivo: {r.note}</p>}
             {r.status === "REQUESTED" && (
-              <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
+              <div data-tour="sq-pagar" className="relative flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
+                {i === 0 && <HelpTip id="sq-pagar" className="absolute -top-3.5 right-0 bg-white dark:bg-stone-900" />}
                 <PayForm withdrawalId={r.id} label={formatBRL(r.amountCents)} />
                 <RejectForm withdrawalId={r.id} />
               </div>

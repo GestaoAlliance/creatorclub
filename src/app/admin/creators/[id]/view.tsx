@@ -1,5 +1,6 @@
 import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import Link from "next/link";
+import { HelpTip } from "@/components/ui/tour";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
@@ -50,16 +51,17 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </div>
           </div>
           {p.canViewAs && (
-            <form action={viewAsAction}>
+            <form action={viewAsAction} data-tour="fi-vercomo" className="flex items-center gap-1">
               <input type="hidden" name="creatorId" value={p.id} />
               <button className={ui.ghost}><Eye className="size-4" /> Ver o portal como esta creator</button>
+              <HelpTip id="fi-vercomo" />
             </form>
           )}
         </div>
       </div>
 
       {st && !ugcOnly && (
-        <Card title="Saldo" icon={<Receipt className="size-4" />}>
+        <Card title="Saldo" icon={<Receipt className="size-4" />} help="fi-saldo">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Kpi label="Saldo" value={formatBRL(st.balance.totalCents)} tone={st.balance.totalCents < 0 ? "red" : undefined} />
             <Kpi label="A liberar" value={formatBRL(st.balance.heldCents)} />
@@ -79,7 +81,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           {!p.reviewedAt && !ugcOnly && (
-            <Card title="Conferência da Ana" icon={<ClipboardCheck className="size-4" />}>
+            <Card title="Conferência da Ana" icon={<ClipboardCheck className="size-4" />} help="fi-conferencia">
               {p.reviewedAt ? (
                 <p className={ui.ok}>Números conferidos em {date(p.reviewedAt)}. O Pagamento já pode aprovar o saldo de abertura.</p>
               ) : (
@@ -91,7 +93,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
           {p.ugcCycle && <UgcVideosCard creatorId={p.id} status={p.status} canEdit={p.canEdit} cycle={p.ugcCycle} videos={p.ugcVideos} legacy={p.ugc} />}
-          <Card title="Cupons" icon={<Ticket className="size-4" />}>
+          <Card title="Cupons" icon={<Ticket className="size-4" />} help="fi-cupons">
             {p.coupons.length === 0 && <p className={ui.muted}>Nenhum.</p>}
             <ul className={ui.list}>
               {p.coupons.map((c, i) => (
@@ -110,7 +112,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             {p.canEdit && p.status !== "DEACTIVATED" && <CouponCreateForm creatorId={p.id} />}
             <Link href="/admin/cupons" className={`${ui.link} text-sm`}>Abrir a conferência de cupons</Link>
           </Card>
-          <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />}>
+          <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />} help="fi-contrato">
             {p.contract.status === "EXPIRED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Contrato vencido em {dmy(p.contract.end)}: renovar ou encerrar.</p>}
             {p.contract.status === "EXPIRING" && (
               <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
@@ -136,7 +138,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
           </Card>
           {st && !ugcOnly && (
-            <Card title="Extrato" icon={<Receipt className="size-4" />}>
+            <Card title="Extrato" icon={<Receipt className="size-4" />} help="fi-extrato">
               {st.months.length > 0 && (
                 <nav aria-label="Mês" className="flex flex-wrap gap-2">
                   {st.months.map((m) => (
@@ -217,7 +219,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
           {!ugcOnly && (
-            <Card title="Taxa de comissão" icon={<Percent className="size-4" />}>
+            <Card title="Taxa de comissão" icon={<Percent className="size-4" />} help="fi-taxa">
               {p.policies.length === 0 && <p className={ui.muted}>Nenhuma taxa definida.</p>}
               <ul className={ui.list}>
                 {p.policies.map((t, i) => (
@@ -248,7 +250,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
           {(autentique.connected || autentique.requests.length > 0) && (
-            <Card title="Contrato pelo Autentique" icon={<FileSignature className="size-4" />}>
+            <Card title="Contrato pelo Autentique" icon={<FileSignature className="size-4" />} help="fi-autentique">
               {autentique.requests.length === 0 && <p className={ui.muted}>Nenhum contrato enviado ainda.</p>}
               <ul className={ui.list}>
                 {autentique.requests.map((r) => (
@@ -312,7 +314,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
           {p.adjustments && !ugcOnly && (
-            <Card title="Ajustes manuais" icon={<Scale className="size-4" />}>
+            <Card title="Ajustes manuais" icon={<Scale className="size-4" />} help="fi-ajustes">
               {p.adjustments.length === 0 && <p className={ui.muted}>Nenhum.</p>}
               <ul className={ui.list}>
                 {p.adjustments.map((a, i) => (

@@ -37,6 +37,8 @@ export function TutorialProvider({ ugc, auto, children }: { ugc: boolean; auto: 
 
 /** Botão do topo: mostra de novo o tutorial da tela aberta. */
 export function TourButton() {
+  // Tela sem tutorial (ex.: Avisos, painel da Alliance): sem botão.
+  if (!tourScreenFor(usePathname())) return null;
   return (
     <button
       type="button"
@@ -229,7 +231,10 @@ export function HelpTip({ id, className = "" }: { id: HelpId; className?: string
       <button
         ref={button}
         type="button"
-        onClick={() => {
+        onClick={(e) => {
+          // Dentro de um <summary> ou de um cartão-link: abre só o balão, sem abrir a seção nem a tela.
+          e.preventDefault();
+          e.stopPropagation();
           setPos(null);
           setOpen((o) => !o);
         }}

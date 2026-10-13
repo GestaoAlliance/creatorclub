@@ -25,7 +25,7 @@ export default async function CuponsPage() {
       <PageHeader title="Cupons">
         Tipo do cupom, dona e taxa. Cupom sem tipo ou com dona a confirmar deixa os pedidos dele pendentes; PROMO nunca leva pedido.
       </PageHeader>
-      <Card>
+      <Card help="cp-resumo">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <Kpi label="Creators confirmadas" value={`${progress.confirmed} de ${progress.activeCreators}`} hint="cupom, dona e taxa" />
           <Kpi label="Cupons de creator" value={rows.filter((r) => r.kind === "CREATOR").length} />

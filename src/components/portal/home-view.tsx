@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Clock, ShoppingBag, Wallet } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
-import { HelpTip } from "@/components/portal/tour";
+import { HelpTip } from "@/components/ui/tour";
 import type { HelpId } from "@/domain/tutorial";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";

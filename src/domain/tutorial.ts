@@ -1,9 +1,20 @@
 /**
- * Mini tutoriais do portal da creator (D-TUTORIAL): o mesmo texto aparece no balão do "?" de cada cartão e no passo a
- * passo do primeiro acesso a cada tela. Textos curtos, do dia a dia; o responsável revisa (PR com capturas).
+ * Mini tutoriais do portal da creator e das telas da equipe (D-TUTORIAL): o mesmo texto aparece no balão do "?" de
+ * cada cartão e no passo a passo do primeiro acesso a cada tela. Textos curtos, do dia a dia; o responsável revisa
+ * (PR com capturas). Passo de botão que a pessoa não tem (pelo papel) não aparece, porque o botão não está na tela.
  */
 
-export type TourScreen = "inicio" | "vendas" | "cupom" | "saque" | "envios";
+export type PortalScreen = "inicio" | "vendas" | "cupom" | "saque" | "envios";
+export type StaffScreen =
+  | "equipe-inicio"
+  | "equipe-candidatas"
+  | "equipe-creators"
+  | "equipe-ficha"
+  | "equipe-cupons"
+  | "equipe-envios"
+  | "equipe-saques"
+  | "equipe-desempenho";
+export type TourScreen = PortalScreen | StaffScreen;
 
 export type HelpTopic = {
   title: string;
@@ -105,6 +116,163 @@ export const HELP = {
     title: "Meus envios",
     text: "Acompanhe cada pedido: solicitado, aprovado, enviado e entregue. Com o rastreio você segue a entrega; quando chegar, toque em Recebi.",
   },
+  // ——— Equipe ———
+  "eq-indicacoes": {
+    title: "Minhas indicações",
+    text: "Cliques no seu link nos últimos 30 dias e quantas indicadas estão em análise ou já aprovadas. Toque para ver a lista.",
+  },
+  "eq-candidatas": {
+    title: "Candidatas",
+    text: "Quem respondeu o formulário de inscrição e espera resposta. Abra para aprovar ou recusar; aprovar cria a creator e segue para o contrato.",
+  },
+  "eq-contratos": {
+    title: "Contratos",
+    text: "Creators com contrato vencendo nos próximos 30 dias ou já vencido. Abra para renovar ou encerrar.",
+  },
+  "eq-semvender": {
+    title: "Sem vender",
+    text: "Creators ativas há 60 dias ou mais sem nenhuma venda pelo cupom. Vale uma conversa para entender o que travou.",
+  },
+  "eq-saques": {
+    title: "Saques",
+    text: "Pedidos de saque esperando a conferência da nota e o Pix. Aberturas a aprovar são saldos antigos que só podem ser sacados depois de aprovados.",
+  },
+  "eq-envios": {
+    title: "Envios",
+    text: "Pedidos de kit das creators: a Gestão aprova, o Envio prepara e manda com o rastreio. Os números mostram em que etapa cada um está.",
+  },
+  "eq-cupons": {
+    title: "Cupons",
+    text: "Cupons que ainda precisam de tipo (creator ou promocional) ou de dona confirmada. Enquanto isso, os pedidos deles ficam pendentes.",
+  },
+  "eq-creators": {
+    title: "Creators",
+    text: "Todas as creators da marca. A conferir pela Ana são as que esperam a conferência que libera o saldo de abertura.",
+  },
+  "cand-abas": {
+    title: "Situação",
+    text: "Novas esperam sua decisão; Aprovadas e Recusadas ficam guardadas para consulta. O número mostra quantas há em cada uma.",
+  },
+  "cand-filtros": {
+    title: "Busca e filtros",
+    text: "Procure pelo nome, @ ou e-mail e filtre por tipo, origem, hunter ou marca. Mais antigas primeiro ajuda a responder quem espera há mais tempo.",
+  },
+  "cand-lista": {
+    title: "Lista de candidatas",
+    text: "Toque numa linha para ver tudo o que ela respondeu e decidir. A etiqueta repetida avisa que pode ser alguém que já está no sistema.",
+  },
+  "cr-filtros": {
+    title: "Busca e filtros",
+    text: "Busque pelo nome e filtre por categoria. As caixas mostram só quem tem pendência, contrato vencendo ou está sem vender.",
+  },
+  "cr-lista": {
+    title: "Lista de creators",
+    text: "Cada creator com a situação, a categoria e o último pedido. Etiquetas amarelas são pendências; toque para abrir a ficha.",
+  },
+  "fi-vercomo": {
+    title: "Ver o portal como ela",
+    text: "Abre o portal exatamente como a creator vê, só para leitura. Ajuda a tirar dúvidas dela pelo WhatsApp.",
+  },
+  "fi-saldo": {
+    title: "Saldo",
+    text: "Vem do extrato dela. A liberar vira disponível no dia 1 quando as vendas acumuladas chegam ao mínimo do contrato.",
+  },
+  "fi-conferencia": {
+    title: "Conferência da Ana",
+    text: "Depois de conferir cupons, taxa e vendas, marque aqui. Isso libera o saldo de abertura para o Pagamento.",
+  },
+  "fi-cupons": {
+    title: "Cupons da creator",
+    text: "Os cupons dela, desde quando valem e se a dona está confirmada. Daqui dá para criar um cupom novo.",
+  },
+  "fi-contrato": {
+    title: "Contrato e checklist",
+    text: "Modelo, datas do contrato e o checklist. Os avisos em amarelo ou vermelho mostram contrato vencendo ou dias sem vender.",
+  },
+  "fi-extrato": {
+    title: "Extrato",
+    text: "Tudo o que entrou e saiu do saldo dela, mês a mês. É a mesma lista que ela vê no portal.",
+  },
+  "fi-taxa": {
+    title: "Taxa de comissão",
+    text: "A porcentagem que ela ganha em cada venda e desde quando vale. Cada pedido usa a taxa do dia em que foi pago.",
+  },
+  "fi-autentique": {
+    title: "Contrato pelo Autentique",
+    text: "Envie o contrato para assinatura e acompanhe. Quando ela assina, o cupom é criado e o kit de boas-vindas é liberado.",
+  },
+  "fi-ajustes": {
+    title: "Ajustes manuais",
+    text: "Correções de saldo, sempre como um lançamento novo com o motivo. Nada é apagado do extrato.",
+  },
+  "cp-resumo": {
+    title: "Resumo dos cupons",
+    text: "Quantas creators ativas já têm cupom, dona e taxa confirmados, e quantos cupons há de cada tipo.",
+  },
+  "cp-abas": {
+    title: "Abas e busca",
+    text: "A conferir é o trabalho a fazer; Creators e Promocionais são para consulta. A busca acha pelo cupom ou pelo nome da dona.",
+  },
+  "cp-conferir": {
+    title: "Conferir um cupom",
+    text: "Primeiro diga se é de creator ou promocional, depois confirme a dona e a taxa. Cupom promocional nunca gera comissão.",
+  },
+  "en-aviso": {
+    title: "Pedidos esperando aprovação",
+    text: "Pedidos que as creators fizeram pelo portal. Toque para ver só eles.",
+  },
+  "en-novo": {
+    title: "Novo envio",
+    text: "Para mandar produtos fora do pedido da creator. Envio criado aqui não passa pela aprovação.",
+  },
+  "en-situacao": {
+    title: "Situação",
+    text: "Filtre os envios pela etapa: aguardando aprovação, preparando, enviado, entregue ou cancelado.",
+  },
+  "en-cartao": {
+    title: "Cada envio",
+    text: "A creator, os produtos e o endereço de entrega. Quando ela confirma no portal, aparece confirmado pela creator.",
+  },
+  "en-aprovar": {
+    title: "Aprovar pedido",
+    text: "Confira os produtos e aprove: o pedido vai para Preparando, na fila do Envio. Se recusar, escreva o motivo: a creator vê e escolhe de novo.",
+  },
+  "en-enviado": {
+    title: "Marcar enviado",
+    text: "Depois de postar, informe a transportadora e o código de rastreio. A creator acompanha a entrega pelo portal.",
+  },
+  "sq-abas": {
+    title: "Situação",
+    text: "Em análise é a fila para pagar; Decididos guarda os pagos e os recusados.",
+  },
+  "sq-resumo": {
+    title: "Resumo",
+    text: "Quantos pedidos esperam e o total a pagar por Pix.",
+  },
+  "sq-cartao": {
+    title: "Pedido de saque",
+    text: "Confira a nota (tomador, valor e CNPJ) ou o recibo e copie a chave Pix. Valor acima do saldo aparece em vermelho.",
+  },
+  "sq-pagar": {
+    title: "Marcar como pago",
+    text: "Só depois do Pix feito. Se algo não bate, recuse com o motivo: a creator vê e pode pedir de novo.",
+  },
+  "de-filtros": {
+    title: "Filtros",
+    text: "Escolha o mês, o tipo de creator e a ordem. Mais perto do mínimo mostra quem está quase liberando a comissão.",
+  },
+  "de-resumo": {
+    title: "Resumo do mês",
+    text: "Vendas e pedidos pelo cupom no mês, quantas creators venderam e quantas já chegaram ao mínimo do contrato.",
+  },
+  "de-grupos": {
+    title: "Grupos",
+    text: "Influencers e prescritores ganham comissão; UGC é permuta e fica à parte, com a meta de vídeos.",
+  },
+  "de-ranking": {
+    title: "Ranking",
+    text: "Cada creator com vendas, pedidos, quanto falta para o mínimo e a faixa do kit. Toque no nome para abrir a ficha.",
+  },
 } as const satisfies Record<string, HelpTopic>;
 
 export type HelpId = keyof typeof HELP;
@@ -116,6 +284,24 @@ export const TOURS: Record<TourScreen, HelpId[]> = {
   cupom: ["cupom-codigo", "cupom-link", "cupom-cliques"],
   saque: ["saque-saldo", "saque-nf", "saque-recibo", "meus-saques", "extrato"],
   envios: ["solicitar-pedido", "endereco", "meus-envios"],
+  "equipe-inicio": ["eq-indicacoes", "eq-candidatas", "eq-contratos", "eq-semvender", "eq-saques", "eq-envios", "eq-cupons", "eq-creators"],
+  "equipe-candidatas": ["cand-abas", "cand-filtros", "cand-lista"],
+  "equipe-creators": ["cr-filtros", "cr-lista"],
+  "equipe-ficha": ["fi-vercomo", "fi-saldo", "fi-conferencia", "fi-cupons", "fi-contrato", "fi-extrato", "fi-taxa", "fi-autentique", "fi-ajustes"],
+  "equipe-cupons": ["cp-resumo", "cp-abas", "cp-conferir"],
+  "equipe-envios": ["en-aviso", "en-novo", "en-situacao", "en-cartao", "en-aprovar", "en-enviado"],
+  "equipe-saques": ["sq-abas", "sq-resumo", "sq-cartao", "sq-pagar"],
+  "equipe-desempenho": ["de-filtros", "de-resumo", "de-grupos", "de-ranking"],
+};
+
+const STAFF_SCREENS: Record<string, StaffScreen> = {
+  marca: "equipe-inicio",
+  candidatas: "equipe-candidatas",
+  creators: "equipe-creators",
+  cupons: "equipe-cupons",
+  envios: "equipe-envios",
+  saques: "equipe-saques",
+  desempenho: "equipe-desempenho",
 };
 
 export function helpText(id: HelpId, ugc = false): string {
@@ -123,14 +309,18 @@ export function helpText(id: HelpId, ugc = false): string {
   return ugc && topic.ugcText ? topic.ugcText : topic.text;
 }
 
-/** Tela do tutorial pela URL do portal (`/portal/<marca>/<aba>`); fora das cinco telas, nenhuma. */
+/** Tela do tutorial pela URL (`/portal/<marca>/<aba>` ou `/admin/<tela>`); fora das telas com tutorial, nenhuma. */
 export function tourScreenFor(pathname: string): TourScreen | null {
   const parts = pathname.split("/").filter(Boolean);
+  if (parts[0] === "admin") {
+    if (parts[1] === "creators" && parts.length === 3) return "equipe-ficha";
+    return parts.length === 2 ? (STAFF_SCREENS[parts[1]!] ?? null) : null;
+  }
   if (parts[0] !== "portal" || !parts[1]) return null;
   if (parts.length === 2) return "inicio";
   if (parts.length > 3) return null;
   const tab = parts[2] as TourScreen;
-  return tab in TOURS && tab !== "inicio" ? tab : null;
+  return ["vendas", "cupom", "saque", "envios"].includes(tab) ? tab : null;
 }
 
 /** Passos que existem nesta tela agora (o cartão está visível). */
