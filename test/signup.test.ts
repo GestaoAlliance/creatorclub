@@ -67,8 +67,8 @@ describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
 });
 
 describe("etapas da inscrição (D-SIGNUPSTEPS)", () => {
-  it("três etapas e cada bloco em exatamente uma", () => {
-    expect(SIGNUP_STEPS).toHaveLength(3);
+  it("duas etapas e cada bloco em exatamente uma", () => {
+    expect(SIGNUP_STEPS).toHaveLength(2);
     const ids = SIGNUP_STEPS.flatMap((s) => s.sections);
     expect([...ids].sort()).toEqual(SIGNUP_SECTIONS.map((s) => s.id).sort());
   });

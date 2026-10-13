@@ -9,10 +9,10 @@ export type SignupBrand = { name: string; color: string };
 
 const BY_KEY = new Map(SIGNUP_QUESTIONS.map((q) => [q.key, q]));
 const REQUIRED = SIGNUP_QUESTIONS.filter((q) => q.required).map((q) => q.key);
-/** Ícone de cada bloco (com três etapas, número no bloco confundiria). */
+/** Ícone de cada bloco (com etapas, número no bloco confundiria). */
 const SECTION_ICON: Record<string, LucideIcon> = { voce: UserRound, conteudo: Sparkles, marcas: Store, envio: Package };
 const SECTION = new Map(SIGNUP_SECTIONS.map((s) => [s.id, s]));
-/** Etapa (0, 1 ou 2) de cada pergunta e do consentimento (que fica na última). */
+/** Etapa (0 ou 1) de cada pergunta e do consentimento (que fica na última). */
 const STEP_OF = new Map<string, number>([
   ...SIGNUP_STEPS.flatMap((st, i) => st.sections.flatMap((id) => SECTION.get(id)!.keys.map((k) => [k, i] as [string, number]))),
   ["consent", SIGNUP_STEPS.length - 1],
@@ -213,7 +213,7 @@ function Done({ brands }: { brands: SignupBrand[] }) {
   );
 }
 
-/** Formulário de inscrição (D-SIGNUP, D-SIGNUPDESIGN, D-SIGNUPSTEPS): as mesmas perguntas do Google, em três etapas.
+/** Formulário de inscrição (D-SIGNUP, D-SIGNUPDESIGN, D-SIGNUPSTEPS): as mesmas perguntas do Google, em duas etapas.
  *  Um formulário só (as etapas só escondem blocos), então o envio continua igual. */
 export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; brands: SignupBrand[] }) {
   const [state, action, pending] = useActionState(signupAction, {
