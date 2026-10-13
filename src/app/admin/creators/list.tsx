@@ -18,7 +18,14 @@ type Row = {
   contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null };
   idle: { days: number; idle: boolean; lastSaleDay: string | null } | null;
   ugcCycle: { count: number; goal: number; outside: number; status: "NO_CONTRACT" | "OPEN" | "DONE" | "MISSED" } | null;
+  lastOrder: { name: string; day: string } | null;
+  pendings: string[];
 };
+
+/** "2026-10-09" → "09/10/2026". */
+const br = (day: string) => day.split("-").reverse().join("/");
+/** Pendências mostradas como selo (contrato já tem selo próprio, com os dias). */
+const PENDING_BADGE = (p: string) => !p.startsWith("contrato");
 
 /** Selo dos vídeos da UGC no ciclo (D-UGCVIDEOS). */
 function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
@@ -30,15 +37,16 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
 const STATUS_BADGE: Record<string, string> = { ACTIVE: badge.green, INACTIVE: badge.amber, DEACTIVATED: badge.neutral };
 
 /** Lista de creators com busca por nome (no próprio navegador; a lista já vem filtrada pela permissão). */
-export function CreatorList({ rows, contractsOnly = false, idleOnly = false, category: initialCategory = "" }: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean; category?: CategoryFilter }) {
+export function CreatorList({ rows, contractsOnly = false, idleOnly = false, pendingOnly = false, category: initialCategory = "" }: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<CategoryFilter>(initialCategory);
+  const [onlyPending, setOnlyPending] = useState(pendingOnly);
   const [onlyContracts, setOnlyContracts] = useState(contractsOnly);
   const [onlyIdle, setOnlyIdle] = useState(idleOnly);
   const isIdle = (r: Row) => r.idle?.idle === true;
   const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
   const warn = (r: Row) => r.status !== "DEACTIVATED" && (r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED");
-  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)) && (!onlyIdle || isIdle(r)) && matchesCategory(r.categories, category));
+  const shown = rows.filter((r) => norm(r.name).includes(norm(q)) && (!onlyContracts || warn(r)) && (!onlyIdle || isIdle(r)) && matchesCategory(r.categories, category) && (!onlyPending || r.pendings.length > 0));
   const count = (f: CategoryFilter) => rows.filter((r) => matchesCategory(r.categories, f)).length;
   return (
     <section className={ui.card}>
@@ -53,6 +61,12 @@ export function CreatorList({ rows, contractsOnly = false, idleOnly = false, cat
         ))}
         {count("NONE") > 0 && <option value="NONE">Sem categoria ({count("NONE")})</option>}
       </select>
+      {rows.some((r) => r.pendings.length > 0) && (
+        <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
+          <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} className="size-4 accent-[var(--brand)]" />
+          Só com pendência ({rows.filter((r) => r.pendings.length > 0).length})
+        </label>
+      )}
       {rows.some(warn) && (
         <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
           <input type="checkbox" checked={onlyContracts} onChange={(e) => setOnlyContracts(e.target.checked)} className="size-4 accent-[var(--brand)]" />
@@ -76,7 +90,12 @@ export function CreatorList({ rows, contractsOnly = false, idleOnly = false, cat
                   {c.name.slice(0, 1).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{c.name}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="truncate text-sm font-medium">{c.name}</span>
+                    <span className="text-xs text-stone-500">
+                      {c.lastOrder ? `último pedido ${c.lastOrder.name} · ${br(c.lastOrder.day)}` : "nenhum pedido ainda"}
+                    </span>
+                  </span>
                   <span className="mt-1 flex flex-wrap gap-1.5">
                     <span className={STATUS_BADGE[c.status] ?? badge.neutral}>{c.statusLabel}</span>
                     {c.categories.map((k) => (
@@ -84,7 +103,9 @@ export function CreatorList({ rows, contractsOnly = false, idleOnly = false, cat
                     ))}
                     {c.hasLogin && <span className={badge.sky}>no portal</span>}
                     {c.reviewed && <span className={badge.green}>conferida</span>}
-                    {c.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
+                    {c.pendings.filter(PENDING_BADGE).map((p) => (
+                      <span key={p} className={badge.amber}>{p}</span>
+                    ))}
                     {c.status !== "DEACTIVATED" && c.contract.status === "EXPIRING" && (
                       <span className={badge.amber}>contrato vence em {c.contract.daysLeft} {c.contract.daysLeft === 1 ? "dia" : "dias"}</span>
                     )}
