@@ -7,7 +7,7 @@ import { syncHealth } from "@/lib/shopify/health";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
+import { AutentiqueForm, BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,9 @@ export default async function SyncPage() {
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
   // A1 (D-ALLIANCE): só a loja da marca escolhida.
   const health = await syncHealth(db(), scopedActor(actor, (await staffContext(actor)).brand?.id));
+  const autentique = new Map(
+    (await db().brandIntegration.findMany({ where: { kind: "AUTENTIQUE", brandId: { in: health.map((h) => h.brand.id) } }, select: { brandId: true, status: true, externalId: true, scopes: true } })).map((r) => [r.brandId, r]),
+  );
 
   return (
     <>
@@ -103,6 +106,21 @@ export default async function SyncPage() {
               </ul>
             </Card>
           )}
+
+          <Card title="Autentique (contratos)">
+            {(() => {
+              const a = autentique.get(h.brand.id);
+              const on = a?.status === "CONNECTED";
+              return (
+                <>
+                  <p className="text-sm">
+                    {on ? <>Conectado à conta <strong>{a?.externalId}</strong>{a?.scopes === "sandbox" ? " · modo teste" : ""}.</> : "Não conectado: a aprovação segue com a assinatura no portal."}
+                  </p>
+                  <AutentiqueForm brandId={h.brand.id} connected={on} sandbox={a?.scopes === "sandbox"} />
+                </>
+              );
+            })()}
+          </Card>
 
           <details className={ui.card}>
             <summary className="cursor-pointer font-semibold">{h.shopify ? "Reconectar loja" : "Conectar loja"}</summary>

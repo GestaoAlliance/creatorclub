@@ -239,6 +239,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-116 — 2026-10-13 — Autentique, parte 1: conexão da conta por marca (U1)
+- **Decidido:** D-AUTENTIQUE (Autentique obrigatório; chave da API por marca).
+- **Feito:** `src/lib/autentique/` (cliente GraphQL JSON e multipart, conexão cifrada, PDF do contrato com `pdf-lib`
+  1.17.1); cartão "Autentique (contratos)" na página Shopify com chave e modo teste.
+- **Próximo:** parte 2 (aprovar → contrato pelo Autentique → assinado → cupom e kit); chave da Botanika recebida,
+  VermeFree e Revita em breve. Depois, o kit (opção a).
+- **Verificado:** testes unitários (cliente, multipart, PDF) e de integração (conexão cifrada, permissão, chave
+  recusada). `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-115 — 2026-10-13 — Endereço que não aparecia, texto da nota e emoji (U1, feedback da Ana)
 - **Decidido:** D-ADDRINFORMED, D-NFSERVICE; tirado o emoji da mensagem de boas-vindas (chegava como "�").
 - **Achado:** 63 creators ativas da Botanika e 19 da VermeFree têm o endereço da carga numa linha só (sem CEP); o
