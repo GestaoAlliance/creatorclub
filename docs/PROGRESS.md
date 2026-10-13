@@ -239,6 +239,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-112 — 2026-10-13 — Inscrição em duas etapas (U1)
+- **Decidido:** D-SIGNUPSTEPS mudada para duas etapas: "Você e suas redes" e "Marcas e pagamento".
+- **Verificado:** teste das etapas ajustado; capturas das duas etapas. `npm test`, `npm run typecheck`, `npm run build`
+  passando.
+
 ### CP-111 — 2026-10-13 — Inscrição em três etapas (U1)
 - **Decidido:** D-SIGNUPSTEPS.
 - **Feito:** `SIGNUP_STEPS` (Você · Perfil e marcas · Envio e pagamento); topo fixo com as etapas e a barra de

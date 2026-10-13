@@ -16,7 +16,7 @@ async function brandColors(): Promise<SignupBrand[]> {
 }
 
 const STEPS = [
-  ["Inscreva-se", "Três passos rápidos, uns 5 minutos."],
+  ["Inscreva-se", "Dois passos rápidos, uns 5 minutos."],
   ["Análise", "A equipe confere o seu perfil e chama no WhatsApp."],
   ["Aprovada", "Você recebe o seu cupom e o acesso ao portal."],
 ] as const;
