@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { validateKitChoice } from "@/domain";
 import type { PortalContext } from "@/lib/portal/context";
+import type { Actor } from "@/lib/auth/actor";
+import { can } from "@/lib/auth/permissions";
 import { addressOf } from "./address";
 import { ShipmentError } from "./shipments";
 
@@ -9,6 +11,8 @@ import { ShipmentError } from "./shipments";
  * Kit mensal: O fechamento do mês concede o kit (`KitGrant` PENDING) pela faixa de vendas do contrato; a
  * creator escolhe os produtos no portal (aba Envios) e o envio nasce "Preparando" com o endereço da ficha. Sem prazo:
  * o kit espera até ela escolher. A escolha só acontece a partir de PENDING (à prova de dois cliques).
+ * D-KITAPPROVAL: a escolha vira um pedido "Aguardando aprovação"; a Gestão aprova (vai para o Envio, "Preparando") ou
+ * recusa com motivo (o envio fica cancelado e o kit volta para ela escolher de novo).
  */
 
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -63,6 +67,7 @@ export async function chooseKit(
       data: {
         brandId: kit.brandId,
         creatorId: ctx.creatorId,
+        status: "AWAITING_APPROVAL",
         note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kit.products === 1 ? "suplemento" : "suplementos"})`,
         address,
         createdById: actorUserId,
@@ -78,3 +83,38 @@ export async function chooseKit(
   });
 }
 
+
+/** Pedido esperando aprovação, conferido para quem decide (Gestão da marca, `creators.edit`). */
+async function awaiting(prisma: PrismaClient, actor: Actor | null, shipmentId: string) {
+  const s = await prisma.shipment.findUnique({ where: { id: shipmentId }, select: { brandId: true, creatorId: true, status: true } });
+  if (!s) throw new ShipmentError("Pedido não encontrado.");
+  if (!actor || !can(actor.grants, "creators.edit", s.brandId)) throw new ShipmentError("Só a Gestão aprova pedidos.");
+  if (s.status !== "AWAITING_APPROVAL") throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
+  return s;
+}
+
+/** D-KITAPPROVAL: aprovado vai para a fila do Envio ("Preparando"). */
+export async function approveShipment(prisma: PrismaClient, actor: Actor | null, shipmentId: string, now = new Date()) {
+  const s = await awaiting(prisma, actor, shipmentId);
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.shipment.updateMany({ where: { id: shipmentId, status: "AWAITING_APPROVAL" }, data: { status: "PREPARING", approvedAt: now, approvedById: actor!.userId } });
+    if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
+    await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.approved", entity: "Shipment", entityId: shipmentId, after: {} } });
+  });
+}
+
+/** D-KITAPPROVAL: recusado fica cancelado com o motivo, e o kit volta para a creator escolher de novo. */
+export async function rejectShipment(prisma: PrismaClient, actor: Actor | null, shipmentId: string, reason: string, now = new Date()) {
+  const s = await awaiting(prisma, actor, shipmentId);
+  const why = reason.trim().replace(/\s+/g, " ").slice(0, 300);
+  if (!why) throw new ShipmentError("Escreva o motivo: ela vê no portal.");
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.shipment.updateMany({
+      where: { id: shipmentId, status: "AWAITING_APPROVAL" },
+      data: { status: "CANCELLED", cancelledAt: now, cancelledById: actor!.userId, rejectReason: why },
+    });
+    if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
+    await tx.kitGrant.updateMany({ where: { shipmentId }, data: { status: "PENDING", shipmentId: null, chosenAt: null } });
+    await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.rejected", entity: "Shipment", entityId: shipmentId, after: { reason: why } } });
+  });
+}

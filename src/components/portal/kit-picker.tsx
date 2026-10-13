@@ -38,7 +38,7 @@ export function KitPicker({
           <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
         </h2>
         <p className={ui.muted}>
-          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} Escolha os produtos e a equipe prepara o envio para o seu endereço.
+          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} Escolha os produtos: a equipe aprova o pedido e prepara o envio para o seu endereço.
         </p>
       </div>
       {!hasAddress ? (

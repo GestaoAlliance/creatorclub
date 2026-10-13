@@ -706,6 +706,7 @@ model Product {
 }
 
 enum ShipmentStatus {
+  AWAITING_APPROVAL // pedido da creator (kit) esperando a aprovação da Gestão (D-KITAPPROVAL)
   PREPARING
   SHIPPED
   DELIVERED
@@ -731,6 +732,11 @@ model Shipment {
   deliveredById String?
   cancelledAt   DateTime?
   cancelledById String?
+  /// D-KITAPPROVAL: quem da Gestão aprovou o pedido da creator (só pedidos que passaram por aprovação).
+  approvedAt    DateTime?
+  approvedById  String?
+  /// D-KITAPPROVAL: motivo quando a Gestão recusa o pedido (o kit volta para ela escolher de novo).
+  rejectReason  String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

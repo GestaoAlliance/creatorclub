@@ -3,12 +3,12 @@ import Link from "next/link";
 import { badge, ui } from "@/components/ui/styles";
 import { formatAddress, type ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type staffShipments } from "@/lib/shipments/shipments";
-import { CancelForm, DeliveredForm, ShippedForm } from "./forms";
+import { ApprovalForms, CancelForm, DeliveredForm, ShippedForm } from "./forms";
 
-type Row = Omit<Awaited<ReturnType<typeof staffShipments>>[number], "address"> & { canManage: boolean; address: ShipmentAddress | null };
+type Row = Omit<Awaited<ReturnType<typeof staffShipments>>[number], "address"> & { canManage: boolean; canApprove: boolean; address: ShipmentAddress | null };
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
-const STATUS_BADGE = { PREPARING: badge.amber, SHIPPED: badge.sky, DELIVERED: badge.green, CANCELLED: badge.neutral } as const;
+const STATUS_BADGE = { AWAITING_APPROVAL: badge.red, PREPARING: badge.amber, SHIPPED: badge.sky, DELIVERED: badge.green, CANCELLED: badge.neutral } as const;
 
 /** Envios da equipe, um cartão por envio. O endereço só aparece para quem tem `personal.address` na marca. */
 export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
@@ -52,9 +52,15 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
                   </span>
                 )}
                 {s.deliveredAt && <span>entregue em {day(s.deliveredAt)} ({s.deliveredBy === "CREATOR" ? "confirmado pela creator" : "pela equipe"})</span>}
-                {s.cancelledAt && <span>cancelado em {day(s.cancelledAt)}</span>}
+                {s.cancelledAt && <span>{s.rejectReason ? `recusado em ${day(s.cancelledAt)}: ${s.rejectReason}` : `cancelado em ${day(s.cancelledAt)}`}</span>}
               </div>
             )}
+            {s.status === "AWAITING_APPROVAL" && (
+              <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
+                {s.canApprove ? <ApprovalForms shipmentId={s.id} /> : <p className={ui.hint}>Pedido da creator esperando a aprovação da Gestão.</p>}
+              </div>
+            )}
+            {s.approvedAt && <p className={ui.hint}>Pedido da creator aprovado em {day(s.approvedAt)}.</p>}
             {s.canManage && (s.status === "PREPARING" || s.status === "SHIPPED") && (
               <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
                 {s.status === "PREPARING" && <ShippedForm shipmentId={s.id} />}

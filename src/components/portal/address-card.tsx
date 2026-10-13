@@ -39,9 +39,11 @@ export function AddressCard({ marca, address, viewOnly, informed = null }: { mar
             {formatAddress(address).map((l) => <p key={l}>{l}</p>)}
           </div>
         ) : (
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            {viewOnly ? "A creator ainda não cadastrou o endereço." : "Cadastre seu endereço para a equipe poder te enviar produtos."}
-          </p>
+          !informed && (
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              {viewOnly ? "A creator ainda não cadastrou o endereço." : "Cadastre seu endereço para a equipe poder te enviar produtos."}
+            </p>
+          )
         )
       ) : (
         <form action={action} className="grid grid-cols-6 gap-3">

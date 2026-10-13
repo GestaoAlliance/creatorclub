@@ -16,7 +16,7 @@ import { addressColumns, addressOf, normalizeAddress, partialAddressText, type A
 
 export class ShipmentError extends Error {}
 
-export const SHIPMENT_STATUS_LABEL = { PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregue", CANCELLED: "Cancelado" } as const;
+export const SHIPMENT_STATUS_LABEL = { AWAITING_APPROVAL: "Aguardando aprovação", PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregue", CANCELLED: "Cancelado" } as const;
 export type ShipmentStatusValue = keyof typeof SHIPMENT_STATUS_LABEL;
 
 /** Link público de rastreio (Correios) quando o código tem o formato deles; outras transportadoras: só o código. */
@@ -171,6 +171,8 @@ const SHIPMENT_SELECT = {
   deliveredAt: true,
   deliveredBy: true,
   cancelledAt: true,
+  approvedAt: true,
+  rejectReason: true,
   items: { select: { title: true, quantity: true }, orderBy: { title: "asc" as const } },
 } as const;
 
