@@ -208,7 +208,7 @@ function Done({ brands }: { brands: SignupBrand[] }) {
         </span>
       </div>
       <h2 className="mt-4 text-3xl font-semibold tracking-tight">Inscrição recebida!</h2>
-      <p className="max-w-sm text-stone-600 dark:text-stone-400">Obrigada pelo interesse! A equipe vai analisar e falar com você pelo WhatsApp.</p>
+      <p className="max-w-sm text-stone-600 dark:text-stone-400">Agora é com a gente: a equipe vai analisar o seu perfil e chamar você no WhatsApp. Enquanto isso, já vai pensando no seu primeiro post.</p>
     </section>
   );
 }
@@ -324,7 +324,7 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
             />
           </div>
           <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-600 dark:text-stone-300">
-            {count === total ? "Pronto para enviar" : `${count} de ${total}`}
+            {count === total ? "Tudo pronto!" : `${count} de ${total}`}
           </span>
         </div>
       </div>
@@ -423,7 +423,7 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
                 backgroundImage: `linear-gradient(110deg, transparent 30%, ${(colors.length ? colors : brands.map((b) => b.color)).join(", ")}, transparent 70%)`,
               }}
             />
-            <span className="relative">{pending ? "Enviando…" : "Enviar inscrição"}</span>
+            <span className="relative">{pending ? "Enviando…" : "Quero fazer parte"}</span>
             {!pending && <ArrowRight className="relative size-5 transition group-hover:translate-x-1" />}
           </button>
         </div>
