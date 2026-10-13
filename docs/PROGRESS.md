@@ -239,6 +239,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-111 — 2026-10-13 — Inscrição em três etapas (U1)
+- **Decidido:** D-SIGNUPSTEPS.
+- **Feito:** `SIGNUP_STEPS` (Você · Perfil e marcas · Envio e pagamento); topo fixo com as etapas e a barra de
+  progresso; "Continuar" confere a etapa; "Voltar"; erro do envio abre a etapa certa; ícone em cada bloco.
+- **Verificado:** teste unitário novo (cada bloco em uma etapa); capturas das três etapas (computador claro, celular
+  escuro). `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-110 — 2026-10-13 — Novo visual da inscrição (U1)
 - **Decidido:** D-SIGNUPDESIGN (pedido do responsável: sem etapas, preto e branco da Alliance, detalhes das marcas,
   animações, mais intuitiva).

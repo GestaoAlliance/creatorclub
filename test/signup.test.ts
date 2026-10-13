@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -63,5 +63,13 @@ describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
     expect(signupCouponPreview("maria 10")).toBe("MARIA");
     expect(signupCouponPreview("Júlia_Colares")).toBe("JULIACOL");
     expect(signupCouponPreview("")).toBe("");
+  });
+});
+
+describe("etapas da inscrição (D-SIGNUPSTEPS)", () => {
+  it("três etapas e cada bloco em exatamente uma", () => {
+    expect(SIGNUP_STEPS).toHaveLength(3);
+    const ids = SIGNUP_STEPS.flatMap((s) => s.sections);
+    expect([...ids].sort()).toEqual(SIGNUP_SECTIONS.map((s) => s.id).sort());
   });
 });

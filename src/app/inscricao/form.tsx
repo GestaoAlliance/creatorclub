@@ -1,14 +1,22 @@
 "use client";
 
-import { ArrowRight, AtSign, Check, Ticket } from "lucide-react";
+import { ArrowLeft, ArrowRight, AtSign, Check, Package, Sparkles, Store, Ticket, UserRound, type LucideIcon } from "lucide-react";
 import { useActionState, useEffect, useRef, useState, type CSSProperties } from "react";
-import { SIGNUP_CONSENT_TEXT, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupCouponPreview, type SignupQuestion } from "@/domain";
+import { SIGNUP_CONSENT_TEXT, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, signupCouponPreview, type SignupQuestion } from "@/domain";
 import { signupAction, type SignupState } from "./actions";
 
 export type SignupBrand = { name: string; color: string };
 
 const BY_KEY = new Map(SIGNUP_QUESTIONS.map((q) => [q.key, q]));
 const REQUIRED = SIGNUP_QUESTIONS.filter((q) => q.required).map((q) => q.key);
+/** Ícone de cada bloco (com três etapas, número no bloco confundiria). */
+const SECTION_ICON: Record<string, LucideIcon> = { voce: UserRound, conteudo: Sparkles, marcas: Store, envio: Package };
+const SECTION = new Map(SIGNUP_SECTIONS.map((s) => [s.id, s]));
+/** Etapa (0, 1 ou 2) de cada pergunta e do consentimento (que fica na última). */
+const STEP_OF = new Map<string, number>([
+  ...SIGNUP_STEPS.flatMap((st, i) => st.sections.flatMap((id) => SECTION.get(id)!.keys.map((k) => [k, i] as [string, number]))),
+  ["consent", SIGNUP_STEPS.length - 1],
+]);
 
 const input =
   "w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-stone-950 focus:ring-4 focus:ring-stone-950/10 aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
@@ -45,7 +53,11 @@ function Label({ q }: { q: SignupQuestion }) {
 }
 
 function Err({ msg }: { msg?: string | undefined }) {
-  return msg ? <span role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{msg}</span> : null;
+  return msg ? (
+    <span role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+      {msg}
+    </span>
+  ) : null;
 }
 
 function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; error?: string | undefined; brands: SignupBrand[] }) {
@@ -57,7 +69,9 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
     const color = new Map(brands.map((b) => [b.name, b.color]));
     return (
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3"><Label q={q} /></legend>
+        <legend className="mb-3">
+          <Label q={q} />
+        </legend>
         <div className="grid gap-2.5 sm:grid-cols-3">
           {q.options!.map((o) => (
             <label
@@ -87,11 +101,21 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
     const short = q.options!.every((o) => o.length <= 4);
     return (
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3"><Label q={q} /></legend>
+        <legend className="mb-3">
+          <Label q={q} />
+        </legend>
         <div className={`grid gap-2 ${short ? "grid-cols-2" : "sm:grid-cols-2"}`}>
           {q.options!.map((o) => (
             <label key={o} className={option}>
-              <input type="radio" name={q.key} value={o} defaultChecked={value === o} required={q.required} aria-invalid={invalid} className="sr-only" />
+              <input
+                type="radio"
+                name={q.key}
+                value={o}
+                defaultChecked={value === o}
+                required={q.required}
+                aria-invalid={invalid}
+                className="sr-only"
+              />
               <span className={dot}>
                 <Check className="pop hidden size-3 text-stone-950 group-has-[:checked]:block dark:text-white" strokeWidth={3.5} />
               </span>
@@ -104,7 +128,12 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
     );
   }
 
-  const common = { name: q.key, defaultValue: value, required: q.required, "aria-invalid": invalid };
+  const common = {
+    name: q.key,
+    defaultValue: value,
+    required: q.required,
+    "aria-invalid": invalid,
+  };
   return (
     <label className="flex flex-col gap-2">
       <Label q={q} />
@@ -163,7 +192,14 @@ function Done({ brands }: { brands: SignupBrand[] }) {
               key={i}
               aria-hidden
               className="burst absolute left-1/2 top-1/2 size-2.5 rounded-full"
-              style={{ background: brands[i % brands.length]?.color, "--bx": `${Math.cos(a) * 90}px`, "--by": `${Math.sin(a) * 90}px`, animationDelay: "150ms" } as CSSProperties}
+              style={
+                {
+                  background: brands[i % brands.length]?.color,
+                  "--bx": `${Math.cos(a) * 90}px`,
+                  "--by": `${Math.sin(a) * 90}px`,
+                  animationDelay: "150ms",
+                } as CSSProperties
+              }
             />
           );
         })}
@@ -177,13 +213,30 @@ function Done({ brands }: { brands: SignupBrand[] }) {
   );
 }
 
-/** Formulário de inscrição (D-SIGNUP, D-SIGNUPDESIGN): as mesmas perguntas do Google, numa página só, em blocos. */
+/** Formulário de inscrição (D-SIGNUP, D-SIGNUPDESIGN, D-SIGNUPSTEPS): as mesmas perguntas do Google, em três etapas.
+ *  Um formulário só (as etapas só escondem blocos), então o envio continua igual. */
 export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; brands: SignupBrand[] }) {
-  const [state, action, pending] = useActionState(signupAction, { n: 0 } as SignupState);
+  const [state, action, pending] = useActionState(signupAction, {
+    n: 0,
+  } as SignupState);
   const ref = useRef<HTMLFormElement>(null);
   const [done, setDone] = useState<Set<string>>(new Set());
   const [picked, setPicked] = useState<string[]>([]);
+  const [step, setStep] = useState(0);
   const v = state.values ?? {};
+  const last = SIGNUP_STEPS.length - 1;
+
+  const goTo = (n: number) => {
+    setStep(n);
+    requestAnimationFrame(() => ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  // Só avança se as respostas obrigatórias desta etapa estão preenchidas (o navegador aponta o que falta).
+  const next = () => {
+    const fields = ref.current?.querySelectorAll<HTMLInputElement>(`[data-step="${step}"] input, [data-step="${step}"] textarea`) ?? [];
+    for (const el of fields) if (!el.checkValidity()) return void el.reportValidity();
+    goTo(step + 1);
+  };
 
   const refresh = () => {
     const form = ref.current;
@@ -203,16 +256,21 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
     );
     root.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [state.n]);
+  }, [state.n, step]);
 
   // Depois de um envio com erro: recalcula o progresso e leva a pessoa ao primeiro campo marcado.
   useEffect(() => {
     refresh();
     if (!state.errors) return;
-    const first = ref.current?.querySelector<HTMLElement>("[aria-invalid=true]");
-    first?.scrollIntoView({ behavior: "smooth", block: "center" });
-    first?.focus({ preventScroll: true });
-  }, [state.n, state.errors]);
+    const keys = Object.keys(state.errors);
+    const target = Math.min(...keys.map((k) => STEP_OF.get(k) ?? last));
+    setStep(target);
+    requestAnimationFrame(() => {
+      const first = ref.current?.querySelector<HTMLElement>(`[data-step="${target}"] [aria-invalid=true]`);
+      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      first?.focus({ preventScroll: true });
+    });
+  }, [state.n, state.errors, last]);
 
   if (state.done) return <Done brands={brands} />;
 
@@ -227,45 +285,107 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
       {hunterCode && <input type="hidden" name="h" value={hunterCode} />}
       {/* Campo que só robô preenche (fica fora da tela). */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
-        <label>Site<input name="site" tabIndex={-1} autoComplete="off" /></label>
+        <label>
+          Site
+          <input name="site" tabIndex={-1} autoComplete="off" />
+        </label>
       </div>
 
-      <div className="glass sticky top-3 z-20 flex items-center gap-4 rounded-full px-5 py-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-300/60 dark:bg-white/10">
-          <div
-            className="h-full rounded-full bg-stone-950 transition-[width] duration-500 ease-out dark:bg-white"
-            style={{ width: `${pct}%`, ...(fill ? { background: fill } : {}) }}
-          />
-        </div>
-        <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-700 dark:text-stone-300">
-          {count === total ? "Pronto para enviar" : `${count} de ${total}`}
-        </span>
-      </div>
-
-      {SIGNUP_SECTIONS.map((s, i) => {
-        const complete = s.keys.every((k) => !BY_KEY.get(k)?.required || done.has(k));
-        return (
-          <section key={s.id} className="reveal flex flex-col gap-7 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-stone-200 md:p-9 dark:bg-white/[0.03] dark:ring-white/10">
-            <header className="flex items-start gap-4">
-              <span
-                className={`grid size-10 shrink-0 place-content-center rounded-full text-sm font-semibold tabular-nums transition ${complete ? "bg-stone-950 text-white dark:bg-white dark:text-black" : "ring-1 ring-stone-300 dark:ring-white/20"}`}
+      <div className="glass sticky top-3 z-20 flex flex-col gap-3 rounded-3xl px-5 py-4">
+        <ol className="flex items-center gap-2">
+          {SIGNUP_STEPS.map((st, i) => (
+            <li key={st.title} className="flex flex-1 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => i < step && goTo(i)}
+                disabled={i >= step}
+                aria-current={i === step ? "step" : undefined}
+                className="flex min-w-0 items-center gap-2 text-left disabled:cursor-default"
               >
-                {complete ? <Check key="ok" className="pop size-4" strokeWidth={3} /> : `0${i + 1}`}
-              </span>
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{s.title}</h2>
-                <p className="mt-0.5 text-sm text-stone-500">{s.hint}</p>
-              </div>
-            </header>
-            {s.keys.map((k) => {
-              const q = BY_KEY.get(k)!;
-              return <Field key={k} q={q} value={v[k] ?? ""} error={state.errors?.[k]} brands={brands} />;
-            })}
-          </section>
-        );
-      })}
+                <span
+                  className={`grid size-7 shrink-0 place-content-center rounded-full text-xs font-semibold tabular-nums transition ${i <= step ? "bg-stone-950 text-white dark:bg-white dark:text-black" : "ring-1 ring-stone-300 text-stone-500 dark:ring-white/20"}`}
+                >
+                  {i < step ? <Check className="pop size-3.5" strokeWidth={3} /> : i + 1}
+                </span>
+                <span className={`truncate text-sm ${i === step ? "font-semibold" : "hidden text-stone-500 sm:inline"}`}>{st.title}</span>
+              </button>
+              {i < last && <span className={`h-px flex-1 transition ${i < step ? "bg-stone-950 dark:bg-white" : "bg-stone-300 dark:bg-white/15"}`} />}
+            </li>
+          ))}
+        </ol>
+        <div className="flex items-center gap-3">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-300/60 dark:bg-white/10">
+            <div
+              className="h-full rounded-full bg-stone-950 transition-[width] duration-500 ease-out dark:bg-white"
+              style={{
+                width: `${pct}%`,
+                ...(fill ? { background: fill } : {}),
+              }}
+            />
+          </div>
+          <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-600 dark:text-stone-300">
+            {count === total ? "Pronto para enviar" : `${count} de ${total}`}
+          </span>
+        </div>
+      </div>
 
-      <section className="reveal flex flex-col gap-4 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-stone-200 md:p-9 dark:bg-white/[0.03] dark:ring-white/10">
+      {SIGNUP_STEPS.map((st, n) => (
+        <div key={st.title} data-step={n} hidden={n !== step} className="flex flex-col gap-5">
+          {st.sections.map((id) => {
+            const s = SECTION.get(id)!;
+            const Icon = SECTION_ICON[s.id] ?? UserRound;
+            const complete = s.keys.every((k) => !BY_KEY.get(k)?.required || done.has(k));
+            return (
+              <section
+                key={s.id}
+                className="reveal flex flex-col gap-7 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-stone-200 md:p-9 dark:bg-white/[0.03] dark:ring-white/10"
+              >
+                <header className="flex items-start gap-4">
+                  <span
+                    className={`grid size-10 shrink-0 place-content-center rounded-full text-sm font-semibold tabular-nums transition ${complete ? "bg-stone-950 text-white dark:bg-white dark:text-black" : "ring-1 ring-stone-300 dark:ring-white/20"}`}
+                  >
+                    {complete ? <Check key="ok" className="pop size-4" strokeWidth={3} /> : <Icon className="size-4" />}
+                  </span>
+                  <div>
+                    <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{s.title}</h2>
+                    <p className="mt-0.5 text-sm text-stone-500">{s.hint}</p>
+                  </div>
+                </header>
+                {s.keys.map((k) => {
+                  const q = BY_KEY.get(k)!;
+                  return <Field key={k} q={q} value={v[k] ?? ""} error={state.errors?.[k]} brands={brands} />;
+                })}
+              </section>
+            );
+          })}
+          {n < last && (
+            <div className="flex items-center gap-3">
+              {n > 0 && (
+                <button
+                  type="button"
+                  onClick={() => goTo(n - 1)}
+                  className="flex h-14 items-center gap-2 rounded-full px-6 text-sm font-semibold ring-1 ring-stone-300 transition hover:ring-stone-500 dark:ring-white/20"
+                >
+                  <ArrowLeft className="size-4" /> Voltar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={next}
+                className="group flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-stone-950 text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] dark:bg-white dark:text-black"
+              >
+                Continuar <ArrowRight className="size-5 transition group-hover:translate-x-1" />
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <section
+        data-step={last}
+        hidden={step !== last}
+        className="reveal flex flex-col gap-4 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-stone-200 md:p-9 dark:bg-white/[0.03] dark:ring-white/10"
+      >
         <label className="group flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
           <input type="checkbox" name="consent" value="sim" required defaultChecked={v.consent === "sim"} className="peer sr-only" />
           <span className="mt-0.5 grid size-5 shrink-0 place-content-center rounded-md border border-stone-400 transition group-has-[:checked]:border-stone-950 group-has-[:checked]:bg-stone-950 group-has-[:focus-visible]:ring-4 group-has-[:focus-visible]:ring-stone-950/15 dark:border-white/30 dark:group-has-[:checked]:border-white dark:group-has-[:checked]:bg-white">
@@ -274,22 +394,39 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
           <span>{SIGNUP_CONSENT_TEXT}</span>
         </label>
         <Err msg={state.errors?.consent} />
-        {state.errors?._form && <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">{state.errors._form}</p>}
-        {state.errors && !state.errors._form && (
-          <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">Faltou alguma coisa: confira os campos marcados em vermelho.</p>
+        {state.errors?._form && (
+          <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+            {state.errors._form}
+          </p>
         )}
-        <button
-          disabled={pending}
-          className="group relative mt-2 flex h-14 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-950 text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] disabled:opacity-60 dark:bg-white dark:text-black"
-        >
-          <span
-            aria-hidden
-            className="sheen pointer-events-none absolute inset-0 opacity-30"
-            style={{ backgroundImage: `linear-gradient(110deg, transparent 30%, ${(colors.length ? colors : brands.map((b) => b.color)).join(", ")}, transparent 70%)` }}
-          />
-          <span className="relative">{pending ? "Enviando…" : "Enviar inscrição"}</span>
-          {!pending && <ArrowRight className="relative size-5 transition group-hover:translate-x-1" />}
-        </button>
+        {state.errors && !state.errors._form && (
+          <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+            Faltou alguma coisa: confira os campos marcados em vermelho.
+          </p>
+        )}
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => goTo(last - 1)}
+            className="flex h-14 items-center gap-2 rounded-full px-6 text-sm font-semibold ring-1 ring-stone-300 transition hover:ring-stone-500 dark:ring-white/20"
+          >
+            <ArrowLeft className="size-4" /> Voltar
+          </button>
+          <button
+            disabled={pending}
+            className="group relative flex h-14 flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-950 text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] disabled:opacity-60 dark:bg-white dark:text-black"
+          >
+            <span
+              aria-hidden
+              className="sheen pointer-events-none absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: `linear-gradient(110deg, transparent 30%, ${(colors.length ? colors : brands.map((b) => b.color)).join(", ")}, transparent 70%)`,
+              }}
+            />
+            <span className="relative">{pending ? "Enviando…" : "Enviar inscrição"}</span>
+            {!pending && <ArrowRight className="relative size-5 transition group-hover:translate-x-1" />}
+          </button>
+        </div>
       </section>
     </form>
   );
