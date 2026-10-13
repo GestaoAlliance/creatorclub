@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-120 — 2026-10-13 — Mini tutoriais em balão no portal da creator (U1)
+- **Decidido:** D-TUTORIAL (respostas do responsável: os dois formatos; portal das creators primeiro; nós escrevemos
+  e ele revisa).
+- **Feito:** textos em `src/domain/tutorial.ts` (24 textos, versão UGC sem comissão); passo a passo no primeiro
+  acesso de cada tela e "?" em cada cartão (`src/components/portal/tour.tsx`); botão "?" no topo para ver de novo.
+- **Falta:** o responsável revisar os textos nas capturas do PR.
+- **Verificado:** teste unitário novo (tela pela URL, passos que faltam na tela, posição do balão, UGC sem
+  comissão). `npm test`, `npm run typecheck`, `npm run build` passando; capturas com banco local (computador claro,
+  celular escuro).
+
 ### CP-119 — 2026-10-13 — Pedido de kit pela creator com aprovação da Ana (U1)
 - **Decidido:** D-KITAPPROVAL (respostas do responsável: só com kit liberado; até 3; tudo passa pela Ana).
 - **Feito:** situação `AWAITING_APPROVAL` e colunas `approvedAt`, `approvedById`, `rejectReason` no envio (trava

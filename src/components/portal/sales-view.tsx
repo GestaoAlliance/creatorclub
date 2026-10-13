@@ -3,6 +3,7 @@ import { formatBRL } from "@/domain";
 import { PERIOD_PRESETS } from "@/lib/portal/period";
 import { SALE_STATUS_LABEL, type SalesPage, type SaleStatus } from "@/lib/portal/sales";
 import { SalesChart } from "./sales-chart";
+import { HelpTip } from "./tour";
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 const pct = (bps: number | null) => (bps === null ? "—" : `${(bps / 100).toString().replace(".", ",")}%`);
@@ -40,30 +41,36 @@ export function SalesView({ page, base, noCommission = false }: { page: SalesPag
       <PeriodPicker page={page} base={base} />
 
       {/* Computador: três cartões. Celular: um cartão com uma linha por número (valores altos não cabem em três colunas). */}
-      <section className={`hidden gap-3 md:grid ${noCommission ? "grid-cols-3" : "grid-cols-4"}`}>
-        {kpis.map(([label, value]) => (
-          <div key={label} className="glass rounded-3xl p-4">
+      <section data-tour="vendas-resumo" className={`hidden gap-3 md:grid ${noCommission ? "grid-cols-3" : "grid-cols-4"}`}>
+        {kpis.map(([label, value], i) => (
+          <div key={label} className="glass relative rounded-3xl p-4">
+            {i === 0 && <HelpTip id="vendas-resumo" className="absolute right-2 top-2" />}
             <p className="text-xs text-stone-600 dark:text-stone-400">{label}</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
           </div>
         ))}
       </section>
-      <section className="glass divide-y divide-stone-200/70 rounded-3xl px-4 md:hidden dark:divide-white/10">
-        {kpis.map(([label, value]) => (
+      <section data-tour="vendas-resumo" className="glass divide-y divide-stone-200/70 rounded-3xl px-4 md:hidden dark:divide-white/10">
+        {kpis.map(([label, value], i) => (
           <div key={label} className="flex items-baseline justify-between py-3">
-            <span className="text-sm text-stone-600 dark:text-stone-400">{label}</span>
+            <span className="flex items-center gap-1 text-sm text-stone-600 dark:text-stone-400">
+              {label}
+              {i === 0 && <HelpTip id="vendas-resumo" className="-my-1" />}
+            </span>
             <span className="text-lg font-semibold tabular-nums">{value}</span>
           </div>
         ))}
       </section>
 
       {page.days.length > 1 && (
-        <section className="glass rounded-3xl p-4 md:p-5">
+        <section data-tour="vendas-grafico" className="glass relative rounded-3xl p-4 md:p-5">
+          <HelpTip id="vendas-grafico" className="absolute right-2 top-2 z-10" />
           <SalesChart days={page.days} noCommission={noCommission} />
         </section>
       )}
 
-      <section className="glass rounded-3xl p-2 md:p-4">
+      <section data-tour="vendas-lista" className="glass relative rounded-3xl p-2 md:p-4">
+        <HelpTip id="vendas-lista" className="absolute right-2 top-2 z-10" />
         {page.sales.length === 0 ? (
           <p className="py-10 text-center text-sm text-stone-500">Nenhuma venda paga com seu cupom neste período.</p>
         ) : (
@@ -132,7 +139,7 @@ function PeriodPicker({ page, base }: { page: SalesPage; base: string }) {
   const pill = (on: boolean) => `shrink-0 rounded-full px-4 py-1.5 text-sm ${on ? "bg-brand font-semibold text-white" : "glass"}`;
   return (
     <div className="flex flex-col gap-2">
-      <nav aria-label="Período" className="flex flex-wrap gap-2">
+      <nav aria-label="Período" data-tour="periodo" className="flex flex-wrap items-center gap-2">
         {PERIOD_PRESETS.map((p) => (
           <Link key={p.key} href={`${base}/vendas?p=${p.key}`} className={pill(period.preset === p.key)} aria-current={period.preset === p.key ? "page" : undefined}>
             {p.label}
@@ -141,6 +148,7 @@ function PeriodPicker({ page, base }: { page: SalesPage; base: string }) {
         <Link href={`${base}/vendas?p=custom&de=${period.firstDay}&ate=${period.lastDay}`} className={pill(period.preset === "custom")}>
           Personalizado
         </Link>
+        <HelpTip id="periodo" />
       </nav>
       {period.preset === "custom" && (
       <form method="get" action={`${base}/vendas`} className="glass flex flex-wrap items-end gap-3 rounded-2xl px-4 py-3 text-sm">

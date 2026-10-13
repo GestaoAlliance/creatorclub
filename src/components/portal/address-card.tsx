@@ -3,6 +3,7 @@
 import { MapPin } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { saveAddressAction } from "@/app/portal/[marca]/envios/actions";
+import { HelpTip } from "./tour";
 import { formatAddress, UFS, zipFromText, type Address } from "@/lib/shipments/address";
 
 const field = "w-full rounded-2xl border border-stone-300/70 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-brand dark:border-white/15 dark:bg-white/5";
@@ -17,9 +18,9 @@ export function AddressCard({ marca, address, viewOnly, informed = null }: { mar
   }, [state]);
 
   return (
-    <section className="glass flex flex-col gap-4 rounded-3xl p-5">
+    <section data-tour="endereco" className="glass flex flex-col gap-4 rounded-3xl p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-semibold"><MapPin className="size-4" /> Endereço de entrega</h2>
+        <h2 className="flex items-center gap-2 font-semibold"><MapPin className="size-4" /> Endereço de entrega <HelpTip id="endereco" className="-my-1" /></h2>
         {!editing && !viewOnly && (
           <button type="button" onClick={() => setEditing(true)} className="glass rounded-full px-4 py-1.5 text-xs font-semibold">
             {address ? "Alterar" : "Cadastrar"}
