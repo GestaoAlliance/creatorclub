@@ -50,6 +50,19 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "pix", title: "PIX PARA PAGAMENTO (pix da conta CNPJ)", label: "Chave Pix para pagamento", kind: "text", required: true },
 ];
 
+/** Blocos da página de inscrição (D-SIGNUPDESIGN): uma página só, dividida em assuntos. Cada pergunta está em um bloco. */
+export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint: string; keys: readonly string[] }[] = [
+  { id: "voce", title: "Quem é você", hint: "Para a equipe saber com quem vai falar.", keys: ["fullName", "kind", "phone", "email", "instagram"] },
+  { id: "conteudo", title: "Seu conteúdo", hint: "Como é o seu perfil e o que você publica.", keys: ["followers", "storiesViews", "niche", "content", "why"] },
+  { id: "marcas", title: "Marcas", hint: "Escolha com quais marcas quer trabalhar.", keys: ["brands", "knows", "commissioned", "accepts", "collab"] },
+  { id: "envio", title: "Envio e pagamento", hint: "Para mandar os produtos e pagar a sua comissão.", keys: ["address", "coupon", "cpf", "cnpj", "companyName", "pix"] },
+];
+
+/** Cupom como ele aparece na prévia: só letras, maiúsculas, até 8 (a sugestão é conferida pela equipe na aprovação). */
+export function signupCouponPreview(raw: string): string {
+  return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 8);
+}
+
 export const SIGNUP_CONSENT_TEXT =
   "Concordo que a Alliance e as marcas que escolhi acima usem estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.";
 
