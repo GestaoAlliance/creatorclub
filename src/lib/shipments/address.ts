@@ -73,3 +73,24 @@ export const addressColumns = (a: Address) => ({
   addrCity: a.city,
   addrState: a.state,
 });
+
+type AddressColumns = Parameters<typeof addressOf>[0];
+
+/**
+ * Endereço incompleto da conta em uma linha (D-ADDRINFORMED): a carga das planilhas gravou o endereço inteiro no campo
+ * da rua, sem CEP, número e bairro separados. Mostrado como "endereço informado" até a creator confirmar em campos.
+ */
+export function partialAddressText(a: AddressColumns): string | null {
+  if (addressOf(a)) return null;
+  const cityState = [a.addrCity, a.addrState].filter(Boolean).join("/");
+  const parts = [a.addrStreet, a.addrNumber, a.addrComplement, a.addrDistrict, cityState, a.addrZip ? `CEP ${a.addrZip}` : null]
+    .map((p) => (p ?? "").trim())
+    .filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
+}
+
+/** CEP (8 números) dentro de um endereço em texto livre, para já vir preenchido no cadastro; null se não houver. */
+export function zipFromText(text: string | null | undefined): string | null {
+  const m = (text ?? "").match(/(?<!\d)(\d{5})-?(\d{3})(?!\d)/);
+  return m ? `${m[1]}${m[2]}` : null;
+}

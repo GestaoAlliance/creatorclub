@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkNf, issuerFromAccessKey, parseNfseText } from "@/domain";
+import { checkNf, issuerFromAccessKey, NF_SERVICE_TEXT, parseNfseText } from "@/domain";
 
 // Texto no formato do DANFSe v2.0 (NFS-e padrão nacional), com dados fictícios. Tomadora: CNPJ da Botanika.
 const KEY = "31062002211222333000181000000000001226080590551396";
@@ -57,5 +57,11 @@ describe("leitura do PDF da nota", () => {
     const pdf = makePdf(danfseLines({ key: KEY, issuer: "11.222.333/0001-81", taker: "65.100.830/0001-36", amount: "R$ 1.528,09" }));
     expect(checkNf(parseNfseText(await pdfText(pdf)), expected)).toMatchObject({ status: "OK", problems: [] });
     expect(await pdfText(new TextEncoder().encode("%PDF-1.4 quebrado"))).toBe("");
+  });
+});
+
+describe("texto do serviço na nota (D-NFSERVICE)", () => {
+  it("a instrução da tela de saque traz o código 17.06.01 com a descrição", () => {
+    expect(NF_SERVICE_TEXT.startsWith("17.06.01 - Propaganda e publicidade")).toBe(true);
   });
 });
