@@ -239,6 +239,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-118 — 2026-10-13 — Kit de 3 e tabela da Ana em todos os contratos (U1)
+- **Decidido:** D-KITANA (opção a do responsável).
+- **Feito:** migração `20261013210000_kit_ana_table` (versões de contrato das 3 marcas, mínimo da marca, nova versão
+  do texto de prescritor, kit de boas-vindas para as ativas que nunca receberam); fechamento do mês só dá kit mensal a
+  quem já teve envio.
+- **Verificar no deploy:** quantos kits de boas-vindas nasceram (esperado ~70: 28 Botanika, 37 VermeFree, 5 Revita).
+- **Verificado:** teste de integração do kit mensal ajustado (quem nunca recebeu não ganha). `npm test`,
+  `npm run test:integration`, `npm run typecheck`, `npm run build` passando; migração × schema sem divergência.
+
 ### CP-117 — 2026-10-13 — Autentique, parte 2: aprovar → contrato → assinado → cupom e kit (U1)
 - **Decidido:** D-AUTENTIQUE (fluxo completo).
 - **Feito:** tabela `ContractRequest` (RLS; travas `ContractRequest_signed_has_date`, `_rejected_has_date`,

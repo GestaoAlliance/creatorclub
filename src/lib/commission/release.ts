@@ -162,8 +162,12 @@ async function closeBrandMonth(
       });
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });
       // D-KIT: kit do mês pela faixa de vendas do contrato; a creator escolhe os produtos no portal.
+      // D-KITANA: só para quem já está rodando (já recebeu algum envio, como o kit de boas-vindas).
+      const running = new Set(
+        (await tx.shipment.findMany({ where: { brandId: brand.id, creatorId: { in: ids }, createdAt: { lt: now } }, distinct: ["creatorId"], select: { creatorId: true } })).map((s) => s.creatorId),
+      );
       const kits = creators.flatMap((c) => {
-        if (c.status !== "ACTIVE" || !c.contractTemplate) return [];
+        if (c.status !== "ACTIVE" || !c.contractTemplate || !running.has(c.id)) return [];
         const salesCents = sales.get(c.id)!.get(month) ?? 0;
         const products = kitProductsFor(parseKitTiers(c.contractTemplate.kitTiers), salesCents);
         return products > 0 ? [{ brandId: brand.id, creatorId: c.id, month, salesCents, products, createdAt: now }] : [];
