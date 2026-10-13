@@ -76,3 +76,7 @@ export function checkNf(
 
   return { status: missing ? "MANUAL" : "OK", problems, fields, issuerDoc: issuer };
 }
+
+/** Texto do serviço que a creator coloca na nota (D-NFSERVICE, instrução da equipe). O sistema aceita 17.06 e 17.06.01. */
+export const NF_SERVICE_TEXT =
+  "17.06.01 - Propaganda e publicidade, inclusive promoção de vendas, planejamento de campanhas ou sistemas de publicidade, elaboração de desenhos, textos e demais materiais de publicidade.";

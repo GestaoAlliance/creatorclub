@@ -1,4 +1,4 @@
-import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
@@ -188,6 +188,16 @@ export function CreatorProfileView({ p, st, terms, contract, requestId }: { p: P
                 <p><span className="text-stone-500">CPF</span> {p.fiscal.cpf ?? "—"}</p>
                 <p><span className="text-stone-500">CNPJ</span> {p.fiscal.cnpj ?? "—"}</p>
                 <p><span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}</p>
+              </div>
+            )}
+            {p.address && (
+              <div className={`${ui.inset} grid gap-1 text-sm`}>
+                <p className="flex items-center gap-2">
+                  <MapPin className="size-3.5 text-stone-500" />
+                  <span className="text-stone-500">Endereço de entrega</span>
+                  {p.address.lines.length > 0 && !p.address.confirmed && <span className={badge.amber}>a confirmar pela creator</span>}
+                </p>
+                {p.address.lines.length ? p.address.lines.map((l) => <p key={l}>{l}</p>) : <p className="text-stone-500">Nenhum endereço no sistema.</p>}
               </div>
             )}
           </Card>

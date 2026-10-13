@@ -4,7 +4,7 @@ import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import type { PortalContext } from "@/lib/portal/context";
-import { addressColumns, addressOf, normalizeAddress, type Address, type AddressInput } from "./address";
+import { addressColumns, addressOf, normalizeAddress, partialAddressText, type Address, type AddressInput } from "./address";
 
 /**
  * Envios de produtos à creator (E7.8, D-SHIPMENTS). A equipe com `shipping.manage` (Envio, Gestão, super admin)
@@ -220,12 +220,27 @@ export async function myAddress(prisma: PrismaClient, ctx: PortalContext): Promi
 }
 
 /**
- * Endereço que a creator já digitou em texto livre (no contrato ou na inscrição), para ajudar a cadastrar o endereço
- * de entrega em campos quando ainda não há (U2, kit de boas-vindas). Só leitura; nada é copiado sozinho.
+ * Endereço que já existe em texto livre, para ajudar a cadastrar o endereço de entrega em campos quando ainda não há
+ * (U2, D-ADDRINFORMED). Ordem: contrato assinado, inscrição, endereço incompleto da conta (carga das planilhas), último
+ * envio importado. Só leitura; nada é copiado sozinho.
  */
+export async function informedAddressFor(prisma: PrismaClient, creatorId: string): Promise<string | null> {
+  const sig = await prisma.contractSignature.findFirst({ where: { creatorId }, orderBy: { signedAt: "desc" }, select: { address: true } });
+  if (sig?.address?.trim()) return sig.address.trim();
+  const app = await prisma.creatorApplication.findFirst({ where: { creatorId }, orderBy: { submittedAt: "desc" }, select: { address: true } });
+  const fromApp = app?.address?.trim().replace(/\s*\n+\s*/g, ", ");
+  if (fromApp) return fromApp;
+  const creator = await prisma.creator.findUniqueOrThrow({
+    where: { id: creatorId },
+    select: { account: { select: { addrZip: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true } } },
+  });
+  const partial = partialAddressText(creator.account);
+  if (partial) return partial;
+  const shipment = await prisma.shipment.findFirst({ where: { creatorId }, orderBy: { createdAt: "desc" }, select: { address: true } });
+  const raw = shipment?.address && typeof shipment.address === "object" && "raw" in shipment.address ? String((shipment.address as { raw: unknown }).raw ?? "").trim() : "";
+  return raw || null;
+}
+
 export async function informedAddress(prisma: PrismaClient, ctx: PortalContext): Promise<string | null> {
-  const sig = await prisma.contractSignature.findFirst({ where: { creatorId: ctx.creatorId }, orderBy: { signedAt: "desc" }, select: { address: true } });
-  if (sig) return sig.address;
-  const app = await prisma.creatorApplication.findFirst({ where: { creatorId: ctx.creatorId }, orderBy: { submittedAt: "desc" }, select: { address: true } });
-  return app?.address?.trim().replace(/\s*\n+\s*/g, ", ") || null;
+  return informedAddressFor(prisma, ctx.creatorId);
 }

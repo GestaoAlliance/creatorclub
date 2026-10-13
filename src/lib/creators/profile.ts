@@ -3,6 +3,8 @@ import { assertBps, contractStatus, creatorPendings, dayKey, type CreatorCategor
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
+import { addressOf, formatAddress } from "@/lib/shipments/address";
+import { informedAddressFor } from "@/lib/shipments/shipments";
 import { ugcCyclesFor, ugcVideosOf } from "./ugc";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -94,6 +96,10 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
   const idle = idleMap.get(creator.id) ?? null;
   const ugcCycle = ugcMap.get(creator.id) ?? null;
   const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
+  const seeAddress = can(actor.grants, "personal.address", creator.brandId);
+  const full = addressOf(creator.account);
+  // D-ADDRINFORMED: sem endereço completo, mostra o que já está no sistema em texto (carga, inscrição, contrato, envio).
+  const address = !seeAddress ? null : full ? { lines: formatAddress(full), confirmed: true } : await informedAddressFor(prisma, creator.id).then((t) => (t ? { lines: [t], confirmed: false } : { lines: [], confirmed: false }));
   const money = can(actor.grants, "money.view", creator.brandId);
   const [assignments, policies, invites, adjustments, templates] = await Promise.all([
     prisma.couponAssignment.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" }, include: { coupon: true } }),
@@ -116,6 +122,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     adjustments: money ? adjustments.map((e) => ({ at: e.createdAt, amountCents: e.amountCents, reason: e.note ?? "" })) : null,
     contact: { name: a.name, email: a.email, phone: a.phone, fakeEmail: a.email.endsWith(FAKE_EMAIL_DOMAIN) },
     fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey } : null,
+    address,
     hasLogin: a.userId !== null,
     reviewedAt: creator.reviewedAt,
     withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,

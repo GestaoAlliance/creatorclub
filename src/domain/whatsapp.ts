@@ -17,7 +17,7 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
 export function welcomeMessage(p: { name: string; brand: string; coupon: string; discountBps: number; inviteLink: string | null; contract?: boolean }): string {
   const pct = (p.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   return [
-    `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada! 🎉`,
+    `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada!`,
     `Seu cupom é *${p.coupon}*: quem comprar com ele ganha ${pct}% de desconto, e a venda fica registrada para você.`,
     ...(p.inviteLink
       ? [`Para entrar no seu portal (vendas, saldo, extrato e saque), crie sua senha por este link. Ele vale 7 dias e funciona uma vez:\n${p.inviteLink}`]

@@ -3,7 +3,7 @@
 import { MapPin } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { saveAddressAction } from "@/app/portal/[marca]/envios/actions";
-import { formatAddress, UFS, type Address } from "@/lib/shipments/address";
+import { formatAddress, UFS, zipFromText, type Address } from "@/lib/shipments/address";
 
 const field = "w-full rounded-2xl border border-stone-300/70 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-brand dark:border-white/15 dark:bg-white/5";
 
@@ -28,7 +28,7 @@ export function AddressCard({ marca, address, viewOnly, informed = null }: { mar
       </div>
       {!address && informed && (
         <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
-          <span className="block text-xs text-stone-500">Endereço que você já informou (passe para os campos abaixo, com o CEP):</span>
+          <span className="block text-xs text-stone-500">{viewOnly ? "Endereço que já está no sistema (a creator ainda não confirmou nos campos):" : "Endereço que você já informou (confira e passe para os campos abaixo, com o CEP):"}</span>
           {informed}
         </p>
       )}
@@ -48,7 +48,7 @@ export function AddressCard({ marca, address, viewOnly, informed = null }: { mar
           <input type="hidden" name="marca" value={marca} />
           <label className="col-span-3 flex flex-col gap-1 text-xs text-stone-500 md:col-span-2">
             CEP
-            <input name="zip" defaultValue={address?.zip ?? ""} inputMode="numeric" autoComplete="postal-code" required className={field} />
+            <input name="zip" defaultValue={address?.zip ?? zipFromText(informed) ?? ""} inputMode="numeric" autoComplete="postal-code" required className={field} />
           </label>
           <label className="col-span-3 flex flex-col gap-1 text-xs text-stone-500 md:col-span-1">
             UF

@@ -239,6 +239,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-115 — 2026-10-13 — Endereço que não aparecia, texto da nota e emoji (U1, feedback da Ana)
+- **Decidido:** D-ADDRINFORMED, D-NFSERVICE; tirado o emoji da mensagem de boas-vindas (chegava como "�").
+- **Achado:** 63 creators ativas da Botanika e 19 da VermeFree têm o endereço da carga numa linha só (sem CEP); o
+  sistema mostrava "não cadastrou". A ficha não mostrava endereço nenhum.
+- **Feito:** `informedAddressFor`, `partialAddressText`, `zipFromText`; endereço na ficha (Contato); portal mostra o
+  endereço informado e já preenche o CEP; texto do serviço na tela de saque (`NF_SERVICE_TEXT`).
+- **Próximo (decidido pelo responsável):** kit de 3 produtos para todos (boas-vindas e mensal; mensal só depois de a
+  creator estar rodando) e a tabela da Ana para todos os contratos; depois, Autentique (chave da Botanika recebida;
+  VermeFree e Revita em breve).
+- **Verificado:** testes unitários e de integração novos. `npm test`, `npm run test:integration` (199),
+  `npm run typecheck`, `npm run build` passando; captura da ficha com banco local.
+
 ### CP-114 — 2026-10-13 — Primeiro feedback da Ana: último pedido, pendências e cupom só com letras (U1)
 - **Decidido:** D-LASTORDER, D-CREATORPENDING, D-SIGNUPCOUPON. (O filtro por tipo pedido por ela já existia: D-CREATORCAT.)
 - **Feito:** `lastOrderFor` (`src/lib/creators/last-order.ts`) e `creatorPendings` (domínio) na lista Creators: último

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addressOf, AddressError, formatAddress, normalizeAddress } from "@/lib/shipments/address";
+import { addressOf, AddressError, formatAddress, normalizeAddress, partialAddressText, zipFromText } from "@/lib/shipments/address";
 import { trackingUrl } from "@/lib/shipments/shipments";
 
 const ok = { zip: "01310-100", street: "  Av.   Paulista ", number: "1000", complement: "", district: "Bela Vista", city: "São Paulo", state: "sp" };
@@ -34,5 +34,24 @@ describe("link de rastreio", () => {
     expect(trackingUrl("Jadlog", "AA123456789BR")).toBeNull();
     expect(trackingUrl("Correios", "12345")).toBeNull();
     expect(trackingUrl("Correios", null)).toBeNull();
+  });
+});
+
+describe("endereço informado (D-ADDRINFORMED)", () => {
+  const empty = { addrZip: null, addrStreet: null, addrNumber: null, addrComplement: null, addrDistrict: null, addrCity: null, addrState: null };
+
+  it("endereço da carga numa linha só vira texto; completo ou vazio não", () => {
+    expect(partialAddressText({ ...empty, addrStreet: "Rua A, 10, Centro, Belo Horizonte - MG, 30140-071" })).toBe("Rua A, 10, Centro, Belo Horizonte - MG, 30140-071");
+    expect(partialAddressText({ ...empty, addrStreet: "Rua B 5", addrCity: "Recife", addrState: "PE" })).toBe("Rua B 5, Recife/PE");
+    expect(partialAddressText(empty)).toBeNull();
+    const full = { addrZip: "30140071", addrStreet: "Rua A", addrNumber: "10", addrComplement: null, addrDistrict: "Centro", addrCity: "BH", addrState: "MG" };
+    expect(partialAddressText(full)).toBeNull();
+  });
+
+  it("acha o CEP no texto, com ou sem traço", () => {
+    expect(zipFromText("Rua A, 10 - CEP 30140-071")).toBe("30140071");
+    expect(zipFromText("Rua A 30140071 BH")).toBe("30140071");
+    expect(zipFromText("Rua A, 10, telefone 31999998888")).toBeNull();
+    expect(zipFromText(null)).toBeNull();
   });
 });
