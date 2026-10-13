@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Package, Truck } from "lucide-react";
+import { Check, ExternalLink, Package, Plus, Truck } from "lucide-react";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type myShipments } from "@/lib/shipments/shipments";
 import type { Address } from "@/lib/shipments/address";
 import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
@@ -13,6 +13,7 @@ type PendingKits = Awaited<ReturnType<typeof myPendingKits>>;
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 
 const STATUS_STYLE = {
+  AWAITING_APPROVAL: "bg-violet-500/15 text-violet-800 dark:text-violet-300",
   PREPARING: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
   SHIPPED: "bg-sky-500/15 text-sky-800 dark:text-sky-300",
   DELIVERED: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
@@ -21,17 +22,18 @@ const STATUS_STYLE = {
 
 function Steps({ s }: { s: Shipment }) {
   const steps = [
-    { label: "Preparando", at: s.createdAt },
+    { label: "Solicitado", at: s.createdAt },
+    { label: "Aprovado", at: s.status === "AWAITING_APPROVAL" ? null : (s.approvedAt ?? s.createdAt) },
     { label: "Enviado", at: s.shippedAt },
     { label: "Entregue", at: s.deliveredAt },
   ];
   return (
-    <ol className="grid grid-cols-3 gap-2">
+    <ol className="grid grid-cols-4 gap-2">
       {steps.map((st, i) => (
         <li key={st.label} className="flex flex-col gap-1.5">
           <span className={`h-1.5 rounded-full ${st.at ? "bg-brand dark:bg-brand-2" : "bg-stone-300/70 dark:bg-white/10"}`} />
           <span className={`text-xs ${st.at ? "font-medium" : "text-stone-500"}`}>
-            {i === 2 && st.at && <Check className="mr-1 inline size-3" />}
+            {i === steps.length - 1 && st.at && <Check className="mr-1 inline size-3" />}
             {st.label}
             {st.at && <span className="block text-[11px] font-normal text-stone-500">{day(st.at)}</span>}
           </span>
@@ -59,9 +61,21 @@ export function ShipmentsView({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      {kits.kits.map((k) => (
-        <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
-      ))}
+      {/* D-KITAPPROVAL: o pedido só existe com kit liberado; a escolha vai para a aprovação da equipe e depois para o envio. */}
+      {kits.kits.length > 0 && (
+        <details className="group flex flex-col gap-4" open={kits.kits.length > 0 && shipments.length === 0}>
+          <summary className="inline-flex w-fit cursor-pointer list-none items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm">
+            <Plus className="size-4 transition-transform group-open:rotate-45" /> Solicitar pedido
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{kits.kits.length === 1 ? "1 kit liberado" : `${kits.kits.length} kits liberados`}</span>
+          </summary>
+          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">Escolha os produtos do seu kit. A equipe aprova o pedido e depois faz o envio para o seu endereço.</p>
+          <div className="mt-3 flex flex-col gap-4">
+            {kits.kits.map((k) => (
+              <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
+            ))}
+          </div>
+        </details>
+      )}
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
       <section className="glass rounded-3xl p-5">
         <h2 className="mb-3 flex items-center gap-2 font-semibold"><Package className="size-4" /> Meus envios</h2>
@@ -86,6 +100,10 @@ export function ShipmentsView({
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[s.status]}`}>{SHIPMENT_STATUS_LABEL[s.status]}</span>
                   </div>
                   {s.status !== "CANCELLED" && <Steps s={s} />}
+                  {s.status === "AWAITING_APPROVAL" && <p className="text-xs text-stone-500">Pedido recebido: a equipe vai conferir e aprovar antes do envio.</p>}
+                  {s.status === "CANCELLED" && s.rejectReason && (
+                    <p className="text-xs text-red-700 dark:text-red-400">Pedido não aprovado: {s.rejectReason} Você pode escolher de novo em &quot;Solicitar pedido&quot;.</p>
+                  )}
                   {s.trackingCode && s.status !== "CANCELLED" && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/60 px-4 py-3 dark:bg-white/5">
                       <div>

@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-119 — 2026-10-13 — Pedido de kit pela creator com aprovação da Ana (U1)
+- **Decidido:** D-KITAPPROVAL (respostas do responsável: só com kit liberado; até 3; tudo passa pela Ana).
+- **Feito:** situação `AWAITING_APPROVAL` e colunas `approvedAt`, `approvedById`, `rejectReason` no envio (trava
+  `Shipment_approval`); `approveShipment` e `rejectShipment` (kit volta a PENDING); botão "Solicitar pedido" e passos
+  Solicitado → Aprovado → Enviado → Entregue no portal; aprovar ou recusar em Envios; "Pedidos a aprovar" no Início.
+  O aviso "não cadastrou o endereço" some quando há endereço informado.
+- **Verificado:** integração nova (Envio não envia antes; recusa devolve o kit; aprovação vai para Preparando;
+  travas). `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run build` passando; migração × schema
+  sem divergência; capturas com banco local.
+
 ### CP-118 — 2026-10-13 — Kit de 3 e tabela da Ana em todos os contratos (U1)
 - **Decidido:** D-KITANA (opção a do responsável).
 - **Feito:** migração `20261013210000_kit_ana_table` (versões de contrato das 3 marcas, mínimo da marca, nova versão

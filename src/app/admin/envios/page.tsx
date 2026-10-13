@@ -33,9 +33,18 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
     canManage ? shipmentFormData(db(), inBrand) : null,
   ]);
 
+  const awaitingCount = (await staffShipments(db(), inBrand, { status: "AWAITING_APPROVAL" })).length;
   return (
     <>
-      <PageHeader title="Envios">Produtos enviados às creators. Registre o envio, marque como enviado com o rastreio e acompanhe a entrega.</PageHeader>
+      <PageHeader title="Envios">
+        Produtos enviados às creators. Pedidos das creators chegam como &quot;Aguardando aprovação&quot;: a Gestão aprova e eles vão para
+        &quot;Preparando&quot;. Registre o envio, marque como enviado com o rastreio e acompanhe a entrega.
+      </PageHeader>
+      {awaitingCount > 0 && status !== "AWAITING_APPROVAL" && (
+        <Link href="/admin/envios?situacao=AWAITING_APPROVAL" className="rounded-2xl border border-amber-400/60 bg-amber-100/80 px-4 py-3 text-sm font-medium text-amber-950 dark:bg-amber-900/40 dark:text-amber-100">
+          {awaitingCount} {awaitingCount === 1 ? "pedido de creator esperando" : "pedidos de creators esperando"} aprovação →
+        </Link>
+      )}
       {form && (
         <details className="group" open={shipments.length === 0}>
           <summary className={`${ui.btn} cursor-pointer list-none self-start`}>
@@ -56,6 +65,7 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         shipments={shipments.map((s) => ({
           ...s,
           canManage: can(actor.grants, "shipping.manage", s.brandId),
+          canApprove: can(actor.grants, "creators.edit", s.brandId),
           address: can(actor.grants, "personal.address", s.brandId) ? (s.address as ShipmentAddress) : null,
         }))}
       />

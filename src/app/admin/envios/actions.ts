@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
+import { approveShipment, rejectShipment } from "@/lib/shipments/kits";
 import { cancelShipment, createShipment, markDeliveredByStaff, markShipped, ShipmentError } from "@/lib/shipments/shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -47,4 +48,14 @@ export async function deliveredAction(_prev: ActionState, form: FormData): Promi
 
 export async function cancelAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => cancelShipment(db(), await currentActor(), String(form.get("shipmentId"))), "Envio cancelado.");
+}
+
+/** D-KITAPPROVAL: a Gestão aprova o pedido da creator (vai para o Envio). */
+export async function approveAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => approveShipment(db(), await currentActor(), String(form.get("shipmentId"))), "Pedido aprovado: foi para o Envio.");
+}
+
+/** D-KITAPPROVAL: a Gestão recusa com motivo (o kit volta para ela escolher de novo). */
+export async function rejectAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => rejectShipment(db(), await currentActor(), String(form.get("shipmentId")), String(form.get("reason") ?? "")), "Pedido recusado.");
 }

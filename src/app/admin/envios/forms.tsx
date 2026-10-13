@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { cancelAction, createShipmentAction, deliveredAction, shippedAction } from "./actions";
+import { approveAction, cancelAction, createShipmentAction, deliveredAction, rejectAction, shippedAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -87,5 +87,26 @@ export function CancelForm({ shipmentId }: { shipmentId: string }) {
       <button className={ui.dangerSm} disabled={pending}>Cancelar envio</button>
       <Msg state={state} />
     </form>
+  );
+}
+
+/** D-KITAPPROVAL: aprovar o pedido da creator ou recusar com motivo (ela vê o motivo e escolhe de novo). */
+export function ApprovalForms({ shipmentId }: { shipmentId: string }) {
+  const [okState, approve, approving] = useActionState(approveAction, undefined);
+  const [noState, reject, rejecting] = useActionState(rejectAction, undefined);
+  return (
+    <div className="flex flex-col gap-2">
+      <form action={approve}>
+        <input type="hidden" name="shipmentId" value={shipmentId} />
+        <button className={`${ui.btnSm} self-start`} disabled={approving}>Aprovar pedido</button>
+      </form>
+      <Msg state={okState} />
+      <form action={reject} className="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="shipmentId" value={shipmentId} />
+        <input name="reason" placeholder="Motivo para recusar (ela vê no portal)" className={`${ui.inputSm} min-w-0 flex-1`} />
+        <button className={ui.dangerSm} disabled={rejecting}>Recusar</button>
+      </form>
+      <Msg state={noState} />
+    </div>
   );
 }

@@ -95,7 +95,7 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
     const product = await prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title: "Whey", active: true } });
     await updateMyAddress(prisma, s.ctx, s.userId, { zip: "01000-000", street: "Rua A", number: "10", complement: "", district: "Centro", city: "São Paulo", state: "SP" });
     const shipmentId = await chooseKit(prisma, s.ctx, s.userId, kits[0]!.id, [{ productId: product.id, quantity: 2 }]);
-    expect(await prisma.shipment.findUniqueOrThrow({ where: { id: shipmentId } })).toMatchObject({ status: "PREPARING", note: "Kit de boas-vindas (2 suplementos)" });
+    expect(await prisma.shipment.findUniqueOrThrow({ where: { id: shipmentId } })).toMatchObject({ status: "AWAITING_APPROVAL", note: "Kit de boas-vindas (2 suplementos)" });
     expect((await creatorContractSignature(prisma, s.r.creatorId)).signature).toMatchObject({ version: 2, kind: "INFLUENCER", cpf: "***.982.247-**" });
     await expect(signedContractText(prisma, await userWith("PAGAMENTO", s.brand.id), sig.id)).resolves.toMatchObject({ body: sig.body });
     expect(await prisma.auditLog.count({ where: { action: "contract.signed", entityId: sig.id } })).toBe(1);

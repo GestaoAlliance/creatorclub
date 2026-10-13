@@ -62,6 +62,7 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
         )}
         {h.shipments && (
           <Tile href="/admin/envios" icon={<Package className="size-4" />} title="Envios">
+            <Kpi label="Pedidos a aprovar" value={h.shipments.awaiting} hint="a Gestão aprova" tone={h.shipments.awaiting ? "amber" : undefined} />
             <Kpi label="Preparando" value={h.shipments.preparing} hint="a enviar" tone={h.shipments.preparing ? "amber" : undefined} />
             <Kpi label="A caminho" value={h.shipments.shipped} hint="esperando a entrega" />
             <Kpi label="Kits a escolher" value={h.shipments.kitsPending} hint="a creator escolhe no portal" />

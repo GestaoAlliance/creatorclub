@@ -14,7 +14,7 @@ const today = (plusDays = 0) => new Date(Date.parse(`${dayKey(new Date())}T00:00
 export type StaffHome = {
   creators?: { active: number; toReview: number; applications: number; contractsExpiring: number; contractsExpired: number; idle: number };
   coupons?: { unclassified: number; ownerPending: number };
-  shipments?: { preparing: number; shipped: number; kitsPending: number };
+  shipments?: { preparing: number; shipped: number; kitsPending: number; awaiting: number };
   withdrawals?: { open: number; openCents: number; openingsPending: number };
   /** U3: a hunter vê as próprias indicações. */
   hunter?: { clicks30: number; inReview: number; approved: number; hasLink: boolean };
@@ -86,7 +86,8 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
         prisma.shipment.count({ where: { ...ship, status: "PREPARING" } }),
         prisma.shipment.count({ where: { ...ship, status: "SHIPPED" } }),
         prisma.kitGrant.count({ where: { ...ship, status: "PENDING" } }), // D-KIT: esperando a creator escolher
-      ]).then(([preparing, shipped, kitsPending]) => (out.shipments = { preparing, shipped, kitsPending })),
+        prisma.shipment.count({ where: { ...ship, status: "AWAITING_APPROVAL" } }), // D-KITAPPROVAL: pedido esperando a Gestão
+      ]).then(([preparing, shipped, kitsPending, awaiting]) => (out.shipments = { preparing, shipped, kitsPending, awaiting })),
     pay &&
       Promise.all([
         prisma.withdrawal.aggregate({ where: { ...pay, status: "REQUESTED" }, _count: true, _sum: { amountCents: true } }),

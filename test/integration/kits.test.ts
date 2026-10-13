@@ -3,7 +3,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { closeDueMonths } from "@/lib/commission/release";
 import { portalContext } from "@/lib/portal/context";
-import { chooseKit, myPendingKits } from "@/lib/shipments/kits";
+import { approveShipment, chooseKit, myPendingKits, rejectShipment } from "@/lib/shipments/kits";
+import { markShipped } from "@/lib/shipments/shipments";
 import { updateMyAddress } from "@/lib/shipments/shipments";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -75,7 +76,7 @@ describe("kit mensal (D-KIT, banco real)", () => {
 
     const id = await chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 2 }, { productId: s.creatina.id, quantity: 1 }]);
     const shipment = await prisma.shipment.findUniqueOrThrow({ where: { id }, include: { items: true, kit: true } });
-    expect(shipment).toMatchObject({ status: "PREPARING", createdById: s.userId, note: "Kit mensal — vendas de outubro de 2026 (3 suplementos)", address: { city: "São Paulo" } });
+    expect(shipment).toMatchObject({ status: "AWAITING_APPROVAL", createdById: s.userId, note: "Kit mensal — vendas de outubro de 2026 (3 suplementos)", address: { city: "São Paulo" } });
     expect(shipment.items.map((i) => [i.title, i.quantity]).sort()).toEqual([["Creatina", 1], ["Whey", 2]]);
     expect(shipment.kit).toMatchObject({ id: kitId, status: "CHOSEN" });
     expect((await myPendingKits(prisma, s.ctx)).kits).toEqual([]);
@@ -101,11 +102,45 @@ describe("kit mensal (D-KIT, banco real)", () => {
     await expect(chooseKit(prisma, other.ctx, other.userId, kit!.id, [])).rejects.toThrow(/Kit não encontrado/);
   });
 
+  it("pedido da creator espera a Gestão: Envio não envia antes; recusar devolve o kit; aprovar vai para Preparando", async () => {
+    const s = await setup(TIERS);
+    await sale(s, "2026-10-05T12:00:00Z", 450_000);
+    await close(s.brand.id, T("2026-11-01T08:00:00Z"));
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    const user = async (role: "GESTAO" | "ENVIO") => {
+      const id = randomUUID();
+      await prisma.user.create({ data: { id, email: `${id}@x.com`, name: role, roleGrants: { create: { role, brandId: s.brand.id } } } });
+      return (await loadActor(prisma, id))!;
+    };
+    const gestao = await user("GESTAO");
+    const envio = await user("ENVIO");
+    const kitId = (await myPendingKits(prisma, s.ctx)).kits[0]!.id;
+    const first = await chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 3 }]);
+
+    await expect(markShipped(prisma, envio, { shipmentId: first, carrier: "Correios", trackingCode: "AA123456789BR" })).rejects.toThrow(/mudou de situação/);
+    await expect(approveShipment(prisma, envio, first)).rejects.toThrow(/Só a Gestão/);
+    await expect(rejectShipment(prisma, gestao, first, "  ")).rejects.toThrow(/motivo/);
+
+    await rejectShipment(prisma, gestao, first, "Whey em falta; escolha outro");
+    expect(await prisma.shipment.findUniqueOrThrow({ where: { id: first } })).toMatchObject({ status: "CANCELLED", rejectReason: "Whey em falta; escolha outro" });
+    expect((await myPendingKits(prisma, s.ctx)).kits).toMatchObject([{ id: kitId }]); // volta para ela escolher
+
+    const second = await chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.creatina.id, quantity: 3 }]);
+    await approveShipment(prisma, gestao, second);
+    await expect(approveShipment(prisma, gestao, second)).rejects.toThrow(/já foi decidido/);
+    expect(await prisma.shipment.findUniqueOrThrow({ where: { id: second } })).toMatchObject({ status: "PREPARING", approvedById: gestao.userId });
+    await markShipped(prisma, envio, { shipmentId: second, carrier: "Correios", trackingCode: "AA123456789BR" });
+    expect(await prisma.auditLog.count({ where: { action: { in: ["shipment.approved", "shipment.rejected"] }, entityId: { in: [first, second] } } })).toBe(2);
+  });
+
   it("travas do banco", async () => {
     const s = await setup(TIERS);
     const base = { brandId: s.brand.id, creatorId: s.creator.id, salesCents: 0, products: 1 };
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-13" } }), /KitGrant_month_format/);
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", products: 0 } }), /KitGrant_values/);
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", status: "CHOSEN" } }), /KitGrant_chosen/);
+    const ship = { brandId: s.brand.id, creatorId: s.creator.id, address: {}, createdById: "x" };
+    await expectDbError(prisma.shipment.create({ data: { ...ship, approvedAt: new Date() } }), /Shipment_approval/);
+    await expectDbError(prisma.shipment.create({ data: { ...ship, status: "AWAITING_APPROVAL", rejectReason: "x" } }), /Shipment_approval/);
   });
 });

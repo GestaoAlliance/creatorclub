@@ -67,6 +67,6 @@ export async function chooseKitAction(_prev: EnviosState, form: FormData): Promi
       const ctx = await currentPortalContext(marca);
       await chooseKit(db(), ctx, userId, String(form.get("kitId") ?? ""), items);
     },
-    "Kit escolhido! A equipe já vai preparar o envio.",
+    "Pedido enviado! A equipe confere, aprova e prepara o envio.",
   );
 }
