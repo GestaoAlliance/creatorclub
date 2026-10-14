@@ -1,6 +1,7 @@
 import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
+import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
@@ -183,8 +184,11 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             ) : (
               <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
             )}
-            {p.instagram && (
-              <a href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noreferrer" className={`${ui.link} text-sm`}>@{p.instagram}</a>
+            {(p.instagram || p.contact.phone) && (
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+                {p.instagram && <InstagramLink handle={p.instagram} />}
+                {p.contact.phone && <WhatsappLink phone={p.contact.phone} />}
+              </div>
             )}
             {p.fiscal && (
               <div className={`${ui.inset} grid gap-1 text-sm`}>

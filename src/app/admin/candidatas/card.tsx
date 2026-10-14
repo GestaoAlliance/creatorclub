@@ -1,5 +1,6 @@
-import { AtSign, Eye, MapPin, Phone, Users } from "lucide-react";
+import { Eye, MapPin, Users } from "lucide-react";
 import Link from "next/link";
+import { InstagramLink, LinkifiedText, WhatsappLink } from "@/components/ui/contact-links";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { DecisionForms, type TemplateOption } from "./forms";
@@ -29,11 +30,11 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       {a.hunter && <p className="text-sm">Trazida por <span className="font-medium">{a.hunter.name}</span> <span className={ui.hint}>(link {a.hunter.code})</span></p>}
       {a.note && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{a.note}</p>}
       <div className="grid gap-1.5 text-sm sm:grid-cols-2">
-        {a.instagram && <p className="flex items-center gap-1.5"><AtSign className="size-3.5 text-stone-500" /> {a.instagram.replace(/^@/, "")}</p>}
+        {a.instagram && <p><InstagramLink handle={a.instagram} /></p>}
         {a.followers && <p className="flex items-center gap-1.5"><Users className="size-3.5 text-stone-500" /> {a.followers} seguidores</p>}
         {a.storiesViews && <p className="flex items-center gap-1.5"><Eye className="size-3.5 text-stone-500" /> {a.storiesViews} views nos stories</p>}
         {a.collabInterest && <p className="text-stone-600 dark:text-stone-400">Collab com a marca: {a.collabInterest}</p>}
-        {a.phone && <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-stone-500" /> {a.phone}</p>}
+        {a.phone && <p><WhatsappLink phone={a.phone} /></p>}
         {a.email && <p className="truncate text-stone-600 dark:text-stone-400">{a.email}</p>}
         {a.niche && <p className="text-stone-600 sm:col-span-2 dark:text-stone-400">Nicho: {a.niche}</p>}
       </div>
@@ -52,7 +53,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
             {a.extras.map((x) => (
               <div key={x.question}>
                 <dt className="text-xs text-stone-500">{x.question}</dt>
-                <dd className="whitespace-pre-line">{x.answer}</dd>
+                <dd className="whitespace-pre-line"><LinkifiedText text={x.answer} /></dd>
               </div>
             ))}
           </dl>
