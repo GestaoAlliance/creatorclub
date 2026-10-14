@@ -45,7 +45,7 @@ async function setup() {
 }
 
 const sign = (s: { userId: string }, documentId: string, extra: object = {}) => ({
-  actorUserId: s.userId, documentId, fullName: "Maria da Silva", cpf: "529.982.247-25", address: "Rua A, 10, Centro, São Paulo - SP", cnpj: "", companyName: "", accept: true, ip: "200.1.2.3", userAgent: "teste", ...extra,
+  actorUserId: s.userId, documentId, fullName: "Maria da Silva", cpf: "529.982.247-25", address: "Rua A, 10, Centro, São Paulo - SP", phone: "(31) 97570-8679", cnpj: "", companyName: "", accept: true, ip: "200.1.2.3", userAgent: "teste", ...extra,
 });
 
 describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
@@ -64,6 +64,7 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
 
     await expect(signContract(prisma, s.ctx, sign(s, pending.documentId, { cpf: "111.111.111-11" }))).rejects.toThrow(/CPF inválido/);
     await expect(signContract(prisma, s.ctx, sign(s, pending.documentId, { accept: false }))).rejects.toThrow(/concorda/);
+    await expect(signContract(prisma, s.ctx, sign(s, pending.documentId, { phone: "9999" }))).rejects.toThrow(/telefone/);
     await expect(signContract(prisma, s.ctx, sign(s, pending.documentId, { cnpj: "11.222.333/0001-81" }))).rejects.toThrow(/razão social/);
     await expect(signContract(prisma, { ...s.ctx, viewAs: { userId: "x" } }, sign(s, pending.documentId))).rejects.toThrow(/Visualização/);
 
@@ -99,6 +100,22 @@ describe("contrato assinado no portal (D-SIGNCONTRACT, banco real)", () => {
     expect((await creatorContractSignature(prisma, s.r.creatorId)).signature).toMatchObject({ version: 2, kind: "INFLUENCER", cpf: "***.982.247-**" });
     await expect(signedContractText(prisma, await userWith("PAGAMENTO", s.brand.id), sig.id)).resolves.toMatchObject({ body: sig.body });
     expect(await prisma.auditLog.count({ where: { action: "contract.signed", entityId: sig.id } })).toBe(1);
+    // Telefone confirmado no contrato fica no cadastro.
+    expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: s.r.accountId } })).phone).toBe("(31) 97570-8679");
+  });
+
+  it("kit de boas-vindas já liberado antes (carga D-KITANA) e endereço '.' da inscrição: assina sem erro e sem kit em dobro", async () => {
+    const s = await setup();
+    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER", title: "Contrato", body: BODY });
+    await prisma.creatorApplication.updateMany({ where: { creatorId: s.r.creatorId }, data: { address: "." } });
+    const month = dayKey(new Date()).slice(0, 7);
+    await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.r.creatorId, kind: "WELCOME", month, salesCents: 0, products: 3 } });
+
+    const pending = (await pendingContract(prisma, s.ctx))!;
+    expect(pending.prefill.address).toBe("");
+    await signContract(prisma, s.ctx, sign(s, pending.documentId));
+    expect(await pendingContract(prisma, s.ctx)).toBeNull();
+    expect(await prisma.kitGrant.findMany({ where: { creatorId: s.r.creatorId }, select: { kind: true, products: true } })).toEqual([{ kind: "WELCOME", products: 3 }]);
   });
 
   it("creator sem a marca da aprovação (já ativa) não é travada; travas do banco", async () => {

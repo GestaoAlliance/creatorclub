@@ -50,7 +50,7 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
       contractRequiredAt: true,
       ugcVideoGoal: true,
       contractTemplate: { select: { id: true, documentKind: true, releaseMinCents: true, kitTiers: true, months: true } },
-      account: { select: { name: true, cpf: true, cnpj: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
+      account: { select: { name: true, cpf: true, cnpj: true, phone: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
       couponAssignments: {
         where: { validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }], coupon: { kind: "CREATOR" } },
         orderBy: { validFrom: "desc" },
@@ -68,12 +68,15 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
     : null;
   const app = await prisma.creatorApplication.findFirst({ where: { creatorId }, orderBy: { submittedAt: "desc" }, select: { address: true, cnpj: true, companyName: true } });
   const coupon = c.couponAssignments[0]?.coupon ?? null;
+  // Endereço da inscrição curto demais (ex.: "." de quem pulou a pergunta) não serve: o campo fica vazio para ela preencher.
+  const appAddress = fold((app?.address ?? "").replace(/\s*\n+\s*/g, ", ")).replace(/,\s*,/g, ",");
   return {
     creator: c,
     prefill: {
       fullName: a.name,
       cpf: a.cpf ?? "",
-      address: structured ?? fold((app?.address ?? "").replace(/\s*\n+\s*/g, ", ")).replace(/,\s*,/g, ","),
+      address: structured ?? (appAddress.length >= 10 ? appAddress : ""),
+      phone: a.phone ?? "",
       cnpj: a.cnpj ?? app?.cnpj?.replace(/\D/g, "") ?? "",
       companyName: fold(app?.companyName),
     },
@@ -94,7 +97,7 @@ export type PendingContract = {
   templateId: string;
   title: string;
   body: string;
-  prefill: { fullName: string; cpf: string; address: string; cnpj: string; companyName: string };
+  prefill: { fullName: string; cpf: string; address: string; phone: string; cnpj: string; companyName: string };
   fixed: Omit<ContractData, "fullName" | "cpf" | "address" | "cnpj" | "companyName" | "signedAt">;
 };
 
@@ -125,6 +128,7 @@ export async function signContract(
     fullName: string;
     cpf: string;
     address: string;
+    phone: string;
     cnpj: string;
     companyName: string;
     accept: boolean;
@@ -141,6 +145,9 @@ export async function signContract(
   if (!isValidCpf(cpf)) throw new ContractSignError("CPF inválido. Confira os números.");
   const address = fold(input.address).slice(0, 300);
   if (address.length < 10) throw new ContractSignError("Informe o endereço completo (rua, número, bairro, cidade, estado e CEP).");
+  const phoneDigits = input.phone.replace(/\D/g, "");
+  if (phoneDigits.length < 10 || phoneDigits.length > 13) throw new ContractSignError("Informe seu telefone com DDD (WhatsApp).");
+  const phone = fold(input.phone).slice(0, 40);
   const cnpj = input.cnpj.replace(/\D/g, "") || null;
   if (cnpj && cnpj.length !== 14) throw new ContractSignError("CNPJ precisa ter 14 números (ou deixe em branco).");
   const companyName = fold(input.companyName).slice(0, 160) || null;
@@ -151,9 +158,17 @@ export async function signContract(
   if (pending.documentId !== input.documentId) throw new ContractSignError("O contrato foi atualizado. Recarregue a página e leia a versão nova.");
   const account = await prisma.creator.findUniqueOrThrow({
     where: { id: ctx.creatorId },
-    select: { brandId: true, contractStart: true, contractEnd: true, account: { select: { id: true, cpf: true } }, contractTemplate: { select: { welcomeProducts: true } } },
+    select: {
+      brandId: true,
+      contractStart: true,
+      contractEnd: true,
+      account: { select: { id: true, cpf: true, phone: true } },
+      contractTemplate: { select: { welcomeProducts: true } },
+      // Kit de boas-vindas já liberado (ex.: pela carga de D-KITANA): não cria outro ao assinar.
+      kitGrants: { where: { kind: "WELCOME" }, select: { id: true }, take: 1 },
+    },
   });
-  const welcome = account.contractTemplate?.welcomeProducts ?? 0;
+  const welcome = account.kitGrants.length ? 0 : (account.contractTemplate?.welcomeProducts ?? 0);
   const saved = account.account.cpf?.replace(/\D/g, "") || null;
   if (saved && saved !== cpf) throw new ContractSignError("Este CPF é diferente do que está no seu cadastro. Fale com a equipe.");
 
@@ -192,7 +207,8 @@ export async function signContract(
           ...(end ? { contractEnd: new Date(`${end}T00:00:00Z`) } : {}),
         },
       });
-      if (!saved) await tx.creatorAccount.update({ where: { id: account.account.id }, data: { cpf } });
+      if (!saved || account.account.phone !== phone)
+        await tx.creatorAccount.update({ where: { id: account.account.id }, data: { ...(saved ? {} : { cpf }), phone } });
       // D-WELCOMEKIT: o kit do início da parceria fica para ela escolher em Envios; a escolha vai para a fila do Envio.
       if (welcome > 0) {
         const month = dayKey(now).slice(0, 7);
