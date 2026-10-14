@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-123 — 2026-10-14 — Telefone do hunter (U1, pedido da Ana)
+- **Feito:** coluna `phone` (opcional) em `User` (migração `20261014120000_user_phone`); telefone ao criar o link do
+  hunter e "Adicionar/Salvar telefone" em cada hunter na tela Hunters, com atalho para o WhatsApp; troca auditada
+  (`hunter.phone`), só para quem edita a marca.
+- **Também nesta data:** chaves do Autentique da Botanika e da VermeFree conectadas pelo responsável (conta conferida
+  pela API). Falta a Revita.
+- **Verificado:** integração ampliada (telefone inválido, troca, limpar, sem permissão, não hunter). `npm test`,
+  `npm run test:integration`, `npm run typecheck`, `npm run build` passando; migração × schema sem divergência;
+  capturas com banco local.
+
 ### CP-122 — 2026-10-14 — Erro ao assinar o contrato no portal e telefone no contrato (U1)
 - **Achado no teste da Ana (Ana Eliza):** ao assinar, "This page couldn't load". Causa: a carga de D-KITANA já tinha
   liberado o kit de boas-vindas dela, e a assinatura tentava criar outro (trava `KitGrant_creatorId_kind_month_key`).

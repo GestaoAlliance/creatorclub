@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { createHunterLink, HunterError } from "@/lib/onboarding/hunters";
+import { createHunterLink, HunterError, setHunterPhone } from "@/lib/onboarding/hunters";
 
 export type HunterState = { error?: string; ok?: string } | undefined;
 
@@ -25,7 +25,20 @@ export async function createLinkAction(_p: HunterState, form: FormData): Promise
         brandId: String(form.get("brandId") ?? ""),
         userId: String(form.get("userId") ?? ""),
         code: String(form.get("code") ?? ""),
+        phone: String(form.get("phone") ?? ""),
       }),
     "Link criado.",
+  );
+}
+
+export async function setPhoneAction(_p: HunterState, form: FormData): Promise<HunterState> {
+  return run(
+    async () =>
+      setHunterPhone(db(), await currentActor(), {
+        brandId: String(form.get("brandId") ?? ""),
+        userId: String(form.get("userId") ?? ""),
+        phone: String(form.get("phone") ?? ""),
+      }),
+    "Telefone salvo.",
   );
 }
