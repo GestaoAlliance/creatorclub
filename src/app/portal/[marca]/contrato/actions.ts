@@ -22,6 +22,7 @@ export async function signContractAction(_prev: ContractState, form: FormData): 
       fullName: String(form.get("fullName") ?? ""),
       cpf: String(form.get("cpf") ?? ""),
       address: String(form.get("address") ?? ""),
+      phone: String(form.get("phone") ?? ""),
       cnpj: String(form.get("cnpj") ?? ""),
       companyName: String(form.get("companyName") ?? ""),
       accept: form.get("accept") === "on",

@@ -57,6 +57,11 @@ export function ContractGate({ marca, brandName, contract }: { marca: string; br
             <textarea name="address" value={v.address} onChange={set("address")} rows={2} required placeholder="Rua, número, bairro, cidade, estado e CEP" className={ui.input} />
           </label>
           <label className={ui.label}>
+            Telefone (WhatsApp)
+            <input name="phone" value={v.phone} onChange={set("phone")} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" required className={ui.input} />
+          </label>
+          <div className="hidden sm:block" />
+          <label className={ui.label}>
             CNPJ (se tiver)
             <input name="cnpj" value={v.cnpj} onChange={set("cnpj")} inputMode="numeric" placeholder="00.000.000/0000-00" className={ui.input} />
           </label>

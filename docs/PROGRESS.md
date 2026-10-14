@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-122 — 2026-10-14 — Erro ao assinar o contrato no portal e telefone no contrato (U1)
+- **Achado no teste da Ana (Ana Eliza):** ao assinar, "This page couldn't load". Causa: a carga de D-KITANA já tinha
+  liberado o kit de boas-vindas dela, e a assinatura tentava criar outro (trava `KitGrant_creatorId_kind_month_key`).
+  O endereço da inscrição era "." e aparecia pré-preenchido.
+- **Feito:** a assinatura não cria kit de boas-vindas se já existe um; endereço da inscrição com menos de 10
+  caracteres não é pré-preenchido; campo "Telefone (WhatsApp)" obrigatório no contrato (pedido do responsável),
+  pré-preenchido do cadastro e gravado nele.
+- **Verificado:** integração nova com o caso dela (kit já liberado + endereço "."). `npm test`,
+  `npm run test:integration`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-121 — 2026-10-13 — Mini tutoriais nas telas da equipe (U1)
 - **Decidido:** D-TUTORIAL, parte da equipe (respostas do responsável: telas da rotina de cada um; balões por papel).
 - **Feito:** 37 textos novos em `src/domain/tutorial.ts` para Início da marca, Candidatas, Creators, ficha, Cupons, Envios,
