@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { hunterBrandWhere } from "@/lib/onboarding/hunters";
 import type { Actor } from "@/lib/auth/actor";
 import { CONTRACT_WARN_DAYS, dayKey } from "@/domain";
 import { brandsWith, type Permission } from "@/lib/auth/permissions";
@@ -49,7 +50,7 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
   await Promise.all([
     isHunter &&
       prisma.hunterLink
-        .findMany({ where: { userId: actor.userId }, select: { id: true, applications: { select: { status: true } } } })
+        .findMany({ where: { userId: actor.userId, ...hunterBrandWhere(actor.grants) }, select: { id: true, applications: { select: { status: true } } } })
         .then(async (links) => {
           const ids = links.map((l) => l.id);
           const clicks30 = ids.length
