@@ -239,6 +239,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-124 — 2026-10-14 — Instagram e WhatsApp clicáveis na candidata e na ficha (U1)
+- **Pedido do responsável:** links das redes e do WhatsApp clicáveis onde estão os dados de quem quer entrar e de
+  quem já é creator.
+- **Feito:** `src/domain/social.ts` (perfil do Instagram a partir de "@ana", "ana" ou link; conversa no WhatsApp com
+  55; links das respostas do formulário) e `src/components/ui/contact-links.tsx`; usados no cartão da candidata
+  (Instagram, telefone e "Mais respostas") e no Contato da ficha.
+- **Verificado:** teste unitário novo. `npm test`, `npm run typecheck`, `npm run build` passando; capturas com banco local.
+
 ### CP-123 — 2026-10-14 — Telefone do hunter (U1, pedido da Ana)
 - **Feito:** coluna `phone` (opcional) em `User` (migração `20261014120000_user_phone`); telefone ao criar o link do
   hunter e "Adicionar/Salvar telefone" em cada hunter na tela Hunters, com atalho para o WhatsApp; troca auditada
