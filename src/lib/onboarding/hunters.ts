@@ -30,7 +30,7 @@ export async function hunterPanel(prisma: PrismaClient, actor: Actor | null, now
   });
   const grants = await prisma.roleGrant.findMany({
     where: { role: "HUNTER", user: { disabledAt: null } },
-    select: { brandId: true, user: { select: { id: true, name: true, email: true } } },
+    select: { brandId: true, user: { select: { id: true, name: true, email: true, phone: true } } },
   });
   const links = await prisma.hunterLink.findMany({
     where: { brandId: { in: brands.map((b) => b.id) } },
@@ -59,6 +59,7 @@ export async function hunterPanel(prisma: PrismaClient, actor: Actor | null, now
           userId: u.id,
           name: u.name,
           email: u.email,
+          phone: u.phone,
           link: l
             ? {
                 code: l.code,
@@ -75,17 +76,32 @@ export async function hunterPanel(prisma: PrismaClient, actor: Actor | null, now
   });
 }
 
-export async function createHunterLink(prisma: PrismaClient, actor: Actor | null, input: { brandId: string; userId: string; code: string }) {
-  assertEdit(actor, input.brandId);
-  const code = normalizeHunterCode(input.code);
-  if (!isValidHunterCode(code)) throw new HunterError("O código precisa ter de 2 a 20 letras ou números.");
+/** Telefone com DDD (10 a 13 números, com ou sem 55); vazio limpa. */
+function parsePhone(raw: string | undefined): string | null {
+  const phone = (raw ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 13) throw new HunterError("Telefone com DDD, por exemplo (31) 99999-9999.");
+  return phone;
+}
+
+async function assertHunter(prisma: PrismaClient, brandId: string, userId: string) {
   const grant = await prisma.roleGrant.findFirst({
-    where: { userId: input.userId, role: "HUNTER", OR: [{ brandId: input.brandId }, { brandId: null }], user: { disabledAt: null } },
+    where: { userId, role: "HUNTER", OR: [{ brandId }, { brandId: null }], user: { disabledAt: null } },
     select: { id: true },
   });
   if (!grant) throw new HunterError("Esta pessoa não é hunter desta marca.");
+}
+
+export async function createHunterLink(prisma: PrismaClient, actor: Actor | null, input: { brandId: string; userId: string; code: string; phone?: string }) {
+  assertEdit(actor, input.brandId);
+  const code = normalizeHunterCode(input.code);
+  if (!isValidHunterCode(code)) throw new HunterError("O código precisa ter de 2 a 20 letras ou números.");
+  const phone = parsePhone(input.phone);
+  await assertHunter(prisma, input.brandId, input.userId);
   try {
     const link = await prisma.hunterLink.create({ data: { brandId: input.brandId, userId: input.userId, code } });
+    if (phone) await prisma.user.update({ where: { id: input.userId }, data: { phone } });
     await prisma.auditLog.create({
       data: { brandId: input.brandId, actorType: "USER", actorId: actor.userId, action: "hunter.link", entity: "HunterLink", entityId: link.id, after: { code, userId: input.userId } },
     });
@@ -94,6 +110,20 @@ export async function createHunterLink(prisma: PrismaClient, actor: Actor | null
     if (String(error).includes("Unique constraint")) throw new HunterError("Este código já é de outro hunter (ou o hunter já tem link).");
     throw error;
   }
+}
+
+/** Telefone do hunter, mostrado na tela Hunters (pedido da Ana). */
+export async function setHunterPhone(prisma: PrismaClient, actor: Actor | null, input: { brandId: string; userId: string; phone: string }) {
+  assertEdit(actor, input.brandId);
+  const phone = parsePhone(input.phone);
+  await assertHunter(prisma, input.brandId, input.userId);
+  const before = await prisma.user.findUniqueOrThrow({ where: { id: input.userId }, select: { phone: true } });
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: input.userId }, data: { phone } }),
+    prisma.auditLog.create({
+      data: { brandId: input.brandId, actorType: "USER", actorId: actor.userId, action: "hunter.phone", entity: "User", entityId: input.userId, before: { phone: before.phone }, after: { phone } },
+    }),
+  ]);
 }
 
 export async function setFormLink(prisma: PrismaClient, actor: Actor | null, input: { brandId: string; form: string; url: string }) {

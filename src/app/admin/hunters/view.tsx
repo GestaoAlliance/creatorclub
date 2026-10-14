@@ -1,11 +1,11 @@
-import { Link2, Target } from "lucide-react";
+import { Link2, MessageCircle, Target } from "lucide-react";
 import Link from "next/link";
 import { CopyButton } from "@/components/portal/copy-button";
 import { Card, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
-import { hunterCodeFrom } from "@/domain";
+import { hunterCodeFrom, whatsappLink } from "@/domain";
 import type { hunterPanel } from "@/lib/onboarding/hunters";
-import { CreateLinkForm } from "./forms";
+import { CreateLinkForm, PhoneForm } from "./forms";
 
 type Brands = Awaited<ReturnType<typeof hunterPanel>>;
 
@@ -34,6 +34,16 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
                       <div>
                         <p className="font-medium">{x.name}</p>
                         <p className={ui.hint}>{x.email}</p>
+                        {x.phone && (
+                          <p className="mt-0.5 flex items-center gap-2 text-sm">
+                            {x.phone}
+                            {whatsappLink(x.phone, `Oi, ${x.name.split(" ")[0]}!`) && (
+                              <a href={whatsappLink(x.phone, `Oi, ${x.name.split(" ")[0]}!`)!} target="_blank" rel="noopener noreferrer" className={`${ui.link} inline-flex items-center gap-1 text-xs`}>
+                                <MessageCircle className="size-3.5" /> WhatsApp
+                              </a>
+                            )}
+                          </p>
+                        )}
                       </div>
                       {x.link && (
                         <span className="flex flex-wrap gap-1.5">
@@ -52,8 +62,9 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
                         <CopyButton value={`${origin}/i/${x.link.code}`} label="Copiar" />
                       </div>
                     ) : (
-                      <CreateLinkForm brandId={b.id} userId={x.userId} suggestion={hunterCodeFrom(x.name)} />
+                      <CreateLinkForm brandId={b.id} userId={x.userId} suggestion={hunterCodeFrom(x.name)} phone={x.phone} />
                     )}
+                    {x.link && <PhoneForm brandId={b.id} userId={x.userId} phone={x.phone} />}
                   </li>
                 ))}
               </ul>

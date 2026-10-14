@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
-import { createHunterLink, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink } from "@/lib/onboarding/hunters";
+import { createHunterLink, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink, setHunterPhone } from "@/lib/onboarding/hunters";
 import { staffHome } from "@/lib/staff/home";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -26,7 +26,17 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     await expect(setFormLink(prisma, gestao, { brandId: brand.id, form: "hunter", url: "https://docs.google.com/forms/x" })).rejects.toThrow(/CODIGO/);
     await setFormLink(prisma, gestao, { brandId: brand.id, form: "hunter", url: TEMPLATE });
     await expect(createHunterLink(prisma, gestao, { brandId: brand.id, userId: gestao.userId, code: "gestao" })).rejects.toThrow(/não é hunter/);
-    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "Ána" });
+    await expect(createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "ana", phone: "123" })).rejects.toThrow(/DDD/);
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "Ána", phone: "(31) 99999-0000" });
+    expect((await hunterPanel(prisma, gestao))[0]!.hunters[0]).toMatchObject({ name: "Ana Hunter", phone: "(31) 99999-0000" });
+    // Telefone do hunter (pedido da Ana): a Gestão troca e limpa; quem não edita a marca, não.
+    await setHunterPhone(prisma, gestao, { brandId: brand.id, userId: hunter.userId, phone: "31 98888-1111" });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: hunter.userId } })).phone).toBe("31 98888-1111");
+    await expect(setHunterPhone(prisma, hunter, { brandId: brand.id, userId: hunter.userId, phone: "31 98888-2222" })).rejects.toThrow(/permissão/);
+    await expect(setHunterPhone(prisma, gestao, { brandId: brand.id, userId: gestao.userId, phone: "31 98888-2222" })).rejects.toThrow(/não é hunter/);
+    await setHunterPhone(prisma, gestao, { brandId: brand.id, userId: hunter.userId, phone: "" });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: hunter.userId } })).phone).toBeNull();
+    expect(await prisma.auditLog.count({ where: { action: "hunter.phone", entityId: hunter.userId } })).toBe(2);
     await expect(createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "outra" })).rejects.toThrow(/já/);
 
     const target = await resolveHunterLink(prisma, brand.slug, "hunter", "ANA");
@@ -47,7 +57,7 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
 
     const [panel] = (await hunterPanel(prisma, gestao)).filter((b) => b.id === brand.id);
     expect(panel!.forms).toEqual({ hunter: TEMPLATE, captacao: null });
-    expect(panel!.hunters).toEqual([{ userId: hunter.userId, name: "Ana Hunter", email: expect.any(String), link: { code: "ana", clicks: 1, clicks30: 1, applications: 1, approved: 0 } }]);
+    expect(panel!.hunters).toEqual([{ userId: hunter.userId, name: "Ana Hunter", phone: null, email: expect.any(String), link: { code: "ana", clicks: 1, clicks30: 1, applications: 1, approved: 0 } }]);
     expect(await prisma.auditLog.count({ where: { brandId: brand.id, action: { in: ["hunter.link", "form.link"] } } })).toBe(2);
   });
 
