@@ -97,4 +97,21 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     expect((await staffHome(prisma, bia)).hunter).toEqual({ clicks30: 1, inReview: 0, approved: 0, hasLink: true });
     await expect(myHunterPanel(prisma, gestao)).rejects.toThrow(/permissão/);
   });
+
+  it("D-BRANDISOLATION: hunter que deixou uma marca não vê mais as indicações dela", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const id = randomUUID();
+    await prisma.user.create({ data: { id, email: `${id}@x.com`, name: "Dani", roleGrants: { create: [{ role: "HUNTER", brandId: a.brand.id }, { role: "HUNTER", brandId: b.brand.id }] } } });
+    const gestaoA = await userWith("GESTAO", a.brand.id);
+    const gestaoB = await userWith("GESTAO", b.brand.id);
+    await createHunterLink(prisma, gestaoA, { brandId: a.brand.id, userId: id, code: "dania" });
+    await createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" });
+    expect((await myHunterPanel(prisma, (await loadActor(prisma, id))!)).map((p) => p.code).sort()).toEqual(["dania", "danib"]);
+
+    await prisma.roleGrant.deleteMany({ where: { userId: id, brandId: b.brand.id } });
+    const dani = (await loadActor(prisma, id))!;
+    expect((await myHunterPanel(prisma, dani)).map((p) => p.code)).toEqual(["dania"]);
+    expect((await staffHome(prisma, dani)).hunter).toMatchObject({ hasLink: true, clicks30: 0 });
+  });
 });

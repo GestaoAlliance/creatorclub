@@ -239,6 +239,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-125 — 2026-10-14 — Isolamento entre marcas para a equipe (U1)
+- **Decidido:** D-BRANDISOLATION (pedido do responsável).
+- **Feito:** auditoria de todas as telas da equipe, ações, rotas de NF e recibo e da escolha de marca (nenhum vazamento
+  para Envio e Pagamento); aprovação recusa e-mail de creator de marca fora do acesso de quem aprova; painel e Início da
+  hunter só com as marcas em que ela é hunter hoje. Convites do Álvaro e da Juci refeitos só para a Botanika (7 dias)
+  e convite da Vanessa (super admin) conferido.
+- **Verificado:** integração nova (aprovação entre marcas recusada sem ir à Shopify; quem tem as duas marcas aprova;
+  hunter que deixou a marca). `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-124 — 2026-10-14 — Instagram e WhatsApp clicáveis na candidata e na ficha (U1)
 - **Pedido do responsável:** links das redes e do WhatsApp clicáveis onde estão os dados de quem quer entrar e de
   quem já é creator.

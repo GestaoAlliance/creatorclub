@@ -189,10 +189,20 @@ export async function hunterLinkIdFor(prisma: PrismaClient, brandId: string, raw
  * Painel da própria hunter (U3, D-HUNTERVIEW): o link dela em cada marca, cliques e as candidatas que trouxe, só com
  * nome, @, seguidores, data e situação (sem contato, CPF, endereço nem o motivo de recusa, que é anotação da equipe).
  */
+/**
+ * Marcas em que a pessoa é hunter hoje (D-BRANDISOLATION): o link de uma marca em que ela deixou de ser hunter fica
+ * guardado, mas some do painel dela. `{}` quando é hunter de todas.
+ */
+export function hunterBrandWhere(grants: Actor["grants"]): { brandId?: { in: string[] } } {
+  const hunter = grants.filter((g) => g.role === "HUNTER");
+  if (hunter.some((g) => g.brandId === null)) return {};
+  return { brandId: { in: hunter.map((g) => g.brandId!) } };
+}
+
 export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, now = new Date()) {
   if (!actor || !actor.grants.some((g) => g.role === "HUNTER")) throw new HunterError("Sem permissão.");
   const links = await prisma.hunterLink.findMany({
-    where: { userId: actor.userId, brand: { archivedAt: null } },
+    where: { userId: actor.userId, brand: { archivedAt: null }, ...hunterBrandWhere(actor.grants) },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,

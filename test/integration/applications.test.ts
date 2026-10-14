@@ -38,6 +38,26 @@ async function received(slug: string, email = `${randomUUID()}@exemplo.com`) {
 }
 
 describe("candidatas do formulário Hunter (banco real)", () => {
+  it("D-BRANDISOLATION: Gestão de uma marca não junta a candidata ao cadastro de creator de outra marca", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const other = await prisma.creatorAccount.findFirstOrThrow({ where: { creators: { some: { id: b.creator.id } } }, select: { email: true } });
+    const app = await received(a.brand.slug);
+    const gestaoA = await userWith("GESTAO", a.brand.id);
+    const before = shop.calls.length;
+    await expect(
+      approveApplication(prisma, gestaoA, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: other.email }, shop.clientFor),
+    ).rejects.toThrow(/outra marca que você não acessa/);
+    expect(shop.calls.length).toBe(before); // nada foi à Shopify
+    expect(await prisma.creator.count({ where: { brandId: a.brand.id, account: { email: other.email } } })).toBe(0);
+
+    // Quem tem as duas marcas pode juntar (mesma pessoa nas duas).
+    const both = randomUUID();
+    await prisma.user.create({ data: { id: both, email: `${both}@x.com`, name: "G2", roleGrants: { create: [{ role: "GESTAO", brandId: a.brand.id }, { role: "GESTAO", brandId: b.brand.id }] } } });
+    const r = await approveApplication(prisma, (await loadActor(prisma, both))!, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: other.email }, shop.clientFor);
+    expect((await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { account: { select: { email: true } } } })).account.email).toBe(other.email);
+  });
+
   it("recebe a resposta uma vez só; Gestão aprova: creator, cupom, dona, taxa confirmadas e saque liberado", async () => {
     const { brand } = await seedBrand(prisma);
     const key = randomUUID();

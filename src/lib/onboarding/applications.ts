@@ -309,8 +309,12 @@ export async function approveApplication(
   // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.
   if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
     throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca. Escolha outro.`);
-  const known = await prisma.creatorAccount.findUnique({ where: { email }, select: { creators: { where: { brandId: app.brandId }, select: { id: true } } } });
-  if (known?.creators.length) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
+  const known = await prisma.creatorAccount.findUnique({ where: { email }, select: { creators: { select: { brandId: true } } } });
+  if (known?.creators.some((c) => c.brandId === app.brandId)) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
+  // Isolamento entre marcas (D-BRANDISOLATION): juntar ao cadastro de quem já é creator de uma marca fora do acesso de
+  // quem aprova mostraria a essa pessoa os dados que a creator deu lá (CPF, Pix, endereço). Só quem tem as duas marcas.
+  if (known?.creators.some((c) => !can(actor.grants, "creators.edit", c.brandId)))
+    throw new ApplicationError("Este e-mail já é de uma creator de outra marca que você não acessa. Peça a um super admin para aprovar esta candidata.");
   let shopifyId: string | null = null;
   if (!viaAutentique) {
     try {
