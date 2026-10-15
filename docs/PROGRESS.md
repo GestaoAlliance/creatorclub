@@ -239,6 +239,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-127 — 2026-10-15 — Formulário de inscrição por marca e um hunter por marca (U1)
+- **Decidido:** D-SIGNUPBRAND (pedidos da Ana; respostas do responsável: link geral vira escolha de marca, travar um
+  hunter por marca, identidade da marca com as cores do sistema). Giovanna sai da equipe (o responsável remove em
+  Equipe); Vanessa fica hunter da Botanika.
+- **Feito:** `/inscricao/[marca]` com as cores e o nome da marca; `/inscricao` escolhe a marca; perguntas e aceite com o
+  nome da marca; candidatura só na marca do formulário; `/i/código` abre o formulário da marca do hunter; código único
+  entre marcas e uma marca por hunter; link de hunter removido deixa de valer; tela Hunters mostra o link do formulário
+  de cada marca.
+- **Verificado:** integração nova (código único, uma marca por hunter, link de hunter removido, candidatura só na
+  marca do formulário) e unitário (textos com a marca). `npm test`, `npm run test:integration`, `npm run typecheck`,
+  `npm run build` passando; capturas com banco local.
+
 ### CP-126 — 2026-10-15 — Mensagem de aprovação da Ana, sem mensagem de recusa (U1)
 - **Validado em produção:** contrato pelo Autentique da Botanika assinado de ponta a ponta (teste do responsável com a
   creator de teste da Ana, 2026-10-15): assinatura reconhecida, cupom e kit de boas-vindas liberados.

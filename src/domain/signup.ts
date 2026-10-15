@@ -1,14 +1,19 @@
 /**
- * Formulário de inscrição do próprio sistema (D-SIGNUP): um formulário só, com as mesmas perguntas dos formulários do
- * Google (Hunter e Captação). Os títulos são os mesmos, então a resposta é gravada e lida igual (`parseHunterAnswers`).
+ * Formulário de inscrição do próprio sistema (D-SIGNUP): um formulário por marca (D-SIGNUPBRAND), com as mesmas perguntas
+ * dos formulários do Google (Hunter e Captação). Onde o texto diz `{marca}`, entra o nome da marca do formulário. Os títulos são os mesmos, então a resposta é gravada e lida igual (`parseHunterAnswers`).
  * Todas obrigatórias como no Google, menos CNPJ e razão social (quem não tem CNPJ recebe como pessoa física, D-PFRECEIPT).
  */
 
 /** Marcas que a pessoa pode escolher representar (D-SIGNUP). Para incluir outra (ex.: Shoty), é só acrescentar aqui. */
 export const SIGNUP_BRANDS = ["Botanika", "VermeFree", "Revita Derma"] as const;
 
-/** A inscrição sem marca no endereço (`/inscricao`) entra nesta marca do sistema, a única ligada por enquanto. */
-export const SIGNUP_DEFAULT_BRAND = "botanika";
+/** Marca da inscrição pelo endereço (`/inscricao/revita-derma` → "Revita Derma"); fora da lista, null. */
+export function signupBrandFor(slug: string): (typeof SIGNUP_BRANDS)[number] | null {
+  return SIGNUP_BRANDS.find((b) => signupBrandSlug(b) === slug.toLowerCase()) ?? null;
+}
+
+/** Troca `{marca}` pelo nome da marca do formulário. */
+export const withBrand = (text: string, brand: string) => text.replaceAll("{marca}", brand);
 
 export type SignupQuestion = {
   key: string;
@@ -37,11 +42,11 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "niche", title: "Qual seu nicho ou sua área de atuação?", label: "Qual seu nicho ou sua área de atuação?", kind: "text", required: true },
   { key: "content", title: "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo", label: "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo", kind: "long", required: true },
   { key: "why", title: "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?", label: "Por que você acredita que faz sentido divulgar as marcas para a sua audiência?", kind: "long", required: true },
-  { key: "knows", title: "Você já conhece a Botanika Brasil e a VermeFree?  ", label: "Você já conhece a Botanika Brasil e a VermeFree?", kind: "choice", options: YES_NO, required: true },
+  { key: "knows", title: "Você já conhece a Botanika Brasil e a VermeFree?  ", label: "Você já conhece a {marca}?", kind: "choice", options: YES_NO, required: true },
   { key: "commissioned", title: "Você já trabalhou de forma comissionada para outras marcas?", label: "Você já trabalhou de forma comissionada para outras marcas?", kind: "choice", options: YES_NO, required: true },
   { key: "accepts", title: "Você aceita receber os produtos e compartilhar sua experiência com seu público, postando no feed e stories? ", label: "Você aceita receber os produtos e compartilhar sua experiência com seu público, postando no feed e stories?", kind: "choice", options: YES_NO, required: true },
-  { key: "brands", title: "Tenho interesse em representar:", label: "Tenho interesse em representar", kind: "multi", options: SIGNUP_BRANDS, required: true, hint: "Pode marcar mais de uma." },
-  { key: "collab", title: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar o seu cupom, você tem interesse? ", label: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do Instagram da Botanika e da VermeFree para divulgar o seu cupom. Você tem interesse?", kind: "choice", options: YES_NO, required: true },
+  { key: "brands", title: "Tenho interesse em representar:", label: "Tenho interesse em representar", kind: "multi", options: SIGNUP_BRANDS, required: false },
+  { key: "collab", title: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do instagram da Botanika e da VermeFree para divulgar o seu cupom, você tem interesse? ", label: "Estamos selecionando alguns parceiros para fazermos Colabs com o perfil do Instagram da {marca} para divulgar o seu cupom. Você tem interesse?", kind: "choice", options: YES_NO, required: true },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço para entrega dos suplementos", kind: "long", required: true, hint: "Rua/Av., número, bairro, cidade, estado, CEP e ponto de referência" },
   { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Sugestão de nome de cupom", kind: "text", required: true, hint: "Só letras, até 8 (ex.: MARIA). É o código que seus seguidores vão usar." },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
@@ -54,14 +59,15 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint: string; keys: readonly string[] }[] = [
   { id: "voce", title: "Quem é você", hint: "Conta pra gente quem está por trás do perfil.", keys: ["fullName", "kind", "phone", "email", "instagram"] },
   { id: "conteudo", title: "Suas redes", hint: "Seu público é o seu poder. Mostre como você conversa com ele.", keys: ["followers", "storiesViews", "niche", "content", "why"] },
-  { id: "marcas", title: "Suas marcas", hint: "Escolha com quem quer crescer. Mais marcas, mais chances de vender.", keys: ["brands", "knows", "commissioned", "accepts", "collab"] },
+  // D-SIGNUPBRAND: a marca vem do endereço; "brands" é preenchida sozinha com ela e não aparece.
+  { id: "marcas", title: "Você e a {marca}", hint: "Conta pra gente como é a sua relação com a marca.", keys: ["knows", "commissioned", "accepts", "collab"] },
   { id: "envio", title: "Receber e ganhar", hint: "Onde entregamos seus produtos e para onde vai a sua comissão.", keys: ["address", "coupon", "cpf", "cnpj", "companyName", "pix"] },
 ];
 
 /** Etapas da inscrição (D-SIGNUPSTEPS): duas telas, cada uma com dois blocos. */
 export const SIGNUP_STEPS: readonly { title: string; sections: readonly string[] }[] = [
   { title: "Você e suas redes", sections: ["voce", "conteudo"] },
-  { title: "Marcas e comissão", sections: ["marcas", "envio"] },
+  { title: "Marca e comissão", sections: ["marcas", "envio"] },
 ];
 
 /** Sugestão de cupom aceita (D-SIGNUPCOUPON): só letras (acento vale e cai), de 2 a 8. Número, espaço e símbolo, não. */
@@ -75,8 +81,9 @@ export function signupCouponPreview(raw: string): string {
   return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 8);
 }
 
-export const SIGNUP_CONSENT_TEXT =
-  "Concordo que a Alliance e as marcas que escolhi acima usem estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.";
+/** Aceite de uso dos dados, gravado com a resposta. */
+export const signupConsentText = (brand: string) =>
+  `Concordo que a Alliance e a ${brand} usem estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.`;
 
 export type SignupResult = { ok: true; answers: Record<string, string> } | { ok: false; errors: Record<string, string> };
 

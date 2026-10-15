@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandSlug, signupCouponPreview, signupCouponValid } from "@/domain";
+import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -34,8 +34,8 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
       fullName: "Preencha este campo.", kind: "Escolha uma das opções.", email: "E-mail inválido.", phone: "Informe o WhatsApp com DDD.",
       cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.", consent: "É preciso concordar para enviar.",
     });
-    // CNPJ e razão social são opcionais; o resto é obrigatório, como no Google.
-    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "companyName"]);
+    // CNPJ e razão social são opcionais; a marca vem do endereço (D-SIGNUPBRAND); o resto é obrigatório, como no Google.
+    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["brands", "cnpj", "companyName"]);
   });
 
   it("marcas de interesse: caixas de seleção só com as opções; leitura também das respostas antigas do Google", () => {
@@ -53,10 +53,19 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
 });
 
 describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
-  it("cada pergunta aparece em exatamente um bloco", () => {
+  it("cada pergunta aparece em exatamente um bloco; a marca não é pergunta (vem do endereço, D-SIGNUPBRAND)", () => {
     const keys = SIGNUP_SECTIONS.flatMap((s) => s.keys);
     expect(new Set(keys).size).toBe(keys.length);
-    expect([...keys].sort()).toEqual(SIGNUP_QUESTIONS.map((q) => q.key).sort());
+    expect([...keys].sort()).toEqual(SIGNUP_QUESTIONS.map((q) => q.key).filter((k) => k !== "brands").sort());
+  });
+
+  it("perguntas com o nome da marca do formulário", () => {
+    const label = (key: string) => withBrand(SIGNUP_QUESTIONS.find((q) => q.key === key)!.label, "VermeFree");
+    expect(label("knows")).toBe("Você já conhece a VermeFree?");
+    expect(label("collab")).toContain("perfil do Instagram da VermeFree");
+    expect(signupBrandFor("revita-derma")).toBe("Revita Derma");
+    expect(signupBrandFor("shoty")).toBeNull();
+    expect(signupConsentText("Botanika")).toContain("a Alliance e a Botanika usem");
   });
 
   it("prévia do cupom: só letras, maiúsculas, até 8", () => {

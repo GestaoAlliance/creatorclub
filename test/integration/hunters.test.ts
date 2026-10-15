@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
-import { createHunterLink, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink, setHunterPhone } from "@/lib/onboarding/hunters";
+import { createHunterLink, hunterLinkIdFor, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink, setHunterPhone, signupLinksFor } from "@/lib/onboarding/hunters";
 import { staffHome } from "@/lib/staff/home";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -68,7 +68,7 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     const hunter = await userWith("HUNTER", brand.id);
     await expectDbError(prisma.hunterLink.create({ data: { brandId: brand.id, userId: hunter.userId, code: "Ana!" } }), /HunterLink_code_format/);
     await expectDbError(prisma.formLink.create({ data: { brandId: brand.id, form: "hunter", urlTemplate: "https://x.com", updatedById: "x" } }), /FormLink_values/);
-    const link = await prisma.hunterLink.create({ data: { brandId: brand.id, userId: hunter.userId, code: "bia" } });
+    const link = await prisma.hunterLink.create({ data: { brandId: brand.id, userId: hunter.userId, code: "bea" } });
     await expectDbError(prisma.hunterClick.create({ data: { brandId: brand.id, hunterLinkId: link.id, form: "outro" } }), /HunterClick_form/);
     const click = await prisma.hunterClick.create({ data: { brandId: brand.id, hunterLinkId: link.id, form: "hunter" } });
     await expectDbError(prisma.hunterClick.delete({ where: { id: click.id } }), /HunterClick é somente inserção/);
@@ -106,12 +106,37 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     const gestaoA = await userWith("GESTAO", a.brand.id);
     const gestaoB = await userWith("GESTAO", b.brand.id);
     await createHunterLink(prisma, gestaoA, { brandId: a.brand.id, userId: id, code: "dania" });
-    await createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" });
+    // D-SIGNUPBRAND: um hunter, uma marca. O link na outra marca é de antes da regra (gravado direto).
+    await expect(createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" })).rejects.toThrow(/já é hunter da .*uma marca só/);
+    await prisma.hunterLink.create({ data: { brandId: b.brand.id, userId: id, code: "danib" } });
     expect((await myHunterPanel(prisma, (await loadActor(prisma, id))!)).map((p) => p.code).sort()).toEqual(["dania", "danib"]);
 
     await prisma.roleGrant.deleteMany({ where: { userId: id, brandId: b.brand.id } });
     const dani = (await loadActor(prisma, id))!;
     expect((await myHunterPanel(prisma, dani)).map((p) => p.code)).toEqual(["dania"]);
     expect((await staffHome(prisma, dani)).hunter).toMatchObject({ hasLink: true, clicks30: 0 });
+  });
+
+  it("D-SIGNUPBRAND: código único entre marcas; /i/código leva ao formulário da marca; hunter removido não marca mais ninguém", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const gestaoA = await userWith("GESTAO", a.brand.id);
+    const gestaoB = await userWith("GESTAO", b.brand.id);
+    const eva = await userWith("HUNTER", a.brand.id, "Eva");
+    const lia = await userWith("HUNTER", b.brand.id, "Lia");
+    await createHunterLink(prisma, gestaoA, { brandId: a.brand.id, userId: eva.userId, code: "evaunica" });
+    await expect(createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: lia.userId, code: "evaunica" })).rejects.toThrow(/código já é de outro hunter/);
+
+    const [only] = await signupLinksFor(prisma, "EVAUNICA");
+    expect(only).toMatchObject({ code: "evaunica", slug: a.brand.slug, click: { brandId: a.brand.id, form: "inscricao" } });
+    expect(await resolveHunterLink(prisma, a.brand.slug, "inscricao", "evaunica")).toMatchObject({ url: `/inscricao/${a.brand.slug}?h=evaunica` });
+    expect(await signupLinksFor(prisma, "ninguem")).toEqual([]);
+
+    // Removida da equipe: o link deixa de valer (nada é apagado).
+    await prisma.user.update({ where: { id: eva.userId }, data: { disabledAt: new Date() } });
+    expect(await signupLinksFor(prisma, "evaunica")).toEqual([]);
+    expect(await resolveHunterLink(prisma, a.brand.slug, "inscricao", "evaunica")).toEqual({ url: `/inscricao/${a.brand.slug}`, click: null });
+    expect(await hunterLinkIdFor(prisma, a.brand.id, "evaunica")).toBeNull();
+    expect(await prisma.hunterLink.count({ where: { code: "evaunica" } })).toBe(1);
   });
 });

@@ -71,10 +71,10 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
             )}
           </Card>
           <Card title="Formulário de inscrição" icon={<Link2 className="size-4" />}>
-            <p className={ui.muted}>Link geral (sem hunter), para divulgar em qualquer lugar:</p>
+            <p className={ui.muted}>Link do formulário da {b.name} (sem hunter), para divulgar em qualquer lugar:</p>
             <div className={`${ui.inset} flex items-center justify-between gap-2`}>
-              <p className="truncate font-mono text-xs">{`${origin}/inscricao`}</p>
-              <CopyButton value={`${origin}/inscricao`} label="Copiar" />
+              <p className="truncate font-mono text-xs">{`${origin}/inscricao/${b.slug}`}</p>
+              <CopyButton value={`${origin}/inscricao/${b.slug}`} label="Copiar" />
             </div>
             <p className={ui.hint}>As respostas viram candidatas em Candidatas. Os formulários antigos do Google continuam chegando lá também.</p>
           </Card>
