@@ -2,13 +2,13 @@
 
 import { ArrowLeft, ArrowRight, AtSign, Check, Package, Sparkles, Store, Ticket, UserRound, type LucideIcon } from "lucide-react";
 import { useActionState, useEffect, useRef, useState, type CSSProperties } from "react";
-import { SIGNUP_CONSENT_TEXT, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, signupCouponPreview, type SignupQuestion } from "@/domain";
+import { SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, signupConsentText, signupCouponPreview, withBrand, type SignupQuestion } from "@/domain";
 import { signupAction, type SignupState } from "./actions";
 
-export type SignupBrand = { name: string; color: string };
+export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null };
 
 const BY_KEY = new Map(SIGNUP_QUESTIONS.map((q) => [q.key, q]));
-const REQUIRED = SIGNUP_QUESTIONS.filter((q) => q.required).map((q) => q.key);
+const REQUIRED = SIGNUP_QUESTIONS.filter((q) => q.required && q.kind !== "multi").map((q) => q.key);
 /** Ícone de cada bloco (com etapas, número no bloco confundiria). */
 const SECTION_ICON: Record<string, LucideIcon> = { voce: UserRound, conteudo: Sparkles, marcas: Store, envio: Package };
 const SECTION = new Map(SIGNUP_SECTIONS.map((s) => [s.id, s]));
@@ -19,11 +19,11 @@ const STEP_OF = new Map<string, number>([
 ]);
 
 const input =
-  "w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-stone-950 focus:ring-4 focus:ring-stone-950/10 aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
+  "w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-[var(--b)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--b)_15%,transparent)] aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
 const option =
-  "group flex cursor-pointer items-center gap-3 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium transition hover:border-stone-500 has-[:checked]:border-stone-950 has-[:checked]:bg-stone-950 has-[:checked]:text-white has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-stone-950/15 dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-white/40 dark:has-[:checked]:border-white dark:has-[:checked]:bg-white dark:has-[:checked]:text-black";
+  "group flex cursor-pointer items-center gap-3 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium transition hover:border-stone-500 has-[:checked]:border-[var(--b)] has-[:checked]:bg-[var(--b)] has-[:checked]:text-white has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[color-mix(in_srgb,var(--b)_25%,transparent)] dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-white/40";
 const dot =
-  "grid size-5 shrink-0 place-content-center rounded-full border border-stone-300 transition group-has-[:checked]:border-transparent group-has-[:checked]:bg-white dark:border-white/25 dark:group-has-[:checked]:bg-black";
+  "grid size-5 shrink-0 place-content-center rounded-full border border-stone-300 transition group-has-[:checked]:border-transparent group-has-[:checked]:bg-white dark:border-white/25";
 
 /** WhatsApp no formato (11) 91234-5678 enquanto a pessoa digita. */
 function formatPhone(raw: string) {
@@ -43,10 +43,10 @@ function answeredKeys(form: HTMLFormElement) {
   return done;
 }
 
-function Label({ q }: { q: SignupQuestion }) {
+function Label({ q, brand }: { q: SignupQuestion; brand: string }) {
   return (
     <span className="text-[15px] font-medium text-stone-900 dark:text-stone-100">
-      {q.label}
+      {withBrand(q.label, brand)}
       {!q.required && <span className="ml-1.5 text-xs font-normal text-stone-500">opcional</span>}
     </span>
   );
@@ -60,49 +60,16 @@ function Err({ msg }: { msg?: string | undefined }) {
   ) : null;
 }
 
-function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; error?: string | undefined; brands: SignupBrand[] }) {
+function Field({ q, value, error, brand }: { q: SignupQuestion; value: string; error?: string | undefined; brand: string }) {
   const [coupon, setCoupon] = useState(signupCouponPreview(value));
   const invalid = error ? true : undefined;
-
-  if (q.kind === "multi") {
-    const chosen = value.split(", ");
-    const color = new Map(brands.map((b) => [b.name, b.color]));
-    return (
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3">
-          <Label q={q} />
-        </legend>
-        <div className="grid gap-2.5 sm:grid-cols-3">
-          {q.options!.map((o) => (
-            <label
-              key={o}
-              style={{ "--c": color.get(o) ?? "#78716c" } as CSSProperties}
-              className="group relative flex cursor-pointer flex-col gap-6 overflow-hidden rounded-2xl border border-stone-300 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-lg has-[:checked]:border-[var(--c)] has-[:checked]:bg-[color-mix(in_srgb,var(--c)_10%,white)] has-[:checked]:shadow-lg has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[color-mix(in_srgb,var(--c)_30%,transparent)] dark:border-white/15 dark:bg-white/[0.04] dark:has-[:checked]:bg-[color-mix(in_srgb,var(--c)_22%,black)]"
-            >
-              <input type="checkbox" name={q.key} value={o} defaultChecked={chosen.includes(o)} className="peer sr-only" />
-              <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-[var(--c)] opacity-40 transition group-has-[:checked]:opacity-100" />
-              <span className="flex items-center justify-between">
-                <span className="size-3 rounded-full bg-[var(--c)] ring-4 ring-[color-mix(in_srgb,var(--c)_20%,transparent)]" />
-                <span className="grid size-6 place-content-center rounded-full border border-stone-300 transition group-has-[:checked]:border-transparent group-has-[:checked]:bg-[var(--c)] dark:border-white/25">
-                  <Check className="pop hidden size-3.5 text-white group-has-[:checked]:block" strokeWidth={3} />
-                </span>
-              </span>
-              <span className="text-lg font-semibold tracking-tight">{o}</span>
-            </label>
-          ))}
-        </div>
-        {q.hint && <span className="text-xs text-stone-500">{q.hint}</span>}
-        <Err msg={error} />
-      </fieldset>
-    );
-  }
 
   if (q.kind === "choice") {
     const short = q.options!.every((o) => o.length <= 4);
     return (
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-3">
-          <Label q={q} />
+          <Label q={q} brand={brand} />
         </legend>
         <div className={`grid gap-2 ${short ? "grid-cols-2" : "sm:grid-cols-2"}`}>
           {q.options!.map((o) => (
@@ -117,7 +84,7 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
                 className="sr-only"
               />
               <span className={dot}>
-                <Check className="pop hidden size-3 text-stone-950 group-has-[:checked]:block dark:text-white" strokeWidth={3.5} />
+                <Check className="pop hidden size-3 text-[var(--b)] group-has-[:checked]:block" strokeWidth={3.5} />
               </span>
               {o}
             </label>
@@ -136,7 +103,7 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
   };
   return (
     <label className="flex flex-col gap-2">
-      <Label q={q} />
+      <Label q={q} brand={brand} />
       {q.kind === "long" ? (
         <textarea {...common} rows={4} maxLength={1500} className={`${input} resize-y leading-relaxed`} />
       ) : q.key === "instagram" ? (
@@ -163,7 +130,7 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
           />
           <span
             aria-live="polite"
-            className="flex h-12 items-center gap-2 self-start rounded-xl border border-dashed border-stone-400 bg-stone-950 px-4 font-mono text-sm font-semibold tracking-[0.2em] text-white sm:self-auto dark:border-white/30 dark:bg-white dark:text-black"
+            className="flex h-12 items-center gap-2 self-start rounded-xl border border-dashed border-white/40 bg-[var(--b)] px-4 font-mono text-sm font-semibold tracking-[0.2em] text-white sm:self-auto"
           >
             <Ticket className="size-4 opacity-60" />
             {coupon || "SEUCUPOM"}
@@ -187,8 +154,8 @@ function Field({ q, value, error, brands }: { q: SignupQuestion; value: string; 
   );
 }
 
-/** Tela de "inscrição recebida", com uma pequena explosão nas cores das marcas. */
-function Done({ brands }: { brands: SignupBrand[] }) {
+/** Tela de "inscrição recebida", com uma pequena explosão nas cores da marca. */
+function Done({ brand }: { brand: SignupBrand }) {
   return (
     <section className="rise relative flex flex-col items-center gap-3 overflow-hidden rounded-[2rem] bg-white px-6 py-14 text-center shadow-xl dark:bg-white/[0.04] dark:ring-1 dark:ring-white/10">
       <div className="relative grid size-20 place-content-center">
@@ -201,7 +168,7 @@ function Done({ brands }: { brands: SignupBrand[] }) {
               className="burst absolute left-1/2 top-1/2 size-2.5 rounded-full"
               style={
                 {
-                  background: brands[i % brands.length]?.color,
+                  background: i % 3 === 2 ? (brand.accent ?? brand.color) : brand.color,
                   "--bx": `${Math.cos(a) * 90}px`,
                   "--by": `${Math.sin(a) * 90}px`,
                   animationDelay: "150ms",
@@ -210,7 +177,7 @@ function Done({ brands }: { brands: SignupBrand[] }) {
             />
           );
         })}
-        <span className="pop grid size-20 place-content-center rounded-full bg-stone-950 text-white dark:bg-white dark:text-black">
+        <span className="pop grid size-20 place-content-center rounded-full bg-[var(--b)] text-white">
           <Check className="size-9" strokeWidth={3} />
         </span>
       </div>
@@ -220,15 +187,14 @@ function Done({ brands }: { brands: SignupBrand[] }) {
   );
 }
 
-/** Formulário de inscrição (D-SIGNUP, D-SIGNUPDESIGN, D-SIGNUPSTEPS): as mesmas perguntas do Google, em duas etapas.
- *  Um formulário só (as etapas só escondem blocos), então o envio continua igual. */
-export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; brands: SignupBrand[] }) {
+/** Formulário de inscrição de uma marca (D-SIGNUP, D-SIGNUPSTEPS, D-SIGNUPBRAND): as mesmas perguntas do Google, em duas
+ *  etapas, na cor da marca. Um formulário só (as etapas só escondem blocos), então o envio continua igual. */
+export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; brand: SignupBrand }) {
   const [state, action, pending] = useActionState(signupAction, {
     n: 0,
   } as SignupState);
   const ref = useRef<HTMLFormElement>(null);
   const [done, setDone] = useState<Set<string>>(new Set());
-  const [picked, setPicked] = useState<string[]>([]);
   const [step, setStep] = useState(0);
   const v = state.values ?? {};
   const last = SIGNUP_STEPS.length - 1;
@@ -249,7 +215,6 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
     const form = ref.current;
     if (!form) return;
     setDone(answeredKeys(form));
-    setPicked(new FormData(form).getAll("brands").map(String));
   };
 
   // Entrada dos blocos ao rolar a página.
@@ -279,16 +244,15 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
     });
   }, [state.n, state.errors, last]);
 
-  if (state.done) return <Done brands={brands} />;
+  if (state.done) return <Done brand={brand} />;
 
   const total = REQUIRED.length + 1;
   const count = REQUIRED.filter((k) => done.has(k)).length + (done.has("consent") ? 1 : 0);
   const pct = Math.round((count / total) * 100);
-  const colors = brands.filter((b) => picked.includes(b.name)).map((b) => b.color);
-  const fill = colors.length > 1 ? `linear-gradient(90deg, ${colors.join(", ")})` : colors[0];
 
   return (
     <form key={state.n} ref={ref} action={action} onInput={refresh} onChange={refresh} className="flex flex-col gap-5">
+      <input type="hidden" name="marca" value={brand.slug} />
       {hunterCode && <input type="hidden" name="h" value={hunterCode} />}
       {/* Campo que só robô preenche (fica fora da tela). */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
@@ -310,24 +274,21 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
                 className="flex min-w-0 items-center gap-2 text-left disabled:cursor-default"
               >
                 <span
-                  className={`grid size-7 shrink-0 place-content-center rounded-full text-xs font-semibold tabular-nums transition ${i <= step ? "bg-stone-950 text-white dark:bg-white dark:text-black" : "ring-1 ring-stone-300 text-stone-500 dark:ring-white/20"}`}
+                  className={`grid size-7 shrink-0 place-content-center rounded-full text-xs font-semibold tabular-nums transition ${i <= step ? "bg-[var(--b)] text-white" : "ring-1 ring-stone-300 text-stone-500 dark:ring-white/20"}`}
                 >
                   {i < step ? <Check className="pop size-3.5" strokeWidth={3} /> : i + 1}
                 </span>
                 <span className={`truncate text-sm ${i === step ? "font-semibold" : "hidden text-stone-500 sm:inline"}`}>{st.title}</span>
               </button>
-              {i < last && <span className={`h-px flex-1 transition ${i < step ? "bg-stone-950 dark:bg-white" : "bg-stone-300 dark:bg-white/15"}`} />}
+              {i < last && <span className={`h-px flex-1 transition ${i < step ? "bg-[var(--b)]" : "bg-stone-300 dark:bg-white/15"}`} />}
             </li>
           ))}
         </ol>
         <div className="flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-300/60 dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-stone-950 transition-[width] duration-500 ease-out dark:bg-white"
-              style={{
-                width: `${pct}%`,
-                ...(fill ? { background: fill } : {}),
-              }}
+              className="h-full rounded-full bg-[var(--b)] transition-[width] duration-500 ease-out"
+              style={{ width: `${pct}%` }}
             />
           </div>
           <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-600 dark:text-stone-300">
@@ -349,18 +310,18 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
               >
                 <header className="flex items-start gap-4">
                   <span
-                    className={`grid size-10 shrink-0 place-content-center rounded-full text-sm font-semibold tabular-nums transition ${complete ? "bg-stone-950 text-white dark:bg-white dark:text-black" : "ring-1 ring-stone-300 dark:ring-white/20"}`}
+                    className={`grid size-10 shrink-0 place-content-center rounded-full text-sm font-semibold tabular-nums transition ${complete ? "bg-[var(--b)] text-white" : "ring-1 ring-stone-300 dark:ring-white/20"}`}
                   >
                     {complete ? <Check key="ok" className="pop size-4" strokeWidth={3} /> : <Icon className="size-4" />}
                   </span>
                   <div>
-                    <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{s.title}</h2>
-                    <p className="mt-0.5 text-sm text-stone-500">{s.hint}</p>
+                    <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{withBrand(s.title, brand.name)}</h2>
+                    <p className="mt-0.5 text-sm text-stone-500">{withBrand(s.hint, brand.name)}</p>
                   </div>
                 </header>
                 {s.keys.map((k) => {
                   const q = BY_KEY.get(k)!;
-                  return <Field key={k} q={q} value={v[k] ?? ""} error={state.errors?.[k]} brands={brands} />;
+                  return <Field key={k} q={q} value={v[k] ?? ""} error={state.errors?.[k]} brand={brand.name} />;
                 })}
               </section>
             );
@@ -379,7 +340,7 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
               <button
                 type="button"
                 onClick={next}
-                className="group flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-stone-950 text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] dark:bg-white dark:text-black"
+                className="group flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--b)] text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99]"
               >
                 Continuar <ArrowRight className="size-5 transition group-hover:translate-x-1" />
               </button>
@@ -395,10 +356,10 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
       >
         <label className="group flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
           <input type="checkbox" name="consent" value="sim" required defaultChecked={v.consent === "sim"} className="peer sr-only" />
-          <span className="mt-0.5 grid size-5 shrink-0 place-content-center rounded-md border border-stone-400 transition group-has-[:checked]:border-stone-950 group-has-[:checked]:bg-stone-950 group-has-[:focus-visible]:ring-4 group-has-[:focus-visible]:ring-stone-950/15 dark:border-white/30 dark:group-has-[:checked]:border-white dark:group-has-[:checked]:bg-white">
-            <Check className="pop hidden size-3.5 text-white group-has-[:checked]:block dark:text-black" strokeWidth={3.5} />
+          <span className="mt-0.5 grid size-5 shrink-0 place-content-center rounded-md border border-stone-400 transition group-has-[:checked]:border-[var(--b)] group-has-[:checked]:bg-[var(--b)] group-has-[:focus-visible]:ring-4 group-has-[:focus-visible]:ring-[color-mix(in_srgb,var(--b)_25%,transparent)] dark:border-white/30">
+            <Check className="pop hidden size-3.5 text-white group-has-[:checked]:block" strokeWidth={3.5} />
           </span>
-          <span>{SIGNUP_CONSENT_TEXT}</span>
+          <span>{signupConsentText(brand.name)}</span>
         </label>
         <Err msg={state.errors?.consent} />
         {state.errors?._form && (
@@ -421,13 +382,13 @@ export function SignupForm({ hunterCode, brands }: { hunterCode: string | null; 
           </button>
           <button
             disabled={pending}
-            className="group relative flex h-14 flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-stone-950 text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] disabled:opacity-60 dark:bg-white dark:text-black"
+            className="group relative flex h-14 flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-[var(--b)] text-base font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-[0.99] disabled:opacity-60"
           >
             <span
               aria-hidden
               className="sheen pointer-events-none absolute inset-0 opacity-30"
               style={{
-                backgroundImage: `linear-gradient(110deg, transparent 30%, ${(colors.length ? colors : brands.map((b) => b.color)).join(", ")}, transparent 70%)`,
+                backgroundImage: `linear-gradient(110deg, transparent 30%, ${brand.accent ?? "#ffffff"}, transparent 70%)`,
               }}
             />
             <span className="relative">{pending ? "Enviando…" : "Quero fazer parte"}</span>

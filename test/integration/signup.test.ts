@@ -26,18 +26,18 @@ describe("inscrição pelo formulário do sistema (D-SIGNUP, banco real)", () =>
     const { brand } = await seedBrand(prisma);
     const gestao = await userWith("GESTAO", brand.id);
     const hunter = await userWith("HUNTER", brand.id, "Bia Hunter");
-    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "bia" });
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: hunter.userId, code: "maria" });
 
     // Link do hunter: conta o clique e abre o formulário com o código.
-    const target = await resolveHunterLink(prisma, brand.slug, "inscricao", "BIA");
-    expect(target).toMatchObject({ url: "/inscricao?h=bia", click: { form: "inscricao" } });
+    const target = await resolveHunterLink(prisma, brand.slug, "inscricao", "MARIA");
+    expect(target).toMatchObject({ url: `/inscricao/${brand.slug}?h=maria`, click: { form: "inscricao" } });
     await recordHunterClick(prisma, target!.click!, { ip: "9.9.9.9", userAgent: "x" });
-    expect(await resolveHunterLink(prisma, brand.slug, "inscricao", "ninguem")).toEqual({ url: "/inscricao", click: null });
+    expect(await resolveHunterLink(prisma, brand.slug, "inscricao", "ninguem")).toEqual({ url: `/inscricao/${brand.slug}`, click: null });
 
     const now = new Date("2026-10-10T15:00:00Z");
-    expect(await submitSignup(prisma, { ...base(brand.slug, "Maria@Example.com", "1.1.1.1"), hunterCode: "bia" }, now)).toEqual({ ok: true });
+    expect(await submitSignup(prisma, { ...base(brand.slug, "Maria@Example.com", "1.1.1.1"), hunterCode: "maria" }, now)).toEqual({ ok: true });
     const a = await prisma.creatorApplication.findFirstOrThrow({ where: { brandId: brand.id, source: "site_form" } });
-    expect(a).toMatchObject({ status: "NEW", fullName: "Maria Exemplo", email: "maria@example.com", hunterCode: "bia", suggestedCoupon: "MARIA", consentAt: now });
+    expect(a).toMatchObject({ status: "NEW", fullName: "Maria Exemplo", email: "maria@example.com", hunterCode: "maria", suggestedCoupon: "MARIA", consentAt: now });
     expect(a.hunterLinkId).not.toBeNull();
     expect(a.ipHash).toMatch(/^[0-9a-f]{32}$/);
     expect(JSON.stringify(a.raw)).not.toContain("1.1.1.1");
@@ -69,33 +69,16 @@ describe("inscrição pelo formulário do sistema (D-SIGNUP, banco real)", () =>
     if (link) await expectDbError(prisma.hunterClick.create({ data: { brandId: link.brandId, hunterLinkId: link.id, form: "outro" } }), /HunterClick_form/);
   });
 
-  it("uma candidatura em cada marca escolhida que está no sistema; sem nenhuma, fica na marca do endereço", async () => {
-    const { brand } = await seedBrand(prisma);
-    // Marcas reais da inscrição (escolhidas pelo nome); arquivadas no fim para não mexer nos outros testes.
-    const [bk, vf] = await Promise.all(
-      ["botanika", "vermefree"].map((slug) => prisma.brand.upsert({ where: { slug }, update: { archivedAt: null }, create: { slug, name: slug } })),
-    );
-    try {
-      const now = new Date("2026-10-11T15:00:00Z");
-      const both = { ...base(brand.slug, "duas@x.com", "6.6.6.6"), values: { ...values("duas@x.com"), brands: "Botanika, VermeFree, Revita Derma" } };
-      expect(await submitSignup(prisma, both, now)).toEqual({ ok: true });
-      for (const b of [bk!, vf!]) {
-        const a = await prisma.creatorApplication.findFirstOrThrow({ where: { brandId: b.id, email: "duas@x.com" } });
-        expect(a).toMatchObject({ status: "NEW", brandsWanted: "Botanika, VermeFree, Revita Derma" });
-        expect(JSON.stringify(a.raw)).toContain("Alliance");
-      }
-      // Revita Derma ainda não está no sistema e a marca do endereço não foi escolhida: nada nelas.
-      expect(await prisma.creatorApplication.count({ where: { brandId: brand.id, email: "duas@x.com" } })).toBe(0);
-      // Reenvio no mesmo dia não duplica em nenhuma marca.
-      expect(await submitSignup(prisma, both, now)).toEqual({ ok: true });
-      expect(await prisma.creatorApplication.count({ where: { email: "duas@x.com" } })).toBe(2);
-
-      // Só marcas que não estão no sistema: fica na marca do endereço.
-      const revita = { ...base(brand.slug, "revita@x.com", "7.7.7.7"), values: { ...values("revita@x.com"), brands: "Revita Derma" } };
-      expect(await submitSignup(prisma, revita, now)).toEqual({ ok: true });
-      expect(await prisma.creatorApplication.count({ where: { brandId: brand.id, email: "revita@x.com" } })).toBe(1);
-    } finally {
-      await prisma.brand.updateMany({ where: { id: { in: [bk!.id, vf!.id] } }, data: { archivedAt: new Date() } });
-    }
+  it("D-SIGNUPBRAND: a candidatura fica só na marca do formulário, com ela como marca escolhida", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const now = new Date("2026-10-11T15:00:00Z");
+    // O que vier em "brands" é ignorado: vale a marca do endereço.
+    const sent = { ...base(a.brand.slug, "uma@x.com", "6.6.6.6"), values: { ...values("uma@x.com"), brands: "Botanika, VermeFree" } };
+    expect(await submitSignup(prisma, sent, now)).toEqual({ ok: true });
+    const app = await prisma.creatorApplication.findFirstOrThrow({ where: { email: "uma@x.com" } });
+    expect(app).toMatchObject({ brandId: a.brand.id, brandsWanted: a.brand.name });
+    expect(JSON.stringify(app.raw)).toContain(`Alliance e a ${a.brand.name}`);
+    expect(await prisma.creatorApplication.count({ where: { brandId: b.brand.id, email: "uma@x.com" } })).toBe(0);
   });
 });

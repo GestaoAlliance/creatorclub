@@ -1,36 +1,24 @@
-import { BadgeDollarSign, Gift, LayoutDashboard, Ticket } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
-import { normalizeHunterCode, SIGNUP_BRANDS, signupBrandSlug } from "@/domain";
+import { normalizeHunterCode } from "@/domain";
 import { db } from "@/lib/db";
-import { SignupForm, type SignupBrand } from "./form";
+import { signupLinksFor } from "@/lib/onboarding/hunters";
+import { PerksAndSteps, signupBrands } from "./hero";
 
 export const dynamic = "force-dynamic";
 
-/** Cor de cada marca da inscrição, lida do banco (D-BRANDCOLOR); sem banco, um cinza neutro. */
-async function brandColors(): Promise<SignupBrand[]> {
-  const slugs = SIGNUP_BRANDS.map(signupBrandSlug);
-  const rows = await db()
-    .brand.findMany({ where: { slug: { in: slugs } }, select: { slug: true, primaryColor: true } })
-    .catch(() => []);
-  const color = new Map(rows.map((r) => [r.slug, r.primaryColor]));
-  return SIGNUP_BRANDS.map((name) => ({ name, color: color.get(signupBrandSlug(name)) ?? "#78716c" }));
-}
-
-const PERKS = [
-  [BadgeDollarSign, "Comissão em cada venda", "Toda compra feita com o seu cupom vira dinheiro para você."],
-  [Ticket, "Cupom com o seu nome", "Um código exclusivo, com desconto para quem te acompanha."],
-  [Gift, "Produtos em casa", "Você recebe os produtos para usar e mostrar de verdade."],
-  [LayoutDashboard, "Seu portal", "Vendas, saldo e saque num lugar só, todo mês."],
-] as const;
-
-const STEPS = ["Inscreva-se em 2 passos", "A equipe chama você no WhatsApp", "Receba seu cupom e comece a ganhar"] as const;
-
-// Inscrição pública (D-SIGNUP, D-SIGNUPDESIGN): base preto e branco da Alliance com detalhes na cor de cada marca.
-// Vira candidata em /admin/candidatas. O link do hunter (/i/[codigo]) traz ?h=código.
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ h?: string }> }) {
+// Inscrição (D-SIGNUPBRAND): um formulário por marca. Aqui a pessoa escolhe UMA marca e vai para o formulário dela.
+// Código de hunter de uma marca só: vai direto ao formulário daquela marca.
+export default async function SignupChooserPage({ searchParams }: { searchParams: Promise<{ h?: string }> }) {
   const { h } = await searchParams;
   const code = normalizeHunterCode(typeof h === "string" ? h : "") || null;
-  const brands = await brandColors();
+  const links = code ? await signupLinksFor(db(), code).catch(() => []) : [];
+  if (links.length === 1) redirect(`/inscricao/${links[0]!.slug}?h=${encodeURIComponent(links[0]!.code)}`);
+  const brands = await signupBrands();
+  const only = links.length ? new Set(links.map((l) => l.slug)) : null;
+  const shown = only ? brands.filter((b) => only.has(b.slug)) : brands;
   return (
     <div className="min-h-screen bg-stone-100 px-3 py-3 md:px-6 md:py-6 dark:bg-black">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
@@ -56,41 +44,34 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             <span className="block text-white/45">Comece pelo seu cupom.</span>
           </h1>
           <p className="rise mt-5 max-w-lg text-[15px] leading-relaxed text-white/70 [animation-delay:160ms]">
-            Divulgue {brands.map((b) => b.name).join(", ").replace(/, ([^,]*)$/, " e $1")} com um cupom só seu. Quem te segue ganha desconto, você
-            ganha comissão em cada venda e acompanha tudo no seu portal.
+            Escolha a marca que você quer divulgar. Quem te segue ganha desconto, você ganha comissão em cada venda e acompanha tudo no
+            seu portal.
           </p>
-          <ul className="rise mt-6 flex flex-wrap gap-2 [animation-delay:240ms]">
-            {brands.map((b) => (
-              <li key={b.name} className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-sm backdrop-blur">
-                <span className="size-2.5 rounded-full ring-2 ring-white/20" style={{ background: b.color }} />
-                {b.name}
-              </li>
-            ))}
-          </ul>
-          <ul className="rise mt-10 grid gap-3 [animation-delay:320ms] sm:grid-cols-2">
-            {PERKS.map(([Icon, title, text]) => (
-              <li key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
-                <span className="grid size-10 shrink-0 place-content-center rounded-xl bg-white text-black">
-                  <Icon className="size-5" />
-                </span>
-                <span>
-                  <span className="block font-semibold">{title}</span>
-                  <span className="mt-0.5 block text-sm leading-snug text-white/60">{text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <ol className="rise mt-6 flex flex-col gap-2 text-sm text-white/70 [animation-delay:400ms] sm:flex-row sm:items-center sm:gap-3">
-            {STEPS.map((t, i) => (
-              <li key={t} className="flex items-center gap-2 sm:gap-3">
-                <span className="grid size-6 shrink-0 place-content-center rounded-full bg-white/10 text-xs font-semibold tabular-nums text-white">{i + 1}</span>
-                {t}
-                {i < STEPS.length - 1 && <span aria-hidden className="hidden h-px w-6 bg-white/20 sm:block" />}
-              </li>
-            ))}
-          </ol>
+          <PerksAndSteps />
         </header>
-        <SignupForm hunterCode={code} brands={brands} />
+
+        <section className="rise flex flex-col gap-4 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-stone-200 md:p-9 dark:bg-white/[0.03] dark:ring-white/10">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight md:text-2xl">Com qual marca você quer crescer?</h2>
+            <p className="mt-0.5 text-sm text-stone-500">Cada marca tem o seu formulário. Escolha uma para começar.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {shown.map((b) => (
+              <Link
+                key={b.slug}
+                href={code ? `/inscricao/${b.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${b.slug}`}
+                style={{ background: `linear-gradient(140deg, ${b.color}, color-mix(in srgb, ${b.color} 55%, black))` }}
+                className="group flex min-h-36 flex-col justify-between rounded-3xl p-5 text-white shadow-md transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">Creator Club</span>
+                <span className="flex items-end justify-between gap-2">
+                  <span className="text-2xl font-semibold tracking-tight">{b.name}</span>
+                  <ArrowRight className="size-5 shrink-0 transition group-hover:translate-x-1" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
         <p className="pb-6 text-center text-xs text-stone-500">
           <span className="font-bold tracking-[0.3em] text-stone-700 dark:text-stone-300">ALLIANCE</span> · Creator Club
         </p>

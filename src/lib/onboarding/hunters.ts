@@ -99,6 +99,14 @@ export async function createHunterLink(prisma: PrismaClient, actor: Actor | null
   if (!isValidHunterCode(code)) throw new HunterError("O código precisa ter de 2 a 20 letras ou números.");
   const phone = parsePhone(input.phone);
   await assertHunter(prisma, input.brandId, input.userId);
+  // D-SIGNUPBRAND: cada hunter representa uma marca só, e o código é único entre as marcas (o link curto /i/código
+  // não diz a marca).
+  const other = await prisma.hunterLink.findFirst({
+    where: { OR: [{ userId: input.userId }, { code }], brandId: { not: input.brandId } },
+    select: { userId: true, brand: { select: { name: true } } },
+  });
+  if (other?.userId === input.userId) throw new HunterError(`Esta pessoa já é hunter da ${other.brand.name}. Cada hunter representa uma marca só.`);
+  if (other) throw new HunterError("Este código já é de outro hunter (ou o hunter já tem link).");
   try {
     const link = await prisma.hunterLink.create({ data: { brandId: input.brandId, userId: input.userId, code } });
     if (phone) await prisma.user.update({ where: { id: input.userId }, data: { phone } });
@@ -142,6 +150,28 @@ export async function setFormLink(prisma: PrismaClient, actor: Actor | null, inp
   });
 }
 
+type LinkWithHunter = { id: string; brandId: string; user: { disabledAt: Date | null; roleGrants: { role: string; brandId: string | null }[] } };
+const HUNTER_OF_LINK = { id: true, brandId: true, user: { select: { disabledAt: true, roleGrants: { select: { role: true, brandId: true } } } } } as const;
+
+/** O link só vale enquanto a pessoa é hunter daquela marca (removida da equipe ou sem o papel: o link não marca mais ninguém). */
+export function activeHunterLink(l: LinkWithHunter | null): boolean {
+  return !!l && !l.user.disabledAt && l.user.roleGrants.some((g) => g.role === "HUNTER" && (g.brandId === null || g.brandId === l.brandId));
+}
+
+/**
+ * Link curto do hunter (/i/código, D-SIGNUPBRAND): as marcas onde o código é de um hunter ativo, cada uma com o
+ * formulário dela. Normalmente uma só; nenhuma = código desconhecido (abre a escolha de marca, sem contar clique).
+ */
+export async function signupLinksFor(prisma: PrismaClient, rawCode: string) {
+  const code = normalizeHunterCode(decodeURIComponent(rawCode));
+  if (!code) return [];
+  const links = await prisma.hunterLink.findMany({
+    where: { code, brand: { archivedAt: null } },
+    select: { ...HUNTER_OF_LINK, brand: { select: { slug: true } } },
+  });
+  return links.filter(activeHunterLink).map((l) => ({ code, slug: l.brand.slug, click: { brandId: l.brandId, hunterLinkId: l.id, form: "inscricao" } }));
+}
+
 /** Destino do link do hunter. Código desconhecido: abre o formulário sem código (o link nunca quebra), sem contar clique. */
 export async function resolveHunterLink(prisma: PrismaClient, brandSlug: string, form: string, rawCode: string) {
   if (form !== "inscricao" && !isHunterForm(form)) return null;
@@ -150,16 +180,18 @@ export async function resolveHunterLink(prisma: PrismaClient, brandSlug: string,
   if (form === "inscricao") {
     // D-SIGNUP: formulário do próprio sistema; o código vai no endereço e chega marcado na candidata.
     const code = normalizeHunterCode(decodeURIComponent(rawCode));
-    const link = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: { id: true } }) : null;
+    const found = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: HUNTER_OF_LINK }) : null;
+    const link = activeHunterLink(found) ? found : null;
     return {
-      url: link ? `/inscricao?h=${encodeURIComponent(code)}` : "/inscricao",
+      url: link ? `/inscricao/${brand.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${brand.slug}`,
       click: link ? { brandId: brand.id, hunterLinkId: link.id, form } : null,
     };
   }
   const template = await prisma.formLink.findUnique({ where: { brandId_form: { brandId: brand.id, form } }, select: { urlTemplate: true } });
   if (!template) return null;
   const code = normalizeHunterCode(decodeURIComponent(rawCode));
-  const link = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: { id: true } }) : null;
+  const found = code ? await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId: brand.id, code } }, select: HUNTER_OF_LINK }) : null;
+  const link = activeHunterLink(found) ? found : null;
   return {
     url: formUrlFor(template.urlTemplate, link ? code : null),
     click: link ? { brandId: brand.id, hunterLinkId: link.id, form } : null,
@@ -181,8 +213,8 @@ export async function recordHunterClick(
 export async function hunterLinkIdFor(prisma: PrismaClient, brandId: string, rawCode: string | null): Promise<string | null> {
   const code = normalizeHunterCode(rawCode);
   if (!code) return null;
-  const link = await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId, code } }, select: { id: true } });
-  return link?.id ?? null;
+  const link = await prisma.hunterLink.findUnique({ where: { brandId_code: { brandId, code } }, select: HUNTER_OF_LINK });
+  return activeHunterLink(link) ? link!.id : null;
 }
 
 /**
