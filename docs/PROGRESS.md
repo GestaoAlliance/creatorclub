@@ -239,6 +239,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-126 — 2026-10-15 — Mensagem de aprovação da Ana, sem mensagem de recusa (U1)
+- **Validado em produção:** contrato pelo Autentique da Botanika assinado de ponta a ponta (teste do responsável com a
+  creator de teste da Ana, 2026-10-15): assinatura reconhecida, cupom e kit de boas-vindas liberados.
+- **Feito (pedidos da Ana):** mensagem de WhatsApp de aprovada com contrato no Autentique trocada pelo texto da Ana
+  (marca, tipo, nome e e-mail trocados sozinhos; frase do propósito e 💜 só na Botanika até virem as das outras
+  marcas); recusa sem mensagem de WhatsApp; fim da inscrição: "caso você seja aprovado(a), te enviaremos um WhatsApp".
+- **Próximo (já combinado):** formulário por marca com a cor da marca, link geral vira escolha de marca, um hunter por
+  marca, perguntas com o nome da marca.
+- **Verificado:** teste unitário da mensagem. `npm test`, `npm run typecheck`, `npm run build` passando.
+
 ### CP-125 — 2026-10-14 — Isolamento entre marcas para a equipe (U1)
 - **Decidido:** D-BRANDISOLATION (pedido do responsável).
 - **Feito:** auditoria de todas as telas da equipe, ações, rotas de NF e recibo e da escolha de marca (nenhum vazamento

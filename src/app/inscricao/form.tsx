@@ -215,7 +215,7 @@ function Done({ brands }: { brands: SignupBrand[] }) {
         </span>
       </div>
       <h2 className="mt-4 text-3xl font-semibold tracking-tight">Inscrição recebida!</h2>
-      <p className="max-w-sm text-stone-600 dark:text-stone-400">Agora é com a gente: a equipe vai analisar o seu perfil e chamar você no WhatsApp. Enquanto isso, já vai pensando no seu primeiro post.</p>
+      <p className="max-w-sm text-stone-600 dark:text-stone-400">Agora é com a gente: a equipe vai analisar o seu perfil e, caso você seja aprovado(a), te enviaremos um WhatsApp.</p>
     </section>
   );
 }
