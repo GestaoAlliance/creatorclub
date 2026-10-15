@@ -27,21 +27,25 @@ export function welcomeMessage(p: { name: string; brand: string; coupon: string;
   ].join("\n\n");
 }
 
-/** Aprovada com contrato pelo Autentique (D-AUTENTIQUE): o contrato foi para o e-mail; o cupom vem depois da assinatura. */
-export function contractSentMessage(p: { name: string; brand: string; email: string }): string {
-  return [
-    `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada!`,
-    `O contrato da parceria foi enviado para o seu e-mail (${p.email}) pelo Autentique. Confira os seus dados com atenção e assine por lá.`,
-    "Assim que estiver assinado, a gente segue com o seu cupom, o acesso ao portal e o envio dos produtos.",
-    "Qualquer dúvida, é só chamar por aqui.",
-  ].join("\n\n");
-}
+/** Como cada tipo aparece na mensagem de aprovação ("sua inscrição para ser influencer da Botanika"). */
+const APPROVAL_ROLE: Record<string, string> = { INFLUENCER: "influencer", PRESCRITOR: "prescritor(a)", UGC: "creator UGC" };
 
-/** Resposta gentil depois de recusar. */
-export function rejectionMessage(p: { name: string; brand: string }): string {
+/** Frase do propósito de cada marca, ao fim da mensagem de aprovação (texto da Ana). Marca sem frase: sem o parágrafo. */
+const BRAND_PURPOSE: Record<string, string> = {
+  Botanika: "Seja muito bem-vinda à família Botanika! 💜\n\nNascemos com o propósito de cuidar da saúde das pessoas, e agora você faz parte dessa missão!",
+};
+
+/**
+ * Aprovada com contrato pelo Autentique (D-AUTENTIQUE): o contrato foi para o e-mail; o cupom vem depois da assinatura.
+ * Texto da Ana (2026-10-15), o mesmo para todas as marcas, trocando a marca, o tipo, o nome e o e-mail.
+ */
+export function contractSentMessage(p: { name: string; brand: string; email: string; category: string }): string {
   return [
-    `Oi, ${firstName(p.name)}! Obrigada pelo interesse no Creator Club da ${p.brand}.`,
-    "Neste momento não vamos seguir com a sua inscrição, mas agradecemos muito o carinho e guardamos o seu contato para próximas oportunidades.",
-    "Um abraço!",
+    `Oi, ${firstName(p.name)}! Tudo bem? Sou a Ana, da ${p.brand}!`,
+    `Temos uma notícia maravilhosa: sua inscrição para ser ${APPROVAL_ROLE[p.category] ?? "creator"} da ${p.brand} foi aprovada! 🎉 Estamos muito felizes em ter você com a gente!`,
+    `Já enviamos o contrato da nossa parceria para o seu e-mail (${p.email}), pelo Autentique. É só conferir seus dados e assinar!`,
+    "Assim que estiver assinado, vamos preparar seu cupom exclusivo, liberar seu acesso ao portal e organizar o envio do produto.",
+    BRAND_PURPOSE[p.brand] ?? `Seja muito bem-vinda à família ${p.brand}!`,
+    "Que seja o início de uma parceria incrível! ✨",
   ].join("\n\n");
 }

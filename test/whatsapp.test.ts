@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rejectionMessage, welcomeMessage, whatsappLink } from "@/domain";
+import { contractSentMessage, welcomeMessage, whatsappLink } from "@/domain";
 
 describe("mensagens prontas de WhatsApp (F3)", () => {
   it("link wa.me: número brasileiro com ou sem 55; sem número utilizável, nada", () => {
@@ -10,15 +10,25 @@ describe("mensagens prontas de WhatsApp (F3)", () => {
     expect(whatsappLink(null, "x")).toBeNull();
   });
 
-  it("boas-vindas com cupom, desconto e convite; resposta de recusa gentil", () => {
+  it("aprovada com contrato no Autentique: texto da Ana, com marca, tipo, nome e e-mail; propósito só onde existe", () => {
+    const b = contractSentMessage({ name: "Vitória Souza", brand: "Botanika", email: "vitoria@x.com", category: "INFLUENCER" });
+    expect(b).toContain("Oi, Vitória! Tudo bem? Sou a Ana, da Botanika!");
+    expect(b).toContain("sua inscrição para ser influencer da Botanika foi aprovada! 🎉");
+    expect(b).toContain("para o seu e-mail (vitoria@x.com), pelo Autentique");
+    expect(b).toContain("Nascemos com o propósito de cuidar da saúde das pessoas");
+    expect(b.endsWith("Que seja o início de uma parceria incrível! ✨")).toBe(true);
+    const v = contractSentMessage({ name: "Ana", brand: "VermeFree", email: "a@x.com", category: "PRESCRITOR" });
+    expect(v).toContain("ser prescritor(a) da VermeFree");
+    expect(v).toContain("Seja muito bem-vinda à família VermeFree!");
+    expect(v).not.toContain("Nascemos");
+  });
+
+  it("boas-vindas com cupom, desconto e convite", () => {
     const w = welcomeMessage({ name: "  Maria Exemplo ", brand: "Botanika", coupon: "MARIA", discountBps: 750, inviteLink: "https://x/convite/abc" });
     expect(w).toContain("Oi, Maria!");
     expect(w).toContain("*MARIA*");
     expect(w).toContain("7,5% de desconto");
     expect(w).toContain("https://x/convite/abc");
     expect(welcomeMessage({ name: "Ana", brand: "Botanika", coupon: "ANA", discountBps: 500, inviteLink: null })).not.toContain("convite");
-    const r = rejectionMessage({ name: "Ana Souza", brand: "Botanika" });
-    expect(r).toContain("Oi, Ana!");
-    expect(r).toContain("não vamos seguir");
   });
 });

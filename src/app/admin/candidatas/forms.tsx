@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { contractSentMessage, rejectionMessage, welcomeMessage, whatsappLink } from "@/domain";
+import { contractSentMessage, welcomeMessage, whatsappLink } from "@/domain";
 import { approveAction, rejectAction } from "./actions";
 
 const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
@@ -73,7 +73,7 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
           {a.sent ? (
             <>
               <p>Contrato enviado pelo Autentique para <strong>{a.email}</strong>{a.sandbox ? " (modo teste: não vale como contrato)" : ""}. O sistema confere a assinatura a cada 5 minutos.</p>
-              <WhatsAppButton phone={p.phone} label="Abrir WhatsApp: aprovada, contrato no e-mail" text={contractSentMessage({ name: p.name, brand: p.brand, email: a.email })} />
+              <WhatsAppButton phone={p.phone} label="Abrir WhatsApp: aprovada, contrato no e-mail" text={contractSentMessage({ name: p.name, brand: p.brand, email: a.email, category })} />
             </>
           ) : (
             <p className="text-red-700 dark:text-red-400">O contrato não foi enviado: {a.error} Reenvie pela ficha.</p>
@@ -159,8 +159,8 @@ function RejectForm(p: Person & { onDone: () => void }) {
   if (state?.ok)
     return (
       <Done>
+        {/* Pedido da Ana (2026-10-15): quem é recusada não recebe mensagem. */}
         <p>{p.name}: candidata recusada.</p>
-        <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com a resposta" text={rejectionMessage({ name: p.name, brand: p.brand })} />
       </Done>
     );
   return (
