@@ -131,8 +131,11 @@ export default async function SyncPage() {
               return (
                 <>
                   <p className="text-sm">
-                    Desligada. O sistema vai só ler as planilhas, sem escrever nada nelas (a leitura automática vem na próxima etapa).
-                    {central?.lastPushAt && <> Última leitura pelo script antigo: <strong>{fmt(central.lastPushAt)}</strong>.</>}
+                    {central?.snapshot ? (
+                      <>Só leitura, a cada 15 minutos (nada é escrito na planilha). Última leitura: <strong>{fmt(central.lastPushAt)}</strong>.</>
+                    ) : (
+                      "Leitura ainda não ligada: o script de docs/sheets/central-leitura.gs roda na conta da marca, fora da planilha."
+                    )}
                   </p>
                   {st.issues.length > 0 && (
                     <>
