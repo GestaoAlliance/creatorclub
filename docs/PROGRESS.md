@@ -208,6 +208,13 @@ já existem antes de desenhar.
     remetente.
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
 
+### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETSYNC; uma por vez, nesta ordem)
+- [~] **S1** Central de creators da Botanika (abas CREATORS, PRESCRITORES e UGC), nos dois sentidos. Código pronto
+  (CP-128); falta o responsável colar o script na planilha e rodar "instalar".
+- [ ] **S2** Envios de pedidos (planilha ↔ Envios).
+- [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
+- [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
+
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
 - [x] **F2** Organizar as candidatas: busca, filtros, lista compacta e aviso de repetida (D-CANDLIST).
@@ -238,6 +245,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-128 — 2026-10-16 — Central de creators sincronizada com o sistema (S1)
+- **Decidido:** D-SHEETSYNC (respostas do responsável: todas as planilhas em uso; vale a última alteração, de onde
+  vier; nos dois sentidos; dinheiro entra a conferir).
+- **Feito:** migração `20261016120000_sheet_sync` (`FieldStamp` + gatilho que carimba a hora de cada campo
+  sincronizado de `CreatorAccount` e `Creator`; `SheetSync`; `SheetSyncIssue`); `src/domain/sheets.ts` (colunas da
+  Central, Sim/Não, datas, cidade/UF); `src/lib/sheets/central.ts` (entrada campo a campo pela hora, creator nova pela
+  aba, cupom vira aviso; volta com os dados do sistema e as creators novas); rota `/api/sheets/[marca]/[planilha]`
+  (`FORMS_SECRET`); script `docs/sheets/central-apps-script.gs`; cartão "Planilhas" na tela Sync com os avisos.
+- **Falta (responsável):** colar o script na Central da Botanika, pôr o segredo e rodar "instalar".
+- **Verificado:** integração nova (edição mais nova aplica, mais antiga que o sistema não; carimbo do gatilho; cupom e
+  CPF inválido viram aviso; linha nova vira creator; volta completa e por data) e unitário das colunas. `npm test`,
+  `npm run test:integration`, `npm run typecheck`, `npm run build` passando; migração × schema sem divergência.
 
 ### CP-127 — 2026-10-15 — Formulário de inscrição por marca e um hunter por marca (U1)
 - **Decidido:** D-SIGNUPBRAND (pedidos da Ana; respostas do responsável: link geral vira escolha de marca, travar um
