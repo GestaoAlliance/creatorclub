@@ -1,0 +1,73 @@
+# Desfazer o que a Central de creators mandou ao sistema (D-SHEETREADONLY). Só roda à mão.
+# Abre a cópia de segurança escolhida num banco temporário desta execução e manda os valores antigos ao app, que volta
+# só os campos cuja última alteração ainda é da planilha. Primeiro rodar com "aplicar = nao" (só conta) e conferir.
+# O log é público: o script imprime só contagens.
+name: Desfazer planilha
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run:
+        description: "Execução do 'Backup do banco' de antes da planilha (número da execução)"
+        required: true
+        default: "38864199548"
+      desde:
+        description: "Desfazer o que a planilha mudou a partir de (UTC)"
+        required: true
+        default: "2026-10-16T13:50:00Z"
+      aplicar:
+        description: "Aplicar de verdade?"
+        type: choice
+        options: [nao, sim]
+        default: nao
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  undo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Postgres 17 temporário
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common gnupg
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y > /dev/null
+          sudo apt-get install -y -qq postgresql-17 postgresql-client-17
+          sudo pg_ctlcluster 17 main start || true
+          port="$(pg_lsclusters -h | awk '$1==17 {print $3}')"
+          sudo -u postgres /usr/lib/postgresql/17/bin/psql -p "$port" -q -c "ALTER ROLE postgres PASSWORD 'postgres'" -c "CREATE DATABASE restore"
+          sudo -u postgres /usr/lib/postgresql/17/bin/psql -p "$port" -q -d restore -c "CREATE EXTENSION IF NOT EXISTS btree_gist"
+          echo "OLD_DATABASE_URL=postgresql://postgres:postgres@localhost:$port/restore" >> "$GITHUB_ENV"
+
+      - name: Abrir a cópia de segurança
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN: ${{ github.event.inputs.backup_run }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          gh run download "$BACKUP_RUN" --repo "$GITHUB_REPOSITORY" --dir copia
+          file="$(find copia -name '*.dump.gpg' | head -1)"
+          [ -n "$file" ] || { echo "::error::Cópia não encontrada nessa execução."; exit 1; }
+          gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 --decrypt --output banco.dump "$file" 3<<<"$BACKUP_PASSPHRASE"
+          /usr/lib/postgresql/17/bin/pg_restore --no-owner --no-privileges --schema=public -d "$OLD_DATABASE_URL" banco.dump > /dev/null 2>&1 || true
+          rm -f banco.dump
+          n="$(/usr/lib/postgresql/17/bin/psql "$OLD_DATABASE_URL" -tAc 'SELECT count(*) FROM "Creator"')"
+          [ "$n" -gt 0 ] || { echo "::error::A cópia não restaurou as creators."; exit 1; }
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+
+      - name: Desfazer
+        env:
+          APP_URL: https://creatorclub-six.vercel.app
+          FORMS_SECRET: ${{ secrets.FORMS_SECRET }}
+        run: |
+          [ -n "$FORMS_SECRET" ] || { echo "::error::Falta o segredo FORMS_SECRET no GitHub."; exit 1; }
+          npm ci --ignore-scripts --silent
+          node scripts/sheet-undo.mjs botanika "${{ github.event.inputs.desde }}" "${{ github.event.inputs.aplicar }}" | tee -a "$GITHUB_STEP_SUMMARY"
