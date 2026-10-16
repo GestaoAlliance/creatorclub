@@ -4,6 +4,7 @@ import { currentActor } from "@/lib/auth/current";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { syncHealth } from "@/lib/shopify/health";
+import { sheetSyncStatus } from "@/lib/sheets/central";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
@@ -24,6 +25,7 @@ export default async function SyncPage() {
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
   // A1 (D-ALLIANCE): só a loja da marca escolhida.
   const health = await syncHealth(db(), scopedActor(actor, (await staffContext(actor)).brand?.id));
+  const sheets = new Map(await Promise.all(health.map(async (h) => [h.brand.id, await sheetSyncStatus(db(), h.brand.id)] as const)));
   const autentique = new Map(
     (await db().brandIntegration.findMany({ where: { kind: "AUTENTIQUE", brandId: { in: health.map((h) => h.brand.id) } }, select: { brandId: true, status: true, externalId: true, scopes: true } })).map((r) => [r.brandId, r]),
   );
@@ -117,6 +119,37 @@ export default async function SyncPage() {
                     {on ? <>Conectado à conta <strong>{a?.externalId}</strong>{a?.scopes === "sandbox" ? " · modo teste" : ""}.</> : "Não conectado: a aprovação segue com a assinatura no portal."}
                   </p>
                   <AutentiqueForm brandId={h.brand.id} connected={on} sandbox={a?.scopes === "sandbox"} />
+                </>
+              );
+            })()}
+          </Card>
+
+          <Card title="Planilhas (Central de creators)">
+            {(() => {
+              const st = sheets.get(h.brand.id)!;
+              const central = st.syncs.find((x) => x.sheet === "central");
+              return (
+                <>
+                  <p className="text-sm">
+                    {central ? (
+                      <>Ligada. Última edição recebida da planilha: <strong>{fmt(central.lastPushAt)}</strong> · última volta para a planilha: <strong>{fmt(central.lastPullAt)}</strong>.</>
+                    ) : (
+                      "Ainda não ligada: cole o script de docs/sheets/central-apps-script.gs na planilha e rode \"instalar\"."
+                    )}
+                  </p>
+                  {st.issues.length > 0 && (
+                    <>
+                      <p className={ui.hint}>Avisos dos últimos 30 dias (o que não foi aplicado; resolva no sistema ou na planilha):</p>
+                      <ul className={ui.list}>
+                        {st.issues.map((i) => (
+                          <li key={i.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
+                            <span>{i.message}</span>
+                            <span className={ui.hint}>{i.tab}, linha {i.row} · {fmt(i.seenAt)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </>
               );
             })()}

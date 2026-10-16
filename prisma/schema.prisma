@@ -85,6 +85,8 @@ model Brand {
   hunterClicks       HunterClick[]
   formLinks          FormLink[]
   ugcVideos          UgcVideo[]
+  sheetSyncs         SheetSync[]
+  sheetSyncIssues    SheetSyncIssue[]
 }
 
 enum IntegrationKind {
@@ -1164,4 +1166,44 @@ model ContractRequest {
 
   @@index([brandId, status])
   @@index([creatorId])
+}
+
+/// D-SHEETSYNC: hora da última alteração de cada campo sincronizado com as planilhas (gatilho no banco).
+model FieldStamp {
+  entity    String
+  entityId  String
+  field     String
+  changedAt DateTime
+  source    String // SYSTEM | SHEET
+
+  @@id([entity, entityId, field])
+}
+
+/// D-SHEETSYNC: planilha ligada de cada marca (última entrada e saída).
+model SheetSync {
+  brandId    String
+  sheet      String // central | envios | pagamentos
+  lastPushAt DateTime?
+  lastPullAt DateTime?
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@id([brandId, sheet])
+}
+
+/// D-SHEETSYNC: linha da planilha que não deu para aplicar (a equipe resolve no sistema ou na planilha).
+model SheetSyncIssue {
+  id        String   @id @default(uuid())
+  brandId   String
+  sheet     String
+  tab       String
+  row       Int
+  message   String
+  seenAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, sheet, tab, row, message])
+  @@index([brandId, seenAt])
 }
