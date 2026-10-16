@@ -131,11 +131,8 @@ export default async function SyncPage() {
               return (
                 <>
                   <p className="text-sm">
-                    {central ? (
-                      <>Ligada. Última edição recebida da planilha: <strong>{fmt(central.lastPushAt)}</strong> · última volta para a planilha: <strong>{fmt(central.lastPullAt)}</strong>.</>
-                    ) : (
-                      "Ainda não ligada: cole o script de docs/sheets/central-apps-script.gs na planilha e rode \"instalar\"."
-                    )}
+                    Desligada. O sistema vai só ler as planilhas, sem escrever nada nelas (a leitura automática vem na próxima etapa).
+                    {central?.lastPushAt && <> Última leitura pelo script antigo: <strong>{fmt(central.lastPushAt)}</strong>.</>}
                   </p>
                   {st.issues.length > 0 && (
                     <>

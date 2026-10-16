@@ -208,10 +208,13 @@ já existem antes de desenhar.
     remetente.
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
 
-### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETSYNC; uma por vez, nesta ordem)
-- [~] **S1** Central de creators da Botanika (abas CREATORS, PRESCRITORES e UGC), nos dois sentidos. Código pronto
-  (CP-128); falta o responsável colar o script na planilha e rodar "instalar".
-- [ ] **S2** Envios de pedidos (planilha ↔ Envios).
+### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETREADONLY substitui D-SHEETSYNC; uma por vez, nesta ordem)
+- [~] **S0** Desfazer a primeira ligação da Central (CP-129): o responsável restaurou a planilha (versão de 15/10 15:00)
+  e apagou o script; falta pôr o segredo `FORMS_SECRET` no GitHub e rodar o workflow "Desfazer planilha"
+  (primeiro só conferência, depois aplicar com o OK do responsável).
+- [ ] **S1** Central de creators da Botanika lida pelo próprio sistema, só leitura (D-SHEETREADONLY). Falta o
+  responsável criar a conta de serviço do Google (`GOOGLE_SHEETS_KEY` na Vercel) e compartilhar a planilha como Leitor.
+- [ ] **S2** Envios de pedidos (planilha → Envios, só leitura).
 - [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
 
@@ -245,6 +248,26 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-129 — 2026-10-16 — Planilhas só leitura e desfazer a primeira ligação (S0)
+- **Aconteceu:** ao rodar "instalar" (CP-128), o script escreveu na Central (coluna ID CREATOR CLUB, CPF/CNPJ
+  formatados, a segunda coluna OBS da aba UGC por cima da primeira, "Vídeo entregue" apagado em CONTRATO ASS.) e
+  mandou a planilha inteira ao sistema como "editada agora", trocando dados mais novos do sistema. O responsável:
+  "não era pra ter editado nada nas planilhas... não podemos mudar nada no fluxo do povo".
+- **Decidido:** D-SHEETREADONLY (substitui D-SHEETSYNC): o sistema só lê as planilhas, pelo Google, sem script e sem
+  coluna nova; vale a edição mais recente (mudança detectada comparando com a leitura anterior); desfazer a ligação.
+- **Feito pelo responsável:** apagou os acionadores e o código do script; restaurou a Central na versão de 15/10 15:00
+  (a última antes do script; ninguém mais editou hoje).
+- **Feito:** rota do script (`/api/sheets/[marca]/[planilha]`) responde 410; `docs/sheets/central-apps-script.gs`
+  removido; `src/lib/sheets/undo.ts` + rota `/api/sheets/[marca]/central/desfazer` (`FORMS_SECRET`) voltam, campo a
+  campo, o valor da cópia de segurança onde a última alteração ainda é da planilha (o que a equipe mudou depois fica;
+  auditoria `sheet.undo`); workflow manual "Desfazer planilha" (`.github/workflows/sheet-undo.yml` +
+  `scripts/sheet-undo.mjs`) abre a cópia das 3h57 de hoje num banco temporário e manda os valores antigos; log só com
+  contagens. Cartão "Planilhas" da tela Sync diz que está desligada.
+- **Falta (responsável):** segredo `FORMS_SECRET` no GitHub (Settings → Secrets → Actions) e rodar o workflow.
+- **Verificado:** integração nova (conferência não muda nada; aplicar volta Pix, endereço, cidade, observação e
+  checklist; telefone mudado pela equipe depois fica; rodar de novo não volta nada). `npm test`,
+  `npm run test:integration`, `npm run typecheck`, `npm run build` passando.
 
 ### CP-128 — 2026-10-16 — Central de creators sincronizada com o sistema (S1)
 - **Decidido:** D-SHEETSYNC (respostas do responsável: todas as planilhas em uso; vale a última alteração, de onde
