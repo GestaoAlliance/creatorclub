@@ -209,11 +209,11 @@ já existem antes de desenhar.
 - [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
 
 ### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETREADONLY substitui D-SHEETSYNC; uma por vez, nesta ordem)
-- [~] **S0** Desfazer a primeira ligação da Central (CP-129): o responsável restaurou a planilha (versão de 15/10 15:00)
-  e apagou o script; falta pôr o segredo `FORMS_SECRET` no GitHub e rodar o workflow "Desfazer planilha"
-  (primeiro só conferência, depois aplicar com o OK do responsável).
-- [ ] **S1** Central de creators da Botanika lida pelo próprio sistema, só leitura (D-SHEETREADONLY). Falta o
-  responsável criar a conta de serviço do Google (`GOOGLE_SHEETS_KEY` na Vercel) e compartilhar a planilha como Leitor.
+- [x] **S0** Desfazer a primeira ligação da Central (CP-129, CP-130): planilha restaurada pelo responsável; no sistema
+  nada a voltar (nos 72 campos a planilha era mais nova que o sistema; as 9 creators criadas ficam, responsável).
+- [~] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY). Código pronto (CP-130);
+  falta o responsável colar `docs/sheets/central-leitura.gs` num projeto do Apps Script na conta da Botanika e rodar
+  "instalar".
 - [ ] **S2** Envios de pedidos (planilha → Envios, só leitura).
 - [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
@@ -248,6 +248,23 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-130 — 2026-10-16 — Central lida pelo sistema, só leitura (S1)
+- **S0 concluído:** a conferência do desfazer com a hora real da última edição da planilha (15/10 15h) deu 0 campos
+  a voltar: nos 72 campos a planilha era mais nova que o sistema. As 9 creators criadas pela planilha ficam
+  (responsável: "essas novas já têm que estar usando o creator club").
+- **Mudou:** a chave da conta de serviço do Google é bloqueada pela política da organização
+  (`iam.disableServiceAccountKeyCreation`); responsável escolheu o script separado: um projeto do Apps Script na conta
+  da Botanika, fora da planilha, que só lê (D-SHEETREADONLY atualizada).
+- **Feito:** migração `20261016180000_sheet_snapshot` (`SheetSync.snapshot`); `readCentral` em
+  `src/lib/sheets/central.ts` (primeira leitura só marca o ponto de partida; depois só a célula que mudou entra, pela
+  regra da edição mais recente; texto fora de Sim/Não no checklist é ignorado; linha sem creator no sistema vira aviso,
+  sem criar creator); rota `/api/sheets/[marca]/central/leitura` (`FORMS_SECRET`); script
+  `docs/sheets/central-leitura.gs` (só lê; título de coluna repetido vale só a primeira); cartão da tela Sync.
+- **Falta (responsável):** colar o script em script.google.com com a conta da Botanika, pôr o segredo e rodar "instalar".
+- **Verificado:** integração nova (ponto de partida; só o Pix mudado entra; telefone mudado pela equipe fica; "Vídeo
+  entregue" não apaga; linha sem creator vira aviso). `npm test`, `npm run test:integration`, `npm run typecheck`,
+  `npm run build` passando; migração × schema sem divergência.
 
 ### CP-129 — 2026-10-16 — Planilhas só leitura e desfazer a primeira ligação (S0)
 - **Aconteceu:** ao rodar "instalar" (CP-128), o script escreveu na Central (coluna ID CREATOR CLUB, CPF/CNPJ

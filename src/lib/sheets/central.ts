@@ -398,3 +398,59 @@ export async function sheetSyncStatus(prisma: PrismaClient, brandId: string, now
   ]);
   return { syncs, issues };
 }
+
+/** Linha lida da planilha (só leitura, D-SHEETREADONLY): valores pelo título da coluna, como aparecem na tela. */
+export type CentralReadRow = { tab: string; row: number; values: Record<string, unknown> };
+export type CentralReadResult = { rows: number; matched: number; unmatched: number; applied: number; baseline: boolean };
+
+const YES_NO: readonly CentralField[] = ["couponRegistered", "followsOnInstagram", "inGroup", "contractSigned", "tagged"];
+
+/**
+ * Lê a Central inteira (D-SHEETREADONLY): o sistema nunca escreve na planilha. A célula que mudou desde a leitura
+ * anterior conta como editada agora e entra se for mais nova que a última alteração do mesmo campo no sistema.
+ * A primeira leitura (e a primeira vez de cada creator) só registra o ponto de partida. Linha sem creator no sistema
+ * (CPF, e-mail ou cupom) vira aviso; texto fora de Sim/Não no checklist é ignorado.
+ */
+export async function readCentral(prisma: PrismaClient, slug: string, rows: CentralReadRow[], now = new Date()): Promise<CentralReadResult> {
+  const brandId = await brandOf(prisma, slug);
+  const sync = await prisma.sheetSync.findUnique({ where: { brandId_sheet: { brandId, sheet: SHEET } }, select: { snapshot: true } });
+  const before = (sync?.snapshot ?? null) as Record<string, Record<string, string>> | null;
+  const next: Record<string, Record<string, string>> = {};
+  const result: CentralReadResult = { rows: 0, matched: 0, unmatched: 0, applied: 0, baseline: !before };
+  for (const r of rows.slice(0, 2000)) {
+    const tab = centralTab(r.tab);
+    if (!tab || !Number.isInteger(r.row)) continue;
+    const f = byField(r.values ?? {});
+    delete f.id;
+    const name = sheetText(f.name, 120);
+    if (!name) continue;
+    result.rows++;
+    const id = await findCreator(prisma, brandId, f);
+    if (!id) {
+      result.unmatched++;
+      await issue(prisma, brandId, r.tab, r.row, `${name}: não achei a creator no sistema (CPF, e-mail ou cupom). A linha não foi lida.`, now);
+      continue;
+    }
+    result.matched++;
+    const cur: Record<string, string> = {};
+    for (const [k, v] of Object.entries(f) as [CentralField, unknown][]) if (!CENTRAL_OUT_ONLY.includes(k)) cur[k] = sheetText(v, 500) ?? "";
+    const prev = before?.[id];
+    next[id] = cur;
+    if (!prev) continue;
+    const edited = new Set<CentralField>();
+    for (const k of Object.keys(cur) as CentralField[]) {
+      if (cur[k] === (prev[k] ?? "")) continue;
+      if (YES_NO.includes(k) && cur[k] && parseYesNo(cur[k]) === null) continue;
+      edited.add(k);
+    }
+    if (!edited.size) continue;
+    const applied = await applyRow(prisma, brandId, id, r.tab, r.row, f, edited, now, false, now);
+    if (applied.length) result.applied++;
+  }
+  await prisma.sheetSync.upsert({
+    where: { brandId_sheet: { brandId, sheet: SHEET } },
+    create: { brandId, sheet: SHEET, lastPushAt: now, snapshot: next },
+    update: { lastPushAt: now, snapshot: next },
+  });
+  return result;
+}

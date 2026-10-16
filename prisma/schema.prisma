@@ -1185,6 +1185,8 @@ model SheetSync {
   sheet      String // central | envios | pagamentos
   lastPushAt DateTime?
   lastPullAt DateTime?
+  /// D-SHEETREADONLY: última leitura (creatorId → coluna → texto), para achar as células que mudaram.
+  snapshot   Json?
 
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
