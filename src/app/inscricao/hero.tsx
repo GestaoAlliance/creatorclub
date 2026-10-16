@@ -1,5 +1,5 @@
 import { BadgeDollarSign, Gift, LayoutDashboard, Ticket } from "lucide-react";
-import { SIGNUP_BRANDS, signupBrandSlug } from "@/domain";
+import { partnershipTerms, SIGNUP_BRANDS, signupBrandSlug, type PartnershipNumbers } from "@/domain";
 import { db } from "@/lib/db";
 import type { SignupBrand } from "./form";
 
@@ -24,6 +24,44 @@ export const PERKS = [
 ] as const;
 
 export const STEPS = ["Inscreva-se em 2 passos", "A equipe analisa o seu perfil", "Receba seu cupom e comece a ganhar"] as const;
+
+/** Números da parceria de uma marca: padrões da marca e o contrato mais recente de cada tipo (D-CONTRACT). */
+export async function partnershipNumbers(slug: string): Promise<PartnershipNumbers> {
+  const brand = await db()
+    .brand.findUnique({
+      where: { slug },
+      select: { defaultDiscountBps: true, defaultCommissionBps: true, contractTemplates: { orderBy: { createdAt: "desc" }, select: { documentKind: true, releaseMinCents: true, months: true } } },
+    })
+    .catch(() => null);
+  const latest = (kind: string) => brand?.contractTemplates.find((t) => t.documentKind === kind);
+  return {
+    discountBps: brand?.defaultDiscountBps ?? null,
+    commissionBps: brand?.defaultCommissionBps ?? null,
+    minInfluencerCents: latest("INFLUENCER")?.releaseMinCents ?? null,
+    minPrescritorCents: latest("PRESCRITOR")?.releaseMinCents ?? null,
+    months: latest("INFLUENCER")?.months ?? null,
+    ugcMonths: latest("UGC")?.months ?? null,
+  };
+}
+
+/** "Como funciona a parceria" no topo do formulário da marca. */
+export function PartnershipTerms({ numbers }: { numbers: PartnershipNumbers }) {
+  return (
+    <section className="rise mt-8 rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur [animation-delay:360ms]">
+      <h2 className="text-base font-semibold">Como funciona a parceria</h2>
+      <ol className="mt-3 flex flex-col gap-2.5 text-sm leading-snug text-white/80">
+        {partnershipTerms(numbers).map((t, i) => (
+          <li key={t.title} className="flex gap-3">
+            <span className="grid size-6 shrink-0 place-content-center rounded-full bg-white/15 text-xs font-semibold tabular-nums text-white">{i + 1}</span>
+            <span>
+              <strong className="font-semibold text-white">{t.title}:</strong> {t.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 /** Vantagens e passos, iguais na escolha de marca e no formulário de cada marca. */
 export function PerksAndSteps() {

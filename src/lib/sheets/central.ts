@@ -117,7 +117,7 @@ const CREATOR_SELECT = {
   shipments: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true, shippedAt: true, trackingCode: true, updatedAt: true } },
 } as const;
 
-async function brandOf(prisma: PrismaClient, slug: string) {
+export async function brandOf(prisma: PrismaClient, slug: string) {
   const brand = await prisma.brand.findUnique({ where: { slug: slug.toLowerCase() }, select: { id: true, archivedAt: true } });
   if (!brand || brand.archivedAt) throw new SheetError("Marca não encontrada.");
   return brand.id;
@@ -133,16 +133,16 @@ function byField(values: Record<string, unknown>): Partial<Record<CentralField, 
   return out;
 }
 
-async function issue(prisma: PrismaClient | Tx, brandId: string, tab: string, row: number, message: string, now: Date) {
+export async function issue(prisma: PrismaClient | Tx, brandId: string, tab: string, row: number, message: string, now: Date, sheet = SHEET) {
   await prisma.sheetSyncIssue.upsert({
-    where: { brandId_sheet_tab_row_message: { brandId, sheet: SHEET, tab, row, message } },
-    create: { brandId, sheet: SHEET, tab, row, message, seenAt: now },
+    where: { brandId_sheet_tab_row_message: { brandId, sheet, tab, row, message } },
+    create: { brandId, sheet, tab, row, message, seenAt: now },
     update: { seenAt: now },
   });
 }
 
 /** Creator da linha: pela coluna de ligação; sem ela, pelo CPF, e-mail ou cupom (nessa ordem). */
-async function findCreator(prisma: PrismaClient, brandId: string, f: Partial<Record<CentralField, unknown>>) {
+export async function findCreator(prisma: PrismaClient, brandId: string, f: Partial<Record<CentralField, unknown>>) {
   const id = sheetText(f.id, 64);
   if (id) {
     const c = await prisma.creator.findFirst({ where: { id, brandId }, select: { id: true } });

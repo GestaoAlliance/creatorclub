@@ -83,7 +83,37 @@ export function signupCouponPreview(raw: string): string {
 
 /** Aceite de uso dos dados, gravado com a resposta. */
 export const signupConsentText = (brand: string) =>
-  `Concordo que a Alliance e a ${brand} usem estes dados para analisar minha inscrição e, se eu for aprovada, para o meu cadastro no Creator Club.`;
+  `Concordo com o uso dos meus dados pessoais pela ${brand} para análise da minha inscrição e, caso seja aprovado(a), para elaboração do contrato de parceria e criação do meu acesso ao Creator Club, portal de influenciadores da ${brand}.`;
+
+/** Números da marca para "Como funciona a parceria" (padrões da marca e dos contratos; sem número, o texto não cita). */
+export type PartnershipNumbers = {
+  discountBps: number | null;
+  commissionBps: number | null;
+  minInfluencerCents: number | null;
+  minPrescritorCents: number | null;
+  months: number | null;
+  ugcMonths: number | null;
+};
+
+const pctText = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+const brl = (cents: number) => `R$ ${(cents / 100).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+
+/** "Como funciona a parceria" no topo da inscrição (texto aprovado pelo responsável e pela Ana em 2026-10-16). */
+export function partnershipTerms(n: PartnershipNumbers): { title: string; text: string }[] {
+  const min =
+    n.minInfluencerCents != null
+      ? `quando as suas vendas somam pelo menos ${brl(n.minInfluencerCents)}${n.minPrescritorCents != null && n.minPrescritorCents !== n.minInfluencerCents ? ` (prescritor: ${brl(n.minPrescritorCents)})` : ""}`
+      : "quando as suas vendas chegam ao mínimo do contrato";
+  const months = n.months != null ? `Contrato de ${n.months} meses${n.ugcMonths != null && n.ugcMonths !== n.months ? ` (UGC: ${n.ugcMonths} meses)` : ""}` : "Contrato";
+  return [
+    { title: "Cupom com o seu nome", text: n.discountBps != null ? `quem compra com ele ganha ${pctText(n.discountBps)} de desconto.` : "quem compra com ele ganha desconto." },
+    { title: n.commissionBps != null ? `Comissão de ${pctText(n.commissionBps)}` : "Comissão", text: "sobre o valor dos produtos de cada venda com o seu cupom." },
+    { title: "Fechamento todo dia 1", text: `a comissão do mês é liberada ${min}. Se não chegar, acumula para o mês seguinte.` },
+    { title: "Saque do dia 1 ao 10", text: "com nota fiscal do valor liberado; o pagamento sai até o dia 15." },
+    { title: "Produtos em casa", text: "kit de boas-vindas ao começar e produtos todo mês conforme as suas vendas." },
+    { title: months, text: "assinado online." },
+  ];
+}
 
 export type SignupResult = { ok: true; answers: Record<string, string> } | { ok: false; errors: Record<string, string> };
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { normalizeHunterCode } from "@/domain";
 import { SignupForm } from "../form";
-import { PerksAndSteps, signupBrands } from "../hero";
+import { PartnershipTerms, partnershipNumbers, PerksAndSteps, signupBrands } from "../hero";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ export default async function BrandSignupPage({ params, searchParams }: { params
   if (!brand) notFound();
   const code = normalizeHunterCode(typeof h === "string" ? h : "") || null;
   const accent = brand.accent ?? "#ffffff";
+  const numbers = await partnershipNumbers(brand.slug);
   return (
     <div style={{ "--b": brand.color } as CSSProperties} className="min-h-screen bg-[color-mix(in_srgb,var(--b)_6%,#f5f5f4)] px-3 py-3 md:px-6 md:py-6 dark:bg-black">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
@@ -47,6 +48,7 @@ export default async function BrandSignupPage({ params, searchParams }: { params
             no seu portal.
           </p>
           <PerksAndSteps />
+          <PartnershipTerms numbers={numbers} />
         </header>
         <SignupForm hunterCode={code} brand={brand} />
         <p className="pb-6 text-center text-xs text-stone-500">

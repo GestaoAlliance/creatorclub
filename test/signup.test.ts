@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
+import { partnershipTerms, SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -65,7 +65,9 @@ describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
     expect(label("collab")).toContain("perfil do Instagram da VermeFree");
     expect(signupBrandFor("revita-derma")).toBe("Revita Derma");
     expect(signupBrandFor("shoty")).toBeNull();
-    expect(signupConsentText("Botanika")).toContain("a Alliance e a Botanika usem");
+    expect(signupConsentText("Botanika")).toBe(
+      "Concordo com o uso dos meus dados pessoais pela Botanika para análise da minha inscrição e, caso seja aprovado(a), para elaboração do contrato de parceria e criação do meu acesso ao Creator Club, portal de influenciadores da Botanika.",
+    );
   });
 
   it("prévia do cupom: só letras, maiúsculas, até 8", () => {
@@ -98,5 +100,23 @@ describe("sugestão de cupom só com letras (D-SIGNUPCOUPON)", () => {
     expect(validateSignup({ ...full, coupon: "maria10" }, true)).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/só letras/) } });
     const ok = validateSignup({ ...full, coupon: "júlia" }, true);
     expect(ok.ok && Object.values(ok.answers)).toContain("JULIA");
+  });
+});
+
+describe("Como funciona a parceria (inscrição)", () => {
+  it("usa os números da marca e dos contratos; sem número, não cita", () => {
+    const t = partnershipTerms({ discountBps: 500, commissionBps: 1500, minInfluencerCents: 50_000, minPrescritorCents: 100_000, months: 6, ugcMonths: 3 });
+    expect(t.map((x) => `${x.title}: ${x.text}`)).toEqual([
+      "Cupom com o seu nome: quem compra com ele ganha 5% de desconto.",
+      "Comissão de 15%: sobre o valor dos produtos de cada venda com o seu cupom.",
+      "Fechamento todo dia 1: a comissão do mês é liberada quando as suas vendas somam pelo menos R$ 500 (prescritor: R$ 1.000). Se não chegar, acumula para o mês seguinte.",
+      "Saque do dia 1 ao 10: com nota fiscal do valor liberado; o pagamento sai até o dia 15.",
+      "Produtos em casa: kit de boas-vindas ao começar e produtos todo mês conforme as suas vendas.",
+      "Contrato de 6 meses (UGC: 3 meses): assinado online.",
+    ]);
+    const none = partnershipTerms({ discountBps: null, commissionBps: null, minInfluencerCents: null, minPrescritorCents: null, months: null, ugcMonths: null });
+    expect(none[0]!.text).toBe("quem compra com ele ganha desconto.");
+    expect(none[1]!.title).toBe("Comissão");
+    expect(none[2]!.text).toContain("mínimo do contrato");
   });
 });

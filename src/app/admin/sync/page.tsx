@@ -124,19 +124,25 @@ export default async function SyncPage() {
             })()}
           </Card>
 
-          <Card title="Planilhas (Central de creators)">
+          <Card title="Planilhas (só leitura)">
             {(() => {
               const st = sheets.get(h.brand.id)!;
-              const central = st.syncs.find((x) => x.sheet === "central");
+              const LABEL: Record<string, string> = { central: "Central de creators", envios: "Envios de pedidos" };
+              const read = st.syncs.filter((x) => x.snapshot);
               return (
                 <>
-                  <p className="text-sm">
-                    {central?.snapshot ? (
-                      <>Só leitura, a cada 15 minutos (nada é escrito na planilha). Última leitura: <strong>{fmt(central.lastPushAt)}</strong>.</>
-                    ) : (
-                      "Leitura ainda não ligada: o script de docs/sheets/central-leitura.gs roda na conta da marca, fora da planilha."
-                    )}
-                  </p>
+                  <p className="text-sm">O sistema lê as planilhas a cada 15 minutos e não escreve nada nelas.</p>
+                  {read.length === 0 ? (
+                    <p className={ui.hint}>Leitura ainda não ligada: o script de docs/sheets/leitura.gs roda na conta da marca, fora das planilhas.</p>
+                  ) : (
+                    <ul className={ui.list}>
+                      {read.map((x) => (
+                        <li key={x.sheet} className="py-2 text-sm">
+                          {LABEL[x.sheet] ?? x.sheet} · última leitura <strong>{fmt(x.lastPushAt)}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {st.issues.length > 0 && (
                     <>
                       <p className={ui.hint}>Avisos dos últimos 30 dias (o que não foi aplicado; resolva no sistema ou na planilha):</p>
@@ -144,7 +150,7 @@ export default async function SyncPage() {
                         {st.issues.map((i) => (
                           <li key={i.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
                             <span>{i.message}</span>
-                            <span className={ui.hint}>{i.tab}, linha {i.row} · {fmt(i.seenAt)}</span>
+                            <span className={ui.hint}>{LABEL[i.sheet] ?? i.sheet} · {i.tab}, linha {i.row} · {fmt(i.seenAt)}</span>
                           </li>
                         ))}
                       </ul>

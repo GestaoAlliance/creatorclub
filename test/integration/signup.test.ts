@@ -78,7 +78,7 @@ describe("inscrição pelo formulário do sistema (D-SIGNUP, banco real)", () =>
     expect(await submitSignup(prisma, sent, now)).toEqual({ ok: true });
     const app = await prisma.creatorApplication.findFirstOrThrow({ where: { email: "uma@x.com" } });
     expect(app).toMatchObject({ brandId: a.brand.id, brandsWanted: a.brand.name });
-    expect(JSON.stringify(app.raw)).toContain(`Alliance e a ${a.brand.name}`);
+    expect(JSON.stringify(app.raw)).toContain(`dados pessoais pela ${a.brand.name}`);
     expect(await prisma.creatorApplication.count({ where: { brandId: b.brand.id, email: "uma@x.com" } })).toBe(0);
   });
 });
