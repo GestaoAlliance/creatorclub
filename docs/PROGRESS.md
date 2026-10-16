@@ -212,7 +212,8 @@ já existem antes de desenhar.
 - [x] **S0** Desfazer a primeira ligação da Central (CP-129, CP-130): planilha restaurada pelo responsável; no sistema
   nada a voltar (nos 72 campos a planilha era mais nova que o sistema; as 9 creators criadas ficam, responsável).
 - [x] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY; CP-130, CP-131).
-- [ ] **S2** Envios de pedidos (planilha → Envios, só leitura).
+- [~] **S2** Envios de pedidos lida pelo sistema, só leitura (CP-132). Código pronto; falta o responsável trocar o
+  código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs` (Central + Envios) e rodar "instalar".
 - [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
 
@@ -246,6 +247,22 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-132 — 2026-10-16 — Planilha de envios lida pelo sistema (S2)
+- **Decidido (responsável):** cada linha da planilha "Envios de pedidos creators - Botanika" vira um envio na ficha e
+  no portal da creator (D-SHEETREADONLY).
+- **Feito:** `src/lib/sheets/envios.ts` (`readEnvios`): creator pelo CPF ou e-mail (aceita os dois trocados de
+  coluna); produtos em texto na nota, endereço em texto (`{ raw }`); "ENVIADO?" Sim com rastreio = Enviado (Correios
+  quando o código tem o formato deles), senão Preparando; a mesma linha não duplica (ligação linha → envio guardada em
+  `SheetSync.snapshot`); se a equipe já criou o envio, a linha com rastreio completa o envio dela ainda sem rastreio;
+  nunca mexe em entregue/cancelado; não conta como kit; a primeira leitura traz o histórico sem avisar as creators,
+  depois "Enviado" pela planilha avisa a creator; linha sem creator vira aviso. A rota
+  `/api/sheets/[marca]/[planilha]/leitura` aceita `envios`. Script único `docs/sheets/leitura.gs` (Central + Envios;
+  substitui `central-leitura.gs`). Cartão "Planilhas (só leitura)" na tela Sync com as duas planilhas e os avisos.
+- **Falta (responsável):** trocar o código do projeto "Creator Club - leitura" e rodar "instalar".
+- **Verificado:** integração nova (histórico sem aviso; CPF/e-mail trocados; não duplica; Não → Sim muda o mesmo envio
+  e avisa; completa envio da equipe; sem creator vira aviso). `npm test`, `npm run test:integration`,
+  `npm run typecheck`, `npm run build` passando.
 
 ### CP-131 — 2026-10-16 — Leitura da Central ligada (S1 concluído)
 - **Feito pelo responsável:** projeto "Creator Club - leitura" no Apps Script da conta Botanika (fora da planilha),
