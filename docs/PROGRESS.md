@@ -248,6 +248,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-133 — 2026-10-16 — Inscrição: aceite novo e "Como funciona a parceria" (pedido da Ana)
+- **Decidido (responsável):** texto de aceite da Ana, com "Creator Club" no lugar de "Creator Hub"; bloco "Como
+  funciona a parceria" no topo do formulário da marca com o texto aprovado.
+- **Feito:** `signupConsentText` novo (marca no lugar de Botanika); `partnershipTerms` em `src/domain/signup.ts`
+  (cupom e desconto, comissão, fechamento no dia 1 com o mínimo, saque do dia 1 ao 10 com NF e pagamento até o dia 15,
+  produtos, contrato de 6 meses / UGC 3); números vêm da marca (`defaultDiscountBps`, `defaultCommissionBps`) e do
+  contrato mais recente de cada tipo (mínimo e meses); sem número, o texto não cita. Bloco no topo de
+  `/inscricao/[marca]`.
+- **Verificado:** unitário novo (texto com e sem números) e aceite atualizado; `npm test`, `npm run typecheck`,
+  `npm run build` passando; capturas no PR.
+
 ### CP-132 — 2026-10-16 — Planilha de envios lida pelo sistema (S2)
 - **Decidido (responsável):** cada linha da planilha "Envios de pedidos creators - Botanika" vira um envio na ficha e
   no portal da creator (D-SHEETREADONLY).
