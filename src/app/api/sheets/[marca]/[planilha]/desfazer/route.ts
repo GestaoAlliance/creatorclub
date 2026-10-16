@@ -6,13 +6,13 @@ export const dynamic = "force-dynamic";
 
 // Desfaz o que a Central mandou ao sistema (D-SHEETREADONLY). Chamado pelo workflow "Desfazer planilha", que lê os
 // valores antigos da cópia de segurança, com `Authorization: Bearer $FORMS_SECRET`.
-// Corpo: { since: ISO, apply: boolean, snapshot: UndoSnapshot[] }. Responde só contagens.
+// Corpo: { since: ISO, apply: boolean, snapshot: UndoSnapshot[], sheetEditedAt?: ISO }. Responde só contagens.
 
 export async function POST(request: Request, ctx: RouteContext<"/api/sheets/[marca]/[planilha]/desfazer">): Promise<Response> {
   if (!isAuthorizedBearer(request.headers.get("authorization"), process.env.FORMS_SECRET)) return Response.json({ ok: false }, { status: 401 });
   const { marca, planilha } = await ctx.params;
   if (planilha !== "central") return Response.json({ ok: false, error: "planilha desconhecida" }, { status: 404 });
-  let body: { since?: unknown; apply?: unknown; snapshot?: unknown };
+  let body: { since?: unknown; apply?: unknown; snapshot?: unknown; sheetEditedAt?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -20,8 +20,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/sheets/[mar
   }
   const since = typeof body.since === "string" ? new Date(body.since) : null;
   if (!since || Number.isNaN(since.getTime()) || !Array.isArray(body.snapshot)) return Response.json({ ok: false, error: "corpo inválido" }, { status: 400 });
+  const sheetEditedAt = typeof body.sheetEditedAt === "string" ? new Date(body.sheetEditedAt) : undefined;
+  if (sheetEditedAt && Number.isNaN(sheetEditedAt.getTime())) return Response.json({ ok: false, error: "sheetEditedAt inválido" }, { status: 400 });
   try {
-    const report = await undoSheetChanges(db(), marca.toLowerCase(), since, body.snapshot as UndoSnapshot[], body.apply === true);
+    const report = await undoSheetChanges(db(), marca.toLowerCase(), since, body.snapshot as UndoSnapshot[], body.apply === true, sheetEditedAt);
     return Response.json({ ok: true, applied: body.apply === true, ...report });
   } catch (error) {
     console.error("sheets.desfazer", error);

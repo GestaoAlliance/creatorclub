@@ -30,6 +30,11 @@ describe("Desfazer o que a Central mandou (D-SHEETREADONLY, banco real)", () => 
 
     const snapshot = [{ creatorId: creator.id, creator: { notes: before.notes, inGroup: before.inGroup }, account: { pixKey: "antiga@pix", phone: "(31) 90000-0000", addrStreet: "Rua Antiga, 1", addrNumber: null, addrComplement: null, addrDistrict: null, addrZip: null, addrCity: "Betim", addrState: "MG" } }];
 
+    // Planilha editada depois da última mudança do sistema: o valor da planilha fica.
+    const stamped = snapshot.map((x) => ({ ...x, creator: { ...x.creator, updatedAt: before.updatedAt.toISOString() }, account: { ...x.account, updatedAt: before.account.updatedAt.toISOString() } }));
+    expect(await undoSheetChanges(prisma, brand.slug, since, stamped, false, new Date(Date.now() + 3_600_000))).toMatchObject({ creators: 0, fields: 0, keptSheet: 5 });
+    expect(await undoSheetChanges(prisma, brand.slug, since, stamped, false, new Date(0))).toMatchObject({ creators: 1, fields: 5, keptSheet: 0 });
+
     // Só conferência: conta e não muda nada.
     const dry = await undoSheetChanges(prisma, brand.slug, since, snapshot, false);
     expect(dry).toMatchObject({ creators: 1, fields: 5, keptNewer: 1, failed: 0 });

@@ -15,6 +15,10 @@ on:
         description: "Desfazer o que a planilha mudou a partir de (UTC)"
         required: true
         default: "2026-10-16T13:50:00Z"
+      planilha_editada_em:
+        description: "Hora real da última edição da planilha antes do script (UTC; vazio = voltar tudo)"
+        required: false
+        default: "2026-10-15T18:00:04Z"
       aplicar:
         description: "Aplicar de verdade?"
         type: choice
@@ -71,4 +75,4 @@ jobs:
         run: |
           [ -n "$FORMS_SECRET" ] || { echo "::error::Falta o segredo FORMS_SECRET no GitHub."; exit 1; }
           npm ci --ignore-scripts --silent
-          node scripts/sheet-undo.mjs botanika "${{ github.event.inputs.desde }}" "${{ github.event.inputs.aplicar }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/sheet-undo.mjs botanika "${{ github.event.inputs.desde }}" "${{ github.event.inputs.aplicar }}" "${{ github.event.inputs.planilha_editada_em }}" | tee -a "$GITHUB_STEP_SUMMARY"
