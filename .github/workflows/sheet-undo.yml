@@ -38,11 +38,12 @@ jobs:
           sudo apt-get install -y -qq postgresql-common gnupg
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y > /dev/null
           sudo apt-get install -y -qq postgresql-17 postgresql-client-17
-          sudo pg_ctlcluster 17 main start || true
-          port="$(pg_lsclusters -h | awk '$1==17 {print $3}')"
-          sudo -u postgres /usr/lib/postgresql/17/bin/psql -p "$port" -q -c "ALTER ROLE postgres PASSWORD 'postgres'" -c "CREATE DATABASE restore"
-          sudo -u postgres /usr/lib/postgresql/17/bin/psql -p "$port" -q -d restore -c "CREATE EXTENSION IF NOT EXISTS btree_gist"
-          echo "OLD_DATABASE_URL=postgresql://postgres:postgres@localhost:$port/restore" >> "$GITHUB_ENV"
+          pg="/usr/lib/postgresql/17/bin"
+          "$pg/initdb" -D "$RUNNER_TEMP/pg" -U postgres --auth=trust > /dev/null
+          "$pg/pg_ctl" -D "$RUNNER_TEMP/pg" -o "-p 5499 -k $RUNNER_TEMP" -l "$RUNNER_TEMP/pg.log" -w start > /dev/null
+          "$pg/psql" "postgresql://postgres@localhost:5499/postgres" -q -c "CREATE DATABASE restore"
+          "$pg/psql" "postgresql://postgres@localhost:5499/restore" -q -c "CREATE EXTENSION IF NOT EXISTS btree_gist"
+          echo "OLD_DATABASE_URL=postgresql://postgres@localhost:5499/restore" >> "$GITHUB_ENV"
 
       - name: Abrir a cópia de segurança
         env:
