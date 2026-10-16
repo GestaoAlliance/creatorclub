@@ -33,15 +33,19 @@ const DATES = new Set(["contractStart", "contractEnd"]);
 /** Linha da cópia de segurança: valores antigos da creator e da conta (só as colunas acima). */
 export type UndoSnapshot = { creatorId: string; creator: Record<string, unknown>; account: Record<string, unknown> };
 
-export type UndoReport = { creators: number; fields: number; keptNewer: number; notInBackup: number; createdBySheet: number; failed: number };
+export type UndoReport = { creators: number; fields: number; keptNewer: number; keptSheet: number; notInBackup: number; createdBySheet: number; failed: number };
 
-/** Volta os campos que a planilha mudou desde `since`. Com `apply` falso só conta (nada muda). */
+/**
+ * Volta os campos que a planilha mudou desde `since`. Com `apply` falso só conta (nada muda). Com `sheetEditedAt`
+ * (hora real da última edição da planilha), fica o valor da planilha onde o sistema não mudou depois dela.
+ */
 export async function undoSheetChanges(
   prisma: PrismaClient,
   slug: string,
   since: Date,
   snapshot: UndoSnapshot[],
   apply: boolean,
+  sheetEditedAt?: Date,
 ): Promise<UndoReport> {
   const brand = await prisma.brand.findUnique({ where: { slug }, select: { id: true } });
   if (!brand) throw new Error("Marca não encontrada.");
@@ -63,7 +67,7 @@ export async function undoSheetChanges(
     touched.set(l.entityId, set);
   }
 
-  const report: UndoReport = { creators: 0, fields: 0, keptNewer: 0, notInBackup: 0, createdBySheet, failed: 0 };
+  const report: UndoReport = { creators: 0, fields: 0, keptNewer: 0, keptSheet: 0, notInBackup: 0, createdBySheet, failed: 0 };
   for (const [creatorId, fields] of touched) {
     const before = old.get(creatorId);
     if (!before) {
@@ -88,6 +92,12 @@ export async function undoSheetChanges(
         continue;
       }
       const src = u.entity === "Creator" ? before.creator : before.account;
+      // A planilha era mais nova que a última mudança do sistema (a hora real da última edição da planilha): fica.
+      const systemAt = typeof src.updatedAt === "string" ? new Date(src.updatedAt) : null;
+      if (sheetEditedAt && systemAt && systemAt <= sheetEditedAt) {
+        report.keptSheet++;
+        continue;
+      }
       const target = u.entity === "Creator" ? creator : account;
       for (const col of u.columns) {
         const v = src[col] ?? null;
