@@ -211,9 +211,7 @@ já existem antes de desenhar.
 ### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETREADONLY substitui D-SHEETSYNC; uma por vez, nesta ordem)
 - [x] **S0** Desfazer a primeira ligação da Central (CP-129, CP-130): planilha restaurada pelo responsável; no sistema
   nada a voltar (nos 72 campos a planilha era mais nova que o sistema; as 9 creators criadas ficam, responsável).
-- [~] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY). Código pronto (CP-130);
-  falta o responsável colar `docs/sheets/central-leitura.gs` num projeto do Apps Script na conta da Botanika e rodar
-  "instalar".
+- [x] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY; CP-130, CP-131).
 - [ ] **S2** Envios de pedidos (planilha → Envios, só leitura).
 - [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
@@ -248,6 +246,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-131 — 2026-10-16 — Leitura da Central ligada (S1 concluído)
+- **Feito pelo responsável:** projeto "Creator Club - leitura" no Apps Script da conta Botanika (fora da planilha),
+  segredo colado, "instalar" executado (gatilho de 15 min).
+- **Verificado:** registro de execução `{"ok":true,"rows":76,"matched":75,"unmatched":1,"applied":0,"baseline":false}`
+  (a primeira execução marcou o ponto de partida; 1 linha sem creator no sistema virou aviso na tela Sync); a Central
+  não foi modificada (Drive: última alteração é a restauração das 11h42).
+- **Próxima:** S2 Envios de pedidos (só leitura), quando o responsável pedir.
 
 ### CP-130 — 2026-10-16 — Central lida pelo sistema, só leitura (S1)
 - **S0 concluído:** a conferência do desfazer com a hora real da última edição da planilha (15/10 15h) deu 0 campos
