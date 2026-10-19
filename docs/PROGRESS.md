@@ -248,6 +248,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-135 — 2026-10-19 — Cadastros a revisar (limpeza de nomes e repetidas)
+- **Pedido (responsável):** preparar a limpeza dos cadastros com nome errado (linha da planilha colada no nome, nome de
+  cupom) e repetidos. Sem acesso ao banco de produção, a lista sai numa tela para a equipe corrigir na ficha.
+- **Feito:** `src/domain/data-review.ts` (`nameProblems`: telefone, link, @ ou número longo no nome; nome com cara de
+  cupom; `nameKey`: nome sem acento e sem de/da/do); `src/lib/creators/data-review.ts` (`dataReview`: também mesmo
+  nome ou mesmo CPF na marca e criadas pela planilha em 16/10, com cupom, pedidos e extrato de cada uma); tela
+  `/admin/creators/revisar` (só lista, com "Parecida com" e "Abrir ficha"; quem tem `creators.edit`) e link na lista
+  de Creators. A correção é na ficha: editar o nome ou desligar a repetida (nada é apagado).
+- **Verificado:** unitário e integração novos; `npm test`, `npm run test:integration`, `npm run typecheck`,
+  `npm run build` passando; capturas no PR.
+
 ### CP-134 — 2026-10-19 — Seletor de creator com busca (Cupons e Envios)
 - **Pedido (responsável):** trocar a lista longa de creators (`<select>` nativo) por um seletor mais fácil e bonito, em
   todas as telas que tinham esse tipo de lista.
