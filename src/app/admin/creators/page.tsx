@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
@@ -27,6 +28,11 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
       <PageHeader title="Creators">
         {creators.length} creators na {brand.name} · {active} ativas. Toque numa creator para ver a ficha.
       </PageHeader>
+      {can(actor.grants, "creators.edit", brand.id) && (
+        <Link href="/admin/creators/revisar" className={`${ui.link} self-start text-sm`}>
+          Cadastros a revisar (nome errado ou repetido) →
+        </Link>
+      )}
       {portal && (
         <p role="status" className="rounded-2xl border border-amber-400/60 bg-amber-100/80 px-4 py-3 text-sm text-amber-950 dark:bg-amber-900/40 dark:text-amber-100">
           O portal é de cada creator. Para ver como ela vê, abra a creator abaixo e toque em &quot;Ver o portal como esta creator&quot;. A
