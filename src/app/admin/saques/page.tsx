@@ -37,6 +37,7 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
         <Link href="/admin/saques" className={!decided ? ui.pillOn : ui.pill}>{WITHDRAWAL_STATUS_LABEL.REQUESTED}</Link>
         <Link href="/admin/saques?ver=decididos" className={decided ? ui.pillOn : ui.pill}>Decididos</Link>
         <HelpTip id="sq-abas" />
+        <Link href="/admin/saques/conferencia" className={`${ui.link} ml-auto text-sm`}>Conferir a planilha de pagamentos →</Link>
       </nav>
       {!decided && (
         <Card help="sq-resumo">

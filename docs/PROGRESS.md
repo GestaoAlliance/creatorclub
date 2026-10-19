@@ -214,7 +214,8 @@ já existem antes de desenhar.
 - [x] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY; CP-130, CP-131).
 - [~] **S2** Envios de pedidos lida pelo sistema, só leitura (CP-132). Código pronto; falta o responsável trocar o
   código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs` (Central + Envios) e rodar "instalar".
-- [ ] **S3** Pagamentos influencers (pagamento novo na planilha vai para a Juci aprovar).
+- [~] **S3** Pagamentos influencers, só conferência (CP-136). Código pronto; falta o responsável trocar o código do
+  projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs` (Central + Envios + Pagamentos) e rodar "instalar".
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
 
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
@@ -247,6 +248,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-136 — 2026-10-19 — Planilha de pagamentos só para conferência (S3)
+- **Decidido (responsável):** a planilha "Pagamentos influencers - Botanika" serve só para conferência: o sistema
+  compara cada linha com o que calculou e mostra as diferenças; nada de dinheiro muda. Julho, agosto e setembro da
+  planilha **já foram pagos** (fora do sistema) — fonte para o E0.2; registrar como saques pagos só com decisão própria.
+- **Feito:** `src/domain/payments-sheet.ts` (período da aba: "VENDAS AGOSTO/26" ou "DO DIA 23/06 AO DIA 31/07";
+  dinheiro e % da planilha; tolerância de R$ 1,00); `src/lib/sheets/pagamentos.ts` (`readPagamentos` guarda as linhas
+  sem o Pix; `paymentsCheck` compara pelo cupom no período: vendas pela data do pagamento, pedidos, % congelada e
+  comissão do extrato); rota `leitura` aceita `pagamentos`; `docs/sheets/leitura.gs` com a terceira planilha; tela
+  `/admin/saques/conferencia` (quem tem `money.view`; só as diferenças ou todas) e link na tela de Saques.
+- **Verificado:** unitário (período, dinheiro, %) e integração (confere, vendas e comissão diferentes, cupom fora do
+  sistema, sem Pix guardado, extrato intacto). `npm test`, `npm run test:integration`, `npm run typecheck`,
+  `npm run build` passando; capturas no PR.
 
 ### CP-135 — 2026-10-19 — Cadastros a revisar (limpeza de nomes e repetidas)
 - **Pedido (responsável):** preparar a limpeza dos cadastros com nome errado (linha da planilha colada no nome, nome de
