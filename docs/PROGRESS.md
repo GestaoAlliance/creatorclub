@@ -212,10 +212,8 @@ já existem antes de desenhar.
 - [x] **S0** Desfazer a primeira ligação da Central (CP-129, CP-130): planilha restaurada pelo responsável; no sistema
   nada a voltar (nos 72 campos a planilha era mais nova que o sistema; as 9 creators criadas ficam, responsável).
 - [x] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY; CP-130, CP-131).
-- [~] **S2** Envios de pedidos lida pelo sistema, só leitura (CP-132). Código pronto; falta o responsável trocar o
-  código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs` (Central + Envios) e rodar "instalar".
-- [~] **S3** Pagamentos influencers, só conferência (CP-136). Código pronto; falta o responsável trocar o código do
-  projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs` (Central + Envios + Pagamentos) e rodar "instalar".
+- [x] **S2** Envios de pedidos lida pelo sistema, só leitura (CP-132, CP-137).
+- [x] **S3** Pagamentos influencers, só conferência (CP-136, CP-137).
 - [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
 
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
@@ -248,6 +246,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-137 — 2026-10-19 — Leitura das 3 planilhas ligada (S2 e S3 concluídos)
+- **Feito pelo responsável:** trocou o código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs`
+  (Central, Envios e Pagamentos) e rodou "instalar".
+- **Verificado (responsável):** registro de execução com as 3 respostas `"ok":true`. Planilha de Pagamentos sem
+  alteração no Drive (última edição 07/10).
+- **Próxima:** S4 (VermeFree e modelo para planilhas novas), quando o responsável pedir.
 
 ### CP-136 — 2026-10-19 — Planilha de pagamentos só para conferência (S3)
 - **Decidido (responsável):** a planilha "Pagamentos influencers - Botanika" serve só para conferência: o sistema
