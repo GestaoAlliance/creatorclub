@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { classifyAction, confirmOwnerAction, confirmRateAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
+import { Picker } from "@/components/ui/picker";
 import { ui } from "@/components/ui/styles";
 
 const btn = ui.ghostSm;
@@ -25,18 +26,20 @@ export function OwnerForm(props: {
   couponId: string;
   currentCreatorId: string | null;
   needsSince: boolean;
-  creators: { id: string; name: string; status: string }[];
+  creators: { id: string; name: string; status: string; detail: string }[];
 }) {
   const [state, action, pending] = useActionState(confirmOwnerAction, undefined);
   return (
     <form action={action} className="flex flex-wrap items-center gap-1.5">
       <input type="hidden" name="couponId" value={props.couponId} />
-      <select name="creatorId" defaultValue={props.currentCreatorId ?? ""} className={field} required>
-        <option value="" disabled>escolher…</option>
-        {props.creators.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}{c.status !== "ACTIVE" ? " (inativa)" : ""}</option>
-        ))}
-      </select>
+      <Picker
+        small
+        name="creatorId"
+        required
+        defaultValue={props.currentCreatorId}
+        placeholder="Escolher a dona…"
+        options={props.creators.map((c) => ({ id: c.id, name: c.name, detail: c.detail, tag: c.status !== "ACTIVE" ? "inativa" : null }))}
+      />
       {props.needsSince && <input type="date" name="since" className={field} required title="Dona desde" />}
       <button className={ui.btnSm} disabled={pending}>Confirmar dona</button>
       <Msg state={state} />

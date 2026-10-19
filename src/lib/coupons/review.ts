@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { PICKER_SELECT, pickerDetail } from "@/lib/creators/picker";
 import { assertBps } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -40,7 +41,7 @@ export async function couponReview(prisma: PrismaClient, actor: Actor | null, br
     prisma.creator.findMany({
       where: { brandId },
       orderBy: { account: { name: "asc" } },
-      select: { id: true, status: true, account: { select: { name: true } } },
+      select: { id: true, status: true, ...PICKER_SELECT },
     }),
   ]);
   const uses = await Promise.all(coupons.map((c) => prisma.order.count({ where: { brandId, discountCodes: { has: c.code } } })));
@@ -65,7 +66,7 @@ export async function couponReview(prisma: PrismaClient, actor: Actor | null, br
   );
   return {
     rows,
-    creators: creators.map((c) => ({ id: c.id, name: c.account.name, status: c.status })),
+    creators: creators.map((c) => ({ id: c.id, name: c.account.name, status: c.status, detail: pickerDetail(c) })),
     progress: { activeCreators: active.length, confirmed: active.filter((c) => done.has(c.id)).length },
   };
 }

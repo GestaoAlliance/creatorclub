@@ -248,6 +248,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-134 — 2026-10-19 — Seletor de creator com busca (Cupons e Envios)
+- **Pedido (responsável):** trocar a lista longa de creators (`<select>` nativo) por um seletor mais fácil e bonito, em
+  todas as telas que tinham esse tipo de lista.
+- **Levantamento:** só duas telas escolhem uma creator numa lista: Cupons (confirmar a dona) e Envios (novo envio). As
+  outras listas são curtas (mês, tipo, marca, papel, contrato) e ficam como estão.
+- **Feito:** `src/components/ui/picker.tsx` (`Picker`: busca por nome, cupom, @ ou e-mail sem acento; setas, Enter e
+  Esc; selo "inativa"/"sem endereço"; campo escondido para o formulário); `src/lib/creators/picker.ts` (detalhe
+  "CUPOM · @ · e-mail", sem o e-mail falso da importação). Usado em `OwnerForm` (Cupons) e `NewShipmentForm` (Envios).
+- **Verificado:** unitário novo; `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run build`
+  passando; capturas no PR.
+
 ### CP-133 — 2026-10-16 — Inscrição: aceite novo e "Como funciona a parceria" (pedido da Ana)
 - **Decidido (responsável):** texto de aceite da Ana, com "Creator Club" no lugar de "Creator Hub"; bloco "Como
   funciona a parceria" no topo do formulário da marca com o texto aprovado.
