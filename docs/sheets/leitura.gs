@@ -3,7 +3,7 @@
  *
  * Fica num projeto separado do Apps Script na conta da marca (script.google.com), não dentro das planilhas.
  * Cole este arquivo inteiro, troque SEGREDO pelo segredo dos formulários (FORMS_SECRET), salve e execute "instalar".
- * A cada 15 minutos lê cada planilha da lista e manda as linhas para o sistema.
+ * A cada 15 minutos lê cada planilha da lista e manda as linhas para o sistema (a de pagamentos é só para conferência).
  */
 var URL_DO_PAINEL = "https://creatorclub-six.vercel.app/api/sheets/";
 var MARCA = "botanika";
@@ -13,6 +13,7 @@ var SEGREDO = "COLE_AQUI_O_SEGREDO";
 var PLANILHAS = [
   { planilha: "central", id: "1kyLKVKIo2C6tIZ2aZ3yHEMaCOMEkfuGFdLxwfwPZTsI", abas: ["CREATORS", "PRESCRITORES", "UGC"] }, // Central - Creators Botanika
   { planilha: "envios", id: "12Z9kQQbcgNsjnYYqczMDL8r2KLK2TJNMJ1_kemRfZjw", abas: [] }, // Envios de pedidos creators - Botanika
+  { planilha: "pagamentos", id: "1HXU6_DGPuMgNWlffr7cc8AfTJKF7erLbW2m3aXotnh0", abas: [] }, // Pagamentos influencers - Botanika (só conferência)
 ];
 
 function instalar() {
