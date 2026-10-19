@@ -15,7 +15,7 @@ type Row = {
   owner: { creatorId: string; name: string; confirmed: boolean } | null;
   rate: { policyId: string; rateBps: number; confirmed: boolean } | null;
 };
-type Creator = { id: string; name: string; status: string };
+type Creator = { id: string; name: string; status: string; detail: string };
 type Tab = "pending" | "creator" | "promo";
 
 const pct = (bps: number) => `${(bps / 100).toString().replace(".", ",")}%`;

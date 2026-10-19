@@ -4,6 +4,7 @@ import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import type { PortalContext } from "@/lib/portal/context";
+import { PICKER_SELECT, pickerDetail } from "@/lib/creators/picker";
 import { addressColumns, addressOf, normalizeAddress, partialAddressText, type Address, type AddressInput } from "./address";
 
 /**
@@ -202,12 +203,17 @@ export async function shipmentFormData(prisma: PrismaClient, actor: Actor | null
     prisma.creator.findMany({
       where: { ...where, status: { not: "DEACTIVATED" } },
       orderBy: { account: { name: "asc" } },
-      select: { id: true, brandId: true, account: { select: { name: true, addrZip: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true } } },
+      select: {
+        id: true,
+        brandId: true,
+        couponAssignments: PICKER_SELECT.couponAssignments,
+        account: { select: { name: true, email: true, instagram: true, addrZip: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true } },
+      },
     }),
     prisma.product.findMany({ where: { ...where, active: true }, orderBy: { title: "asc" }, select: { id: true, brandId: true, title: true } }),
   ]);
   return {
-    creators: creators.map((c) => ({ id: c.id, brandId: c.brandId, name: c.account.name, hasAddress: addressOf(c.account) !== null })),
+    creators: creators.map((c) => ({ id: c.id, brandId: c.brandId, name: c.account.name, detail: pickerDetail(c), hasAddress: addressOf(c.account) !== null })),
     products,
   };
 }

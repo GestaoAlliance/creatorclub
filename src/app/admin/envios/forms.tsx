@@ -4,27 +4,28 @@ import { useActionState } from "react";
 import { approveAction, cancelAction, createShipmentAction, deliveredAction, rejectAction, shippedAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
+import { Picker } from "@/components/ui/picker";
 import { ui } from "@/components/ui/styles";
 
 const field = ui.inputSm;
 
 export function NewShipmentForm(props: {
-  creators: { id: string; name: string; hasAddress: boolean }[];
+  creators: { id: string; name: string; detail: string; hasAddress: boolean }[];
   products: { id: string; title: string }[];
 }) {
   const [state, action, pending] = useActionState(createShipmentAction, undefined);
   return (
     <form action={action} className={ui.card}>
       <h2 className={ui.h2}>Novo envio</h2>
-      <label className={ui.label}>
+      <div className={ui.label}>
         Creator
-        <select name="creatorId" required defaultValue="" className={ui.input}>
-          <option value="" disabled>escolher…</option>
-          {props.creators.map((c) => (
-            <option key={c.id} value={c.id} disabled={!c.hasAddress}>{c.name}{c.hasAddress ? "" : " (sem endereço)"}</option>
-          ))}
-        </select>
-      </label>
+        <Picker
+          name="creatorId"
+          required
+          placeholder="Escolher a creator…"
+          options={props.creators.map((c) => ({ id: c.id, name: c.name, detail: c.detail, tag: c.hasAddress ? null : "sem endereço", disabled: !c.hasAddress }))}
+        />
+      </div>
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-2 text-xs font-medium text-stone-500">Produtos (quantidade)</legend>
         {props.products.length === 0 && <p className={ui.hint}>Nenhum produto carregado da loja ainda.</p>}
