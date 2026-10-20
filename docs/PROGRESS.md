@@ -247,6 +247,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-139 — 2026-10-20 — Endereço da inscrição em campos, com CEP primeiro
+- **Pedido (responsável):** trocar a caixa grande "Endereço para entrega dos suplementos" por um campo para cada coisa,
+  com o CEP primeiro preenchendo o máximo possível.
+- **Feito (D-SIGNUPADDR):** no bloco "Receber e ganhar", campos CEP → rua, número, complemento (opcional), bairro, cidade e
+  UF. Com os 8 números do CEP o formulário busca no ViaCEP (direto do navegador) e completa rua, bairro, cidade e UF; o
+  cursor vai para o número. CEP não encontrado ou sem resposta: aviso e a pessoa preenche à mão. Erro mostrado em cada
+  campo. A resposta continua gravada como texto na mesma pergunta ("Rua, nº — compl., bairro, cidade/UF, CEP 00000-000"),
+  então a equipe lê igual e nada muda no banco.
+- **Verificado:** testes unitários (montagem do texto e erros por campo), integração da inscrição, typecheck; capturas
+  com a resposta do ViaCEP simulada (a rede do ambiente de teste não alcança o ViaCEP).
+
 ### CP-138 — 2026-10-20 — CI sem baixar imagem do Postgres
 - **Pedido (responsável):** trocar a origem do banco de teste do CI, que falhava com "toomanyrequests: Data limit
   exceeded" ao baixar a imagem `postgres:16` (espelho do Docker Hub na AWS) antes de qualquer teste.

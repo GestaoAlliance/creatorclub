@@ -129,11 +129,40 @@ const cpfValid = (input: string) => {
   return digit(9) === Number(d[9]) && digit(10) === Number(d[10]);
 };
 
+/**
+ * Endereço da inscrição em campos (D-SIGNUPADDR): CEP primeiro (o formulário completa rua, bairro, cidade e UF pelo CEP),
+ * depois número e complemento. Gravado como o texto de sempre na resposta "ENDEREÇO PARA ENTREGA…", com o CEP no fim.
+ */
+export const SIGNUP_ADDRESS_PARTS = ["addrZip", "addrStreet", "addrNumber", "addrComplement", "addrDistrict", "addrCity", "addrState"] as const;
+export type SignupAddressPart = (typeof SIGNUP_ADDRESS_PARTS)[number];
+export const SIGNUP_ADDRESS_OPTIONAL: readonly SignupAddressPart[] = ["addrComplement"];
+
+/** Monta o texto do endereço a partir dos campos, ou os erros por campo. */
+export function signupAddress(p: Partial<Record<SignupAddressPart, string | undefined>>): { text: string; errors: Record<string, string> } {
+  const v = Object.fromEntries(SIGNUP_ADDRESS_PARTS.map((k) => [k, (p[k] ?? "").replace(/\s+/g, " ").trim().slice(0, 160)])) as Record<SignupAddressPart, string>;
+  const errors: Record<string, string> = {};
+  for (const k of SIGNUP_ADDRESS_PARTS) if (!v[k] && !SIGNUP_ADDRESS_OPTIONAL.includes(k)) errors[k] = "Preencha este campo.";
+  const zip = v.addrZip.replace(/\D/g, "");
+  if (v.addrZip && zip.length !== 8) errors.addrZip = "CEP precisa ter 8 números.";
+  const uf = v.addrState.toUpperCase();
+  if (v.addrState && !/^[A-Z]{2}$/.test(uf)) errors.addrState = "Escolha o estado (UF).";
+  if (Object.keys(errors).length) return { text: "", errors };
+  const text = `${v.addrStreet}, ${v.addrNumber}${v.addrComplement ? ` — ${v.addrComplement}` : ""}, ${v.addrDistrict}, ${v.addrCity}/${uf}, CEP ${zip.slice(0, 5)}-${zip.slice(5)}`;
+  return { text, errors };
+}
+
 /** Confere as respostas e devolve no formato do Google ({ título: resposta }) ou os erros por campo. */
 export function validateSignup(values: Record<string, string | undefined>, consent: boolean): SignupResult {
   const errors: Record<string, string> = {};
   const answers: Record<string, string> = {};
+  // Formulário com o endereço em campos: o texto da resposta sai deles (D-SIGNUPADDR).
+  if (SIGNUP_ADDRESS_PARTS.some((k) => values[k] !== undefined)) {
+    const a = signupAddress(values);
+    Object.assign(errors, a.errors);
+    values = { ...values, address: a.text };
+  }
   for (const q of SIGNUP_QUESTIONS) {
+    if (q.key === "address" && SIGNUP_ADDRESS_PARTS.some((k) => errors[k])) continue;
     const raw = values[q.key] ?? "";
     // Texto longo mantém as quebras de linha (endereço, conteúdo); os outros viram uma linha só.
     const v = (q.kind === "long" ? raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n") : raw.replace(/\s+/g, " ")).trim().slice(0, q.kind === "long" ? 1500 : 300);
