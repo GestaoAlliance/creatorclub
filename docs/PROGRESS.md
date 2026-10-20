@@ -247,6 +247,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-138 — 2026-10-20 — CI sem baixar imagem do Postgres
+- **Pedido (responsável):** trocar a origem do banco de teste do CI, que falhava com "toomanyrequests: Data limit
+  exceeded" ao baixar a imagem `postgres:16` (espelho do Docker Hub na AWS) antes de qualquer teste.
+- **Feito:** `.github/workflows/ci.yml` usa o Postgres que já vem instalado na máquina do GitHub (liga o serviço, define a
+  senha e cria o banco `creator_club_test`); sem `services`, sem download de imagem.
+- **Verificado:** CI do próprio PR passando com o Postgres da máquina.
+
 ### CP-137 — 2026-10-19 — Leitura das 3 planilhas ligada (S2 e S3 concluídos)
 - **Feito pelo responsável:** trocou o código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs`
   (Central, Envios e Pagamentos) e rodou "instalar".

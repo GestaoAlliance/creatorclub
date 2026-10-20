@@ -19,22 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    services:
-      postgres:
-        # Espelho oficial da imagem do Docker Hub na AWS: o Docker Hub limita downloads sem login e derrubou o CI.
-        image: public.ecr.aws/docker/library/postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: creator_club_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/creator_club_test
@@ -43,6 +27,16 @@ jobs:
       # Actions fixadas pelo hash do commit (tag v5), para uma tag movida não mudar o que roda aqui.
       - name: Baixar o código
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      # Postgres já instalado na máquina do GitHub (sem baixar imagem): os espelhos do Docker Hub limitavam os downloads e
+      # derrubavam o CI antes de qualquer teste.
+      - name: Postgres da máquina
+        run: |
+          sudo systemctl start postgresql.service
+          until pg_isready -h localhost -p 5432; do sleep 1; done
+          sudo -u postgres psql -q -c "ALTER USER postgres PASSWORD 'postgres'"
+          sudo -u postgres createdb creator_club_test
+          psql "$TEST_DATABASE_URL" -tAc "SELECT version()"
 
       - name: Node 22
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
