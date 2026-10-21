@@ -247,6 +247,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-138 — 2026-10-21 — Referência: portal de creators da Bigboom (tarefa avulsa, só documento)
+- **Pedido do responsável:** engenharia reversa do portal da Bigboom (autorizada pelo dono) e comparação com o nosso,
+  adaptada às 3 marcas. Tarefa fora da fila; a fila não muda e nada do app foi alterado.
+- **Feito:** `docs/referencias/bigboom.md`, com o mapa das 5 telas do portal da creator, as regras visíveis, o que
+  eles têm e nós não (loja com saldo, "aguardando pagamento", "já usado", condições no Início, aba de dados, aviso
+  de encerramento) e as perguntas de negócio de cada item. **Nada disso é decisão.**
+- **Limite:** o login disponível era de uma creator de teste encerrada e sem vendas; o lado da equipe (captação →
+  envios) não foi visto. Capturas fora do repositório (têm dados pessoais da conta de teste).
+- **Próxima:** segue A2 (VermeFree). Para completar a referência: login de equipe da Bigboom.
+
 ### CP-137 — 2026-10-19 — Leitura das 3 planilhas ligada (S2 e S3 concluídos)
 - **Feito pelo responsável:** trocou o código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs`
   (Central, Envios e Pagamentos) e rodou "instalar".
