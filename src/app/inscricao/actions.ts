@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { SIGNUP_QUESTIONS } from "@/domain";
+import { SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS } from "@/domain";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
 import { submitSignup } from "@/lib/onboarding/signup";
@@ -10,9 +10,11 @@ export type SignupState = { done?: boolean; errors?: Record<string, string>; val
 
 /** Envio do formulário de inscrição de uma marca (D-SIGNUP, D-SIGNUPBRAND). Em erro devolve o que foi digitado para nada se perder. */
 export async function signupAction(prev: SignupState, form: FormData): Promise<SignupState> {
-  const values: Record<string, string> = Object.fromEntries(
-    SIGNUP_QUESTIONS.map((q) => [q.key, q.kind === "multi" ? form.getAll(q.key).map(String).join(", ") : String(form.get(q.key) ?? "")]),
-  );
+  const values: Record<string, string> = Object.fromEntries([
+    ...SIGNUP_QUESTIONS.filter((q) => q.key !== "address").map((q) => [q.key, q.kind === "multi" ? form.getAll(q.key).map(String).join(", ") : String(form.get(q.key) ?? "")]),
+    // Endereço em campos (D-SIGNUPADDR): o texto da resposta é montado na validação.
+    ...SIGNUP_ADDRESS_PARTS.map((k) => [k, String(form.get(k) ?? "")]),
+  ]);
   try {
     const r = await submitSignup(db(), {
       brandSlug: String(form.get("marca") ?? ""),

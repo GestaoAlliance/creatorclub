@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, AtSign, Check, Package, Sparkles, Store, Ticket, UserRound, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, AtSign, Check, LoaderCircle, Package, Sparkles, Store, Ticket, UserRound, type LucideIcon } from "lucide-react";
 import { useActionState, useEffect, useRef, useState, type CSSProperties } from "react";
-import { SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, signupConsentText, signupCouponPreview, withBrand, type SignupQuestion } from "@/domain";
+import { SIGNUP_ADDRESS_OPTIONAL, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, signupConsentText, signupCouponPreview, withBrand, type SignupQuestion } from "@/domain";
+import { UFS } from "@/lib/shipments/address";
 import { signupAction, type SignupState } from "./actions";
 
 export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null };
@@ -17,6 +18,7 @@ const STEP_OF = new Map<string, number>([
   ...SIGNUP_STEPS.flatMap((st, i) => st.sections.flatMap((id) => SECTION.get(id)!.keys.map((k) => [k, i] as [string, number]))),
   ["consent", SIGNUP_STEPS.length - 1],
 ]);
+for (const k of SIGNUP_ADDRESS_PARTS) STEP_OF.set(k, STEP_OF.get("address")!);
 
 const input =
   "w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-[var(--b)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--b)_15%,transparent)] aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
@@ -39,6 +41,7 @@ function answeredKeys(form: HTMLFormElement) {
   const data = new FormData(form);
   const done = new Set<string>();
   for (const q of SIGNUP_QUESTIONS) if (data.getAll(q.key).some((v) => String(v).trim())) done.add(q.key);
+  if (SIGNUP_ADDRESS_PARTS.every((k) => SIGNUP_ADDRESS_OPTIONAL.includes(k) || String(data.get(k) ?? "").trim())) done.add("address");
   if (data.get("consent") === "sim") done.add("consent");
   return done;
 }
@@ -58,6 +61,139 @@ function Err({ msg }: { msg?: string | undefined }) {
       {msg}
     </span>
   ) : null;
+}
+
+/** CEP no formato 00000-000 enquanto a pessoa digita. */
+const formatZip = (raw: string) => {
+  const d = raw.replace(/\D/g, "").slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+};
+
+type ZipLookup = "idle" | "loading" | "found" | "notfound" | "error";
+
+/**
+ * Endereço em campos (D-SIGNUPADDR): CEP primeiro; com os 8 números o formulário busca no ViaCEP e completa rua, bairro,
+ * cidade e UF (a pessoa pode corrigir). Sem resposta, preenche à mão. Cada parte vai num campo próprio do formulário.
+ */
+function AddressFields({ q, values, errors, brand }: { q: SignupQuestion; values: Record<string, string>; errors: Record<string, string>; brand: string }) {
+  const [a, setA] = useState<Record<string, string>>(() => Object.fromEntries(SIGNUP_ADDRESS_PARTS.map((k) => [k, values[k] ?? ""])));
+  const [lookup, setLookup] = useState<ZipLookup>("idle");
+  const numberRef = useRef<HTMLInputElement>(null);
+  const asked = useRef("");
+  const set = (k: string, v: string) => setA((cur) => ({ ...cur, [k]: v }));
+
+  const search = async (zip: string) => {
+    if (zip.length !== 8 || asked.current === zip) return;
+    asked.current = zip;
+    setLookup("loading");
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
+      const data = (await res.json()) as { erro?: unknown; logradouro?: string; bairro?: string; localidade?: string; uf?: string };
+      if (asked.current !== zip) return;
+      if (!res.ok || data.erro) return setLookup("notfound");
+      setA((cur) => ({
+        ...cur,
+        addrStreet: data.logradouro || (cur.addrStreet ?? ""),
+        addrDistrict: data.bairro || (cur.addrDistrict ?? ""),
+        addrCity: data.localidade || (cur.addrCity ?? ""),
+        addrState: data.uf || (cur.addrState ?? ""),
+      }));
+      setLookup("found");
+      requestAnimationFrame(() => numberRef.current?.focus());
+    } catch {
+      if (asked.current === zip) setLookup("error");
+    }
+  };
+
+  const box = (k: string, label: string, extra: Record<string, unknown> = {}, className = "") => (
+    <label className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-sm text-stone-600 dark:text-stone-300">
+        {label}
+        {SIGNUP_ADDRESS_OPTIONAL.includes(k as (typeof SIGNUP_ADDRESS_PARTS)[number]) && <span className="ml-1.5 text-xs text-stone-500">opcional</span>}
+      </span>
+      <input
+        name={k}
+        value={a[k]}
+        onChange={(e) => set(k, e.target.value)}
+        required={!SIGNUP_ADDRESS_OPTIONAL.includes(k as (typeof SIGNUP_ADDRESS_PARTS)[number])}
+        maxLength={160}
+        aria-invalid={errors[k] ? true : undefined}
+        className={input}
+        {...extra}
+      />
+      <Err msg={errors[k]} />
+    </label>
+  );
+
+  return (
+    <fieldset className="flex flex-col gap-4">
+      <legend className="mb-3">
+        <Label q={q} brand={brand} />
+      </legend>
+      <div className="flex flex-col gap-1.5">
+        <label className="flex flex-col gap-1.5 sm:max-w-56">
+          <span className="text-sm text-stone-600 dark:text-stone-300">CEP</span>
+          <span className="relative">
+            <input
+              name="addrZip"
+              value={formatZip(a.addrZip ?? "")}
+              onChange={(e) => {
+                const d = e.target.value.replace(/\D/g, "").slice(0, 8);
+                set("addrZip", d);
+                if (d.length === 8) void search(d);
+                else setLookup("idle");
+              }}
+              required
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="00000-000"
+              pattern="\d{5}-?\d{3}"
+              title="CEP com 8 números"
+              aria-invalid={errors.addrZip ? true : undefined}
+              className={input}
+            />
+            {lookup === "loading" && <LoaderCircle className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-stone-400" />}
+            {lookup === "found" && <Check className="pop absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[var(--b)]" strokeWidth={3} />}
+          </span>
+        </label>
+        <span aria-live="polite" className="text-xs text-stone-500">
+          {lookup === "notfound"
+            ? "Não encontramos esse CEP: confira os números ou preencha o endereço abaixo."
+            : lookup === "error"
+              ? "Não conseguimos buscar o CEP agora: preencha o endereço abaixo."
+              : lookup === "found"
+                ? "Endereço encontrado: confira e complete com o número."
+                : "Digite o CEP e a gente preenche o resto."}
+        </span>
+        <Err msg={errors.addrZip} />
+      </div>
+      <div className="grid grid-cols-6 gap-4">
+        {box("addrStreet", "Rua ou avenida", { autoComplete: "address-line1" }, "col-span-6 sm:col-span-4")}
+        {box("addrNumber", "Número", { ref: numberRef, placeholder: "Ex.: 123 ou s/n", maxLength: 20 }, "col-span-6 sm:col-span-2")}
+        {box("addrComplement", "Complemento", { autoComplete: "address-line2", placeholder: "Apto, bloco, ponto de referência" }, "col-span-6")}
+        {box("addrDistrict", "Bairro", {}, "col-span-6 sm:col-span-3")}
+        {box("addrCity", "Cidade", { autoComplete: "address-level2" }, "col-span-4 sm:col-span-2")}
+        <label className="col-span-2 flex flex-col gap-1.5 sm:col-span-1">
+          <span className="text-sm text-stone-600 dark:text-stone-300">UF</span>
+          <select
+            name="addrState"
+            value={a.addrState}
+            onChange={(e) => set("addrState", e.target.value)}
+            required
+            aria-invalid={errors.addrState ? true : undefined}
+            className={`${input} px-3`}
+          >
+            <option value="" disabled>—</option>
+            {UFS.map((uf) => (
+              <option key={uf} value={uf}>{uf}</option>
+            ))}
+          </select>
+          <Err msg={errors.addrState} />
+        </label>
+      </div>
+      <Err msg={errors.address} />
+    </fieldset>
+  );
 }
 
 function Field({ q, value, error, brand }: { q: SignupQuestion; value: string; error?: string | undefined; brand: string }) {
@@ -206,7 +342,7 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
 
   // Só avança se as respostas obrigatórias desta etapa estão preenchidas (o navegador aponta o que falta).
   const next = () => {
-    const fields = ref.current?.querySelectorAll<HTMLInputElement>(`[data-step="${step}"] input, [data-step="${step}"] textarea`) ?? [];
+    const fields = ref.current?.querySelectorAll<HTMLInputElement>(`[data-step="${step}"] input, [data-step="${step}"] textarea, [data-step="${step}"] select`) ?? [];
     for (const el of fields) if (!el.checkValidity()) return void el.reportValidity();
     goTo(step + 1);
   };
@@ -321,6 +457,7 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
                 </header>
                 {s.keys.map((k) => {
                   const q = BY_KEY.get(k)!;
+                  if (k === "address") return <AddressFields key={k} q={q} values={v} errors={state.errors ?? {}} brand={brand.name} />;
                   return <Field key={k} q={q} value={v[k] ?? ""} error={state.errors?.[k]} brand={brand.name} />;
                 })}
               </section>

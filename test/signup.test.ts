@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { partnershipTerms, SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
+import { partnershipTerms, signupAddress, SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
@@ -24,6 +24,23 @@ describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
       "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo",
       "Você já trabalhou de forma comissionada para outras marcas?",
     ]));
+  });
+
+  it("endereço em campos vira o texto de sempre, com o CEP no fim (D-SIGNUPADDR)", () => {
+    const parts = { addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp" };
+    const { address: _, ...rest } = full;
+    const r = validateSignup({ ...rest, ...parts }, true);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.answers["ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)"]).toBe(
+      "Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100",
+    );
+    expect(signupAddress({ ...parts, addrComplement: "" }).text).toBe("Avenida Paulista, 1000, Bela Vista, São Paulo/SP, CEP 01310-100");
+    // Erro em cada campo, sem repetir "preencha" no endereço inteiro; complemento é opcional.
+    const bad = validateSignup({ ...rest, ...parts, addrZip: "0131", addrNumber: " ", addrComplement: "", addrState: "" }, true);
+    expect(bad.ok).toBe(false);
+    if (bad.ok) return;
+    expect(bad.errors).toEqual({ addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.", addrState: "Preencha este campo." });
   });
 
   it("obrigatórias, opções, e-mail, WhatsApp, CPF, CNPJ e o aceite", () => {

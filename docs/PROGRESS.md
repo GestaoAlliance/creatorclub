@@ -247,7 +247,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
-### CP-138 — 2026-10-21 — Referência: portal de creators da Bigboom (tarefa avulsa, só documento)
+### CP-140 — 2026-10-21 — Referência: portal de creators da Bigboom (tarefa avulsa, só documento)
 - **Pedido do responsável:** engenharia reversa do portal da Bigboom (autorizada pelo dono) e comparação com o nosso,
   adaptada às 3 marcas. Tarefa fora da fila; a fila não muda e nada do app foi alterado.
 - **Feito:** `docs/referencias/bigboom.md`, com o mapa das 5 telas do portal da creator, as regras visíveis, o que
@@ -256,6 +256,24 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 - **Limite:** o login disponível era de uma creator de teste encerrada e sem vendas; o lado da equipe (captação →
   envios) não foi visto. Capturas fora do repositório (têm dados pessoais da conta de teste).
 - **Próxima:** segue A2 (VermeFree). Para completar a referência: login de equipe da Bigboom.
+
+### CP-139 — 2026-10-20 — Endereço da inscrição em campos, com CEP primeiro
+- **Pedido (responsável):** trocar a caixa grande "Endereço para entrega dos suplementos" por um campo para cada coisa,
+  com o CEP primeiro preenchendo o máximo possível.
+- **Feito (D-SIGNUPADDR):** no bloco "Receber e ganhar", campos CEP → rua, número, complemento (opcional), bairro, cidade e
+  UF. Com os 8 números do CEP o formulário busca no ViaCEP (direto do navegador) e completa rua, bairro, cidade e UF; o
+  cursor vai para o número. CEP não encontrado ou sem resposta: aviso e a pessoa preenche à mão. Erro mostrado em cada
+  campo. A resposta continua gravada como texto na mesma pergunta ("Rua, nº — compl., bairro, cidade/UF, CEP 00000-000"),
+  então a equipe lê igual e nada muda no banco.
+- **Verificado:** testes unitários (montagem do texto e erros por campo), integração da inscrição, typecheck; capturas
+  com a resposta do ViaCEP simulada (a rede do ambiente de teste não alcança o ViaCEP).
+
+### CP-138 — 2026-10-20 — CI sem baixar imagem do Postgres
+- **Pedido (responsável):** trocar a origem do banco de teste do CI, que falhava com "toomanyrequests: Data limit
+  exceeded" ao baixar a imagem `postgres:16` (espelho do Docker Hub na AWS) antes de qualquer teste.
+- **Feito:** `.github/workflows/ci.yml` usa o Postgres que já vem instalado na máquina do GitHub (liga o serviço, define a
+  senha e cria o banco `creator_club_test`); sem `services`, sem download de imagem.
+- **Verificado:** CI do próprio PR passando com o Postgres da máquina.
 
 ### CP-137 — 2026-10-19 — Leitura das 3 planilhas ligada (S2 e S3 concluídos)
 - **Feito pelo responsável:** trocou o código do projeto "Creator Club - leitura" pelo `docs/sheets/leitura.gs`
