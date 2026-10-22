@@ -19,6 +19,8 @@ até 2026-10-09 e não recebe mais commits). Contas do projeto: Gestão Alliance
 5. Regra de negócio que não está nos documentos: perguntar, não inventar. **Qualquer dúvida** (negócio, design,
    escolha que muda o que o usuário vê): perguntar antes de executar. Nunca decidir sozinho para evitar retrabalho.
 6. O repositório é a memória do projeto. O que não está aqui não aconteceu.
+7. Antes de cada tarefa, consultar também o Google Drive da Alliance (planilhas, formulários, documentos) para ter o
+   contexto do que a equipe já faz. **Só leitura**: nada é editado nas planilhas e formulários da equipe (D-SHEETREADONLY).
 
 ## Escopo atual (lançamento 1)
 
