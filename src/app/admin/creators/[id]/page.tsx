@@ -9,6 +9,8 @@ import { creatorContractSignature } from "@/lib/contracts/sign";
 import { creatorAutentique } from "@/lib/autentique/contracts";
 import { staffContext } from "@/lib/staff/context";
 import { OtherBrandNotice } from "@/components/staff/other-brand";
+import { headers } from "next/headers";
+import { creatorNumbers, creatorTimeline } from "@/lib/creators/timeline";
 import { CreatorProfileView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +44,17 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     }
   }
 
-  const [terms, contract, autentique] = await Promise.all([creatorTermsStatus(db(), p.id, p.brandId), creatorContractSignature(db(), p.id), creatorAutentique(db(), p.id, p.brandId)]);
-  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} />;
+  const [terms, contract, autentique, numbers, timeline, own] = await Promise.all([
+    creatorTermsStatus(db(), p.id, p.brandId),
+    creatorContractSignature(db(), p.id),
+    creatorAutentique(db(), p.id, p.brandId),
+    // M0.2: números de 30 dias, aguardando pagamento e estornos (só quem vê dinheiro) e a linha do tempo.
+    p.adjustments ? creatorNumbers(db(), p.id) : Promise.resolve(null),
+    creatorTimeline(db(), actor, p.id),
+    db().brand.findUniqueOrThrow({ where: { id: p.brandId }, select: { slug: true } }),
+  ]);
+  // Link rastreado que ela divulga (D-LINK), com o domínio desta requisição (o mesmo do portal).
+  const h = await headers();
+  const linkBase = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}/r/${own.slug}/`;
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} />;
 }

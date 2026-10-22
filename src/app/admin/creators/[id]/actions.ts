@@ -18,6 +18,7 @@ import { CouponCreateError, createCouponInShopify } from "@/lib/coupons/create";
 import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/creators/ugc";
 import { formatBRL } from "@/domain";
 import { checkCreatorContracts, ContractSendError, sendContract } from "@/lib/autentique/contracts";
+import { addCreatorNote, NoteError } from "@/lib/creators/timeline";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -27,7 +28,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError || error instanceof NoteError) {
       return { error: error.message };
     }
     throw error;
@@ -177,4 +178,10 @@ export async function checkContractAction(_prev: State, form: FormData): Promise
     if (r.errors) return { error: "Não foi possível conferir agora; veja o erro abaixo." };
     return { ok: "Ainda não assinou." };
   }, "Conferido.");
+}
+
+/** M0.2: observação da equipe na linha do tempo (só a equipe vê). */
+export async function noteAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => void (await addCreatorNote(db(), await currentActor(), id, String(form.get("body") ?? ""))), "Observação salva.");
 }

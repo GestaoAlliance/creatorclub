@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.2 (Ficha da creator)**, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M0.3 (Lista de creators)**, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -30,7 +30,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 
 ### M — Plano de melhorias (`docs/PLANO-MELHORIAS.md`; uma etapa por vez, cada uma com PR e capturas)
 - [x] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
-- [ ] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
+- [x] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
 - [ ] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração
 - [ ] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
 - [ ] **M0.5** Busca de creator no painel inteiro
@@ -255,6 +255,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-145 — 2026-10-22 — M0.2 Ficha da creator: números, link e linha do tempo
+- **Feito:** no cartão Saldo (quem vê dinheiro), vendas pagas e ticket médio dos últimos 30 dias, **aguardando
+  pagamento** (pedidos com o cupom dela ainda não pagos, com a comissão estimada pela taxa de hoje — a taxa só congela
+  no pagamento) e comissão estornada. Em Cupons, o **link rastreado** (`/r/marca/CUPOM`, D-LINK) com "Copiar link".
+  **Linha do tempo** (cadastro, aprovação, conferência da Ana, convite, contrato, cupom, taxa, primeira venda,
+  liberações, envios, saques, encerramento) com **observações da equipe** (D-CREATORNOTE). Saques, taxa e liberações
+  só aparecem para quem vê dinheiro. Migração `20261022180000_creator_notes`.
+- **Verificado:** integração (números, observação: permissão, tamanho, travas `CreatorNote_body_length` e somente
+  inserção; linha do tempo e o que o Envio não vê), migração sem divergência, typecheck, build; capturas.
 
 ### CP-144 — 2026-10-22 — M0.1 Vendas da equipe
 - **Feito:** tela `/admin/vendas` (menu "Vendas", para quem tem `money.view`: Gestão, Pagamento e super admin; só a
