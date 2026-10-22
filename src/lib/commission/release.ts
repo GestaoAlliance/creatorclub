@@ -125,7 +125,7 @@ export function lastClosedMonth(now: Date, timeZone: string): string {
 export async function closeDueMonths(prisma: PrismaClient, now = new Date(), only?: { brandId: string }): Promise<number> {
   const brands = await prisma.brand.findMany({
     where: { archivedAt: null, ...(only ? { id: only.brandId } : {}) },
-    select: { id: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true },
+    select: { id: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true },
   });
   let total = 0;
   for (const brand of brands) {
@@ -138,7 +138,7 @@ export async function closeDueMonths(prisma: PrismaClient, now = new Date(), onl
 
 async function closeBrandMonth(
   prisma: PrismaClient,
-  brand: { id: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number },
+  brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number },
   month: string,
   now: Date,
 ): Promise<number> {
@@ -176,7 +176,7 @@ async function closeBrandMonth(
       // U5 (D-NOTICES): avisa quem teve comissão liberada e quem ganhou kit neste fechamento.
       await notify(tx, [
         ...[...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month) })),
-        ...kits.map((k) => ({ brandId: brand.id, creatorId: k.creatorId, notice: notices.kitAvailable("MONTHLY", month, k.products) })),
+        ...kits.map((k) => ({ brandId: brand.id, creatorId: k.creatorId, notice: notices.kitAvailable("MONTHLY", month, k.products, brand.slug) })),
       ]);
       const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
       await tx.auditLog.create({

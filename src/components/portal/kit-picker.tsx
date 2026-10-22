@@ -5,8 +5,9 @@ import { useActionState, useState } from "react";
 import { chooseKitAction } from "@/app/portal/[marca]/envios/actions";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
+import { kitNoun } from "@/domain";
 
-/** Kit mensal (D-KIT) ou de boas-vindas (D-WELCOMEKIT): a creator escolhe os N suplementos que ganhou. */
+/** Kit mensal (D-KIT) ou de boas-vindas (D-WELCOMEKIT, 1 produto desde D-WELCOMEKIT1): a creator escolhe os N produtos que ganhou. */
 export function KitPicker({
   marca,
   kit,
@@ -29,7 +30,7 @@ export function KitPicker({
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
   const left = kit.products - total;
   const set = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + d) }));
-  const plural = (n: number) => (n === 1 ? "suplemento" : "suplementos");
+  const plural = (n: number) => kitNoun(marca, n);
 
   return (
     <section className={`${ui.card} ring-1 ring-brand/30`}>

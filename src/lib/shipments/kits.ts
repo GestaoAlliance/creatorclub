@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { validateKitChoice } from "@/domain";
+import { kitNoun, validateKitChoice } from "@/domain";
 import type { PortalContext } from "@/lib/portal/context";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -49,7 +49,7 @@ export async function chooseKit(
   if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
   let chosen: { productId: string; quantity: number }[];
   try {
-    chosen = validateKitChoice(items, kit.products);
+    chosen = validateKitChoice(items, kit.products, ctx.brand.slug);
   } catch (e) {
     throw new ShipmentError((e as Error).message);
   }
@@ -68,7 +68,7 @@ export async function chooseKit(
         brandId: kit.brandId,
         creatorId: ctx.creatorId,
         status: "AWAITING_APPROVAL",
-        note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kit.products === 1 ? "suplemento" : "suplementos"})`,
+        note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`,
         address,
         createdById: actorUserId,
         items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
