@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.0.2 (Creators com abas)**; depois M0.0.3–M0.0.5 e então M0.3, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M0.0.2 (Creators como a referência: abas por tipo, tabela com redes e WhatsApp, busca)**; depois Candidatas (Pendentes), Vendas com gráfico e top creators, portal, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -32,7 +32,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M0.0.1** Menu em grupos com abas (6 itens) e Configurações
 - [ ] **M0.0.2** Creators com abas (Ativas, Pendentes, Encerradas, Hunters)
 - [ ] **M0.0.3** Vendas + Cupons e Pagamentos como abas
-- [ ] **M0.0.4** Início = dashboard; "Todas as marcas" no lugar do painel Alliance
+- [x] **M0.0.4** Início = dashboard (adiantado a pedido; "Todas as marcas" fica para depois); "Todas as marcas" no lugar do painel Alliance
 - [ ] **M0.0.5** Portal com 4 telas
 - [x] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
 - [x] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
@@ -260,6 +260,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-147 — 2026-10-22 — Início com dashboard; Hunters no menu
+- **Pedido (responsável):** o Início "ainda incomoda": modelar o dashboard da referência; Hunters é diferente de
+  creator (elas trazem as creators): item próprio. Ordem aprovada: Início → Creators → Candidatas → Vendas; gráficos no
+  Início e em Vendas; tipo de creator como abas.
+- **Feito:** para quem vê dinheiro, `/admin/marca` virou dashboard: período (7, 30, 90 dias, este mês), tipo de
+  creator, "olho" que esconde os valores; faixa **Precisa de você** (cadastros, contratos, sem vender, conferência da
+  Ana, saques, aberturas, kits, envios, cupons, cada um leva à tela); 4 números com a variação contra o período
+  anterior (vendas de creators e % da loja, comissão gerada, creators que venderam de X ativas, produtos vendidos e
+  ticket); vendas por dia; loja inteira (pagas, aguardando, estornadas, canceladas); top 10 creators (abre a ficha) com
+  a concentração; top 10 produtos com cupom. Venda conta pelo pagamento, a mesma régua da comissão. Envio e Hunter
+  continuam com os cartões. Menu: Hunters virou item próprio.
+- **Verificado:** integração do dashboard (período, variação, números, dias, tops, filtro de tipo), teste do menu,
+  typecheck, build; capturas.
 
 ### CP-146 — 2026-10-22 — M0.0.1 Menu em grupos com abas
 - **Pedido (responsável):** "muita tela"; juntar para ficar enxuto e intuitivo, sem perder função. Aprovadas as

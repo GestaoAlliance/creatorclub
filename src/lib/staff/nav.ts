@@ -15,9 +15,10 @@ const GROUPS: Group[] = [
     tabs: [
       { href: "/creators", label: "Creators", needs: "creators.view" },
       { href: "/candidatas", label: "Candidatas", needs: "creators.view" },
-      { href: "/hunters", label: "Hunters", needs: "creators.edit" },
     ],
   },
+  // Hunters trazem as creators (influencers, UGC, prescritores): grupo próprio (pedido do responsável).
+  { label: "Hunters", icon: "hunter", tabs: [{ href: "/hunters", label: "Hunters", needs: "creators.edit" }] },
   {
     label: "Vendas",
     icon: "sales",
