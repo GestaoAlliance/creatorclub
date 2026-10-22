@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { monthKey, type Balance } from "@/domain";
+import { monthKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, type Balance } from "@/domain";
 import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import { readLedger, type StatementLine } from "@/lib/commission/statement";
 import type { PortalContext } from "./context";
@@ -21,6 +21,14 @@ export type PortalSummary = {
   commissionCents: number;
   recent: StatementLine[];
   coupons: string[];
+  /** M0.4: vendas com o cupom dela feitas nos últimos 30 dias e ainda não pagas (Pix, boleto). Fora do saldo e do extrato. */
+  pending: { orders: number; salesCents: number };
+  /** M0.4: o que já saiu do saldo — saques pagos (soma do extrato). */
+  usedCents: number;
+  /** M0.4: as condições dela hoje — comissão vigente e desconto do cupom (null = sem cadastro). */
+  terms: { rateBps: number | null; discountBps: number | null };
+  /** Quando a participação foi encerrada (aviso com a data). */
+  deactivatedAt: Date | null;
 };
 
 const RECENT = 8;
@@ -34,7 +42,7 @@ export async function portalSummary(prisma: PrismaClient, ctx: PortalContext, no
   // Janela folgada para trás; o mês exato é conferido no fuso da marca.
   const since = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000);
 
-  const [ledger, release, attributed, assignments] = await Promise.all([
+  const [ledger, release, attributed, assignments, pending, policy, me] = await Promise.all([
     readLedger(prisma, creator, now),
     releaseProgress(prisma, ctx.creatorId, now),
     prisma.orderAttribution.findMany({
@@ -49,9 +57,29 @@ export async function portalSummary(prisma: PrismaClient, ctx: PortalContext, no
       ? Promise.resolve([])
       : prisma.couponAssignment.findMany({
           where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }] },
-          select: { coupon: { select: { code: true } } },
+          select: { coupon: { select: { code: true, kind: true, discountBps: true } } },
           orderBy: { validFrom: "asc" },
         }),
+    // Aguardando pagamento: pedido com o cupom dela, não cancelado, não teste, sem pagamento ainda (Pix/boleto vencido
+    // vira cancelado ou expirado na Shopify e sai daqui). Só os últimos 30 dias, para não arrastar pedido esquecido.
+    prisma.order.aggregate({
+      where: {
+        brandId: ctx.brand.id,
+        attribution: { creatorId: ctx.creatorId },
+        cancelledAt: null,
+        test: false,
+        financialStatus: { notIn: [...PAID_FINANCIAL, ...REFUNDED_FINANCIAL] },
+        createdAtShop: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+      },
+      _sum: { subtotalCents: true },
+      _count: true,
+    }),
+    prisma.commissionPolicy.findFirst({
+      where: { creatorId: ctx.creatorId, validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }] },
+      orderBy: { validFrom: "desc" },
+      select: { rateBps: true },
+    }),
+    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { deactivatedAt: true } }),
   ]);
 
   const sales = attributed.filter((a) => a.order.paidAt && monthKey(a.order.paidAt, tz) === month);
@@ -66,5 +94,12 @@ export async function portalSummary(prisma: PrismaClient, ctx: PortalContext, no
       .reduce((sum, l) => sum + l.amountCents, 0),
     recent: ledger.lines.slice(0, RECENT).map(({ month: _m, ...l }) => l),
     coupons: assignments.map((a) => a.coupon.code),
+    pending: { orders: pending._count, salesCents: pending._sum.subtotalCents ?? 0 },
+    usedCents: ledger.lines.filter((l) => l.type === "WITHDRAWAL").reduce((sum, l) => sum - l.amountCents, 0),
+    terms: {
+      rateBps: policy?.rateBps ?? null,
+      discountBps: assignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.discountBps ?? null,
+    },
+    deactivatedAt: me.deactivatedAt,
   };
 }

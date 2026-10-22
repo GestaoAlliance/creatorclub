@@ -12,11 +12,14 @@ import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 export function PortalShell({
   ctx,
   unread = 0,
+  endedAt = null,
   children,
 }: {
   ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly">;
   /** U5: avisos não lidos (sininho). */
   unread?: number;
+  /** M0.4: quando a participação foi encerrada (aviso com a data). */
+  endedAt?: Date | null;
   children: ReactNode;
 }) {
   const base = `/portal/${ctx.brand.slug}`;
@@ -81,7 +84,9 @@ export function PortalShell({
         )}
         {ctx.status === "DEACTIVATED" && (
           <p className="glass mb-4 rounded-2xl px-4 py-3 text-sm">
-            Sua participação na {ctx.brand.name} foi encerrada. {ctx.ugcOnly ? "Você continua vendo suas vendas." : "Você continua vendo seu saldo e seu extrato."}
+            Sua participação na {ctx.brand.name} foi encerrada
+            {endedAt ? ` em ${endedAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" })}` : ""}.{" "}
+            {ctx.ugcOnly ? "Você continua vendo suas vendas." : "Você continua vendo seu saldo e seu extrato."}
           </p>
         )}
         {/* D-TUTORIAL: passo a passo no primeiro acesso a cada tela (não abre sozinho para quem só visualiza, D-VIEWAS). */}

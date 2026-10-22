@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, Clock, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Banknote, Clock, Hourglass, ShoppingBag, Wallet } from "lucide-react";
 import { CouponView } from "@/components/portal/coupon-view";
 import { HelpTip } from "@/components/ui/tour";
 import type { HelpId } from "@/domain/tutorial";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
-import { releaseNote } from "@/components/ui/release-progress";
+import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
 import type { PortalCoupon } from "@/lib/portal/coupons";
 import type { PortalSummary } from "@/lib/portal/home";
 
@@ -23,13 +23,15 @@ export function HomeView({ s, base, coupons, ugc = false }: { s: PortalSummary; 
   const cards = [
     { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} em saque` : "já liberado para você", Icon: Wallet, accent: true, help: "saldo" as HelpId },
     { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.balance.heldCents > 0 ? releaseNote(s.release) : "nada em espera", Icon: Clock, help: "a-liberar" as HelpId },
+    { label: "Aguardando pagamento", value: formatBRL(s.pending.salesCents), note: s.pending.orders ? `${s.pending.orders} ${s.pending.orders === 1 ? "pedido" : "pedidos"} com seu cupom` : "nenhum pedido esperando", Icon: Hourglass, help: "aguardando" as HelpId },
     { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: `${s.salesCount} ${s.salesCount === 1 ? "pedido" : "pedidos"}`, Icon: ShoppingBag, help: "vendas-mes" as HelpId },
     { label: `Comissão de ${monthName}`, value: formatBRL(s.commissionCents), note: "pela data do pagamento", Icon: ArrowUpRight, help: "comissao-mes" as HelpId },
+    { label: "Já usado", value: formatBRL(s.usedCents), note: "saques pagos", Icon: Banknote, help: "ja-usado" as HelpId },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {cards.map(({ label, value, note, Icon, accent, help }) => (
           <div key={label} data-tour={help} className={`glass rounded-3xl p-4 md:p-5 ${accent ? "ring-2 ring-brand/40" : ""}`}>
             <div className="mb-3 flex items-start justify-between gap-2">
@@ -45,7 +47,18 @@ export function HomeView({ s, base, coupons, ugc = false }: { s: PortalSummary; 
         ))}
       </section>
 
-      <CouponView coupons={coupons.list} origin={coupons.origin} brandName={coupons.brandName} deactivated={coupons.deactivated} />
+      {s.release.minCents !== null && (
+        <section data-tour="minimo-mes" className="glass flex flex-col gap-2 rounded-3xl p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold">Mínimo do contrato</h2>
+            <HelpTip id="minimo-mes" />
+          </div>
+          <ReleaseProgressBar r={s.release} />
+          <p className="text-xs text-stone-500">{releaseNote(s.release)}{s.release.accumulatedCents < s.release.minCents ? " neste fechamento" : ""}.</p>
+        </section>
+      )}
+
+      <CouponView coupons={coupons.list} origin={coupons.origin} brandName={coupons.brandName} deactivated={coupons.deactivated} terms={s.terms} />
 
       <div className="grid gap-6">
         <section data-tour="movimentacoes" className="glass rounded-3xl p-5">
@@ -110,7 +123,7 @@ function UgcHome({ s, base, monthName, coupons }: { s: PortalSummary; base: stri
       <Link href={`${base}/vendas`} className="glass flex items-center justify-between rounded-3xl px-5 py-4 text-sm font-medium">
         Ver todas as minhas vendas <span aria-hidden>→</span>
       </Link>
-      <CouponView coupons={coupons.list} origin={coupons.origin} brandName={coupons.brandName} deactivated={coupons.deactivated} />
+      <CouponView coupons={coupons.list} origin={coupons.origin} brandName={coupons.brandName} deactivated={coupons.deactivated} terms={{ rateBps: null, discountBps: s.terms.discountBps }} />
     </div>
   );
 }

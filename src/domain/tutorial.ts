@@ -28,6 +28,18 @@ export const HELP = {
     title: "Disponível para saque",
     text: "É o dinheiro que já é seu. Do dia 1 ao 10 de cada mês você pede o saque do valor total na aba Saque e recebe por Pix.",
   },
+  aguardando: {
+    title: "Aguardando pagamento",
+    text: "Pedidos com o seu cupom ainda não pagos (Pix ou boleto). Quando pagam, entram nas vendas e geram comissão; se não pagam, somem daqui.",
+  },
+  "ja-usado": {
+    title: "Já usado",
+    text: "Tudo o que você já sacou do seu saldo nesta marca.",
+  },
+  "minimo-mes": {
+    title: "Mínimo do contrato",
+    text: "No dia 1 a comissão vira saldo se as suas vendas acumuladas chegarem ao mínimo do contrato. A barra mostra quanto falta.",
+  },
   "a-liberar": {
     title: "A liberar",
     text: "Comissões das suas vendas esperando o fechamento do mês. No dia 1 elas viram saldo disponível quando suas vendas acumuladas chegam ao mínimo do seu contrato.",
@@ -274,7 +286,7 @@ export type HelpId = keyof typeof HELP;
 
 /** Ordem dos balões no primeiro acesso a cada tela. Passo sem cartão na tela (ex.: sem gráfico) é pulado. */
 export const TOURS: Record<TourScreen, HelpId[]> = {
-  inicio: ["saldo", "a-liberar", "vendas-mes", "comissao-mes", "pedidos-mes", "cupom-codigo", "cupom-link", "cupom-cliques", "movimentacoes"],
+  inicio: ["saldo", "a-liberar", "aguardando", "ja-usado", "vendas-mes", "comissao-mes", "pedidos-mes", "minimo-mes", "cupom-codigo", "cupom-link", "cupom-cliques", "movimentacoes"],
   vendas: ["periodo", "vendas-resumo", "vendas-grafico", "vendas-lista"],
   saque: ["saque-saldo", "saque-nf", "saque-recibo", "meus-saques", "extrato"],
   envios: ["solicitar-pedido", "endereco", "meus-envios"],

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.4 — portal** ("Aguardando pagamento", "Já usado", comissão e desconto dela no Início, barra do mínimo do contrato); depois M0.5 (busca de creator no painel inteiro) e a Fase 1, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M0.5 — busca de creator no painel inteiro** (nome, cupom, @, CPF); depois a Fase 1 (saques que dão menos trabalho), do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-159 — 2026-10-22 — Portal: aguardando pagamento, já usado, condições, mínimo e data do encerramento (M0.4)
+- **Feito (D-PORTALM04):** Início com 6 cartões (disponível, a liberar, aguardando pagamento, vendas do mês, comissão
+  do mês, já usado), a barra do mínimo do contrato, o desconto e a comissão dela no cartão do cupom e a data no aviso de
+  encerramento. Tutorial do Início com os passos novos.
+- **Verificado:** integração (`portal`: aguardando 30 dias, já usado, condições), testes, typecheck, build; capturas.
 
 ### CP-158 — 2026-10-22 — Marcas: todas em "Todas as marcas", só a escolhida dentro de uma marca
 - **Pedido (responsável):** a tela Marcas, dentro da Botanika, mostrava e editava as três.

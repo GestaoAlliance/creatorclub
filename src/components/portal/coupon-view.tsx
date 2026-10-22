@@ -8,7 +8,21 @@ import { ShareButton } from "./share-button";
  * Cupom, link e cliques (E7.5), no Início do portal desde M0.0.5 (a tela Cupom saiu do menu). No computador fica
  * numa faixa: código, link e cliques lado a lado. Só exibe.
  */
-export function CouponView({ coupons, origin, brandName, deactivated }: { coupons: PortalCoupon[]; origin: string; brandName: string; deactivated: boolean }) {
+export function CouponView({
+  coupons,
+  origin,
+  brandName,
+  deactivated,
+  terms,
+}: {
+  coupons: PortalCoupon[];
+  origin: string;
+  brandName: string;
+  deactivated: boolean;
+  /** M0.4: as condições dela (comissão vigente e desconto do cupom); UGC sem comissão passa `rateBps: null`. */
+  terms?: { rateBps: number | null; discountBps: number | null };
+}) {
+  const pct = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
   if (coupons.length === 0) {
     return (
       <section className="glass rounded-3xl p-6 text-sm text-stone-600 dark:text-stone-400">
@@ -33,7 +47,11 @@ export function CouponView({ coupons, origin, brandName, deactivated }: { coupon
                 <span className="font-mono text-2xl font-semibold tracking-wider">{c.code}</span>
                 <CopyButton value={c.code} label="Copiar cupom" />
               </div>
-              <p className="text-xs text-stone-500">A pessoa digita o cupom no carrinho da {brandName}.</p>
+              <p className="text-xs text-stone-500">
+                A pessoa digita o cupom no carrinho da {brandName}
+                {terms?.discountBps != null ? ` e ganha ${pct(terms.discountBps)} de desconto` : ""}.
+                {terms?.rateBps != null && <> Você ganha <strong className="text-stone-700 dark:text-stone-300">{pct(terms.rateBps)}</strong> de comissão sobre os produtos.</>}
+              </p>
             </div>
 
             <div data-tour="cupom-link" className="flex min-w-0 flex-col gap-2">
