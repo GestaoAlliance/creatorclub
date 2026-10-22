@@ -67,7 +67,10 @@ describe("saque de pessoa física com recibo (D-PFRECEIPT, banco real)", () => {
     const [row] = (await withdrawalQueue(prisma, pagamento, "REQUESTED")).filter((x) => x.id === r.withdrawalId);
     expect(row).toMatchObject({ individual: true, hasNf: false });
     expect((await receiptFor(prisma, pagamento, r.withdrawalId)).body).toContain("Maria Exemplo da Silva");
-    await expect(receiptFor(prisma, gestao, r.withdrawalId)).rejects.toThrow(/Sem permissão/);
+    // M1.1: a Gestão aprova, então também abre o recibo; quem não vê saques, não.
+    expect((await receiptFor(prisma, gestao, r.withdrawalId)).body).toContain("Maria Exemplo da Silva");
+    const outra = await userWith("PAGAMENTO", (await seedBrand(prisma)).brand.id);
+    await expect(receiptFor(prisma, outra, r.withdrawalId)).rejects.toThrow(/Sem permissão/);
   });
 
   it("CPF diferente do cadastro é recusado", async () => {

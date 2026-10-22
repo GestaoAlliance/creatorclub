@@ -63,7 +63,7 @@ export async function readLedger(
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: { order: { select: { name: true, paidAt: true } } },
     }),
-    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
+    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: { in: ["REQUESTED", "APPROVED"] } }, select: { amountCents: true } }),
     releasedThroughFor(prisma, [creator.id]),
   ]);
   const release = { releasedThrough: released.get(creator.id) ?? null };

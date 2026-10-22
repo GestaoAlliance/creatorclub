@@ -61,7 +61,7 @@ async function brandNotices(
     const asked = new Set(
       (
         await prisma.withdrawal.findMany({
-          where: { creatorId: { in: unlocked.map((c) => c.id) }, status: { in: ["REQUESTED", "PAID"] }, requestedAt: { gte: new Date(now.getTime() - 40 * DAY) } },
+          where: { creatorId: { in: unlocked.map((c) => c.id) }, status: { in: ["REQUESTED", "APPROVED", "PAID"] }, requestedAt: { gte: new Date(now.getTime() - 40 * DAY) } },
           select: { creatorId: true, requestedAt: true },
         })
       )

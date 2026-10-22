@@ -509,6 +509,8 @@ enum NfCheckStatus {
 
 enum WithdrawalStatus {
   REQUESTED
+  /// M1.1 (D-WDAPPROVE): a Gestão aprovou; falta o Pagamento fazer o Pix. Continua em aberto (reserva o saldo).
+  APPROVED
   PAID
   REJECTED
   CANCELLED
@@ -529,6 +531,9 @@ model Withdrawal {
   requestedAt    DateTime         @default(now())
   decidedAt      DateTime?
   decidedById    String?
+  /// M1.1 (D-WDAPPROVE): quem (Gestão) e quando aprovou para o Pagamento pagar.
+  approvedAt     DateTime?
+  approvedById   String?
   note           String?
 
   brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)

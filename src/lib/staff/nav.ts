@@ -32,7 +32,7 @@ const GROUPS: Group[] = [
     label: "Pagamentos",
     icon: "payout",
     tabs: [
-      { href: "/saques", label: "Saques", needs: "withdrawals.manage" },
+      { href: "/saques", label: "Saques", needs: "withdrawals.view" },
       { href: "/abertura", label: "Abertura", needs: "withdrawals.manage" },
       { href: "/saques/conferencia", label: "Conferência da planilha", needs: "withdrawals.manage" },
     ],

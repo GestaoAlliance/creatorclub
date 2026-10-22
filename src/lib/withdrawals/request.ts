@@ -176,7 +176,7 @@ export async function requestWithdrawal(
         const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj });
         if (nf.problems.length) throw new WithdrawalRequestError(nf.problems.join(" "));
         const accessKey = nfFields.accessKey;
-        if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "PAID"] } } })))
+        if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "APPROVED", "PAID"] } } })))
           throw new WithdrawalRequestError(NF_USED);
         // Ficha sem CNPJ: grava o CNPJ de quem emitiu a nota.
         if (!creator.account.cnpj && nf.issuerDoc?.length === 14)

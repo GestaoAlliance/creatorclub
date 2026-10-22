@@ -18,10 +18,10 @@ export const WITHDRAWAL_BLOCK_TEXT: Record<WithdrawalBlock, string> = {
   VIEW_ONLY: "Visualização da equipe: nada é pedido em nome da creator.",
   OUTSIDE_WINDOW: "Os pedidos de saque abrem do dia {start} ao dia {end} de cada mês, com a nota fiscal do valor total liberado.",
   NOTHING_AVAILABLE: "Você ainda não tem comissão liberada. A comissão é liberada no fechamento do mês (dia 1) quando suas vendas acumuladas chegam a {min}.",
-  OPEN_REQUEST: "Você já tem um pedido de saque em análise. Assim que ele for concluído, pode pedir outro.",
+  OPEN_REQUEST: "Você já tem um pedido de saque em andamento. Assim que ele for concluído, pode pedir outro.",
 };
 
-export const WITHDRAWAL_STATUS_LABEL = { REQUESTED: "Em análise", PAID: "Pago", REJECTED: "Recusado", CANCELLED: "Cancelado" } as const;
+export const WITHDRAWAL_STATUS_LABEL = { REQUESTED: "Em análise", APPROVED: "Aprovado", PAID: "Pago", REJECTED: "Recusado", CANCELLED: "Cancelado" } as const;
 
 export type WithdrawalTab = {
   balance: Balance;
@@ -72,7 +72,7 @@ export async function portalWithdrawalTab(
   if (!creator.withdrawalsUnlockedAt) blocks.push("LOCKED");
   if (!isInsideWithdrawalWindow(now, { ...policy, timeZone: brand.timezone })) blocks.push("OUTSIDE_WINDOW");
   if (ledger.balance.availableCents <= 0) blocks.push("NOTHING_AVAILABLE");
-  if (withdrawals.some((w) => w.status === "REQUESTED")) blocks.push("OPEN_REQUEST");
+  if (withdrawals.some((w) => w.status === "REQUESTED" || w.status === "APPROVED")) blocks.push("OPEN_REQUEST");
 
   return {
     balance: ledger.balance,

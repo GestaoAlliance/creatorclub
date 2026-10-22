@@ -7,13 +7,13 @@ const V = "vermefree";
 describe("matriz de permissões (D-ROLES)", () => {
   const expected: Record<StaffRole, Permission[]> = {
     SUPER_ADMIN: [
-      "creators.view", "creators.edit", "money.view", "withdrawals.manage", "shipping.view", "shipping.manage",
+      "creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "withdrawals.manage", "shipping.view", "shipping.manage",
       "personal.address", "personal.fiscal", "ledger.adjust", "prospects.own", "integrations.manage", "staff.manage",
       "portal.viewAs",
     ],
-    GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
+    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
     ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
-    PAGAMENTO: ["creators.view", "money.view", "withdrawals.manage", "personal.fiscal"],
+    PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
     HUNTER: ["prospects.own"],
   };
 

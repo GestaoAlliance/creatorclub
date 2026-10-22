@@ -15,6 +15,7 @@ const ORDER: WithdrawalBlock[] = ["VIEW_ONLY", "LOCKED", "OPEN_REQUEST", "OUTSID
 
 const STATUS_STYLE = {
   REQUESTED: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
+  APPROVED: "bg-sky-500/15 text-sky-800 dark:text-sky-300",
   PAID: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
   REJECTED: "bg-red-500/15 text-red-700 dark:text-red-300",
   CANCELLED: "bg-stone-500/15 text-stone-700 dark:text-stone-300",
@@ -131,6 +132,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
                   <p className="text-xs text-stone-500">
                     pedido em {day(w.requestedAt)}
                     {w.decidedAt && ` · concluído em ${day(w.decidedAt)}`}
+                    {w.status === "APPROVED" && " · aprovado, aguardando o Pix"}
                     {w.status === "REJECTED" && w.note && ` · motivo: ${w.note}`}
                   </p>
                 </div>

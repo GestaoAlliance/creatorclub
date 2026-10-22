@@ -142,7 +142,7 @@ export const HELP = {
   },
   "eq-saques": {
     title: "Saques",
-    text: "Pedidos de saque esperando a conferência da nota e o Pix. Aberturas a aprovar são saldos antigos que só podem ser sacados depois de aprovados.",
+    text: "Para aprovar: a Gestão confere a nota. Para pagar: o Pagamento faz o Pix. Aberturas a aprovar são saldos antigos travados até aprovar.",
   },
   "eq-envios": {
     title: "Envios",
@@ -250,19 +250,19 @@ export const HELP = {
   },
   "sq-abas": {
     title: "Situação",
-    text: "Em análise é a fila para pagar; Decididos guarda os pagos e os recusados.",
+    text: "Em análise: a Gestão confere e aprova. Aprovados: o Pagamento faz o Pix. Decididos guarda os pagos e os recusados.",
   },
   "sq-resumo": {
-    title: "Resumo",
-    text: "Quantos pedidos esperam e o total a pagar por Pix.",
+    title: "Comissão a pagar",
+    text: "Sacável (liberado e não pedido), pedidos em análise e aprovados, o que espera o fechamento do mês e as vendas ainda sem pagamento.",
   },
   "sq-cartao": {
     title: "Pedido de saque",
-    text: "Confira a nota (tomador, valor e CNPJ) ou o recibo e copie a chave Pix. Valor acima do saldo aparece em vermelho.",
+    text: "O selo mostra se o sistema conferiu a nota; \"Conferir de novo\" lê outra vez. Valor acima do saldo aparece em vermelho.",
   },
   "sq-pagar": {
-    title: "Marcar como pago",
-    text: "Só depois do Pix feito. Se algo não bate, recuse com o motivo: a creator vê e pode pedir de novo.",
+    title: "Aprovar ou pagar",
+    text: "A Gestão aprova; o Pagamento marca como pago só depois do Pix. Se algo não bate, recuse com o motivo: a creator vê.",
   },
   "de-filtros": {
     title: "Filtros",

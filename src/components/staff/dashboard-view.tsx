@@ -58,8 +58,10 @@ function Needs({ h }: { h: StaffHome }) {
     items.push({ href: "/admin/creators?pendencia=1", label: "a conferir pela Ana", n: h.creators.toReview });
   }
   if (h.withdrawals) {
-    items.push({ href: "/admin/saques", label: "saques em análise", n: h.withdrawals.open });
-    items.push({ href: "/admin/abertura", label: "aberturas a aprovar", n: h.withdrawals.openingsPending });
+    const w = h.withdrawals;
+    if (w.mine.approve) items.push({ href: "/admin/saques", label: "saques para aprovar", n: w.toApprove });
+    if (w.mine.pay) items.push({ href: "/admin/saques?ver=aprovados", label: "saques aprovados para pagar", n: w.toPay });
+    if (w.openingsPending !== null) items.push({ href: "/admin/abertura", label: "aberturas a aprovar", n: w.openingsPending });
   }
   if (h.shipments) {
     items.push({ href: "/admin/envios", label: "kits a aprovar", n: h.shipments.awaiting });
