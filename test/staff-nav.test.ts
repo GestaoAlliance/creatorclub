@@ -34,8 +34,8 @@ describe("menu da equipe por papel", () => {
     expect(hasAlliancePanel([{ role: "SUPER_ADMIN", brandId: null }], 1)).toBe(true);
     expect(hasAlliancePanel([{ role: "GESTAO", brandId: "a" }], 1)).toBe(false);
     expect(hasAlliancePanel([{ role: "GESTAO", brandId: "a" }, { role: "GESTAO", brandId: "b" }], 2)).toBe(true);
-    expect(allianceNav([{ role: "SUPER_ADMIN", brandId: null }]).map((i) => i.label)).toEqual(["Marcas da Alliance", "Configurações"]);
-    expect(allianceNav([{ role: "GESTAO", brandId: "a" }]).map((i) => i.label)).toEqual(["Marcas da Alliance"]);
+    expect(allianceNav([{ role: "SUPER_ADMIN", brandId: null }]).map((i) => i.label)).toEqual(["Início", "Configurações"]);
+    expect(allianceNav([{ role: "GESTAO", brandId: "a" }]).map((i) => i.label)).toEqual(["Início"]);
     expect(staffNav([{ role: "ENVIO", brandId: "a" }])[0]).toEqual({ href: "/marca", label: "Início", icon: "home" });
   });
 });

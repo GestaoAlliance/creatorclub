@@ -7,7 +7,7 @@ const full: Record<string, string> = {
   instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria10",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp",
 };
-const ADDRESS = "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
+const ADDRESS = "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
 
 describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
   it("cadastro completo vira as respostas no formato do Google e os dados da conta", () => {

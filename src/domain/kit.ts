@@ -38,11 +38,14 @@ export function validateKitChoice(items: readonly { productId: string; quantity:
   return chosen;
 }
 
+/** Marcas que vendem suplementos: Botanika e VermeFree (suplementos naturais antiparasitários). */
+const SUPPLEMENT_BRANDS = new Set(["botanika", "vermefree"]);
+
 /**
- * Como chamar o produto do kit em cada marca (D-WELCOMEKIT1): Botanika manda suplementos; Revita Derma e VermeFree,
- * produtos da marca (sérum, creme...).
+ * Como chamar o produto do kit em cada marca (D-WELCOMEKIT1): Botanika e VermeFree mandam suplementos; a Revita Derma
+ * vende dermocosméticos (sérum, creme), então "produto". Marca nova sem cadastro aqui: "produto".
  */
 export function kitNoun(brandSlug: string | null | undefined, n: number): string {
-  if (brandSlug === "botanika") return n === 1 ? "suplemento" : "suplementos";
+  if (brandSlug && SUPPLEMENT_BRANDS.has(brandSlug)) return n === 1 ? "suplemento" : "suplementos";
   return n === 1 ? "produto" : "produtos";
 }

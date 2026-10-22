@@ -44,12 +44,13 @@ describe("kit mensal (D-KIT)", () => {
 });
 
 describe("nome do produto do kit por marca (D-WELCOMEKIT1)", () => {
-  it("Botanika manda suplementos; as outras marcas, produtos", async () => {
+  it("Botanika e VermeFree mandam suplementos; a Revita Derma, produtos (dermocosméticos)", async () => {
     const { kitNoun } = await import("@/domain");
     expect(kitNoun("botanika", 1)).toBe("suplemento");
     expect(kitNoun("botanika", 3)).toBe("suplementos");
     expect(kitNoun("revita-derma", 1)).toBe("produto");
-    expect(kitNoun("vermefree", 2)).toBe("produtos");
+    expect(kitNoun("vermefree", 2)).toBe("suplementos");
+    expect(kitNoun("marca-nova", 1)).toBe("produto");
     expect(validateKitChoice([{ productId: "a", quantity: 1 }], 1, "revita-derma")).toEqual([{ productId: "a", quantity: 1 }]);
     expect(() => validateKitChoice([], 1, "revita-derma")).toThrow("Escolha 1 produto (você escolheu 0).");
   });

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
-import { formatBRL } from "@/domain";
+import { formatBRL, kitNoun } from "@/domain";
 import type { monthPerformance } from "@/lib/creators/performance";
 
 type Data = Awaited<ReturnType<typeof monthPerformance>>;
@@ -43,8 +43,8 @@ function MinBar({ r }: { r: NonNullable<Row["release"]> }) {
   );
 }
 
-function KitText({ k }: { k: NonNullable<Row["kit"]> }) {
-  const n = (p: number) => `${p} ${p === 1 ? "suplemento" : "suplementos"}`;
+function KitText({ k, brandSlug }: { k: NonNullable<Row["kit"]>; brandSlug: string }) {
+  const n = (p: number) => `${p} ${kitNoun(brandSlug, p)}`;
   return (
     <span className="inline-flex items-center gap-1 text-xs text-stone-600 dark:text-stone-400">
       <Gift className="size-3.5" />
@@ -55,7 +55,7 @@ function KitText({ k }: { k: NonNullable<Row["kit"]> }) {
 }
 
 /** Desempenho do mês (U4): resumo, ranking de influencers e prescritores, e UGC à parte. Só exibe. */
-export function DesempenhoView({ data, sp }: { data: Data; sp: Search }) {
+export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search; brandSlug: string }) {
   const { summary: s } = data;
   const ugcTab = sp.aba === "ugc";
   const partners = data.partners.filter((r) => (!sp.tipo || (r.categories as string[]).includes(sp.tipo)) && (sp.semvenda !== "1" || r.orders === 0));
@@ -127,7 +127,7 @@ export function DesempenhoView({ data, sp }: { data: Data; sp: Search }) {
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       {r.categories.map((c) => <span key={c} className={badge.neutral}>{KIND[c] ?? c}</span>)}
                       {r.idle && <span className={badge.amber}>{r.idle.neverSold ? `nunca vendeu · ${r.idle.days} dias` : `sem vender há ${r.idle.days} dias`}</span>}
-                      {r.kit && <KitText k={r.kit} />}
+                      {r.kit && <KitText k={r.kit} brandSlug={brandSlug} />}
                     </span>
                   </span>
                   <span className="flex flex-col">

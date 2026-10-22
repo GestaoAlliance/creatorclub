@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
@@ -17,8 +17,9 @@ import { SectionTabs } from "./section-tabs";
 const ALLIANCE_COLORS = { primaryColor: "#18181B", secondaryColor: null };
 
 /**
- * Moldura da equipe em dois níveis (A1, D-ALLIANCE). No painel da Alliance: só as marcas (e o cadastro e a equipe,
- * para o super admin), em cor neutra. Dentro de uma marca: o nome e a cor dela, o "Alliance" para voltar e as telas.
+ * Moldura da equipe em dois níveis (A1, D-ALLIANCE). Em "Todas as marcas" (D-ALLBRANDS): o Início somado (e as
+ * Configurações, para o super admin), em cor neutra. Dentro de uma marca: o nome e a cor dela e as telas. O seletor do
+ * topo troca de marca ou volta para "Todas as marcas".
  */
 export function StaffFrame(p: {
   brand: StaffBrand | null;
@@ -32,30 +33,39 @@ export function StaffFrame(p: {
 }) {
   const path = usePathname();
   const inAlliance = p.alliance && ALLIANCE_PATHS.includes(path);
-  const items: NavItem[] = inAlliance ? p.allianceItems : p.alliance ? [{ href: "", label: "Alliance", icon: "grid" }, ...p.brandItems] : p.brandItems;
+  // D-ALLBRANDS: "Todas as marcas" fica no seletor do topo (não mais um item "Alliance" no menu).
+  const items: NavItem[] = inAlliance ? p.allianceItems : p.brandItems;
   const vars = inAlliance || !p.brand ? brandCssVars(ALLIANCE_COLORS) : brandCssVars(p.brand);
-  const others = p.brands.filter((b) => b.slug !== p.brand?.slug);
+  const others = inAlliance ? p.brands : p.brands.filter((b) => b.slug !== p.brand?.slug);
   return (
     <div style={vars as CSSProperties} className="portal-bg flex min-h-screen">
-      <SideNav base="/admin" brandName={inAlliance ? "Alliance" : (p.brand?.name ?? "Creator Club")} items={items} />
+      <SideNav base="/admin" brandName={inAlliance ? "Todas as marcas" : (p.brand?.name ?? "Creator Club")} items={items} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-brand-2">
-              {inAlliance ? "Creator Club · Alliance" : `Alliance · ${p.brand?.name ?? ""}`}
+              {inAlliance ? "Alliance · Todas as marcas" : `Alliance · ${p.brand?.name ?? ""}`}
             </p>
             <p className="truncate text-lg font-semibold">Olá, {p.firstName}</p>
           </div>
           <div className="flex items-center gap-2">
-            {!inAlliance && p.brand && (
+            {(inAlliance || p.brand) && (
               <details className="relative">
                 <summary className="glass flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2 text-sm">
-                  <span className="size-3 rounded-full" style={{ background: brandCssVars(p.brand)["--brand"] }} />
-                  {p.brand.name}
-                  {others.length > 0 && <ChevronDown className="size-3.5 text-stone-500" />}
+                  {inAlliance || !p.brand ? (
+                    <><LayoutGrid className="size-3.5" /> Todas as marcas</>
+                  ) : (
+                    <><span className="size-3 rounded-full" style={{ background: brandCssVars(p.brand)["--brand"] }} />{p.brand.name}</>
+                  )}
+                  {(others.length > 0 || p.alliance) && <ChevronDown className="size-3.5 text-stone-500" />}
                 </summary>
-                <div className="glass absolute right-0 z-30 mt-2 flex min-w-48 flex-col rounded-2xl p-2">
-                  <p className="px-3 pb-1 pt-2 text-xs text-stone-500">{others.length ? "Trocar de marca" : "Única marca do seu acesso"}</p>
+                <div className="glass absolute right-0 z-30 mt-2 flex min-w-52 flex-col rounded-2xl p-2">
+                  <p className="px-3 pb-1 pt-2 text-xs text-stone-500">{others.length || p.alliance ? "Trocar de marca" : "Única marca do seu acesso"}</p>
+                  {p.alliance && !inAlliance && (
+                    <Link href="/admin" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-white/60 dark:hover:bg-white/10">
+                      <LayoutGrid className="size-3.5" /> Todas as marcas
+                    </Link>
+                  )}
                   {others.map((b) => (
                     <BrandSwitchOption key={b.slug} slug={b.slug} name={b.name} color={brandCssVars(b)["--brand"] ?? b.primaryColor} />
                   ))}

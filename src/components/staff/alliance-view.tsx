@@ -29,6 +29,15 @@ export function AllianceView({ brands }: { brands: Brands }) {
   return (
     <>
       <PageHeader title="Marcas da Alliance">Escolha a marca para entrar no painel dela, com tudo dela: candidatas, creators, cupons, envios, saques, contratos e a loja.</PageHeader>
+      <AllianceBrandCards brands={brands} />
+    </>
+  );
+}
+
+/** Um cartão por marca com o que pede atenção ("Precisa de você" de cada uma) e o botão para entrar nela. */
+export function AllianceBrandCards({ brands }: { brands: Brands }) {
+  return (
+    <>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {brands.map((b) => {
           const c = b.home.creators;
