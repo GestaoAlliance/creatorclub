@@ -15,6 +15,7 @@ import { markReviewed, OpeningError } from "@/lib/withdrawals/opening";
 import { correctRateSinceStart, RateFixError } from "@/lib/commission/rate-fix";
 import { ContractError, updateChecklist } from "@/lib/creators/contract";
 import { CouponCreateError, createCouponInShopify } from "@/lib/coupons/create";
+import { changeCouponDiscount, DiscountChangeError } from "@/lib/coupons/discount";
 import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/creators/ugc";
 import { formatBRL } from "@/domain";
 import { checkCreatorContracts, ContractSendError, sendContract } from "@/lib/autentique/contracts";
@@ -28,7 +29,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError || error instanceof NoteError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError || error instanceof NoteError || error instanceof DiscountChangeError) {
       return { error: error.message };
     }
     throw error;
@@ -186,4 +187,34 @@ export async function checkContractAction(_prev: State, form: FormData): Promise
 export async function noteAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   return run(id, async () => void (await addCreatorNote(db(), await currentActor(), id, String(form.get("body") ?? ""))), "Observação salva.");
+}
+
+/**
+ * Comissão e desconto juntos, no topo da ficha (D-RATEDISCOUNT). O desconto vai primeiro (Shopify); a comissão vale
+ * para pedidos pagos daqui pra frente. Se o desconto passar e a comissão não, a mensagem diz o que ficou salvo.
+ */
+export async function pricingAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  const rate = form.get("rate");
+  const discount = form.get("discount");
+  return run(id, async () => {
+    const actor = await currentActor();
+    const done: string[] = [];
+    if (typeof discount === "string" && discount.trim()) {
+      const r = await changeCouponDiscount(db(), actor, { creatorId: id, discountBps: percentToBps(discount) });
+      if (r.changed) done.push(`desconto do cupom ${r.code} mudado na Shopify`);
+    }
+    if (typeof rate === "string" && rate.trim()) {
+      try {
+        const before = await db().commissionPolicy.findFirst({ where: { creatorId: id, validTo: null }, select: { rateBps: true } });
+        const rateBps = percentToBps(rate);
+        await changeRate(db(), actor, id, rateBps);
+        if (before && before.rateBps !== rateBps) done.push("comissão nova vale para pedidos pagos a partir de agora");
+      } catch (error) {
+        if (done.length && (error instanceof ProfileError || error instanceof ReviewError)) return { error: `Desconto salvo, mas a comissão não: ${error.message}` };
+        throw error;
+      }
+    }
+    return { ok: done.length ? `Salvo: ${done.join("; ")}.` : "Nada mudou." };
+  }, "");
 }

@@ -17,7 +17,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -128,6 +128,14 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               <CopyButton value={`${linkBase}${c.code}`} label="Copiar link" />
             </div>
           ) : null;
+        })()}
+        {(() => {
+          const c = p.coupons.find((x) => !x.until && x.kind === "CREATOR");
+          const rate = p.policies.find((x) => !x.until) ?? null;
+          const locked = !rate ? "Sem taxa definida: defina na aba Cadastro." : !rate.confirmed ? "Confirme a taxa atual na conferência antes de mudar." : null;
+          return ugcOnly && !c ? null : (
+            <PricingEditor creatorId={p.id} rateBps={rate?.rateBps ?? null} discountBps={c?.discountBps ?? null} coupon={c?.code ?? null} canEdit={p.canEdit && p.status !== "DEACTIVATED"} rateLocked={locked} />
+          );
         })()}
         {numbers && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

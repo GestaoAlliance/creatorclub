@@ -261,6 +261,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-153 — 2026-10-22 — Editar comissão e desconto no topo da ficha (D-RATEDISCOUNT)
+- **Pedido (responsável):** antes do merge das Candidatas, um lugar para editar a comissão da creator e o desconto do
+  cupom dela. Respostas: no topo da ficha; comissão só daqui pra frente; Gestão e super admin.
+- **Feito:** topo da ficha mostra "Comissão X% · Desconto do cupom Y%" e o botão "Editar comissão e desconto";
+  desconto muda na Shopify (`discountCodeBasicUpdate`, só o valor, combinável; acha pelo código quando falta o id) e
+  depois no banco; comissão abre nova vigência. Mensagens claras quando a Shopify recusa ou não responde.
+- **Verificado:** integração nova (`coupon-discount`, Shopify falsa), testes, typecheck, build; capturas; comissão salva
+  pela tela no banco local.
+
 ### CP-152 — 2026-10-22 — Candidatas no modelo da referência (aprovar/recusar na linha)
 - **Feito (M0.0.2/M4.1):** situação Pendentes · Aprovadas · Recusadas; origem em abas (Todas, Site, Captação, Hunter);
   busca e filtros (tipo, hunter, marca de interesse, ordem); alertas clicáveis (esperando há mais de 7 dias, trazidas

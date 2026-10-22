@@ -186,6 +186,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     coupons: assignments.map((x) => ({
       code: x.coupon.code,
       kind: x.coupon.kind,
+      discountBps: x.coupon.discountBps,
       since: x.validFrom,
       until: x.validTo,
       confirmed: x.confirmedAt !== null,
