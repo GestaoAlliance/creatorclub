@@ -7,6 +7,14 @@ import { letters, seedBrand, testClient } from "./fixtures";
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
+/** CPF válido e único para este teste (o banco de teste é dividido com os outros testes, que usam CPFs de exemplo). */
+function uniqueCpf(): string {
+  const base = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+  const dv = (d: number[]) => ((d.reduce((s, n, i) => s + n * (d.length + 1 - i), 0) * 10) % 11) % 10;
+  const d1 = dv(base);
+  return [...base, d1, dv([...base, d1])].join("");
+}
+
 async function userWith(grants: { role: "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO"; brandId: string | null }[]) {
   const id = randomUUID();
   await prisma.user.create({ data: { id, email: `${id}@x.com`, name: "X", roleGrants: { create: grants } } });
@@ -18,7 +26,8 @@ describe("busca de creator no painel inteiro (M0.5, banco real)", () => {
     const a = await seedBrand(prisma);
     const b = await seedBrand(prisma);
     const tag = letters(6).toLowerCase();
-    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { name: `Mariana ${tag}`, instagram: `mari.${tag}`, cpf: "52998224725" } });
+    const cpf = uniqueCpf();
+    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { name: `Mariana ${tag}`, instagram: `mari.${tag}`, cpf } });
     await prisma.creatorAccount.update({ where: { id: b.account.id }, data: { name: `Bruna ${tag}`, tiktok: `bru_${tag}` } });
     const uid = randomUUID();
     await prisma.user.create({ data: { id: uid, email: `${uid}@x.com`, name: "seed" } });
@@ -29,14 +38,14 @@ describe("busca de creator no painel inteiro (M0.5, banco real)", () => {
     expect((await searchCreators(prisma, admin, `@mari.${tag}`))[0]).toMatchObject({ id: a.creator.id, coupon: a.coupon.code, instagram: `mari.${tag}` });
     expect((await searchCreators(prisma, admin, a.coupon.code.toLowerCase())).map((h) => h.id)).toContain(a.creator.id);
     expect((await searchCreators(prisma, admin, `bru_${tag}`)).map((h) => h.id)).toEqual([b.creator.id]);
-    expect((await searchCreators(prisma, admin, "529.982.247-25")).map((h) => h.id)).toContain(a.creator.id);
+    expect((await searchCreators(prisma, admin, `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`)).map((h) => h.id)).toEqual([a.creator.id]);
 
     // Gestão só da marca B: não acha a da marca A, nem pelo nome.
     const gestaoB = await userWith([{ role: "GESTAO", brandId: b.brand.id }]);
     expect((await searchCreators(prisma, gestaoB, tag)).map((h) => h.id)).toEqual([b.creator.id]);
     // Envio vê creators, mas não CPF: buscar pelo CPF não acha.
     const envio = await userWith([{ role: "ENVIO", brandId: a.brand.id }]);
-    expect(await searchCreators(prisma, envio, "52998224725")).toEqual([]);
+    expect(await searchCreators(prisma, envio, cpf)).toEqual([]);
     expect(await searchCreators(prisma, envio, "a")).toEqual([]); // curto demais
   });
 });
