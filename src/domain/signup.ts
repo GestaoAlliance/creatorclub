@@ -39,7 +39,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "phone", title: "Seu whatsapp com DDD:", label: "Telefone (WhatsApp)", kind: "tel", required: true },
   { key: "instagram", title: "@ do seu Instagram:", label: "Instagram", kind: "text", required: true },
   { key: "tiktok", title: "@ do seu TikTok:", label: "TikTok", kind: "text", required: false },
-  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Letras e números, de 3 a 20." },
+  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto. De 3 a 20 letras." },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
 ];
 
@@ -177,7 +177,7 @@ export function validateSignup(values: Record<string, string | undefined>): Sign
     else if (q.kind === "tel" && v.replace(/\D/g, "").length < 10) errors[q.key] = "Informe o telefone com DDD.";
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
-    else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use letras e números, de 3 a 20 (ex.: MARIA10).";
+    else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
     const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : v;
     clean[q.key] = out;
