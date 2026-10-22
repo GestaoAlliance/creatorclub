@@ -38,19 +38,39 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       where: { brandId },
       orderBy: { account: { name: "asc" } },
       include: {
-        account: { select: { name: true, email: true, userId: true } },
+        account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true } },
         contractTemplate: { select: { releaseMinCents: true } },
-        couponAssignments: { where: { validTo: null }, select: { confirmedAt: true } },
+        couponAssignments: { where: { validTo: null }, select: { confirmedAt: true, coupon: { select: { code: true, kind: true } } } },
         commissionPolicies: { where: { validTo: null }, select: { confirmedAt: true } },
       },
     }),
     prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } }),
   ]);
-  const [idle, ugc, lastOrders] = await Promise.all([
+  const money = can(actor.grants, "money.view", brandId);
+  const fiscal = can(actor.grants, "personal.fiscal", brandId);
+  const [idle, ugc, lastOrders, sales] = await Promise.all([
     idleFor(prisma, creators, brand.timezone),
     ugcCyclesFor(prisma, creators, brand.timezone),
     lastOrderFor(prisma, creators.map((c) => c.id)),
+    // Lista no modelo da referência (M0.0.2): vendas de cada creator (pagas, pela régua da comissão), só para quem vê dinheiro.
+    money
+      ? prisma.order.findMany({
+          where: { brandId, cancelledAt: null, test: false, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] }, attribution: { isNot: null } },
+          select: { subtotalCents: true, paidAt: true, attribution: { select: { creatorId: true } } },
+        })
+      : Promise.resolve([]),
   ]);
+  const since30 = Date.now() - 30 * 86_400_000;
+  const stats = new Map<string, { salesCents: number; orders: number; sales30Cents: number; lastPaidAt: Date | null }>();
+  for (const o of sales) {
+    const id = o.attribution!.creatorId;
+    const st = stats.get(id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null };
+    st.salesCents += o.subtotalCents;
+    st.orders++;
+    if (o.paidAt && o.paidAt.getTime() >= since30) st.sales30Cents += o.subtotalCents;
+    if (o.paidAt && (!st.lastPaidAt || o.paidAt > st.lastPaidAt)) st.lastPaidAt = o.paidAt;
+    stats.set(id, st);
+  }
   return creators.map((c) => {
     const fakeEmail = c.account.email.endsWith(FAKE_EMAIL_DOMAIN);
     const contract = contractStatus(dayOf(c.contractEnd), new Date());
@@ -66,7 +86,20 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       contract,
       idle: idle.get(c.id) ?? null,
       ugcCycle: ugc.get(c.id) ?? null,
-      lastOrder: last ? { name: last.name, day: dayKey(last.paidAt, brand.timezone) } : null,
+      // Última venda: a mais recente entre o pedido do cupom (D-LASTORDER) e as vendas atribuídas.
+      lastOrder: (() => {
+        const st = stats.get(c.id);
+        if (st?.lastPaidAt && (!last || st.lastPaidAt > last.paidAt)) return { name: "", day: dayKey(st.lastPaidAt, brand.timezone) };
+        return last ? { name: last.name, day: dayKey(last.paidAt, brand.timezone) } : null;
+      })(),
+      joinedAt: c.createdAt,
+      email: fakeEmail ? null : c.account.email,
+      phone: c.account.phone,
+      instagram: c.account.instagram,
+      tiktok: c.account.tiktok,
+      cpf: fiscal ? (c.account.cpf ?? null) : null,
+      coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
+      stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null }) : null,
       pendings: creatorPendings({
         status: c.status,
         reviewed: c.reviewedAt !== null,

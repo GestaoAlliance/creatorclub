@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.0.2 (Creators como a referência: abas por tipo, tabela com redes e WhatsApp, busca)**; depois Candidatas (Pendentes), Vendas com gráfico e top creators, portal, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Candidatas no modelo da referência (Pendentes, aprovar/recusar na linha)**; depois Vendas com gráfico e top creators, portal, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -30,7 +30,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 
 ### M — Plano de melhorias (`docs/PLANO-MELHORIAS.md`; uma etapa por vez, cada uma com PR e capturas)
 - [x] **M0.0.1** Menu em grupos com abas (6 itens) e Configurações
-- [ ] **M0.0.2** Creators com abas (Ativas, Pendentes, Encerradas, Hunters)
+- [x] **M0.0.2** Creators no modelo da referência (situação e tipo em abas, alertas, busca, tabela com redes e vendas)
 - [ ] **M0.0.3** Vendas + Cupons e Pagamentos como abas
 - [x] **M0.0.4** Início = dashboard (adiantado a pedido; "Todas as marcas" fica para depois); "Todas as marcas" no lugar do painel Alliance
 - [ ] **M0.0.5** Portal com 4 telas
@@ -260,6 +260,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-148 — 2026-10-22 — Lista de creators no modelo da referência
+- **Feito (M0.0.2):** situação em abas (Ativas, Pausadas, Encerradas, Pendentes → candidatas) e **tipo em abas**
+  (Todos, Influencer, UGC, Prescritor, com contadores); busca por nome, cupom, @, e-mail, WhatsApp ou CPF; **alertas
+  clicáveis** (nunca venderam, pararam há 30 dias, sem vender há 60, sem acesso ao portal, com pendência, contrato
+  vencendo); concentração das vendas; **tabela** com WhatsApp (abre a conversa), Instagram e TikTok (abrem o perfil),
+  cupom (copiar), tipo, vendas totais e dos últimos 30 dias, pedidos, última venda e entrada, ordenável pelo título. No
+  celular, cartões. Vendas só para quem vê dinheiro; CPF só para quem vê dado fiscal. Última venda = a mais recente
+  entre o pedido do cupom e as vendas atribuídas.
+- **Verificado:** integração (dados da lista) e os testes da lista que já existiam, typecheck, build; capturas.
 
 ### CP-147 — 2026-10-22 — Início com dashboard; Hunters no menu
 - **Pedido (responsável):** o Início "ainda incomoda": modelar o dashboard da referência; Hunters é diferente de
