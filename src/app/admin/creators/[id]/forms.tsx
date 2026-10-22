@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction } from "./actions";
+import { pricingAction, adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -320,5 +320,50 @@ export function NoteForm({ creatorId }: { creatorId: string }) {
       <Msg state={state} />
       <button className={`${btn} self-start`} disabled={pending}>{pending ? "Salvando…" : "Salvar observação"}</button>
     </form>
+  );
+}
+
+const pctText = (bps: number | null) => (bps === null ? "—" : `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`);
+const pctInput = (bps: number | null) => (bps === null ? "" : String(bps / 100).replace(".", ","));
+
+/**
+ * Comissão e desconto no topo da ficha (D-RATEDISCOUNT): mostra os dois e, para quem edita, abre os campos juntos.
+ * Comissão vale para pedidos pagos daqui pra frente; o desconto muda o cupom na Shopify na hora.
+ */
+export function PricingEditor(p: { creatorId: string; rateBps: number | null; discountBps: number | null; coupon: string | null; canEdit: boolean; rateLocked: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(pricingAction, undefined);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <p className="text-sm"><span className="text-stone-500">Comissão</span> <strong className="text-base tabular-nums">{pctText(p.rateBps)}</strong></p>
+        {p.coupon && <p className="text-sm"><span className="text-stone-500">Desconto do cupom</span> <strong className="text-base tabular-nums">{pctText(p.discountBps)}</strong></p>}
+        {p.canEdit && !open && <button type="button" onClick={() => setOpen(true)} className={ui.ghostSm}>Editar comissão e desconto</button>}
+      </div>
+      {open && (
+        <form action={action} className="flex flex-col gap-3">
+          <input type="hidden" name="creatorId" value={p.creatorId} />
+          <div className="grid gap-3">
+            <label className={ui.label}>
+              Comissão dela (%)
+              <input name="rate" defaultValue={pctInput(p.rateBps)} inputMode="decimal" disabled={!!p.rateLocked} className={input} />
+              <span className={ui.hint}>{p.rateLocked ?? "Vale para pedidos pagos a partir de agora; o que já foi lançado não muda."}</span>
+            </label>
+            {p.coupon && (
+              <label className={ui.label}>
+                Desconto do cupom {p.coupon} para as clientes (%)
+                <input name="discount" defaultValue={pctInput(p.discountBps)} inputMode="decimal" placeholder={p.discountBps === null ? "ex.: 5" : undefined} className={input} />
+                <span className={ui.hint}>Muda o cupom na Shopify na hora, para todas as compras novas. De 0,01% a 50%.</span>
+              </label>
+            )}
+          </div>
+          <Msg state={state} />
+          <div className="flex flex-wrap gap-2">
+            <button className={btn} disabled={pending}>{pending ? "Salvando…" : "Salvar"}</button>
+            <button type="button" onClick={() => setOpen(false)} className={`${ui.ghost} self-start`}>Fechar</button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }

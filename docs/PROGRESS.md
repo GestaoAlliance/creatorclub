@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Candidatas no modelo da referência (Pendentes, aprovar/recusar na linha)**; depois Vendas com gráfico e top creators, portal, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Vendas no modelo da referência (gráfico e top creators)**; depois portal com 4 telas, "Todas as marcas" no seletor, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,27 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-153 — 2026-10-22 — Editar comissão e desconto no cartão do cupom da ficha (D-RATEDISCOUNT)
+- **Pedido (responsável):** antes do merge das Candidatas, um lugar para editar a comissão da creator e o desconto do
+  cupom dela. Respostas: no topo da ficha; comissão só daqui pra frente; Gestão e super admin.
+- **Feito:** o cartão de cupons da ficha virou "Cupom, comissão e desconto" (o topo ficou "muito em cima", pediu o
+  responsável): mostra "Comissão X% · Desconto do cupom Y%", o desconto no selo do cupom e o botão "Editar comissão e
+  desconto"; "Criar outro cupom" fica recolhido quando ela já tem cupom;
+  desconto muda na Shopify (`discountCodeBasicUpdate`, só o valor, combinável; acha pelo código quando falta o id) e
+  depois no banco; comissão abre nova vigência. Mensagens claras quando a Shopify recusa ou não responde.
+- **Verificado:** integração nova (`coupon-discount`, Shopify falsa), testes, typecheck, build; capturas; comissão salva
+  pela tela no banco local.
+
+### CP-152 — 2026-10-22 — Candidatas no modelo da referência (aprovar/recusar na linha)
+- **Feito (M0.0.2/M4.1):** situação Pendentes · Aprovadas · Recusadas; origem em abas (Todas, Site, Captação, Hunter);
+  busca e filtros (tipo, hunter, marca de interesse, ordem); alertas clicáveis (esperando há mais de 7 dias, trazidas
+  por hunter, podem ser repetidas); **tabela** com avatar, WhatsApp, Instagram e TikTok com seguidores, tipo, origem e
+  hunter, há quantos dias chegou; **Aprovar** na linha abre cupom, tipo, comissão, desconto, contrato e e-mail já
+  preenchidos para confirmar (cria o cupom na Shopify); **Recusar** na linha pede só o motivo opcional. Clicar na linha
+  mostra tudo o que ela respondeu. No celular, cartões com os mesmos botões. Regra nova no `CLAUDE.md`: consultar o
+  Drive (só leitura) antes de cada tarefa.
+- **Verificado:** testes, integração, typecheck, build; capturas; recusa feita na tela de ponta a ponta (banco local).
 
 ### CP-151 — 2026-10-22 — Aprovação passa a copiar Instagram e TikTok; já aprovadas preenchidas
 - **Pedido (responsável):** "não vi nenhuma com TikTok" — o formulário Hunter/Captação perguntava o @ do TikTok, mas a

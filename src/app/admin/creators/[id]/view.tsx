@@ -17,7 +17,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -179,7 +179,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
           {p.ugcCycle && <UgcVideosCard creatorId={p.id} status={p.status} canEdit={p.canEdit} cycle={p.ugcCycle} videos={p.ugcVideos} legacy={p.ugc} />}
-          <Card title="Cupons" icon={<Ticket className="size-4" />} help="fi-cupons">
+          <Card title="Cupom, comissão e desconto" icon={<Ticket className="size-4" />} help="fi-cupons">
             {p.coupons.length === 0 && <p className={ui.muted}>Nenhum.</p>}
             <ul className={ui.list}>
               {p.coupons.map((c, i) => (
@@ -198,13 +198,32 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                     )}
                   </span>
                   <span className="flex gap-1.5">
+                    {!c.until && c.discountBps !== null && <span className={badge.sky}>{pct(c.discountBps)} de desconto</span>}
                     <span className={badge.neutral}>{c.kind ?? "sem tipo"}</span>
                     <span className={c.confirmed ? badge.green : badge.amber}>{c.confirmed ? "dona confirmada" : "dona a confirmar"}</span>
                   </span>
                 </li>
               ))}
             </ul>
-            {p.canEdit && p.status !== "DEACTIVATED" && <CouponCreateForm creatorId={p.id} />}
+            {/* D-RATEDISCOUNT: comissão e desconto do cupom, editáveis aqui. */}
+            <div className={`${ui.inset} flex flex-col gap-2`}>
+              {(() => {
+          const c = p.coupons.find((x) => !x.until && x.kind === "CREATOR");
+          const rate = p.policies.find((x) => !x.until) ?? null;
+          const locked = !rate ? "Sem taxa definida: defina na aba Cadastro." : !rate.confirmed ? "Confirme a taxa atual na conferência antes de mudar." : null;
+          return ugcOnly && !c ? null : (
+            <PricingEditor creatorId={p.id} rateBps={rate?.rateBps ?? null} discountBps={c?.discountBps ?? null} coupon={c?.code ?? null} canEdit={p.canEdit && p.status !== "DEACTIVATED"} rateLocked={locked} />
+          );
+        })()}
+            </div>
+            {p.canEdit && p.status !== "DEACTIVATED" && (p.coupons.some((x) => !x.until && x.kind === "CREATOR") ? (
+              <details>
+                <summary className="cursor-pointer text-sm text-stone-500 hover:underline">Criar outro cupom</summary>
+                <div className="mt-2"><CouponCreateForm creatorId={p.id} /></div>
+              </details>
+            ) : (
+              <CouponCreateForm creatorId={p.id} />
+            ))}
             <Link href="/admin/cupons" className={`${ui.link} text-sm`}>Abrir a conferência de cupons</Link>
           </Card>
                   </div>

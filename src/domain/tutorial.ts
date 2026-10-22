@@ -151,15 +151,15 @@ export const HELP = {
   },
   "cand-abas": {
     title: "Situação",
-    text: "Novas esperam sua decisão; Aprovadas e Recusadas ficam guardadas para consulta. O número mostra quantas há em cada uma.",
+    text: "Pendentes esperam sua decisão; Aprovadas e Recusadas ficam guardadas para consulta. O número mostra quantas há em cada uma.",
   },
   "cand-filtros": {
     title: "Busca e filtros",
-    text: "Procure pelo nome, @ ou e-mail e filtre por tipo, origem, hunter ou marca. Mais antigas primeiro ajuda a responder quem espera há mais tempo.",
+    text: "Escolha a origem nas abas, procure pelo nome, @ ou e-mail e filtre por tipo, hunter ou marca. Mais antigas primeiro mostra quem espera há mais tempo.",
   },
   "cand-lista": {
     title: "Lista de candidatas",
-    text: "Toque numa linha para ver tudo o que ela respondeu e decidir. A etiqueta repetida avisa que pode ser alguém que já está no sistema.",
+    text: "Aprovar abre cupom, tipo, comissão e desconto já preenchidos para conferir; Recusar pede só o motivo. Toque na linha para ver tudo o que ela respondeu.",
   },
   "cr-filtros": {
     title: "Busca e filtros",
@@ -182,8 +182,8 @@ export const HELP = {
     text: "Depois de conferir cupons, taxa e vendas, marque aqui. Isso libera o saldo de abertura para o Pagamento.",
   },
   "fi-cupons": {
-    title: "Cupons da creator",
-    text: "Os cupons dela, desde quando valem e se a dona está confirmada. Daqui dá para criar um cupom novo.",
+    title: "Cupom, comissão e desconto",
+    text: "O cupom dela e o link. Em Editar, mude a comissão (vale daqui pra frente) e o desconto do cupom (muda na Shopify na hora).",
   },
   "fi-contrato": {
     title: "Contrato e checklist",
