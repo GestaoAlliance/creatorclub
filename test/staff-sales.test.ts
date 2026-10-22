@@ -36,3 +36,18 @@ describe("vendas da equipe (M0.1)", () => {
     expect(lines[2]).toBe("21/10/2026 16:30;#1002;Aguardando pagamento;1,00;1,00;;;sem cupom;");
   });
 });
+
+describe("período da tela de vendas", () => {
+  const now = new Date("2026-10-22T15:00:00Z");
+  it("padrão 30 dias; a lista segue o período; busca sem período procura em todas as datas", async () => {
+    const { filtersOf, salesPeriod } = await import("@/app/admin/vendas/filters");
+    const p = salesPeriod({}, "America/Sao_Paulo", now);
+    expect(p).toEqual({ from: "2026-09-23", to: "2026-10-22", preset: "30" });
+    expect(filtersOf({}, p)).toMatchObject({ from: "2026-09-23", to: "2026-10-22" });
+    expect(filtersOf({ q: "#1001" }, p)).toMatchObject({ q: "#1001", from: "", to: "" });
+    expect(filtersOf({ q: "#1001", periodo: "7" }, salesPeriod({ periodo: "7" }, "America/Sao_Paulo", now))).toMatchObject({ from: "2026-10-16", to: "2026-10-22" });
+    const custom = salesPeriod({ de: "2026-08-01", ate: "2026-08-31" }, "America/Sao_Paulo", now);
+    expect(custom).toEqual({ from: "2026-08-01", to: "2026-08-31", preset: "" });
+    expect(filtersOf({ de: "2026-08-01", ate: "2026-08-31", situacao: "PAID", dona: "sem" }, custom)).toEqual({ q: "", status: "PAID", owner: "none", from: "2026-08-01", to: "2026-08-31" });
+  });
+});

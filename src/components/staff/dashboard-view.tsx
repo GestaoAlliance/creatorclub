@@ -20,9 +20,9 @@ const CATS: { id: DashCategory; label: string }[] = [
 const CAT_LABEL: Record<string, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
 
 /** Valor em dinheiro que some quando o "olho" está fechado (classe `money`). */
-const M = ({ children }: { children: ReactNode }) => <span className="money">{children}</span>;
+export const M = ({ children }: { children: ReactNode }) => <span className="money">{children}</span>;
 
-function Change({ v }: { v: number | null }) {
+export function Change({ v }: { v: number | null }) {
   if (v === null) return <span className="text-xs text-stone-500">sem base anterior</span>;
   const Icon = v > 0 ? ArrowUpRight : v < 0 ? ArrowDownRight : Minus;
   const tone = v > 0 ? "text-emerald-700 dark:text-emerald-400" : v < 0 ? "text-red-700 dark:text-red-400" : "text-stone-500";
@@ -35,7 +35,7 @@ function Change({ v }: { v: number | null }) {
   );
 }
 
-function Stat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
+export function Stat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
   return (
     <div className={`${ui.card} gap-2`}>
       <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{label}</p>
@@ -87,6 +87,43 @@ function Needs({ h }: { h: StaffHome }) {
   );
 }
 
+/** Top creators do período (barra pelo valor; clicar abre a ficha). Usado no Início e em Vendas. */
+export function TopCreatorsCard({ d }: { d: StaffDashboard }) {
+  const maxCreator = Math.max(1, ...d.topCreators.map((c) => c.salesCents));
+  return (
+    <Card title="Top creators">
+      {d.topCreators.length === 0 ? (
+        <p className={ui.muted}>Nenhuma venda de creator no período.</p>
+      ) : (
+        <>
+          <p className={ui.hint}>A maior faz {pct(d.concentration.top1)} das vendas de creators · as 3 maiores, {pct(d.concentration.top3)}.</p>
+          <ol className="flex flex-col gap-3">
+            {d.topCreators.map((c, i) => (
+              <li key={c.id}>
+                <Link href={`/admin/creators/${c.id}`} className="group flex flex-col gap-1">
+                  <span className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate">
+                      <span className="mr-2 tabular-nums text-stone-400">{i + 1}</span>
+                      <span className="font-medium group-hover:underline">{c.name}</span>
+                      <span className="ml-1.5 text-xs text-stone-500">{c.categories.map((x) => CAT_LABEL[x]).join(" · ")}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      <M>{formatBRL(c.salesCents)}</M> <span className="text-xs text-stone-500">· {c.orders} ped.</span>
+                    </span>
+                  </span>
+                  <span className="h-1.5 overflow-hidden rounded-full bg-stone-300/40 dark:bg-white/10">
+                    <span className="block h-full rounded-full bg-brand" style={{ width: `${(c.salesCents / maxCreator) * 100}%` }} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </Card>
+  );
+}
+
 const href = (p: { periodo?: string; tipo?: string }) => {
   const s = new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][]).toString();
   return `/admin/marca${s ? `?${s}` : ""}`;
@@ -95,7 +132,6 @@ const href = (p: { periodo?: string; tipo?: string }) => {
 /** Início com o dashboard (M0.0.4, modelo da referência), para quem vê dinheiro na marca. */
 export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard; h: StaffHome; category: DashCategory; brandName: string }) {
   const k = d.kpis;
-  const maxCreator = Math.max(1, ...d.topCreators.map((c) => c.salesCents));
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
     <div className="dash flex flex-col gap-6">
@@ -156,36 +192,7 @@ export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title="Top creators">
-          {d.topCreators.length === 0 ? (
-            <p className={ui.muted}>Nenhuma venda de creator no período.</p>
-          ) : (
-            <>
-              <p className={ui.hint}>A maior faz {pct(d.concentration.top1)} das vendas de creators · as 3 maiores, {pct(d.concentration.top3)}.</p>
-              <ol className="flex flex-col gap-3">
-                {d.topCreators.map((c, i) => (
-                  <li key={c.id}>
-                    <Link href={`/admin/creators/${c.id}`} className="group flex flex-col gap-1">
-                      <span className="flex items-baseline justify-between gap-3 text-sm">
-                        <span className="min-w-0 truncate">
-                          <span className="mr-2 tabular-nums text-stone-400">{i + 1}</span>
-                          <span className="font-medium group-hover:underline">{c.name}</span>
-                          <span className="ml-1.5 text-xs text-stone-500">{c.categories.map((x) => CAT_LABEL[x]).join(" · ")}</span>
-                        </span>
-                        <span className="shrink-0 tabular-nums">
-                          <M>{formatBRL(c.salesCents)}</M> <span className="text-xs text-stone-500">· {c.orders} ped.</span>
-                        </span>
-                      </span>
-                      <span className="h-1.5 overflow-hidden rounded-full bg-stone-300/40 dark:bg-white/10">
-                        <span className="block h-full rounded-full bg-brand" style={{ width: `${(c.salesCents / maxCreator) * 100}%` }} />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </>
-          )}
-        </Card>
+        <TopCreatorsCard d={d} />
         <Card title="Top produtos com cupom de creator">
           {d.topProducts.length === 0 ? (
             <p className={ui.muted}>Nenhum produto vendido com cupom de creator no período.</p>
