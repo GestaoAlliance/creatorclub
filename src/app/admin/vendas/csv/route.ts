@@ -5,7 +5,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { salesForCsv } from "@/lib/sales/list";
 import { staffContext } from "@/lib/staff/context";
-import { filtersOf } from "../filters";
+import { filtersOf, salesPeriod } from "../filters";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   const { brand } = await staffContext(actor);
   if (!brand || !can(actor.grants, "money.view", brand.id)) return new Response("Sem permissão.", { status: 403 });
   const sp = Object.fromEntries(request.nextUrl.searchParams.entries());
-  const rows = await salesForCsv(db(), brand.id, filtersOf(sp));
+  const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
+  const rows = await salesForCsv(db(), brand.id, filtersOf(sp, salesPeriod(sp, timezone)));
   return new Response(salesCsv(rows), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

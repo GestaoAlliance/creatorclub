@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Vendas no modelo da referência (gráfico e top creators)**; depois portal com 4 telas, "Todas as marcas" no seletor, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Portal da creator com 4 telas** (Início com cupom e link, Vendas, Saque, Envios; avisos só no sininho); depois "Todas as marcas" no seletor, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-154 — 2026-10-22 — Vendas no modelo da referência (gráfico e top creators)
+- **Feito:** período (7, 30, 90 dias, este mês ou de–até; padrão 30 dias) com comparação com o período anterior;
+  números (vendas da loja, vendas com cupom de creator e % da loja, comissão gerada, creators que venderam, tickets);
+  gráfico de vendas de creators por dia; top creators; lista de todas as vendas em **tabela** (data, pedido, situação,
+  cupom, creator ou motivo, produtos e total, comissão) com situação em abas, busca e filtro com/sem creator; no
+  celular, cartões. **10 vendas por página**, com "1 de N" e setas em cima e embaixo (pedido do responsável: a tela
+  esticava). A lista segue o período; busca sem período escolhido procura em todas as datas (achar pedido antigo).
+  CSV com os mesmos filtros. "Olho" para esconder valores. Peças do Início reaproveitadas (`Stat`, `TopCreatorsCard`).
+- **Verificado:** unitário (período e filtros), testes, integração, typecheck, build; capturas.
 
 ### CP-153 — 2026-10-22 — Editar comissão e desconto no cartão do cupom da ficha (D-RATEDISCOUNT)
 - **Pedido (responsável):** antes do merge das Candidatas, um lugar para editar a comissão da creator e o desconto do

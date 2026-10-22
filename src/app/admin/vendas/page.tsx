@@ -1,19 +1,25 @@
-import { Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, Kpi, PageHeader } from "@/components/ui/page";
+import { SalesChart } from "@/components/portal/sales-chart";
+import { M, Stat, TopCreatorsCard } from "@/components/staff/dashboard-view";
+import { HideValuesToggle } from "@/components/staff/hide-values";
+import { Card, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
 import { formatBRL, SALE_STATUS_LABEL, SALE_STATUSES, type SaleStatus } from "@/domain";
 import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { listSales, SALES_PAGE_SIZE } from "@/lib/sales/list";
-import { filtersOf, type Search } from "./filters";
+import { DASH_PRESETS, staffDashboard } from "@/lib/staff/dashboard";
 import { staffContext } from "@/lib/staff/context";
+import { filtersOf, salesPeriod, searchesAllTime, type Search } from "./filters";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_BADGE: Record<SaleStatus, string> = { PAID: badge.green, PENDING: badge.amber, REFUNDED: badge.red, CANCELLED: badge.neutral, TEST: badge.sky };
+const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
+const pct = (v: number) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 const query = (sp: Search, change: Partial<Search>) => {
   const next = new URLSearchParams();
@@ -22,7 +28,8 @@ const query = (sp: Search, change: Partial<Search>) => {
   return s ? `?${s}` : "";
 };
 
-// Vendas da marca (M0.1, docs/PLANO-MELHORIAS.md): todas as vendas da loja, com a creator que levou ou o motivo.
+// Vendas no modelo da referência (M0.1 + gráfico e top creators): período, números com comparação, vendas por dia,
+// top creators e a lista de todas as vendas da loja com a creator que levou (ou o motivo).
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Search> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/vendas");
@@ -30,117 +37,192 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "money.view", brand.id)) redirect("/conta");
   const sp = await searchParams;
-  const f = filtersOf(sp);
+  const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
+  const period = salesPeriod(sp, timezone);
+  const f = filtersOf(sp, period);
   const page = Math.max(1, Number.parseInt(sp.pagina ?? "1", 10) || 1);
-  const r = await listSales(db(), brand.id, f, page);
+  const [r, d] = await Promise.all([listSales(db(), brand.id, f, page), staffDashboard(db(), brand.id, period, "")]);
   const pages = Math.max(1, Math.ceil(r.total / SALES_PAGE_SIZE));
-  const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: r.timezone, dateStyle: "short", timeStyle: "short" });
+  const when = (x: Date) => x.toLocaleString("pt-BR", { timeZone: r.timezone, dateStyle: "short", timeStyle: "short" });
   const allCount = SALE_STATUSES.reduce((s, k) => s + r.counts[k], 0);
+  const k = d.kpis;
+  const ticketStore = d.store.paidOrders ? Math.round(d.store.salesCents / d.store.paidOrders) : 0;
+  const keep = { periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "" };
 
   return (
-    <>
+    <div className="dash flex flex-col gap-6">
       <PageHeader
         title="Vendas"
         actions={
-          <a href={`/admin/vendas/csv${query(sp, { pagina: "" })}`} className={ui.ghost}>
-            <Download className="size-4" /> Exportar CSV
-          </a>
+          <span className="flex items-center gap-2">
+            <HideValuesToggle />
+            <a href={`/admin/vendas/csv${query(sp, { pagina: "" })}`} className={ui.ghost}>
+              <Download className="size-4" /> Exportar CSV
+            </a>
+          </span>
         }
       >
-        Todas as vendas da loja que chegaram da Shopify, com a creator que levou cada uma (ou o motivo de não ter levado) e a comissão
-        já lançada. Comissão só nasce de venda paga.
+        Todas as vendas da loja que chegaram da Shopify, com a creator que levou cada uma (ou o motivo). {dmy(period.from)} a {dmy(period.to)}, comparado com{" "}
+        {dmy(d.previous.from)} a {dmy(d.previous.to)}.
       </PageHeader>
 
-      <form className={`${ui.card} grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto]`}>
-        {f.status && <input type="hidden" name="situacao" value={f.status} />}
-        <label className={ui.label}>
-          Buscar
-          <input name="q" defaultValue={f.q} placeholder="Pedido, cupom ou creator" className={ui.inputSm} />
-        </label>
-        <label className={ui.label}>
-          Creator
-          <select name="dona" defaultValue={sp.dona ?? ""} className={ui.inputSm}>
+      <div className="flex flex-wrap items-center gap-2">
+        {DASH_PRESETS.map((p) => (
+          <Link key={p.id} href={`/admin/vendas${query({ ...sp, de: "", ate: "" }, { periodo: p.id, pagina: "" })}`} className={period.preset === p.id ? ui.pillOn : ui.pill}>
+            {p.label}
+          </Link>
+        ))}
+        <form className="flex flex-wrap items-center gap-1.5">
+          {sp.q && <input type="hidden" name="q" value={sp.q} />}
+          {sp.situacao && <input type="hidden" name="situacao" value={sp.situacao} />}
+          {sp.dona && <input type="hidden" name="dona" value={sp.dona} />}
+          <input type="date" name="de" defaultValue={period.preset ? "" : period.from} aria-label="De" className={ui.inputSm} />
+          <span className={ui.hint}>até</span>
+          <input type="date" name="ate" defaultValue={period.preset ? "" : period.to} aria-label="Até" className={ui.inputSm} />
+          <button className={ui.ghostSm}>Aplicar</button>
+        </form>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Vendas da loja" value={<M>{formatBRL(d.store.salesCents)}</M>} change={d.store.change} hint={<>{d.store.paidOrders} pedidos pagos · ticket <M>{formatBRL(ticketStore)}</M></>} />
+        <Stat label="Vendas com cupom de creator" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{pct(k.sales.storeShare)} da loja · {k.sales.orders} pedidos</>} />
+        <Stat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas de creators</>} />
+        <Stat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas · ticket <M>{formatBRL(k.units.ticketCents)}</M></>} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Card title="Vendas de creators por dia">
+          <div className="money-chart">
+            <SalesChart days={d.days} />
+          </div>
+          <p className={ui.hint}>Pela data do pagamento, só pagas, como a comissão.</p>
+        </Card>
+        <TopCreatorsCard d={d} />
+      </div>
+
+      <section id="lista" className={`${ui.card} scroll-mt-4 gap-4`}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Link href={`/admin/vendas${query(sp, { situacao: "", pagina: "" })}`} className={`rounded-full px-3 py-1 text-sm ${f.status ? "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300" : "bg-stone-900 text-white dark:bg-white dark:text-stone-900"}`}>
+            Todas <span className="tabular-nums opacity-60">{allCount}</span>
+          </Link>
+          {SALE_STATUSES.map((s) => (
+            <Link key={s} href={`/admin/vendas${query(sp, { situacao: s, pagina: "" })}`} className={`rounded-full px-3 py-1 text-sm ${f.status === s ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300"}`}>
+              {SALE_STATUS_LABEL[s]} <span className="tabular-nums opacity-60">{r.counts[s]}</span>
+            </Link>
+          ))}
+        </div>
+        <form className="flex flex-wrap items-center gap-2" role="search">
+          {Object.entries(keep).map(([n, v]) => v && <input key={n} type="hidden" name={n} value={v} />)}
+          {f.status && <input type="hidden" name="situacao" value={f.status} />}
+          <label className="relative min-w-60 flex-1">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+            <input name="q" defaultValue={f.q} placeholder="Buscar por pedido, cupom ou creator" aria-label="Buscar venda" className={`${ui.input} pl-9`} />
+          </label>
+          <select name="dona" defaultValue={sp.dona ?? ""} aria-label="Creator" className={ui.inputSm}>
             <option value="">Com e sem creator</option>
             <option value="creator">Só com creator</option>
             <option value="sem">Só sem creator</option>
           </select>
-        </label>
-        <label className={ui.label}>
-          De
-          <input type="date" name="de" defaultValue={f.from} className={ui.inputSm} />
-        </label>
-        <label className={ui.label}>
-          Até
-          <input type="date" name="ate" defaultValue={f.to} className={ui.inputSm} />
-        </label>
-        <button className={`${ui.btnSm} self-end`}>Filtrar</button>
-      </form>
-
-      <nav className="flex flex-wrap gap-2" aria-label="Situação">
-        <Link href={`/admin/vendas${query(sp, { situacao: "", pagina: "" })}`} className={f.status ? ui.pill : ui.pillOn}>
-          Todas · {allCount}
-        </Link>
-        {SALE_STATUSES.map((s) => (
-          <Link key={s} href={`/admin/vendas${query(sp, { situacao: s, pagina: "" })}`} className={f.status === s ? ui.pillOn : ui.pill}>
-            {SALE_STATUS_LABEL[s]} · {r.counts[s]}
-          </Link>
-        ))}
-      </nav>
-
-      <Card>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Kpi label="Vendas no filtro" value={r.total} />
-          <Kpi label="Valor dos produtos" value={formatBRL(r.subtotalCents)} hint="sem frete, como a base da comissão" />
-          <Kpi label="Página" value={`${Math.min(page, pages)} de ${pages}`} />
+          <button className={ui.btnSm}>Buscar</button>
+        </form>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={ui.hint}>
+          {r.total} {r.total === 1 ? "venda" : "vendas"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos (sem frete, a base da comissão) ·{" "}
+          {searchesAllTime(sp) ? "busca em todas as datas" : `pedidos feitos de ${dmy(period.from)} a ${dmy(period.to)}`}
+        </p>
+        {pages > 1 && <Pager sp={sp} page={Math.min(page, pages)} pages={pages} />}
         </div>
-      </Card>
 
-      {r.rows.length === 0 ? (
-        <p className={ui.muted}>Nenhuma venda com esses filtros.</p>
-      ) : (
-        <Card>
-          <ul className={ui.list}>
-            {r.rows.map((o) => (
-              <li key={o.id} className="grid gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[9rem_1fr_13rem] sm:items-center">
-                <div>
-                  <p className="font-mono text-sm font-semibold">{o.name}</p>
-                  <p className={ui.hint}>{when(o.createdAt)}</p>
-                </div>
-                <div className="flex min-w-0 flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={STATUS_BADGE[o.status]}>{SALE_STATUS_LABEL[o.status]}</span>
-                    {o.codes.map((c) => (
-                      <span key={c} className="rounded-md bg-stone-500/10 px-1.5 py-0.5 font-mono text-xs">{c}</span>
-                    ))}
+        {r.rows.length === 0 ? (
+          <p className={ui.muted}>Nenhuma venda com esses filtros.</p>
+        ) : (
+          <>
+            {/* Celular: um cartão por venda. */}
+            <ul className="flex flex-col divide-y divide-stone-200/70 md:hidden dark:divide-white/10">
+              {r.rows.map((o) => (
+                <li key={o.id} className="flex flex-col gap-1.5 py-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-mono text-sm font-semibold">{o.name}</span>
+                    <span className="font-semibold tabular-nums"><M>{formatBRL(o.subtotalCents)}</M></span>
                   </div>
-                  {o.creatorId ? (
-                    <p className="text-sm">
-                      <Link href={`/admin/creators/${o.creatorId}`} className={ui.link}>{o.creatorName}</Link>
-                      <span className={ui.hint}> · {o.reason}</span>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-stone-500">{o.reason}</p>
-                  )}
-                </div>
-                <div className="sm:text-right">
-                  <p className="font-semibold tabular-nums">{formatBRL(o.subtotalCents)}</p>
-                  <p className={ui.hint}>
-                    total {formatBRL(o.totalCents)}
-                    {o.commissionCents !== null && (o.status === "PENDING" && o.commissionCents === 0 ? " · comissão quando pagar" : ` · comissão ${formatBRL(o.commissionCents)}`)}
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className={STATUS_BADGE[o.status]}>{SALE_STATUS_LABEL[o.status]}</span>
+                    {o.codes.map((c) => <span key={c} className="rounded-md bg-stone-500/10 px-1.5 py-0.5 font-mono">{c}</span>)}
+                    <span className="text-stone-500">{when(o.createdAt)}</span>
+                  </div>
+                  <p className="text-sm">
+                    {o.creatorId ? <Link href={`/admin/creators/${o.creatorId}`} className={ui.link}>{o.creatorName}</Link> : <span className="text-stone-500">{o.reason}</span>}
                   </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+                </li>
+              ))}
+            </ul>
+            <div className="-mx-2 hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[860px] border-separate border-spacing-0 text-sm">
+                <thead>
+                  <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-stone-500">
+                    <th>Data</th>
+                    <th>Pedido</th>
+                    <th>Situação</th>
+                    <th>Cupom</th>
+                    <th>Creator</th>
+                    <th className="!text-right">Produtos</th>
+                    <th className="!text-right">Comissão</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.rows.map((o) => (
+                    <tr key={o.id} className="align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-2.5 dark:[&>td]:border-white/10">
+                      <td className="whitespace-nowrap text-xs text-stone-500">{when(o.createdAt)}</td>
+                      <td className="font-mono font-semibold">{o.name}</td>
+                      <td><span className={STATUS_BADGE[o.status]}>{SALE_STATUS_LABEL[o.status]}</span></td>
+                      <td>
+                        <span className="flex flex-wrap gap-1">
+                          {o.codes.length ? o.codes.map((c) => <span key={c} className="rounded-md bg-stone-500/10 px-1.5 py-0.5 font-mono text-xs">{c}</span>) : <span className="text-stone-400">—</span>}
+                        </span>
+                      </td>
+                      <td className="max-w-56">
+                        {o.creatorId ? (
+                          <Link href={`/admin/creators/${o.creatorId}`} className="font-medium hover:underline">{o.creatorName}</Link>
+                        ) : (
+                          <span title={o.reason} className="block truncate text-xs text-stone-500">{o.reason}</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap text-right tabular-nums">
+                        <span className="font-semibold"><M>{formatBRL(o.subtotalCents)}</M></span>
+                        <span className="block text-xs text-stone-500">total <M>{formatBRL(o.totalCents)}</M></span>
+                      </td>
+                      <td className="whitespace-nowrap text-right text-xs tabular-nums">
+                        {o.commissionCents === null ? (
+                          <span className="text-stone-400">—</span>
+                        ) : o.status === "PENDING" && o.commissionCents === 0 ? (
+                          <span className="text-stone-500">quando pagar</span>
+                        ) : (
+                          <M>{formatBRL(o.commissionCents)}</M>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
-      {pages > 1 && (
-        <div className="flex items-center justify-between gap-3 text-sm">
-          {page > 1 ? <Link href={`/admin/vendas${query(sp, { pagina: String(page - 1) })}`} className={ui.ghostSm}>← Anteriores</Link> : <span />}
-          {page < pages && <Link href={`/admin/vendas${query(sp, { pagina: String(page + 1) })}`} className={ui.ghostSm}>Próximas →</Link>}
-        </div>
-      )}
-    </>
+        {pages > 1 && <div className="flex justify-center"><Pager sp={sp} page={Math.min(page, pages)} pages={pages} /></div>}
+      </section>
+    </div>
+  );
+}
+
+/** Paginação compacta: 10 vendas por página, "1 de 10" com setas; volta para a lista, sem subir a página. */
+function Pager({ sp, page, pages }: { sp: Search; page: number; pages: number }) {
+  const go = (n: number) => `/admin/vendas${query(sp, { pagina: n > 1 ? String(n) : "" })}#lista`;
+  const arrow = "glass grid size-8 place-content-center rounded-full";
+  return (
+    <nav aria-label="Páginas" className="flex items-center gap-2 text-sm">
+      {page > 1 ? <Link href={go(page - 1)} className={arrow} aria-label="Página anterior"><ChevronLeft className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronLeft className="size-4" /></span>}
+      <span className="tabular-nums text-stone-600 dark:text-stone-300">{page} de {pages}</span>
+      {page < pages ? <Link href={go(page + 1)} className={arrow} aria-label="Próxima página"><ChevronRight className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronRight className="size-4" /></span>}
+    </nav>
   );
 }
