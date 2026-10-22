@@ -261,6 +261,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-151 — 2026-10-22 — Aprovação passa a copiar Instagram e TikTok; já aprovadas preenchidas
+- **Pedido (responsável):** "não vi nenhuma com TikTok" — o formulário Hunter/Captação perguntava o @ do TikTok, mas a
+  aprovação não copiava as redes para o cadastro da creator.
+- **Feito:** aprovar copia Instagram e TikTok válidos (`usableHandle`); conta que já existia só ganha o que faltava.
+  Migração `20261022200000_backfill_social_from_applications` preenche as já aprovadas a partir da candidatura, sem trocar
+  o que já estava preenchido. Na lista, o TikTok aparece abaixo do Instagram. Seguidores: não (pedido do responsável).
+- **Verificado:** integração (aprovação e migração sobre dados), unitário, typecheck, build, sem divergência de schema.
+
 ### CP-150 — 2026-10-22 — TikTok das creators: equipe e creator preenchem (D-SOCIALFILL)
 - **Pedido (responsável):** "nenhuma tem TikTok?" — as creators antigas vieram sem o campo; fazer as duas coisas.
 - **Feito:** ficha (aba Cadastro → Contato) com Instagram e TikTok editáveis pela equipe; Início do portal pede o

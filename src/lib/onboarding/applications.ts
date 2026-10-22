@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -339,21 +339,29 @@ export async function approveApplication(
     created = await prisma.$transaction(async (tx) => {
       const taken = await tx.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } });
       if (taken) throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca. Escolha outro.`);
-      let account = await tx.creatorAccount.findUnique({ where: { email }, select: { id: true } });
+      // Redes respondidas no formulário vão para o cadastro (D-SOCIALFILL); o que a conta já tem não é trocado.
+      const instagram = usableHandle(app.instagram);
+      const tiktok = usableHandle(app.tiktok);
+      let account = await tx.creatorAccount.findUnique({ where: { email }, select: { id: true, instagram: true, tiktok: true } });
       if (account) {
         const already = await tx.creator.findUnique({ where: { brandId_accountId: { brandId: app.brandId, accountId: account.id } }, select: { id: true } });
         if (already) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
+        if ((!account.instagram && instagram) || (!account.tiktok && tiktok)) {
+          await tx.creatorAccount.update({ where: { id: account.id }, data: { instagram: account.instagram ?? instagram, tiktok: account.tiktok ?? tiktok } });
+        }
       } else {
         account = await tx.creatorAccount.create({
           data: {
             name: app.fullName,
             email,
             phone: app.phone,
+            instagram,
+            tiktok,
             cpf: isValidCpf(cpfDigits) ? cpfDigits : null,
             cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
             pixKey: app.pixKey && !/^(n\/?a|nao tenho|não tenho|-)$/i.test(app.pixKey.trim()) ? app.pixKey.slice(0, 140) : null,
           },
-          select: { id: true },
+          select: { id: true, instagram: true, tiktok: true },
         });
       }
       const creator = await tx.creator.create({

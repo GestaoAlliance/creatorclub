@@ -36,3 +36,12 @@ export function linkifyText(text: string): TextPart[] {
   if (last < text.length) parts.push({ text: text.slice(last) });
   return parts;
 }
+
+/**
+ * @ de rede social utilizável (letras, números, ponto e _, de 2 a 30), a partir do que a pessoa respondeu
+ * ("@ana", "instagram.com/ana/", "tiktok.com/@ana"). Respostas como "não tenho" ou "-": null.
+ */
+export function usableHandle(raw: string | null | undefined): string | null {
+  const h = (raw ?? "").trim().replace(/^.*(instagram\.com|tiktok\.com)\/@?/i, "").replace(/[/?#].*$/, "").replace(/^@+/, "").trim();
+  return /^[A-Za-z0-9._]{2,30}$/.test(h) ? h : null;
+}
