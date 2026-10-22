@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { instagramUrl, linkifyText, whatsappChatUrl } from "@/domain";
+import { instagramUrl, linkifyText, usableHandle, whatsappChatUrl } from "@/domain";
 
 describe("links das redes e do WhatsApp", () => {
   it("Instagram a partir do que a pessoa escreveu", () => {
@@ -25,5 +25,16 @@ describe("links das redes e do WhatsApp", () => {
     ]);
     expect(linkifyText("canal www.youtube.com/ana")).toEqual([{ text: "canal " }, { text: "www.youtube.com/ana", href: "https://www.youtube.com/ana" }]);
     expect(linkifyText("sem link")).toEqual([{ text: "sem link" }]);
+  });
+});
+
+describe("usableHandle", () => {
+  it("limpa o @ respondido e recusa o que não é perfil", () => {
+    expect(usableHandle("@Maria.Oficial")).toBe("Maria.Oficial");
+    expect(usableHandle("https://instagram.com/maria/")).toBe("maria");
+    expect(usableHandle("https://www.tiktok.com/@mari_tt?lang=pt")).toBe("mari_tt");
+    expect(usableHandle("não tenho")).toBeNull();
+    expect(usableHandle("-")).toBeNull();
+    expect(usableHandle(null)).toBeNull();
   });
 });
