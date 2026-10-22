@@ -78,6 +78,7 @@ model Brand {
   contractRequests   ContractRequest[]
   notifications      Notification[]
   noticeRuns         NoticeRun[]
+  actionsDone        ActionDone[]
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
@@ -305,6 +306,7 @@ model Creator {
   termsAcceptances   TermsAcceptance[]
   contractSignatures ContractSignature[]
   contractRequests   ContractRequest[]
+  actionsDone        ActionDone[]
   notifications      Notification[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
@@ -1242,4 +1244,21 @@ model CreatorNote {
   author  User    @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   @@index([creatorId, createdAt])
+}
+
+/// M2.1 (D-ACTIONS): tarefa da fila de ações marcada como feita. A chave é a ocorrência do alerta (ex.: contrato com
+/// fim em tal dia, mínimo de tal mês): a mesma ocorrência não volta; uma nova (outro mês, outro kit) volta à fila.
+model ActionDone {
+  id        String   @id @default(uuid())
+  brandId   String
+  creatorId String
+  key       String
+  doneAt    DateTime @default(now())
+  doneById  String
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([brandId, key])
+  @@index([creatorId])
 }
