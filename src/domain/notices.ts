@@ -1,3 +1,4 @@
+import { kitNoun } from "./kit";
 import { formatBRL } from "./money";
 
 /**
@@ -21,7 +22,7 @@ export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body:
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const monthName = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]} de ${m.slice(0, 4)}`;
 const brl = (c: number) => formatBRL(c).replace(/ /g, " ");
-const items = (n: number) => `${n} ${n === 1 ? "suplemento" : "suplementos"}`;
+const items = (n: number, brandSlug: string) => `${n} ${kitNoun(brandSlug, n)}`;
 
 export const notices = {
   /** Fechamento do mês (dia 1) liberou comissão (D-CONTRACT). */
@@ -33,10 +34,10 @@ export const notices = {
     path: "/saque",
   }),
   /** Kit do mês (D-KIT) ou de boas-vindas (D-WELCOMEKIT). */
-  kitAvailable: (kind: "MONTHLY" | "WELCOME", month: string, products: number): Notice => ({
+  kitAvailable: (kind: "MONTHLY" | "WELCOME", month: string, products: number, brandSlug = "botanika"): Notice => ({
     kind: "KIT_AVAILABLE",
     dedupeKey: `kit:${kind}:${month}`,
-    title: kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products)}` : `Você ganhou ${items(products)}`,
+    title: kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products, brandSlug)}` : `Você ganhou ${items(products, brandSlug)}`,
     body:
       kind === "WELCOME"
         ? "É o kit do início da sua parceria. Escolha os produtos em Envios e a equipe prepara o envio."

@@ -213,7 +213,7 @@ export async function signContract(
       if (welcome > 0) {
         const month = dayKey(now).slice(0, 7);
         await tx.kitGrant.create({ data: { brandId: account.brandId, creatorId: ctx.creatorId, kind: "WELCOME", month, salesCents: 0, products: welcome } });
-        await notify(tx, [{ brandId: account.brandId, creatorId: ctx.creatorId, notice: notices.kitAvailable("WELCOME", month, welcome) }]);
+        await notify(tx, [{ brandId: account.brandId, creatorId: ctx.creatorId, notice: notices.kitAvailable("WELCOME", month, welcome, ctx.brand.slug) }]);
       }
       await tx.auditLog.create({
         data: {

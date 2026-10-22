@@ -29,11 +29,20 @@ export function kitProductsFor(tiers: readonly KitTier[], salesCents: number): n
 }
 
 /** Valida a escolha da creator: produtos distintos, quantidades inteiras positivas, total igual ao do kit. */
-export function validateKitChoice(items: readonly { productId: string; quantity: number }[], products: number): { productId: string; quantity: number }[] {
+export function validateKitChoice(items: readonly { productId: string; quantity: number }[], products: number, brandSlug = "botanika"): { productId: string; quantity: number }[] {
   const chosen = items.filter((i) => i.quantity !== 0);
   if (chosen.some((i) => !Number.isSafeInteger(i.quantity) || i.quantity < 0)) throw new RangeError("Quantidade inválida.");
   if (new Set(chosen.map((i) => i.productId)).size !== chosen.length) throw new RangeError("Produto repetido.");
   const total = chosen.reduce((s, i) => s + i.quantity, 0);
-  if (total !== products) throw new RangeError(`Escolha ${products} ${products === 1 ? "suplemento" : "suplementos"} (você escolheu ${total}).`);
+  if (total !== products) throw new RangeError(`Escolha ${products} ${kitNoun(brandSlug, products)} (você escolheu ${total}).`);
   return chosen;
+}
+
+/**
+ * Como chamar o produto do kit em cada marca (D-WELCOMEKIT1): Botanika manda suplementos; Revita Derma e VermeFree,
+ * produtos da marca (sérum, creme...).
+ */
+export function kitNoun(brandSlug: string | null | undefined, n: number): string {
+  if (brandSlug === "botanika") return n === 1 ? "suplemento" : "suplementos";
+  return n === 1 ? "produto" : "produtos";
 }

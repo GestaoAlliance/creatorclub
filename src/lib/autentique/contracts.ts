@@ -210,7 +210,8 @@ async function markSigned(prisma: PrismaClient, requestId: string, now: Date) {
     if (welcome > 0 && !hasWelcome) {
       const month = dayKey(now).slice(0, 7);
       await tx.kitGrant.create({ data: { brandId: req.brandId, creatorId: req.creatorId, kind: "WELCOME", month, salesCents: 0, products: welcome } });
-      await notify(tx, [{ brandId: req.brandId, creatorId: req.creatorId, notice: notices.kitAvailable("WELCOME", month, welcome) }]);
+      const { slug } = await tx.brand.findUniqueOrThrow({ where: { id: req.brandId }, select: { slug: true } });
+      await notify(tx, [{ brandId: req.brandId, creatorId: req.creatorId, notice: notices.kitAvailable("WELCOME", month, welcome, slug) }]);
     }
     await tx.auditLog.create({
       data: { brandId: req.brandId, actorType: "SYSTEM", action: "contract.signed", entity: "ContractRequest", entityId: req.id, after: { externalId: req.externalId, welcomeKit: hasWelcome ? 0 : welcome } },

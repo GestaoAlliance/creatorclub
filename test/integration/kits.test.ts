@@ -68,7 +68,7 @@ describe("kit mensal (D-KIT, banco real)", () => {
 
     await expect(chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 3 }])).rejects.toThrow(/endereço/);
     await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
-    await expect(chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 2 }])).rejects.toThrow("Escolha 3 suplementos (você escolheu 2).");
+    await expect(chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 2 }])).rejects.toThrow("Escolha 3 produtos (você escolheu 2)."); // marca de teste não é a Botanika: "produtos" (D-WELCOMEKIT1)
     await expect(chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.inativo.id, quantity: 3 }])).rejects.toThrow(/indisponível/);
     await expect(chooseKit(prisma, { ...s.ctx, viewAs: { userId: "sa" } }, s.userId, kitId, [{ productId: s.whey.id, quantity: 3 }])).rejects.toThrow(
       /Visualização da equipe/,
@@ -76,7 +76,7 @@ describe("kit mensal (D-KIT, banco real)", () => {
 
     const id = await chooseKit(prisma, s.ctx, s.userId, kitId, [{ productId: s.whey.id, quantity: 2 }, { productId: s.creatina.id, quantity: 1 }]);
     const shipment = await prisma.shipment.findUniqueOrThrow({ where: { id }, include: { items: true, kit: true } });
-    expect(shipment).toMatchObject({ status: "AWAITING_APPROVAL", createdById: s.userId, note: "Kit mensal — vendas de outubro de 2026 (3 suplementos)", address: { city: "São Paulo" } });
+    expect(shipment).toMatchObject({ status: "AWAITING_APPROVAL", createdById: s.userId, note: "Kit mensal — vendas de outubro de 2026 (3 produtos)", address: { city: "São Paulo" } });
     expect(shipment.items.map((i) => [i.title, i.quantity]).sort()).toEqual([["Creatina", 1], ["Whey", 2]]);
     expect(shipment.kit).toMatchObject({ id: kitId, status: "CHOSEN" });
     expect((await myPendingKits(prisma, s.ctx)).kits).toEqual([]);

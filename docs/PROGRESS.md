@@ -261,6 +261,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-156 — 2026-10-22 — Kit de boas-vindas de 1 produto em todas as marcas (D-WELCOMEKIT1)
+- **Pedido (responsável):** em Envios, no início ela escolhe só 1 produto (Botanika um suplemento, Revita um produto
+  da marca, e assim por diante). Respostas: o mensal não muda; os kits ainda não escolhidos viram 1; qualquer produto
+  ativo da marca.
+- **Feito:** migração `20261022230000_welcome_kit_one` (contratos com 1 de boas-vindas, kits pendentes com 1, nova
+  versão dos textos de contrato que citavam 3); o produto do kit se chama "suplemento" na Botanika e "produto" nas
+  outras marcas (portal, aviso, nota do envio, mensagem de erro).
+- **Fátima (D-HUNTERADMIN):** a senha nova do login de hunter foi gravada no banco; dar Gestão da Revita ao mesmo login
+  ficou para o painel (Configurações → Equipe → dar papel), porque a conexão com o banco caiu antes.
+- **Verificado:** integração nova (`welcome-kit-one`, migração sobre dados), unitário (`kitNoun`), testes, typecheck,
+  build, sem divergência de schema.
+
 ### CP-155 — 2026-10-22 — Portal da creator com 4 telas (D-PORTAL4)
 - **Feito (M0.0.5):** menu Início · Vendas · Saque · Envios; cupom, link (copiar e compartilhar) e cliques no Início,
   numa faixa abaixo dos números (no celular, um embaixo do outro); `/cupom` leva ao Início; avisos só no sininho.
