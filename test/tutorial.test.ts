@@ -12,7 +12,7 @@ describe("tutoriais do portal e da equipe (D-TUTORIAL)", () => {
   });
 
   it("UGC não lê sobre comissão (D-UGCPORTAL)", () => {
-    for (const id of ["cupom-inicio", "vendas-resumo", "vendas-lista", "cupom-codigo"] as const)
+    for (const id of ["vendas-resumo", "vendas-lista", "cupom-codigo"] as const)
       expect(helpText(id, true)).not.toMatch(/comiss/i);
     expect(helpText("cupom-codigo")).toMatch(/comissão/);
   });
@@ -22,7 +22,7 @@ describe("tutoriais do portal e da equipe (D-TUTORIAL)", () => {
     expect(tourScreenFor("/portal/botanika/vendas")).toBe("vendas");
     expect(tourScreenFor("/portal/botanika/saque")).toBe("saque");
     expect(tourScreenFor("/portal/botanika/envios")).toBe("envios");
-    expect(tourScreenFor("/portal/botanika/cupom")).toBe("cupom");
+    expect(tourScreenFor("/portal/botanika/cupom")).toBeNull(); // Cupom entrou no Início (M0.0.5)
     expect(tourScreenFor("/portal/botanika/saque/novo")).toBeNull();
     expect(tourScreenFor("/portal/botanika/avisos")).toBeNull();
     expect(tourScreenFor("/portal/botanika/inicio")).toBeNull();
@@ -51,7 +51,7 @@ describe("tutoriais do portal e da equipe (D-TUTORIAL)", () => {
 
   it("pula o passo cujo cartão não está na tela, mantendo a ordem", () => {
     expect(tourSteps("vendas", (id) => id !== "vendas-grafico")).toEqual(["periodo", "vendas-resumo", "vendas-lista"]);
-    expect(tourSteps("cupom", () => false)).toEqual([]);
+    expect(tourSteps("envios", () => false)).toEqual([]);
   });
 
   it("guarda o já visto por tela", () => {

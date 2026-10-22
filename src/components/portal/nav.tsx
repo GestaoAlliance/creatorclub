@@ -57,11 +57,10 @@ export type NavIcon = keyof typeof ICONS;
 /** Item do menu; `tabs` = telas do mesmo grupo (D-MENUGROUPS), mostradas como abas e que deixam o item aceso. */
 export type NavItem = { href: string; label: string; icon: NavIcon; tabs?: { href: string; label: string }[] };
 
-/** Menu do portal da creator (D-E7ORDER). */
+/** Menu do portal da creator (D-E7ORDER; M0.0.5: 4 telas, o cupom fica no Início e os avisos no sininho). */
 export const PORTAL_ITEMS: NavItem[] = [
   { href: "", label: "Início", icon: "home" },
   { href: "/vendas", label: "Vendas", icon: "sales" },
-  { href: "/cupom", label: "Cupom", icon: "coupon" },
   { href: "/saque", label: "Saque", icon: "wallet" },
   { href: "/envios", label: "Envios", icon: "package" },
 ];
