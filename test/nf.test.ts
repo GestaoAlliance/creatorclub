@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkNf, issuerFromAccessKey, NF_SERVICE_TEXT, parseNfseText } from "@/domain";
+import { checkNf, issuerFromAccessKey, nfData, NF_SERVICE_TEXT, parseNfseText, serviceItem } from "@/domain";
 
 // Texto no formato do DANFSe v2.0 (NFS-e padrão nacional), com dados fictícios. Tomadora: CNPJ da Botanika.
 const KEY = "31062002211222333000181000000000001226080590551396";
@@ -63,5 +63,15 @@ describe("leitura do PDF da nota", () => {
 describe("texto do serviço na nota (D-NFSERVICE)", () => {
   it("a instrução da tela de saque traz o código 17.06.01 com a descrição", () => {
     expect(NF_SERVICE_TEXT.startsWith("17.06.01 - Propaganda e publicidade")).toBe(true);
+  });
+
+  it("M1.3 (D-NFDATA): a marca define o código; a conferência compara o item da lista", () => {
+    expect(serviceItem("17.06.01")).toBe("17.06");
+    expect(checkNf(parseNfseText(danfse()), { ...expected, serviceCode: "17.06" }).problems).toEqual([]);
+    expect(checkNf(parseNfseText(danfse()), { ...expected, serviceCode: "10.08" }).problems).toEqual([expect.stringMatching(/precisa ser 10\.08/)]);
+    expect(checkNf(parseNfseText(danfse({ code: "10.08.01 - Agenciamento" })), { ...expected, serviceCode: "10.08" }).problems).toEqual([]);
+    const brand = { legalName: "X LTDA", nfTakerDocument: "65100830000136", nfServiceCode: null, nfServiceDescription: null, nfInstructions: null };
+    expect(nfData(brand)).toMatchObject({ serviceCode: "17.06.01", serviceDescription: expect.stringMatching(/^Propaganda e publicidade/), notes: null });
+    expect(nfData({ ...brand, nfServiceCode: "10.08", nfServiceDescription: "Agenciamento", nfInstructions: "Sem ISS" })).toMatchObject({ serviceCode: "10.08", serviceDescription: "Agenciamento", notes: "Sem ISS" });
   });
 });

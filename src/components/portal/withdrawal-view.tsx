@@ -3,7 +3,7 @@ import Link from "next/link";
 import { formatBRL } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
-import { CopyButton } from "./copy-button";
+import { NfDataList } from "./nf-data";
 import { HelpTip } from "@/components/ui/tour";
 import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
@@ -98,21 +98,9 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           <HelpTip id="saque-nf" />
         </div>
         <p className="text-sm text-stone-600 dark:text-stone-400">
-          O pedido só é feito com a nota já emitida, no valor total disponível para saque. Use estes dados:
+          O pedido só é feito com a nota já emitida, no valor total disponível para saque, pelo CNPJ do seu cadastro. Use estes dados:
         </p>
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-3 dark:bg-white/5">
-          <div>
-            <p className="text-xs text-stone-500">CNPJ do tomador</p>
-            <p className="font-mono font-semibold">{tab.nf.takerDocument ?? "em breve"}</p>
-          </div>
-          {tab.nf.takerDocument && <CopyButton value={tab.nf.takerDocument} label="Copiar" />}
-        </div>
-        {tab.nf.instructions && (
-          <div className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
-            <p className="text-xs text-stone-500">Descrição e código do serviço</p>
-            <p className="mt-1 whitespace-pre-line">{tab.nf.instructions}</p>
-          </div>
-        )}
+        <NfDataList nf={tab.nf} />
       </section>
       )}
 

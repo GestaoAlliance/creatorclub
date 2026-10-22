@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { brandList, createBrand, slugFrom, updateBrand } from "@/lib/brands/manage";
 import { grantRole } from "@/lib/team/invites";
-import { letters, seedBrand, testClient } from "./fixtures";
+import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -32,6 +32,21 @@ describe("marcas e papéis por marca (A1b, banco real)", () => {
     const { brand } = await seedBrand(prisma);
     await expect(createBrand(prisma, await userWith("GESTAO", brand.id), { name: "Outra", primaryColor: "#000000", legalName: "", cnpj: "" })).rejects.toThrow(/super admin/);
     expect(await prisma.auditLog.count({ where: { entityId: b.id, action: { in: ["brand.create", "brand.update"] } } })).toBe(2);
+  });
+
+  it("M1.3 (D-NFDATA): dados para a creator emitir a nota; vazio volta ao padrão; campo fora do formulário fica", async () => {
+    const sa = await userWith("SUPER_ADMIN", null);
+    const b = await createBrand(prisma, sa, { name: `Nota ${letters(5)}`, primaryColor: "#000000", legalName: "Nota LTDA", cnpj: "" });
+    const base = { name: b.name, primaryColor: "#000000", legalName: "Nota LTDA", cnpj: "" };
+    await expect(updateBrand(prisma, sa, b.id, { ...base, nfServiceCode: "1706" })).rejects.toThrow(/17\.06/);
+    await updateBrand(prisma, sa, b.id, { ...base, nfServiceCode: " 10.08 ", nfServiceDescription: "  Agenciamento   de publicidade ", nfInstructions: " Não destacar ISS. " });
+    expect(await prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ nfServiceCode: "10.08", nfServiceDescription: "Agenciamento de publicidade", nfInstructions: "Não destacar ISS." });
+    await updateBrand(prisma, sa, b.id, base);
+    expect(await prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ nfServiceCode: "10.08", nfInstructions: "Não destacar ISS." });
+    await updateBrand(prisma, sa, b.id, { ...base, nfServiceCode: "", nfServiceDescription: "", nfInstructions: "" });
+    expect(await prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ nfServiceCode: null, nfServiceDescription: null, nfInstructions: null });
+    await expectDbError(prisma.brand.update({ where: { id: b.id }, data: { nfServiceCode: "17-06" } }), /Brand_nf_service_code_format/);
+    await expectDbError(prisma.brand.update({ where: { id: b.id }, data: { nfServiceDescription: "  " } }), /Brand_nf_service_description_filled/);
   });
 
   it("dar papel em outra marca a quem já está na equipe; sem repetir; super admin não tem marca", async () => {

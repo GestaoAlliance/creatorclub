@@ -39,7 +39,9 @@ model Brand {
   /// D-CONTRACT: vendas acumuladas mínimas para liberar a comissão no fechamento do mês.
   releaseMinCents           Int       @default(50000)
   releaseMinPrescriberCents Int       @default(100000)
-  nfInstructions            String?
+  nfInstructions            String? // M1.3: observações livres para emitir a nota
+  nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
+  nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
   legacyId                  String?   @unique

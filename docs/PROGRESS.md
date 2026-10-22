@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 1 — M1.2 Aprovação automática do saque** quando a nota passa em todas as conferências (a Ana só vê as exceções); depende da **decisão 2** do plano: perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 1 — M1.4 Saque mínimo**; depende da **decisão 5** do plano: perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -40,7 +40,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
 - [x] **M0.5** Busca de creator no painel inteiro
 - [x] **M1.1** Saques em duas etapas: em análise → Gestão aprova → Pagamento paga; aba Aprovados; selo da nota; "conferir de novo"; resumo "comissão a pagar" (D-WDAPPROVE)
-- [ ] **M1.2** Aprovação automática quando a nota passa em todas as conferências (**decisão** 2 do plano)
+- [x] ~~**M1.2** Aprovação automática~~ — **não será feita**: decisão 2 respondida em 2026-10-22, a Ana olha sempre (D-WDAPPROVE)
+- [x] **M1.3** Dados para emitir a nota na tela de saque, editáveis por marca (D-NFDATA)
+- [ ] **M1.4** Saque mínimo (**decisão** 5 do plano)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -262,6 +264,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-162 — 2026-10-22 — Dados para emitir a nota por marca (M1.3, D-NFDATA)
+- **Decisão 2 do plano respondida:** sem aprovação automática; a Ana olha todo saque (M1.2 sai da fila).
+- **Feito:** em Configurações → Marcas, cada marca define os dados que a creator usa para emitir a nota: razão social
+  e CNPJ do tomador (já existiam), **código e descrição do serviço** (vazio = padrão 17.06.01, propaganda e
+  publicidade) e **observações livres**. No portal, a aba Saque e o passo 1 do pedido mostram esses dados no modelo da
+  referência, cada um com botão de copiar. A conferência da nota passa a exigir o código da marca (compara o item da
+  lista: 17.06 aceita 17.06.01). Selo "dados para a nota" na marca exige razão social e CNPJ.
+- **Banco:** `Brand.nfServiceCode` e `Brand.nfServiceDescription`, com travas `Brand_nf_service_code_format` e
+  `Brand_nf_service_description_filled`.
+- **Pendente do responsável:** preencher razão social e CNPJ de VermeFree e Revita Derma em Marcas (cada uma o seu).
+- **Verificado:** testes (224), integração (235; novos: dados da nota na marca, código da marca na conferência),
+  typecheck, build, migração sem divergência; capturas no PR.
 
 ### CP-161 — 2026-10-22 — Saques em duas etapas (M1.1, D-WDAPPROVE)
 - **Feito:** saque passa a ter **em análise → aprovado → pago**. A Gestão (Ana) e o super admin aprovam ou recusam o

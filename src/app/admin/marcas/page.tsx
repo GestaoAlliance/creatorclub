@@ -45,7 +45,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
           { done: b._count.termsVersions > 0, label: "termo publicado" },
           { done: b._count.contractDocuments > 0, label: "contratos publicados" },
           { done: b._count.contractTemplates > 0, label: "versões de contrato" },
-          { done: Boolean(b.nfTakerDocument), label: "CNPJ para a nota" },
+          { done: Boolean(b.nfTakerDocument && b.legalName), label: "dados para a nota" },
           { done: Boolean(b.storeUrl), label: "site da loja" },
         ];
         return (
@@ -58,7 +58,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
             <details>
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "" }} />
+                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "" }} />
               </div>
             </details>
           </Card>
@@ -66,7 +66,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
       })}
       {all && (
         <Card title="Nova marca" icon={<Plus className="size-4" />}>
-          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "" }} />
+          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "" }} />
         </Card>
       )}
     </>
