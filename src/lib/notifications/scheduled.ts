@@ -103,11 +103,23 @@ async function brandNotices(
  * E-mail dos avisos (D-NOTICES + D-EMAIL): só com remetente e endereço do site configurados; só avisos das últimas 24 h
  * (ligar o e-mail depois não manda avisos velhos); e-mail de importação (falso) fica de fora. Até 20 por rodada.
  */
-export async function emailPendingNotices(prisma: PrismaClient, sender: EmailSender | null, origin: string | null, now = new Date()): Promise<number> {
+export async function emailPendingNotices(
+  prisma: PrismaClient,
+  sender: EmailSender | null,
+  origin: string | null,
+  now = new Date(),
+  opts: { whatsappOn?: boolean } = {},
+): Promise<number> {
   if (!sender || !origin) return 0;
   const pending = await prisma.notification.findMany({
     // E-mail de importação (falso) sai da busca: não pode ocupar a fila na frente dos outros.
-    where: { emailedAt: null, createdAt: { gte: new Date(now.getTime() - DAY) }, creator: { account: { email: { not: { endsWith: FAKE_EMAIL_DOMAIN } } } } },
+    // M2.2 (D-WHATSAPP): marca com WhatsApp ligado avisa no portal e no WhatsApp, sem e-mail.
+    where: {
+      emailedAt: null,
+      createdAt: { gte: new Date(now.getTime() - DAY) },
+      creator: { account: { email: { not: { endsWith: FAKE_EMAIL_DOMAIN } } } },
+      ...(opts.whatsappOn ? { brand: { whatsappInstance: null } } : {}),
+    },
     orderBy: { createdAt: "asc" },
     take: 20,
     select: { id: true, title: true, body: true, href: true, brandId: true, brand: { select: { name: true, slug: true } }, creator: { select: { account: { select: { name: true, email: true } } } } },
