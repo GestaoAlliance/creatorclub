@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.5 — busca de creator no painel inteiro** (nome, cupom, @, CPF); depois a Fase 1 (saques que dão menos trabalho), do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 1 — M1.1 Saques em duas etapas** (em análise → Ana aprova → Juci marca como pago; aba Aprovados; selo da nota; resumo "comissão a pagar"), do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-160 — 2026-10-22 — Busca de creator no painel inteiro (M0.5, D-SEARCH)
+- **Feito:** "Buscar creator" no topo (Ctrl K / ⌘K), em todas as marcas do acesso: nome, cupom, @, e-mail e CPF (só
+  com dado fiscal); o resultado abre a ficha já na marca certa. **Fim da Fase 0 e do M0.0 do plano de melhorias.**
+- **Verificado:** integração nova (`creator-search`: marcas do acesso, CPF só com permissão), testes, typecheck, build;
+  capturas; clicar no resultado abre a ficha.
 
 ### CP-159 — 2026-10-22 — Portal: aguardando pagamento, já usado, condições, mínimo e data do encerramento (M0.4)
 - **Feito (D-PORTALM04):** Início com 6 cartões (disponível, a liberar, aguardando pagamento, vendas do mês, comissão

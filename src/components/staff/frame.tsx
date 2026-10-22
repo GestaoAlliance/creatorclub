@@ -12,6 +12,7 @@ import { brandCssVars } from "@/lib/portal/context";
 import type { StaffBrand } from "@/lib/staff/context";
 import { ALL_BRANDS_PARAM, inAllBrands } from "@/lib/staff/nav";
 import { BrandSwitchOption } from "./brand-switch";
+import { CreatorSearch } from "./creator-search";
 import { SectionTabs } from "./section-tabs";
 
 const ALLIANCE_COLORS = { primaryColor: "#18181B", secondaryColor: null };
@@ -27,6 +28,8 @@ export function StaffFrame(p: {
   firstName: string;
   isCreator: boolean;
   alliance: boolean;
+  /** M0.5: quem vê creators tem a busca no topo. */
+  search: boolean;
   brandItems: NavItem[];
   allianceItems: NavItem[];
   children: ReactNode;
@@ -50,6 +53,7 @@ export function StaffFrame(p: {
             <p className="truncate text-lg font-semibold">Olá, {p.firstName}</p>
           </div>
           <div className="flex items-center gap-2">
+            {p.search && <CreatorSearch />}
             {(inAlliance || p.brand) && (
               <details className="relative">
                 <summary className="glass flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2 text-sm">
