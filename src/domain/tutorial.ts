@@ -182,8 +182,8 @@ export const HELP = {
     text: "Depois de conferir cupons, taxa e vendas, marque aqui. Isso libera o saldo de abertura para o Pagamento.",
   },
   "fi-cupons": {
-    title: "Cupons da creator",
-    text: "Os cupons dela, desde quando valem e se a dona está confirmada. Daqui dá para criar um cupom novo.",
+    title: "Cupom, comissão e desconto",
+    text: "O cupom dela e o link. Em Editar, mude a comissão (vale daqui pra frente) e o desconto do cupom (muda na Shopify na hora).",
   },
   "fi-contrato": {
     title: "Contrato e checklist",

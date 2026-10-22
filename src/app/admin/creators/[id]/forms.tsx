@@ -343,7 +343,7 @@ export function PricingEditor(p: { creatorId: string; rateBps: number | null; di
       {open && (
         <form action={action} className="flex flex-col gap-3">
           <input type="hidden" name="creatorId" value={p.creatorId} />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <label className={ui.label}>
               Comissão dela (%)
               <input name="rate" defaultValue={pctInput(p.rateBps)} inputMode="decimal" disabled={!!p.rateLocked} className={input} />

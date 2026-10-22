@@ -261,10 +261,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
-### CP-153 — 2026-10-22 — Editar comissão e desconto no topo da ficha (D-RATEDISCOUNT)
+### CP-153 — 2026-10-22 — Editar comissão e desconto no cartão do cupom da ficha (D-RATEDISCOUNT)
 - **Pedido (responsável):** antes do merge das Candidatas, um lugar para editar a comissão da creator e o desconto do
   cupom dela. Respostas: no topo da ficha; comissão só daqui pra frente; Gestão e super admin.
-- **Feito:** topo da ficha mostra "Comissão X% · Desconto do cupom Y%" e o botão "Editar comissão e desconto";
+- **Feito:** o cartão de cupons da ficha virou "Cupom, comissão e desconto" (o topo ficou "muito em cima", pediu o
+  responsável): mostra "Comissão X% · Desconto do cupom Y%", o desconto no selo do cupom e o botão "Editar comissão e
+  desconto"; "Criar outro cupom" fica recolhido quando ela já tem cupom;
   desconto muda na Shopify (`discountCodeBasicUpdate`, só o valor, combinável; acha pelo código quando falta o id) e
   depois no banco; comissão abre nova vigência. Mensagens claras quando a Shopify recusa ou não responde.
 - **Verificado:** integração nova (`coupon-discount`, Shopify falsa), testes, typecheck, build; capturas; comissão salva
