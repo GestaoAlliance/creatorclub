@@ -247,6 +247,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-142 — 2026-10-22 — Cupom do cadastro: exemplo com nome, sem número
+- **Pedido (responsável):** o exemplo "SEUCUPOM10" sugere 10% de desconto ou comissão e pode conflitar com campanhas;
+  orientar a usar o nome ou apelido. Número continua permitido.
+- **Feito:** exemplo "SEUNOME" e a dica "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto";
+  a mensagem de erro também cita só nome.
+- **Verificado:** testes do cadastro; captura.
+
 ### CP-141 — 2026-10-22 — Cadastro de creator com conta, no modelo da referência
 - **Pedido (responsável):** o formulário de inscrição estava burocrático; seguir o cadastro da referência (Bigboom) e
   adaptar o sistema a ele. Respostas: a conta nasce com senha e a Ana aprova depois; Pix pedido no saque; cupom igual

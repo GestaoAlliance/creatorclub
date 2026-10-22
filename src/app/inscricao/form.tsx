@@ -40,7 +40,7 @@ const PLACEHOLDER: Record<string, string> = {
   phone: "(00) 00000-0000",
   instagram: "usuario",
   tiktok: "usuario",
-  coupon: "SEUCUPOM10",
+  coupon: "SEUNOME",
   addrZip: "00000-000",
   addrComplement: "Apto 101",
 };
