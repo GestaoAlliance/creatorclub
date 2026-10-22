@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 1 — M1.4 Saque mínimo**; depende da **decisão 5** do plano: perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 2 — M2.1 Fila de ações por creator** (alertas viram tarefas com responsável e mensagem pronta); depende da **decisão 3** do plano (gerente: existe? quem acompanha as creators depois de aprovadas, por marca?): perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -42,7 +42,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M1.1** Saques em duas etapas: em análise → Gestão aprova → Pagamento paga; aba Aprovados; selo da nota; "conferir de novo"; resumo "comissão a pagar" (D-WDAPPROVE)
 - [x] ~~**M1.2** Aprovação automática~~ — **não será feita**: decisão 2 respondida em 2026-10-22, a Ana olha sempre (D-WDAPPROVE)
 - [x] **M1.3** Dados para emitir a nota na tela de saque, editáveis por marca (D-NFDATA)
-- [ ] **M1.4** Saque mínimo (**decisão** 5 do plano)
+- [x] ~~**M1.4** Saque mínimo~~ — **não será feito**: decisão 5 respondida em 2026-10-22, sem mínimo por pedido (D-CONTRACT segue)
+- [x] **M1.5** Pagamento em lote: planilha dos aprovados e marcar vários como pagos (D-WDBATCH). **Fim da Fase 1.**
+- [ ] **M2.1** Fila de ações por creator (**decisão** 3 do plano)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -264,6 +266,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-163 — 2026-10-22 — Pagamento em lote (M1.5, D-WDBATCH); fim da Fase 1
+- **Decisão 5 do plano respondida:** sem saque mínimo por pedido (M1.4 sai da fila; o mínimo continua sendo o de
+  vendas do contrato, D-CONTRACT). **Decisão 6:** planilha basta, sem arquivo de banco.
+- **Feito:** na aba Aprovados, quem paga vê "Pagamento em lote": **baixar a planilha dos aprovados** (CSV para o Excel:
+  marca, creator, CPF/CNPJ, chave Pix, valor, datas, selo da nota e o código do saque, com total no fim) e, depois dos
+  Pix, **marcar os selecionados como pagos** de uma vez (caixa "Incluir no lote" em cada cartão, "Selecionar todos" e
+  confirmação com o total). Cada saque é pago no mesmo passo de sempre (lançamento no extrato, aviso, auditoria); o
+  que mudou de situação ou é de outra marca volta com o motivo sem travar os outros.
+- **Verificado:** testes (225), integração (236; novo: lote com saque fora de situação e de outra marca), typecheck,
+  build; capturas no PR.
 
 ### CP-162 — 2026-10-22 — Dados para emitir a nota por marca (M1.3, D-NFDATA)
 - **Decisão 2 do plano respondida:** sem aprovação automática; a Ana olha todo saque (M1.2 sai da fila).

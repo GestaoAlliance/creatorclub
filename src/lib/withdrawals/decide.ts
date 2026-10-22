@@ -85,6 +85,27 @@ export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, w
   });
 }
 
+/**
+ * Marcar vários aprovados como pagos de uma vez (M1.5, D-WDBATCH), depois do Pix em lote. Cada saque vale sozinho
+ * (o mesmo passo de `payWithdrawal`): um que mudou de situação ou sem permissão não impede os outros e volta na lista.
+ */
+export async function payWithdrawals(prisma: PrismaClient, actor: Actor | null, withdrawalIds: readonly string[], now = new Date()) {
+  const ids = [...new Set(withdrawalIds)].slice(0, 200);
+  if (ids.length === 0) throw new WithdrawalDecisionError("Escolha ao menos um saque.");
+  const paid: string[] = [];
+  const failed: { id: string; reason: string }[] = [];
+  for (const id of ids) {
+    try {
+      await payWithdrawal(prisma, actor, id, now);
+      paid.push(id);
+    } catch (error) {
+      if (!(error instanceof WithdrawalDecisionError)) throw error;
+      failed.push({ id, reason: error.message });
+    }
+  }
+  return { paid, failed };
+}
+
 export async function rejectWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, reason: string, now = new Date()) {
   const note = reason.trim().replace(/\s+/g, " ").slice(0, 300);
   if (!note) throw new WithdrawalDecisionError("Escreva o motivo da recusa (a creator vê).");

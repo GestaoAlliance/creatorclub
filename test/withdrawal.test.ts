@@ -81,3 +81,16 @@ describe("políticas de comissão", () => {
     ).toThrow(/se sobrepõem/);
   });
 });
+
+describe("planilha do pagamento em lote (M1.5, D-WDBATCH)", () => {
+  it("BOM, ponto e vírgula, valor com vírgula, total no fim; texto que vira fórmula é neutralizado", async () => {
+    const { payoutCsv } = await import("@/domain");
+    const row = { brand: "Botanika", name: "=Maria; Silva", document: "52998224725", pixKey: "maria@x.com", amountCents: 84_250, requestedDay: "05/10/2026", approvedDay: "06/10/2026", seal: "conferida", id: "w1" };
+    const csv = payoutCsv([row, { ...row, name: "Ana", amountCents: 1_000, id: "w2" }]);
+    const lines = csv.slice(1).trim().split("\r\n");
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(lines[0]).toBe("Marca;Creator;CPF/CNPJ;Chave Pix;Valor (R$);Pedido em;Aprovado em;Nota;Saque");
+    expect(lines[1]).toBe(`Botanika;"'=Maria; Silva";52998224725;maria@x.com;842,50;05/10/2026;06/10/2026;conferida;w1`);
+    expect(lines[3]).toBe("Total;2 saques;;;852,50;;;;");
+  });
+});

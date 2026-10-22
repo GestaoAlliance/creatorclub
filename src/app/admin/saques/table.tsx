@@ -5,7 +5,7 @@ import { formatBRL } from "@/domain";
 import { WITHDRAWAL_STATUS_LABEL } from "@/lib/portal/withdrawals";
 import type { withdrawalQueue } from "@/lib/withdrawals/decide";
 import { CopyButton } from "@/components/portal/copy-button";
-import { ApproveForm, PayForm, RecheckForm, RejectForm } from "./forms";
+import { ApproveForm, BatchCheck, PayForm, RecheckForm, RejectForm } from "./forms";
 
 type Row = Awaited<ReturnType<typeof withdrawalQueue>>[number];
 
@@ -92,6 +92,7 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
               <div data-tour="sq-pagar" className="relative flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
                 {i === 0 && <HelpTip id="sq-pagar" className="absolute -top-3.5 right-0 bg-white dark:bg-stone-900" />}
                 {r.canApprove && <ApproveForm withdrawalId={r.id} label={formatBRL(r.amountCents)} />}
+                {r.canPay && <BatchCheck withdrawalId={r.id} cents={r.amountCents} name={r.name} />}
                 {r.canPay && <PayForm withdrawalId={r.id} label={formatBRL(r.amountCents)} />}
                 <RejectForm withdrawalId={r.id} />
               </div>

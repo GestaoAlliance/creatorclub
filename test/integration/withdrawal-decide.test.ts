@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
-import { approveWithdrawal, cancelMyWithdrawal, nfLocation, payWithdrawal, recheckWithdrawalNf, rejectWithdrawal, withdrawalQueue } from "@/lib/withdrawals/decide";
+import { approveWithdrawal, cancelMyWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, withdrawalQueue } from "@/lib/withdrawals/decide";
 import { payoutSummary } from "@/lib/withdrawals/summary";
 import { staffHome } from "@/lib/staff/home";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
@@ -156,6 +156,25 @@ describe("decisão do saque (banco real)", () => {
     await expect(recheckWithdrawalNf(prisma, await userWith("GESTAO", otherBrand.brand.id), s.withdrawalId, PDF)).rejects.toThrow(/permissão/);
     await rejectWithdrawal(prisma, s.gestao, s.withdrawalId, "nota errada");
     await expect(recheckWithdrawalNf(prisma, s.gestao, s.withdrawalId, PDF)).rejects.toThrow(/mudou de situação/);
+  });
+
+  it("M1.5: marcar vários aprovados como pagos; o que mudou de situação ou é de outra marca volta sem travar os outros", async () => {
+    const a = await approved();
+    const b = await approved();
+    const c = await requested(); // ainda em análise
+    const other = await approved(); // outra marca: a Juci de "a" não paga
+    for (const x of [b, c]) await prisma.roleGrant.create({ data: { userId: a.pagamento.userId, role: "PAGAMENTO", brandId: x.brand.id } });
+    const juci = (await loadActor(prisma, a.pagamento.userId))!;
+    await expect(payWithdrawals(prisma, juci, [])).rejects.toThrow(/ao menos um/);
+    const r = await payWithdrawals(prisma, juci, [a.withdrawalId, b.withdrawalId, a.withdrawalId, c.withdrawalId, other.withdrawalId], IN_WINDOW);
+    expect(r.paid).toEqual([a.withdrawalId, b.withdrawalId]);
+    expect(r.failed).toEqual([
+      { id: c.withdrawalId, reason: expect.stringMatching(/mudou de situação/) },
+      { id: other.withdrawalId, reason: expect.stringMatching(/permissão/) },
+    ]);
+    expect(await sum(a.creator.id)).toBe(0);
+    expect(await sum(b.creator.id)).toBe(0);
+    expect((await prisma.withdrawal.findUniqueOrThrow({ where: { id: other.withdrawalId } })).status).toBe("APPROVED");
   });
 
   it("travas do banco: recusa sem motivo, decisão sem autor, dois lançamentos do mesmo saque", async () => {

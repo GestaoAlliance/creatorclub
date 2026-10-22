@@ -53,3 +53,31 @@ export function checkWithdrawalRequest(
   if (req.hasOpenWithdrawal) errors.push("SAQUE_EM_ABERTO");
   return errors;
 }
+
+/** Linha da planilha de pagamento em lote (M1.5, D-WDBATCH). */
+export type PayoutCsvRow = {
+  brand: string;
+  name: string;
+  document: string | null;
+  pixKey: string | null;
+  amountCents: number;
+  requestedDay: string;
+  approvedDay: string | null;
+  seal: string;
+  id: string;
+};
+
+function csvCell(v: string | null): string {
+  let s = v ?? "";
+  if (/^[=+\-@]/.test(s)) s = `'${s}`; // não vira fórmula no Excel
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Planilha dos saques aprovados para a Juci pagar em lote: BOM para o Excel, `;` e valor com vírgula; total no fim. */
+export function payoutCsv(rows: readonly PayoutCsvRow[]): string {
+  const head = ["Marca", "Creator", "CPF/CNPJ", "Chave Pix", "Valor (R$)", "Pedido em", "Aprovado em", "Nota", "Saque"];
+  const brl = (c: number) => (c / 100).toFixed(2).replace(".", ",");
+  const lines = rows.map((r) => [r.brand, r.name, r.document, r.pixKey, brl(r.amountCents), r.requestedDay, r.approvedDay, r.seal, r.id].map(csvCell).join(";"));
+  const total = ["Total", `${rows.length} ${rows.length === 1 ? "saque" : "saques"}`, "", "", brl(rows.reduce((s, r) => s + r.amountCents, 0)), "", "", "", ""].join(";");
+  return `﻿${[head.join(";"), ...lines, total].join("\r\n")}\r\n`;
+}

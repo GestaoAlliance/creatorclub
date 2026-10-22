@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { approveWithdrawal, nfLocation, payWithdrawal, recheckWithdrawalNf, rejectWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
+import { approveWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
 
@@ -42,5 +42,16 @@ export async function recheckAction(_prev: ActionState, form: FormData): Promise
     const r = await recheckWithdrawalNf(db(), actor, id, new Uint8Array(await data.arrayBuffer()));
     if (r.nfCheck === "OK") return "Nota conferida: tomadora, valor, emissor e código batem.";
     throw new WithdrawalDecisionError(r.problems.length ? `Não bate: ${r.problems.join(" ")}` : "O sistema ainda não consegue ler esta nota. Confira abrindo o PDF.");
+  }, "");
+}
+
+/** M1.5: marcar vários aprovados como pagos depois do Pix em lote. */
+export async function payBatchAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    const ids = form.getAll("ids").map(String);
+    const r = await payWithdrawals(db(), await currentActor(), ids);
+    const ok = `${r.paid.length} ${r.paid.length === 1 ? "saque marcado" : "saques marcados"} como pago.`;
+    if (r.failed.length) throw new WithdrawalDecisionError(`${ok} ${r.failed.length} não ${r.failed.length === 1 ? "foi" : "foram"}: ${r.failed[0]!.reason}`);
+    return ok;
   }, "");
 }
