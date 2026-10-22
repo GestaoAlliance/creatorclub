@@ -11,6 +11,7 @@ import { withdrawalQueue, type QueueFilter } from "@/lib/withdrawals/decide";
 import { payoutSummary } from "@/lib/withdrawals/summary";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
+import { BatchBar } from "./forms";
 import { SaquesTable } from "./table";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +64,7 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
         <HelpTip id="sq-abas" />
         <Link href="/admin/saques/conferencia" className={`${ui.link} ml-auto text-sm`}>Conferir a planilha de pagamentos →</Link>
       </nav>
+      {tab === "APPROVED" && rows.some((r) => r.canPay) && <BatchBar count={rows.filter((r) => r.canPay).length} />}
       <SaquesTable rows={rows} />
     </>
   );
