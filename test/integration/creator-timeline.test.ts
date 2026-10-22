@@ -7,7 +7,7 @@ import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixture
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
-async function userWith(role: "GESTAO" | "ENVIO", brandId: string, name = role) {
+async function userWith(role: "GESTAO" | "ENVIO", brandId: string, name: string = role) {
   const id = randomUUID();
   await prisma.user.create({ data: { id, email: `${id}@x.com`, name, roleGrants: { create: { role, brandId } } } });
   return (await loadActor(prisma, id))!;
