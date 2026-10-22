@@ -56,5 +56,5 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   // Link rastreado que ela divulga (D-LINK), com o domínio desta requisição (o mesmo do portal).
   const h = await headers();
   const linkBase = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}/r/${own.slug}/`;
-  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} />;
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} />;
 }
