@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M0.3 (Lista de creators)**, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M0.0.2 (Creators com abas)**; depois M0.0.3–M0.0.5 e então M0.3, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -29,6 +29,11 @@
 Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado · `[-]` adiado
 
 ### M — Plano de melhorias (`docs/PLANO-MELHORIAS.md`; uma etapa por vez, cada uma com PR e capturas)
+- [x] **M0.0.1** Menu em grupos com abas (6 itens) e Configurações
+- [ ] **M0.0.2** Creators com abas (Ativas, Pendentes, Encerradas, Hunters)
+- [ ] **M0.0.3** Vendas + Cupons e Pagamentos como abas
+- [ ] **M0.0.4** Início = dashboard; "Todas as marcas" no lugar do painel Alliance
+- [ ] **M0.0.5** Portal com 4 telas
 - [x] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
 - [x] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
 - [ ] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração
@@ -255,6 +260,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-146 — 2026-10-22 — M0.0.1 Menu em grupos com abas
+- **Pedido (responsável):** "muita tela"; juntar para ficar enxuto e intuitivo, sem perder função. Aprovadas as
+  recomendações: Hunters como aba de Creators; aprovação da abertura em Pagamentos e conferência da Ana como alerta em
+  Creators; no portal, cupom no Início e avisos só no sininho.
+- **Feito (D-MENUGROUPS):** o menu da marca passou de até 15 itens para Início + 5 grupos (Creators, Vendas,
+  Pagamentos, Envios, Configurações); cada grupo mostra as telas dele como **abas no topo** (`SectionTabs` na moldura)
+  e só as que o papel pode usar. Marcas e Equipe saíram do painel Alliance para Configurações (o painel Alliance fica
+  com "Marcas da Alliance" e Configurações até a M0.0.4). Plano atualizado com a etapa M0.0 (5 partes).
+- **Verificado:** teste do menu (grupos por papel, abas, aba mais específica), typecheck, build; capturas.
 
 ### CP-145 — 2026-10-22 — M0.2 Ficha da creator: números, link e linha do tempo
 - **Feito:** no cartão Saldo (quem vê dinheiro), vendas pagas e ticket médio dos últimos 30 dias, **aguardando

@@ -12,6 +12,7 @@ import { brandCssVars } from "@/lib/portal/context";
 import type { StaffBrand } from "@/lib/staff/context";
 import { ALLIANCE_PATHS } from "@/lib/staff/nav";
 import { BrandSwitchOption } from "./brand-switch";
+import { SectionTabs } from "./section-tabs";
 
 const ALLIANCE_COLORS = { primaryColor: "#18181B", secondaryColor: null };
 
@@ -71,7 +72,10 @@ export function StaffFrame(p: {
         </header>
         {/* D-TUTORIAL: passo a passo no primeiro acesso às telas da rotina de cada papel. */}
         <TutorialProvider ugc={false} auto>
-          <main className="flex flex-1 flex-col gap-6">{p.children}</main>
+          <main className="flex flex-1 flex-col gap-6">
+            {!inAlliance && <SectionTabs items={items} />}
+            {p.children}
+          </main>
         </TutorialProvider>
       </div>
       <BottomNav base="/admin" items={items} />

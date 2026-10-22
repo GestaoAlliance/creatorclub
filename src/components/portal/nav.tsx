@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   Package,
   RefreshCw,
+  Settings,
   Scale,
   ShoppingBag,
   Target,
@@ -49,10 +50,12 @@ const ICONS = {
   grid: LayoutGrid,
   inbox: Inbox,
   hunter: Target,
+  settings: Settings,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;
-export type NavItem = { href: string; label: string; icon: NavIcon };
+/** Item do menu; `tabs` = telas do mesmo grupo (D-MENUGROUPS), mostradas como abas e que deixam o item aceso. */
+export type NavItem = { href: string; label: string; icon: NavIcon; tabs?: { href: string; label: string }[] };
 
 /** Menu do portal da creator (D-E7ORDER). */
 export const PORTAL_ITEMS: NavItem[] = [
@@ -63,16 +66,21 @@ export const PORTAL_ITEMS: NavItem[] = [
   { href: "/envios", label: "Envios", icon: "package" },
 ];
 
-function useActive(base: string) {
+function useActive(base: string, items: NavItem[]) {
   const path = usePathname();
-  return (href: string) => (href === "" ? path === base : path === `${base}${href}` || path.startsWith(`${base}${href}/`));
+  const hit = (href: string) => (href === "" ? path === base : path === `${base}${href}` || path.startsWith(`${base}${href}/`));
+  // O item aceso é o que tem a aba (ou o endereço) mais específica para o caminho.
+  const best = items
+    .flatMap((i) => [i.href, ...(i.tabs ?? []).map((t) => t.href)].filter(hit).map((h) => ({ href: i.href, len: h.length })))
+    .sort((a, b) => b.len - a.len)[0]?.href;
+  return (href: string) => (best === undefined ? hit(href) : href === best);
 }
 
 /** Computador: barra lateral de vidro, recolhível (lembra a escolha neste navegador). */
 export function SideNav({ base, brandName, items: all, hidden = [] }: { base: string; brandName: string; items: NavItem[]; hidden?: string[] }) {
   const items = all.filter((i) => !hidden.includes(i.href));
   const [open, setOpen] = useState(true);
-  const isActive = useActive(base);
+  const isActive = useActive(base, items);
   useEffect(() => {
     try {
       if (localStorage.getItem("portal-nav") === "closed") setOpen(false);
@@ -133,7 +141,7 @@ export function SideNav({ base, brandName, items: all, hidden = [] }: { base: st
 /** Celular: barra de vidro fixa embaixo, tipo app. Mais de 5 itens: os 4 primeiros e "Mais" com o resto. */
 export function BottomNav({ base, items: all, hidden = [] }: { base: string; items: NavItem[]; hidden?: string[] }) {
   const items = all.filter((i) => !hidden.includes(i.href));
-  const isActive = useActive(base);
+  const isActive = useActive(base, items);
   const [more, setMore] = useState(false);
   const path = usePathname();
   useEffect(() => setMore(false), [path]);

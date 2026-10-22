@@ -16,6 +16,18 @@
   conferência rígida da NF (D-NFCHECK), várias marcas com o painel da Alliance.
 - Nenhuma tela consulta a Shopify (custo e catálogo chegam pela sincronização).
 
+## M0.0 — Menos telas (pedido do responsável em 2026-10-22, antes da Fase 0)
+
+Painel da equipe de ~17 itens para 6 grupos (D-MENUGROUPS), sem perder função; portal da creator de 6 para 4.
+
+| Parte | O que |
+|---|---|
+| M0.0.1 | **Menu em grupos com abas**: Início · Creators (Creators, Candidatas, Hunters) · Vendas (Vendas, Cupons, Desempenho) · Pagamentos (Saques, Abertura, Conferência) · Envios · Configurações (Marcas, Equipe, Contratos, Termo, Shopify, Importar) |
+| M0.0.2 | **Creators** numa tela com abas Ativas · Pendentes (candidatas, aprovar/recusar na linha) · Encerradas · Hunters; revisar dados e conferência da Ana como alertas clicáveis |
+| M0.0.3 | **Vendas + Cupons** e **Pagamentos** (saques, aprovação da abertura e conferência) como abas de verdade |
+| M0.0.4 | **Início = dashboard** (período, vendas de creators × loja, gráfico, top creators e produtos) com a faixa "Precisa de você"; "Todas as marcas" no seletor substitui o painel Alliance; Desempenho entra aqui (sobe a M3.1) |
+| M0.0.5 | **Portal com 4 telas**: Início (com cupom e link), Vendas, Saque, Envios; avisos só no sininho |
+
 ## Fase 0 — Ganhos rápidos (dados que já existem; sem decisão nova)
 
 | # | Etapa | Lado | Ligação com o outro lado |
