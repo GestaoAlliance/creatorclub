@@ -41,6 +41,8 @@ export async function contactAction(_p: State, form: FormData): Promise<State> {
     name: String(form.get("name") ?? ""),
     email: String(form.get("email") ?? ""),
     phone: String(form.get("phone") ?? ""),
+    instagram: String(form.get("instagram") ?? ""),
+    tiktok: String(form.get("tiktok") ?? ""),
   }), "Contato salvo.");
 }
 

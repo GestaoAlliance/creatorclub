@@ -9,7 +9,7 @@ import { ui } from "@/components/ui/styles";
 const input = ui.input;
 const btn = `${ui.btn} self-start`;
 
-export function ContactForm(p: { creatorId: string; name: string; email: string; phone: string | null; fakeEmail: boolean }) {
+export function ContactForm(p: { creatorId: string; name: string; email: string; phone: string | null; fakeEmail: boolean; instagram: string | null; tiktok: string | null }) {
   const [state, action, pending] = useActionState(contactAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -19,6 +19,10 @@ export function ContactForm(p: { creatorId: string; name: string; email: string;
         <input className={input} name="email" type="email" defaultValue={p.fakeEmail ? "" : p.email} placeholder={p.fakeEmail ? "e-mail real (o do app antigo era falso)" : ""} required />
       </label>
       <label className={ui.label}>Telefone<input className={input} name="phone" defaultValue={p.phone ?? ""} /></label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={ui.label}>Instagram<input className={input} name="instagram" defaultValue={p.instagram ?? ""} placeholder="@ dela" autoCapitalize="none" /></label>
+        <label className={ui.label}>TikTok<input className={input} name="tiktok" defaultValue={p.tiktok ?? ""} placeholder="@ dela (se tiver)" autoCapitalize="none" /></label>
+      </div>
       <Msg state={state} />
       <button className={btn} disabled={pending}>Salvar contato</button>
     </form>

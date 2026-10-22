@@ -261,6 +261,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-150 — 2026-10-22 — TikTok das creators: equipe e creator preenchem (D-SOCIALFILL)
+- **Pedido (responsável):** "nenhuma tem TikTok?" — as creators antigas vieram sem o campo; fazer as duas coisas.
+- **Feito:** ficha (aba Cadastro → Contato) com Instagram e TikTok editáveis pela equipe; Início do portal pede o
+  @ do TikTok a quem não informou (salvar ou "Agora não"); visualização da equipe não altera; auditoria.
+- **Verificado:** integração nova (`creator-social`), testes, typecheck, build; capturas.
+
 ### CP-149 — 2026-10-22 — Lista mais bonita e ficha completa da creator
 - **Pedido (responsável):** lista no modelo da referência com mini ícones de Instagram, TikTok e WhatsApp; ao clicar
   no nome abrir a ficha com tudo da creator, como antes, otimizada e mais bonita.
