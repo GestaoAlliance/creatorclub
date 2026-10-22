@@ -53,3 +53,12 @@ describe("contrato preenchido (D-SIGNCONTRACT)", () => {
     }
   });
 });
+
+describe("faixas do kit com o produto de cada marca (D-WELCOMEKIT1)", () => {
+  it("Revita Derma fala em produtos; VermeFree e Botanika, em suplementos", () => {
+    const tiers = [{ fromCents: 100_000, products: 1 }, { fromCents: 200_000, products: 2 }];
+    expect(kitText(tiers, "revita-derma")).toContain("02 (dois) produtos.");
+    expect(kitText(tiers, "vermefree")).toContain("02 (dois) suplementos.");
+    expect(kitText(tiers)).toContain("01 (um) suplemento;");
+  });
+});

@@ -163,6 +163,8 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     topCreators,
     topProducts,
     concentration: { top1, top3 },
+    /** Valores do período anterior, para somar marcas e calcular a variação do total (Todas as marcas). */
+    prev: { salesCents: sum(before), commissionCents: commission(before), sellers: sellers(before), storeSalesCents: before.store.salesCents },
     generatedAt: now,
   };
 }

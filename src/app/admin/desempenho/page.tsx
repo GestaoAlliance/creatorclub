@@ -23,5 +23,5 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const sort = SORTS.find((s) => s === sp.ordem) ?? "vendas";
   const data = await monthPerformance(db(), actor, brand.id, { month: sp.mes, sort });
-  return <DesempenhoView data={data} sp={{ ...sp, ordem: sort }} />;
+  return <DesempenhoView data={data} sp={{ ...sp, ordem: sort }} brandSlug={brand.slug} />;
 }

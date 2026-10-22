@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **"Todas as marcas" no seletor** (substitui o painel Alliance; M0.0.4); depois a Fase 0 restante, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M0.4 — portal** ("Aguardando pagamento", "Já usado", comissão e desconto dela no Início, barra do mínimo do contrato); depois M0.5 (busca de creator no painel inteiro) e a Fase 1, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-157 — 2026-10-22 — "Todas as marcas" no seletor; produto certo de cada marca (D-ALLBRANDS)
+- **Feito (M0.0.4):** o seletor do topo tem "Todas as marcas" (o item "Alliance" saiu do menu); `/admin` virou o Início
+  da Alliance: período com comparação, números somados das marcas, vendas por dia, comparação entre as marcas, top
+  creators de todas (com a marca) e o cartão de cada marca com o que espera. Escolher uma marca de lá abre o Início dela.
+- **Produto de cada marca (pedido do responsável):** Botanika e VermeFree, suplemento; Revita Derma, produto
+  (dermocosméticos). Corrigido também no texto das faixas do contrato, no Desempenho e no endereço do cadastro.
+- **Verificado:** integração nova (`alliance-dashboard`), unitários (`kitNoun`, `kitText`), testes, typecheck, build;
+  capturas.
 
 ### CP-156 — 2026-10-22 — Kit de boas-vindas de 1 produto em todas as marcas (D-WELCOMEKIT1)
 - **Pedido (responsável):** em Envios, no início ela escolhe só 1 produto (Botanika um suplemento, Revita um produto

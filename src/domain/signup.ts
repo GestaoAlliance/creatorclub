@@ -40,7 +40,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "instagram", title: "@ do seu Instagram:", label: "Instagram", kind: "text", required: true },
   { key: "tiktok", title: "@ do seu TikTok:", label: "TikTok", kind: "text", required: false },
   { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto. De 3 a 20 letras." },
-  { key: "address", title: "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
+  { key: "address", title: "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
 ];
 
 /** Blocos do cadastro, na ordem da página (a senha vem no fim, fora das respostas). */

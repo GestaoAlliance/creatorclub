@@ -47,6 +47,7 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
     select: {
       id: true,
       brandId: true,
+      brand: { select: { slug: true } },
       contractRequiredAt: true,
       ugcVideoGoal: true,
       contractTemplate: { select: { id: true, documentKind: true, releaseMinCents: true, kitTiers: true, months: true } },
@@ -86,6 +87,7 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
       rateBps: c.commissionPolicies[0]?.rateBps ?? null,
       releaseMinCents: c.contractTemplate?.releaseMinCents ?? null,
       kitTiers: parseKitTiers(c.contractTemplate?.kitTiers),
+      brandSlug: c.brand.slug,
       months: c.contractTemplate?.months ?? 6,
       videoGoal: c.ugcVideoGoal ?? UGC_DEFAULT_VIDEO_GOAL,
     },

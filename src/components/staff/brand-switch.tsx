@@ -9,7 +9,8 @@ export function BrandSwitchOption({ slug, name, color }: { slug: string; name: s
   return (
     <form action={chooseBrandAction}>
       <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="next" value={path.split("/").slice(0, 3).join("/")} />
+      {/* Em "Todas as marcas" (/admin), escolher uma marca abre o Início dela. */}
+      <input type="hidden" name="next" value={path === "/admin" ? "/admin/marca" : path.split("/").slice(0, 3).join("/")} />
       <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/60 dark:hover:bg-white/10">
         <span className="size-3 rounded-full" style={{ background: color }} />
         {name}

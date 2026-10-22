@@ -1,4 +1,4 @@
-import type { KitTier } from "./kit";
+import { kitNoun, type KitTier } from "./kit";
 import { formatBRL } from "./money";
 
 /**
@@ -39,6 +39,8 @@ export type ContractData = {
   rateBps: number | null;
   releaseMinCents: number | null;
   kitTiers: readonly KitTier[];
+  /** Marca do contrato: o kit é de suplementos (Botanika, VermeFree) ou de produtos (Revita Derma). */
+  brandSlug?: string;
   months: number;
   videoGoal: number;
   signedAt: Date;
@@ -57,7 +59,7 @@ export function longDate(d: Date): string {
 }
 
 /** Faixas do kit em linhas legíveis (D-KIT: vendas do mês; vale a faixa mais alta alcançada). */
-export function kitText(tiers: readonly KitTier[]): string {
+export function kitText(tiers: readonly KitTier[], brandSlug = "botanika"): string {
   const sorted = [...tiers].sort((a, b) => a.fromCents - b.fromCents);
   if (sorted.length === 0) return "Esta versão do contrato não tem kit mensal.";
   const lines = [`Vendas do mês abaixo de ${money(sorted[0]!.fromCents)}: sem novo kit;`];
@@ -66,7 +68,7 @@ export function kitText(tiers: readonly KitTier[]): string {
     const range = t.toCents != null
       ? `de ${money(t.fromCents)} até ${money(t.toCents)}`
       : next ? `de ${money(t.fromCents)} a ${money(next.fromCents - 1)}` : `a partir de ${money(t.fromCents)}`;
-    lines.push(`Vendas do mês ${range}: ${spelled(t.products)} ${t.products === 1 ? "suplemento" : "suplementos"}${next ? ";" : "."}`);
+    lines.push(`Vendas do mês ${range}: ${spelled(t.products)} ${kitNoun(brandSlug, t.products)}${next ? ";" : "."}`);
   });
   return lines.join("\n");
 }
@@ -85,7 +87,7 @@ function values(d: ContractData): Record<ContractField, string> {
     DESCONTO: d.discountBps != null ? pct(d.discountBps) : "(a definir)",
     COMISSAO: d.rateBps != null ? pct(d.rateBps) : "(a definir)",
     MINIMO: d.releaseMinCents != null ? money(d.releaseMinCents) : "(sem comissão)",
-    KIT: kitText(d.kitTiers),
+    KIT: kitText(d.kitTiers, d.brandSlug),
     MESES: `${spelled(d.months)} meses`,
     VIDEOS: spelled(d.videoGoal),
     DATA: longDate(d.signedAt),

@@ -79,10 +79,10 @@ export function hasAlliancePanel(grants: readonly Grant[], brandCount: number): 
   return grants.some((g) => g.role === "SUPER_ADMIN" && g.brandId === null) || brandCount > 1;
 }
 
-/** Menu do painel da Alliance: as marcas e, para o super admin, as Configurações (marcas, equipe, contratos…). */
+/** Menu de "Todas as marcas" (D-ALLBRANDS): o Início somado e, para o super admin, as Configurações. */
 export function allianceNav(grants: readonly Grant[]): NavItem[] {
   const admin = brandsWith(grants, "staff.manage") === "ALL";
-  return [{ href: "", label: "Marcas da Alliance", icon: "home" }, ...(admin ? [{ href: "/marcas", label: "Configurações", icon: "settings" as const }] : [])];
+  return [{ href: "", label: "Início", icon: "home" }, ...(admin ? [{ href: "/marcas", label: "Configurações", icon: "settings" as const }] : [])];
 }
 
 /** Telas do painel da Alliance (o resto é dentro de uma marca). */
