@@ -82,8 +82,16 @@ export function hasAlliancePanel(grants: readonly Grant[], brandCount: number): 
 /** Menu de "Todas as marcas" (D-ALLBRANDS): o Início somado e, para o super admin, as Configurações. */
 export function allianceNav(grants: readonly Grant[]): NavItem[] {
   const admin = brandsWith(grants, "staff.manage") === "ALL";
-  return [{ href: "", label: "Início", icon: "home" }, ...(admin ? [{ href: "/marcas", label: "Configurações", icon: "settings" as const }] : [])];
+  return [{ href: "", label: "Início", icon: "home" }, ...(admin ? [{ href: `/marcas?${ALL_BRANDS_PARAM}=1`, label: "Configurações", icon: "settings" as const }] : [])];
 }
 
 /** Telas do painel da Alliance (o resto é dentro de uma marca). */
 export const ALLIANCE_PATHS = ["/admin"];
+
+/** Marcas em "Todas as marcas" (`/admin/marcas?todas=1`): as três para editar; dentro de uma marca, só ela. */
+export const ALL_BRANDS_PARAM = "todas";
+
+/** A tela está em "Todas as marcas"? O Início da Alliance, ou Marcas aberta de lá. */
+export function inAllBrands(path: string, todas: string | null): boolean {
+  return ALLIANCE_PATHS.includes(path) || (path === "/admin/marcas" && todas === "1");
+}

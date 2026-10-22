@@ -2,7 +2,7 @@
 
 import { ChevronDown, LayoutGrid } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, SideNav, type NavItem } from "@/components/portal/nav";
@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/portal/theme-toggle";
 import { TourButton, TutorialProvider } from "@/components/ui/tour";
 import { brandCssVars } from "@/lib/portal/context";
 import type { StaffBrand } from "@/lib/staff/context";
-import { ALLIANCE_PATHS } from "@/lib/staff/nav";
+import { ALL_BRANDS_PARAM, inAllBrands } from "@/lib/staff/nav";
 import { BrandSwitchOption } from "./brand-switch";
 import { SectionTabs } from "./section-tabs";
 
@@ -32,7 +32,8 @@ export function StaffFrame(p: {
   children: ReactNode;
 }) {
   const path = usePathname();
-  const inAlliance = p.alliance && ALLIANCE_PATHS.includes(path);
+  const todas = useSearchParams().get(ALL_BRANDS_PARAM);
+  const inAlliance = p.alliance && inAllBrands(path, todas);
   // D-ALLBRANDS: "Todas as marcas" fica no seletor do topo (não mais um item "Alliance" no menu).
   const items: NavItem[] = inAlliance ? p.allianceItems : p.brandItems;
   const vars = inAlliance || !p.brand ? brandCssVars(ALLIANCE_COLORS) : brandCssVars(p.brand);

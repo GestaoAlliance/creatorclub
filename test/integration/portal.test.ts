@@ -106,6 +106,35 @@ describe("Início do portal (banco real)", () => {
     const empty = await portalSummary(prisma, otherCtx, T("2026-10-07T12:00:00Z"));
     expect(empty).toMatchObject({ salesCount: 0, commissionCents: 0, recent: [], coupons: [], balance: { totalCents: 0 } });
   });
+
+  it("M0.4: aguardando pagamento (30 dias), já usado (saques pagos) e as condições dela", async () => {
+    const { portalSummary } = await import("@/lib/portal/home");
+    const a = await seedBrand(prisma);
+    const ctx = await portalContext(prisma, await loginFor(a.account.id), a.brand.slug);
+    const now = new Date("2026-10-07T12:00:00Z");
+    const pending = async (createdAt: string, cents: number, extra: Record<string, unknown> = {}) => {
+      const o = await prisma.order.create({
+        data: { brandId: a.brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: `#${randomUUID().slice(0, 4)}`, createdAtShop: new Date(createdAt), paidAt: null, financialStatus: "PENDING", subtotalCents: cents, totalCents: cents, discountCodes: [a.coupon.code], shopifyUpdatedAt: new Date(createdAt), ...extra },
+      });
+      await prisma.orderAttribution.create({ data: { brandId: a.brand.id, orderId: o.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] } });
+    };
+    await pending("2026-10-06T12:00:00Z", 8_000);
+    await pending("2026-10-05T12:00:00Z", 2_000);
+    await pending("2026-08-01T12:00:00Z", 9_999); // esquecido há mais de 30 dias: fora
+    await pending("2026-10-04T12:00:00Z", 7_777, { cancelledAt: new Date("2026-10-05T00:00:00Z") }); // cancelado: fora
+
+    await prisma.coupon.update({ where: { id: a.coupon.id }, data: { discountBps: 500 } });
+    await prisma.couponAssignment.create({ data: { brandId: a.brand.id, couponId: a.coupon.id, creatorId: a.creator.id, validFrom: new Date("2026-01-01"), createdById: "teste" } });
+    await prisma.commissionPolicy.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, rateBps: 1500, validFrom: new Date("2026-01-01"), createdById: "teste" } });
+    const w = await prisma.withdrawal.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, amountCents: 4_000, status: "PAID", decidedAt: now, decidedById: "teste", idempotencyKey: randomUUID() } });
+    await prisma.ledgerEntry.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, withdrawalId: w.id, type: "WITHDRAWAL", amountCents: -4_000, availableAt: now, idempotencyKey: randomUUID() } });
+
+    const s = await portalSummary(prisma, ctx, now);
+    expect(s.pending).toEqual({ orders: 2, salesCents: 10_000 });
+    expect(s.usedCents).toBe(4_000);
+    expect(s.terms).toEqual({ rateBps: 1500, discountBps: 500 });
+    expect(s.deactivatedAt).toBeNull();
+  });
 });
 
 describe("ver como creator (D-VIEWAS, banco real)", () => {

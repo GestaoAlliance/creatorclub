@@ -1,4 +1,5 @@
 import { Plus, Store } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
@@ -7,22 +8,36 @@ import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { brandList } from "@/lib/brands/manage";
 import { db } from "@/lib/db";
+import { staffContext } from "@/lib/staff/context";
+import { ALL_BRANDS_PARAM } from "@/lib/staff/nav";
 import { BrandForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
-// Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin.
-export default async function MarcasPage() {
+// Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin. Em "Todas as marcas" (?todas=1) aparecem
+// todas e a criação de marca nova; dentro de uma marca, só a marca escolhida no topo (pedido do responsável).
+export default async function MarcasPage({ searchParams }: { searchParams: Promise<{ todas?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marcas");
   if (brandsWith(actor.grants, "staff.manage") !== "ALL") redirect("/admin");
-  const brands = await brandList(db(), actor);
+  const all = (await searchParams)[ALL_BRANDS_PARAM] === "1";
+  const { brand } = await staffContext(actor);
+  const brands = (await brandList(db(), actor)).filter((b) => all || b.id === brand?.id);
   return (
     <>
-      <PageHeader title="Marcas">
-        As marcas da Alliance no Creator Club. Cada uma tem a própria loja Shopify, creators, cupons, equipe, termo e
-        contratos. Para começar uma marca: criar aqui, escolher a marca no topo, conectar a loja em Shopify e publicar o
-        termo e os contratos.
+      <PageHeader title={all ? "Marcas" : `Marca ${brand?.name ?? ""}`}>
+        {all ? (
+          <>
+            As marcas da Alliance no Creator Club. Cada uma tem a própria loja Shopify, creators, cupons, equipe, termo e
+            contratos. Para começar uma marca: criar aqui, escolher a marca no topo, conectar a loja em Shopify e publicar o
+            termo e os contratos.
+          </>
+        ) : (
+          <>
+            Os dados da {brand?.name} e o que falta para ela funcionar inteira.{" "}
+            <Link href={`/admin/marcas?${ALL_BRANDS_PARAM}=1`} className={ui.link}>Ver todas as marcas</Link>
+          </>
+        )}
       </PageHeader>
       {brands.map((b) => {
         const steps = [
@@ -49,9 +64,11 @@ export default async function MarcasPage() {
           </Card>
         );
       })}
-      <Card title="Nova marca" icon={<Plus className="size-4" />}>
-        <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "" }} />
-      </Card>
+      {all && (
+        <Card title="Nova marca" icon={<Plus className="size-4" />}>
+          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "" }} />
+        </Card>
+      )}
     </>
   );
 }
