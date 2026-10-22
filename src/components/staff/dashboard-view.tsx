@@ -57,6 +57,10 @@ function Needs({ h }: { h: StaffHome }) {
     items.push({ href: "/admin/creators?semvenda=1", label: "sem vender há 60 dias", n: h.creators.idle });
     items.push({ href: "/admin/creators?pendencia=1", label: "a conferir pela Ana", n: h.creators.toReview });
   }
+  if (h.actions) {
+    if (h.creators) items.push({ href: "/admin/creators/acoes", label: "ações com creators", n: h.actions.open });
+    else items.push({ href: "/admin/envios", label: "envios parados há 3 dias", n: h.actions.shipStuck });
+  }
   if (h.withdrawals) {
     const w = h.withdrawals;
     if (w.mine.approve) items.push({ href: "/admin/saques", label: "saques para aprovar", n: w.toApprove });

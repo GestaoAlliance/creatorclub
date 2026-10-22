@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 2 — M2.1 Fila de ações por creator** (alertas viram tarefas com responsável e mensagem pronta); depende da **decisão 3** do plano (gerente: existe? quem acompanha as creators depois de aprovadas, por marca?): perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 2 — M2.2 Avisos à creator pelo WhatsApp** (comissão liberada, kit enviado, saque pago, faltam R$ X para o mínimo); depende da **decisão 1** do plano (SendFlow ou outro número?): perguntar ao responsável antes. Pendente do responsável: conectar a loja Shopify da Revita Derma (já existe) e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -44,7 +44,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M1.3** Dados para emitir a nota na tela de saque, editáveis por marca (D-NFDATA)
 - [x] ~~**M1.4** Saque mínimo~~ — **não será feito**: decisão 5 respondida em 2026-10-22, sem mínimo por pedido (D-CONTRACT segue)
 - [x] **M1.5** Pagamento em lote: planilha dos aprovados e marcar vários como pagos (D-WDBATCH). **Fim da Fase 1.**
-- [ ] **M2.1** Fila de ações por creator (**decisão** 3 do plano)
+- [x] **M2.1** Fila de ações por creator (D-ACTIONS)
+- [ ] **M2.2** Avisos à creator pelo WhatsApp (**decisão** 1 do plano)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -266,6 +267,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-164 — 2026-10-22 — Fila de ações por creator (M2.1, D-ACTIONS)
+- **Decisão 3 do plano respondida:** por enquanto a Ana cuida de todas; em breve cada marca terá a sua gerente (papel
+  Gestão na marca, ex.: Fátima na Revita), e a fila já segue quem tem Gestão em cada marca.
+- **Feito:** aba **Creators → Ações** com as tarefas do dia: parou de vender (60 dias), contrato vencendo (até 30 dias
+  ou vencido), perto do mínimo (passou de 70% do mínimo do mês), kit sem escolher (7 dias) e envio parado em preparação
+  (3 dias, tarefa de quem envia). Cada tarefa tem o motivo, o botão **"Mandar no WhatsApp"** com a mensagem pronta
+  (sem telefone, copiar o texto) e **"Feito"**, que tira aquela ocorrência da fila; resolvido o motivo, ela some
+  sozinha. Filtro por tipo e contador "ações com creators" no Início (quem envia vê "envios parados").
+- **Banco:** tabela `ActionDone` (RLS, trava `ActionDone_key_format`).
+- **Verificado:** testes (228), integração (237; novo: os cinco tipos, quem vê, feito, resolvido some), typecheck,
+  build, migração sem divergência; capturas no PR.
 
 ### CP-163 — 2026-10-22 — Pagamento em lote (M1.5, D-WDBATCH); fim da Fase 1
 - **Decisão 5 do plano respondida:** sem saque mínimo por pedido (M1.4 sai da fila; o mínimo continua sendo o de

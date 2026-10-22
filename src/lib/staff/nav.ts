@@ -15,6 +15,7 @@ const GROUPS: Group[] = [
     tabs: [
       { href: "/creators", label: "Creators", needs: "creators.view" },
       { href: "/candidatas", label: "Candidatas", needs: "creators.view" },
+      { href: "/creators/acoes", label: "Ações", needs: "creators.edit" },
     ],
   },
   // Hunters trazem as creators (influencers, UGC, prescritores): grupo próprio (pedido do responsável).

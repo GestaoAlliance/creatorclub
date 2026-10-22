@@ -4,6 +4,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { CONTRACT_WARN_DAYS, dayKey } from "@/domain";
 import { brandsWith, type Permission } from "@/lib/auth/permissions";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
+import { actionQueue, visibleTasks } from "@/lib/actions/queue";
 
 /** Hoje (dia de São Paulo) + n dias, como data UTC à meia-noite (formato das colunas `@db.Date`). */
 const today = (plusDays = 0) => new Date(Date.parse(`${dayKey(new Date())}T00:00:00Z`) + plusDays * 86_400_000);
@@ -18,6 +19,8 @@ export type StaffHome = {
   shipments?: { preparing: number; shipped: number; kitsPending: number; awaiting: number };
   /** M1.1 (D-WDAPPROVE): em análise (a Gestão aprova) e aprovados (o Pagamento faz o Pix); `null` = não é tarefa desta pessoa. */
   withdrawals?: { toApprove: number; toApproveCents: number; toPay: number; toPayCents: number; mine: { approve: boolean; pay: boolean }; openingsPending: number | null };
+  /** M2.1 (D-ACTIONS): tarefas da fila de ações que esta pessoa cuida (Gestão: todas; Envio: envios parados). */
+  actions?: { open: number; shipStuck: number };
   /** U3: a hunter vê as próprias indicações. */
   hunter?: { clicks30: number; inReview: number; approved: number; hasLink: boolean };
 };
@@ -49,7 +52,15 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
   const wd = scope(actor, "withdrawals.view");
   const pay = scope(actor, "withdrawals.manage");
   const isHunter = actor.grants.some((g) => g.role === "HUNTER");
+  const ownsActions = scope(actor, "creators.edit") ?? scope(actor, "shipping.manage");
   await Promise.all([
+    ownsActions &&
+      prisma.brand
+        .findMany({ where: { archivedAt: null, ...("brandId" in ownsActions ? { id: ownsActions.brandId } : {}) }, select: { id: true } })
+        .then(async (brands) => {
+          const tasks = (await Promise.all(brands.map(async (b) => visibleTasks(await actionQueue(prisma, b.id), actor, b.id)))).flat();
+          out.actions = { open: tasks.length, shipStuck: tasks.filter((t) => t.kind === "SHIP_STUCK").length };
+        }),
     isHunter &&
       prisma.hunterLink
         .findMany({ where: { userId: actor.userId, ...hunterBrandWhere(actor.grants) }, select: { id: true, applications: { select: { status: true } } } })
