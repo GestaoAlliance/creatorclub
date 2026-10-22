@@ -1,4 +1,6 @@
-import { ArrowLeft, ClipboardCheck, FileSignature, Eye, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
+import { CopyButton } from "@/components/portal/copy-button";
+import type { creatorNumbers, TimelineEvent, TimelineKind } from "@/lib/creators/timeline";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
@@ -13,7 +15,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -25,9 +27,41 @@ type Profile = Awaited<ReturnType<typeof creatorProfile>>;
 type Statement = Awaited<ReturnType<typeof creatorStatement>>;
 type Terms = Awaited<ReturnType<typeof creatorTermsStatus>>;
 type ContractSig = Awaited<ReturnType<typeof creatorContractSignature>>;
+type Numbers = Awaited<ReturnType<typeof creatorNumbers>>;
+
+const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+const KIND_DOT: Record<TimelineKind, string> = {
+  signup: "bg-sky-500", approval: "bg-emerald-500", invite: "bg-sky-500", contract: "bg-violet-500", coupon: "bg-brand", rate: "bg-brand",
+  sale: "bg-emerald-500", release: "bg-emerald-500", shipment: "bg-amber-500", withdrawal: "bg-emerald-600", status: "bg-stone-400", note: "bg-stone-700 dark:bg-stone-300",
+};
+
+/** M0.2: linha do tempo da creator com as observações da equipe. */
+function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; creatorId: string; canEdit: boolean }) {
+  return (
+    <Card title="Linha do tempo" icon={<History className="size-4" />}>
+      {canEdit && <NoteForm creatorId={creatorId} />}
+      {events.length === 0 ? (
+        <p className={ui.muted}>Nada registrado ainda.</p>
+      ) : (
+        <ol className="relative flex flex-col gap-3 border-l border-stone-200 pl-4 dark:border-white/10">
+          {events.map((e, i) => (
+            <li key={i} className="relative">
+              <span className={`absolute -left-[1.3rem] top-1.5 size-2 rounded-full ${KIND_DOT[e.kind]}`} />
+              <p className={`text-sm ${e.kind === "note" ? "whitespace-pre-line rounded-xl bg-stone-500/10 px-3 py-2" : "font-medium"}`}>{e.title}</p>
+              <p className={ui.hint}>
+                {when(e.at)}
+                {e.detail && ` · ${e.kind === "note" ? `por ${e.detail}` : e.detail}`}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  );
+}
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId }: { p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string }) {
+export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase }: { p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -69,6 +103,18 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             <Kpi label="Em saque" value={formatBRL(st.balance.reservedCents)} />
             <Kpi label="Disponível" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} />
           </div>
+          {numbers && (
+            <div className="grid grid-cols-2 gap-4 border-t border-stone-200/70 pt-4 md:grid-cols-4 dark:border-white/10">
+              <Kpi label="Vendas em 30 dias" value={formatBRL(numbers.last30.salesCents)} hint={`${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido pago" : "pedidos pagos"}`} />
+              <Kpi label="Ticket médio (30 dias)" value={formatBRL(numbers.last30.ticketCents)} />
+              <Kpi
+                label="Aguardando pagamento"
+                value={formatBRL(numbers.pending.salesCents)}
+                hint={`${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão se pagos` : ""}`}
+              />
+              <Kpi label="Comissão estornada" value={formatBRL(numbers.reversedCents)} hint="vendas canceladas ou devolvidas depois de pagas" />
+            </div>
+          )}
           <ReleaseProgressBar r={st.release} />
           <p className={ui.hint}>
             {st.release.minCents === null
@@ -99,9 +145,18 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             <ul className={ui.list}>
               {p.coupons.map((c, i) => (
                 <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0">
-                  <span>
+                  <span className="flex flex-col gap-1">
+                    <span>
                     <span className="font-mono font-semibold">{c.code}</span>
                     <span className={`${ui.hint} ml-2`}>desde {date(c.since)}{c.until && ` até ${date(c.until)}`}</span>
+                    </span>
+                    {/* M0.2: o link que ela divulga (rastreado, D-LINK), pronto para copiar. */}
+                    {!c.until && c.kind === "CREATOR" && (
+                      <span className="flex items-center gap-2">
+                        <span className="truncate font-mono text-xs text-stone-500">{linkBase}{c.code}</span>
+                        <CopyButton value={`${linkBase}${c.code}`} label="Copiar link" />
+                      </span>
+                    )}
                   </span>
                   <span className="flex gap-1.5">
                     <span className={badge.neutral}>{c.kind ?? "sem tipo"}</span>
@@ -178,6 +233,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
           )}
         </div>
         <div className="flex min-w-0 flex-col gap-6">
+          <Timeline events={timeline} creatorId={p.id} canEdit={p.canEdit} />
           <Card title="Contato" icon={<UserRound className="size-4" />}>
             {p.canEdit ? (
               <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} />

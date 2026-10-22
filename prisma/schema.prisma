@@ -87,6 +87,7 @@ model Brand {
   ugcVideos          UgcVideo[]
   sheetSyncs         SheetSync[]
   sheetSyncIssues    SheetSyncIssue[]
+  creatorNotes       CreatorNote[]
 }
 
 enum IntegrationKind {
@@ -135,6 +136,7 @@ model User {
   roleGrants     RoleGrant[]
   creatorAccount CreatorAccount?
   hunterLinks    HunterLink[]
+  creatorNotes   CreatorNote[]
 }
 
 enum StaffRole {
@@ -307,6 +309,7 @@ model Creator {
   kitGrants          KitGrant[]
   ugcVideos          UgcVideo[]
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
+  creatorNotes       CreatorNote[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -1215,4 +1218,21 @@ model SheetSyncIssue {
 
   @@unique([brandId, sheet, tab, row, message])
   @@index([brandId, seenAt])
+}
+
+/// M0.2: observação da equipe na ficha da creator (só a equipe vê). Somente inserção, como o extrato: corrigir = nova
+/// observação. Entra na linha do tempo da ficha.
+model CreatorNote {
+  id        String   @id @default(uuid())
+  brandId   String
+  creatorId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([creatorId, createdAt])
 }

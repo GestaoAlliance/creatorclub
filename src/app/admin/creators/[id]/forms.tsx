@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State } from "./actions";
+import { adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -303,5 +303,18 @@ export function AutentiqueButtons({ creatorId, canSend, canCheck }: { creatorId:
       <Msg state={sendState} />
       <Msg state={checkState} />
     </div>
+  );
+}
+
+/** M0.2: observação da equipe (entra na linha do tempo; só a equipe vê; não se apaga). */
+export function NoteForm({ creatorId }: { creatorId: string }) {
+  const [state, action, pending] = useActionState(noteAction, undefined);
+  return (
+    <form key={state?.ok ? Date.now() : "nota"} action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <textarea name="body" required maxLength={1000} rows={2} placeholder="Observação para a equipe (ex.: combinou post na sexta)" className={`${input} resize-y`} />
+      <Msg state={state} />
+      <button className={`${btn} self-start`} disabled={pending}>{pending ? "Salvando…" : "Salvar observação"}</button>
+    </form>
   );
 }
