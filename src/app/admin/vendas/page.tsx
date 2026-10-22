@@ -1,4 +1,4 @@
-import { Download, Search as SearchIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SalesChart } from "@/components/portal/sales-chart";
@@ -100,7 +100,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
         <TopCreatorsCard d={d} />
       </div>
 
-      <section className={`${ui.card} gap-4`}>
+      <section id="lista" className={`${ui.card} scroll-mt-4 gap-4`}>
         <div className="flex flex-wrap items-center gap-1.5">
           <Link href={`/admin/vendas${query(sp, { situacao: "", pagina: "" })}`} className={`rounded-full px-3 py-1 text-sm ${f.status ? "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300" : "bg-stone-900 text-white dark:bg-white dark:text-stone-900"}`}>
             Todas <span className="tabular-nums opacity-60">{allCount}</span>
@@ -125,10 +125,13 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           </select>
           <button className={ui.btnSm}>Buscar</button>
         </form>
+        <div className="flex flex-wrap items-center justify-between gap-2">
         <p className={ui.hint}>
           {r.total} {r.total === 1 ? "venda" : "vendas"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos (sem frete, a base da comissão) ·{" "}
           {searchesAllTime(sp) ? "busca em todas as datas" : `pedidos feitos de ${dmy(period.from)} a ${dmy(period.to)}`}
         </p>
+        {pages > 1 && <Pager sp={sp} page={Math.min(page, pages)} pages={pages} />}
+        </div>
 
         {r.rows.length === 0 ? (
           <p className={ui.muted}>Nenhuma venda com esses filtros.</p>
@@ -177,11 +180,11 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
                           {o.codes.length ? o.codes.map((c) => <span key={c} className="rounded-md bg-stone-500/10 px-1.5 py-0.5 font-mono text-xs">{c}</span>) : <span className="text-stone-400">—</span>}
                         </span>
                       </td>
-                      <td className="max-w-64">
+                      <td className="max-w-56">
                         {o.creatorId ? (
                           <Link href={`/admin/creators/${o.creatorId}`} className="font-medium hover:underline">{o.creatorName}</Link>
                         ) : (
-                          <span className="text-xs text-stone-500">{o.reason}</span>
+                          <span title={o.reason} className="block truncate text-xs text-stone-500">{o.reason}</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap text-right tabular-nums">
@@ -205,14 +208,21 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           </>
         )}
 
-        {pages > 1 && (
-          <div className="flex items-center justify-between gap-3 text-sm">
-            {page > 1 ? <Link href={`/admin/vendas${query(sp, { pagina: String(page - 1) })}`} className={ui.ghostSm}>← Anteriores</Link> : <span />}
-            <span className={ui.hint}>página {Math.min(page, pages)} de {pages}</span>
-            {page < pages ? <Link href={`/admin/vendas${query(sp, { pagina: String(page + 1) })}`} className={ui.ghostSm}>Próximas →</Link> : <span />}
-          </div>
-        )}
+        {pages > 1 && <div className="flex justify-center"><Pager sp={sp} page={Math.min(page, pages)} pages={pages} /></div>}
       </section>
     </div>
+  );
+}
+
+/** Paginação compacta: 10 vendas por página, "1 de 10" com setas; volta para a lista, sem subir a página. */
+function Pager({ sp, page, pages }: { sp: Search; page: number; pages: number }) {
+  const go = (n: number) => `/admin/vendas${query(sp, { pagina: n > 1 ? String(n) : "" })}#lista`;
+  const arrow = "glass grid size-8 place-content-center rounded-full";
+  return (
+    <nav aria-label="Páginas" className="flex items-center gap-2 text-sm">
+      {page > 1 ? <Link href={go(page - 1)} className={arrow} aria-label="Página anterior"><ChevronLeft className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronLeft className="size-4" /></span>}
+      <span className="tabular-nums text-stone-600 dark:text-stone-300">{page} de {pages}</span>
+      {page < pages ? <Link href={go(page + 1)} className={arrow} aria-label="Próxima página"><ChevronRight className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronRight className="size-4" /></span>}
+    </nav>
   );
 }

@@ -266,7 +266,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   números (vendas da loja, vendas com cupom de creator e % da loja, comissão gerada, creators que venderam, tickets);
   gráfico de vendas de creators por dia; top creators; lista de todas as vendas em **tabela** (data, pedido, situação,
   cupom, creator ou motivo, produtos e total, comissão) com situação em abas, busca e filtro com/sem creator; no
-  celular, cartões. A lista segue o período; busca sem período escolhido procura em todas as datas (achar pedido antigo).
+  celular, cartões. **10 vendas por página**, com "1 de N" e setas em cima e embaixo (pedido do responsável: a tela
+  esticava). A lista segue o período; busca sem período escolhido procura em todas as datas (achar pedido antigo).
   CSV com os mesmos filtros. "Olho" para esconder valores. Peças do Início reaproveitadas (`Stat`, `TopCreatorsCard`).
 - **Verificado:** unitário (período e filtros), testes, integração, typecheck, build; capturas.
 

@@ -6,7 +6,7 @@ import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleR
  * (ou o motivo de não ter levado) e a comissão já lançada no extrato. Só leitura; quem chama confere `money.view`.
  */
 
-export const SALES_PAGE_SIZE = 50;
+export const SALES_PAGE_SIZE = 10;
 
 export type SalesFilters = { q?: string; status?: SaleStatus | ""; owner?: "creator" | "none" | ""; from?: string; to?: string };
 
