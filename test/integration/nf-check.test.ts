@@ -51,6 +51,15 @@ describe("conferência da NF no pedido de saque (D-NFCHECK, banco real)", () => 
     expect(await prisma.withdrawal.count({ where: { creatorId: c.creator.id } })).toBe(0);
   });
 
+  it("M1.3: a marca com outro código de serviço exige o código dela", async () => {
+    const c = await creatorWith(80_000, ISSUER);
+    await prisma.brand.update({ where: { id: c.brand.id }, data: { nfServiceCode: "10.08" } });
+    const ask = (pdf: Uint8Array) => requestWithdrawal(prisma, c.ctx, { actorUserId: c.userId, requestId: randomUUID(), amountCents: 80_000, pdf }, IN_WINDOW);
+    await expect(ask(nf({ key: keyFor(7) }))).rejects.toThrow(/precisa ser 10\.08/);
+    const r = await ask(nf({ key: keyFor(7), code: "10.08.01 / 001" }));
+    expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: r.withdrawalId } })).toMatchObject({ nfCheck: "OK" });
+  });
+
   it("nota que o sistema não lê entra marcada para conferir", async () => {
     const c = await creatorWith(80_000);
     const r = await requestWithdrawal(

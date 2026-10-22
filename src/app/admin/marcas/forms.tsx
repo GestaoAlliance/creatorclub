@@ -3,9 +3,21 @@
 import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
+import { NF_DEFAULT_SERVICE } from "@/domain";
 import { createBrandAction, updateBrandAction } from "./actions";
 
-type Values = { brandId?: string; name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string; storeUrl: string };
+type Values = {
+  brandId?: string;
+  name: string;
+  slug?: string;
+  primaryColor: string;
+  legalName: string;
+  cnpj: string;
+  storeUrl: string;
+  nfServiceCode: string;
+  nfServiceDescription: string;
+  nfInstructions: string;
+};
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
 export function BrandForm({ initial, create = false }: { initial: Values; create?: boolean }) {
@@ -50,6 +62,25 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
           </span>
         </label>
       </div>
+      {/* M1.3 (D-NFDATA): o que a creator vê na tela de saque para emitir a nota. Vazio = serviço padrão. */}
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
+        <legend className="px-1 text-sm font-semibold">Dados para a creator emitir a nota</legend>
+        <p className={ui.hint}>Aparecem na tela de saque da creator, com botão de copiar. A razão social e o CNPJ são os de cima. A conferência automática da nota exige este código.</p>
+        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+          <label className={ui.label}>
+            Código do serviço
+            <input name="nfServiceCode" defaultValue={initial.nfServiceCode} placeholder={NF_DEFAULT_SERVICE.code} className={`${ui.input} font-mono`} />
+          </label>
+          <label className={ui.label}>
+            Descrição do serviço
+            <textarea name="nfServiceDescription" defaultValue={initial.nfServiceDescription} placeholder={NF_DEFAULT_SERVICE.description} rows={2} maxLength={500} className={ui.input} />
+          </label>
+        </div>
+        <label className={ui.label}>
+          Observações (opcional)
+          <textarea name="nfInstructions" defaultValue={initial.nfInstructions} placeholder="Ex.: não destacar ISS; emita no mesmo mês do pedido." rows={2} maxLength={1000} className={ui.input} />
+        </label>
+      </fieldset>
       <Msg state={state} />
       <button className={`${ui.btn} self-start`} disabled={pending}>{create ? "Criar marca" : "Salvar"}</button>
     </form>

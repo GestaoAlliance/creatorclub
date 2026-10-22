@@ -1,10 +1,12 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith } from "@/lib/auth/permissions";
+import { NF_SERVICE_CODE } from "@/domain";
 
 /**
  * Marcas da Alliance (A1b, D-ALLIANCE): o super admin cadastra e edita nome, endereço (slug), cor, razão social e CNPJ
- * (tomador da nota fiscal das creators, D-NF) e o site da loja (destino do link da creator, `/r/...`). As regras de comissão e saque nascem com o padrão das outras marcas.
+ * (tomador da nota fiscal das creators, D-NF), os dados para a creator emitir a nota (código e descrição do serviço e
+ * observações, M1.3, D-NFDATA) e o site da loja (destino do link da creator, `/r/...`). As regras de comissão e saque nascem com o padrão das outras marcas.
  * Nada é apagado (D-ARCHIVE).
  */
 
@@ -15,7 +17,17 @@ function requireSuperAdmin(actor: Actor | null): Actor {
   return actor;
 }
 
-export type BrandInput = { name: string; slug?: string; primaryColor: string; legalName: string; cnpj: string; storeUrl?: string };
+export type BrandInput = {
+  name: string;
+  slug?: string;
+  primaryColor: string;
+  legalName: string;
+  cnpj: string;
+  storeUrl?: string;
+  nfServiceCode?: string;
+  nfServiceDescription?: string;
+  nfInstructions?: string;
+};
 
 /** "VermeFree Saúde" → "vermefree-saude". */
 export function slugFrom(name: string): string {
@@ -32,7 +44,17 @@ function clean(input: BrandInput) {
   const legalName = input.legalName.trim().replace(/\s+/g, " ").slice(0, 160) || null;
   if (legalName && !/[A-Za-zÀ-ÿ]/.test(legalName)) throw new BrandError("Razão social é o nome da empresa (o CNPJ vai no campo ao lado).");
   const storeUrl = normalizeStoreUrl(input.storeUrl ?? "");
-  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl };
+  const nfServiceCode = (input.nfServiceCode ?? "").replace(/\s/g, "") || null;
+  if (nfServiceCode && !NF_SERVICE_CODE.test(nfServiceCode)) throw new BrandError("Código do serviço no formato 17.06 ou 17.06.01.");
+  const nfServiceDescription = (input.nfServiceDescription ?? "").trim().replace(/\s+/g, " ").slice(0, 500) || null;
+  const nfInstructions = (input.nfInstructions ?? "").trim().replace(/\n{3,}/g, "\n\n").slice(0, 1000) || null;
+  // Campo da nota que não veio no formulário fica como está.
+  const nf = {
+    ...(input.nfServiceCode !== undefined && { nfServiceCode }),
+    ...(input.nfServiceDescription !== undefined && { nfServiceDescription }),
+    ...(input.nfInstructions !== undefined && { nfInstructions }),
+  };
+  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf };
 }
 
 /** "vermefree.com.br" → "https://vermefree.com.br" (sem barra no fim); vazio = sem site. */
@@ -66,7 +88,8 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true } });
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true },
+  });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
   await prisma.$transaction(async (tx) => {
@@ -89,6 +112,9 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       secondaryColor: true,
       legalName: true,
       nfTakerDocument: true,
+      nfServiceCode: true,
+      nfServiceDescription: true,
+      nfInstructions: true,
       storeUrl: true,
       createdAt: true,
       integrations: { where: { kind: "SHOPIFY" }, select: { status: true, externalId: true } },

@@ -3,7 +3,8 @@
 import { FileUp, Loader2 } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
 import { prepareNfUpload, submitWithdrawal, type SubmitState } from "@/app/portal/[marca]/saque/actions";
-import { NF_SERVICE_TEXT } from "@/domain";
+import type { NfData } from "@/domain";
+import { NfDataList } from "./nf-data";
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -11,7 +12,7 @@ type Props = {
   marca: string;
   requestId: string;
   availableCents: number;
-  takerDocument: string | null;
+  nf: NfData;
   pixKeyMasked: string | null;
 };
 
@@ -60,13 +61,10 @@ export function WithdrawalForm(p: Props) {
         <section className={card}>
           <h1 className="text-lg font-semibold">Envie o PDF da nota fiscal de {brl(cents)}</h1>
           <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
-            O saque é sempre do <strong>valor total liberado</strong>. A nota precisa já estar emitida, neste valor, para o CNPJ{" "}
-            {p.takerDocument ?? "da marca"}, pelo CNPJ do seu cadastro. O sistema confere a nota ao enviar e uma nota só vale para um saque.
+            O saque é sempre do <strong>valor total liberado</strong>. A nota precisa já estar emitida, neste valor, com os dados abaixo,
+            pelo CNPJ do seu cadastro. O sistema confere a nota ao enviar e uma nota só vale para um saque.
           </p>
-          <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm dark:bg-white/5">
-            <span className="block text-xs text-stone-500">Código e descrição do serviço na nota</span>
-            {NF_SERVICE_TEXT}
-          </p>
+          <NfDataList nf={p.nf} />
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 px-4 py-8 text-center text-sm dark:border-white/15">
             <FileUp className="size-6 text-stone-500" />
             {file ? <span className="font-medium">{file.name}</span> : <span>Toque para escolher o PDF (até 10 MB)</span>}

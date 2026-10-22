@@ -64,7 +64,7 @@ type LockedCreator = {
   brandId: string;
   receivesAsIndividual: boolean;
   account: { id: string; pixKey: string | null; cnpj: string | null; cpf: string | null };
-  brand: { name: string; legalName: string | null; nfTakerDocument: string | null; timezone: string };
+  brand: { name: string; legalName: string | null; nfTakerDocument: string | null; nfServiceCode: string | null; timezone: string };
 };
 
 /** O que cada tipo de pedido grava no saque: a nota (PJ) ou o recibo aceito (pessoa física, D-PFRECEIPT). */
@@ -102,6 +102,7 @@ async function createRequest(
               name: true,
               legalName: true,
               nfTakerDocument: true,
+              nfServiceCode: true,
               timezone: true,
               withdrawalMinCents: true,
               withdrawalWindowStartDay: true,
@@ -173,7 +174,7 @@ export async function requestWithdrawal(
     {
       async check(creator, tx) {
         if (creator.receivesAsIndividual) throw new WithdrawalRequestError("Seu cadastro está como pessoa física: o saque é com recibo, sem nota.");
-        const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj });
+        const nf = checkNf(nfFields, { takerDoc: creator.brand.nfTakerDocument, takerName: creator.brand.name, amountCents: input.amountCents, issuerDoc: creator.account.cnpj, serviceCode: creator.brand.nfServiceCode });
         if (nf.problems.length) throw new WithdrawalRequestError(nf.problems.join(" "));
         const accessKey = nfFields.accessKey;
         if (accessKey && (await tx.withdrawal.count({ where: { nfAccessKey: accessKey, status: { in: ["REQUESTED", "APPROVED", "PAID"] } } })))

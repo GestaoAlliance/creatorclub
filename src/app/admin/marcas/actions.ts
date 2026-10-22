@@ -14,6 +14,9 @@ const input = (form: FormData) => ({
   legalName: String(form.get("legalName") ?? ""),
   cnpj: String(form.get("cnpj") ?? ""),
   storeUrl: String(form.get("storeUrl") ?? ""),
+  nfServiceCode: String(form.get("nfServiceCode") ?? ""),
+  nfServiceDescription: String(form.get("nfServiceDescription") ?? ""),
+  nfInstructions: String(form.get("nfInstructions") ?? ""),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

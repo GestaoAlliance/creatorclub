@@ -228,7 +228,7 @@ export async function recheckWithdrawalNf(prisma: PrismaClient, actor: Actor | n
       amountCents: true,
       nfFileId: true,
       nfCheck: true,
-      brand: { select: { name: true, nfTakerDocument: true } },
+      brand: { select: { name: true, nfTakerDocument: true, nfServiceCode: true } },
       creator: { select: { account: { select: { cnpj: true } } } },
     },
   });
@@ -241,6 +241,7 @@ export async function recheckWithdrawalNf(prisma: PrismaClient, actor: Actor | n
     takerName: w.brand.name,
     amountCents: w.amountCents,
     issuerDoc: w.creator.account.cnpj,
+    serviceCode: w.brand.nfServiceCode,
   });
   const nfCheck = nf.problems.length ? "MANUAL" : nf.status;
   await prisma.$transaction([

@@ -45,7 +45,7 @@ export default async function NewWithdrawal({ params }: { params: Promise<{ marc
       marca={ctx.brand.slug}
       requestId={randomUUID()}
       availableCents={tab.balance.availableCents}
-      takerDocument={brand.nfTakerDocument}
+      nf={tab.nf}
       pixKeyMasked={pixKeyMasked}
     />
   );

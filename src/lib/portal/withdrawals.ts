@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { isInsideWithdrawalWindow, isMonthKey, monthKey, type Balance } from "@/domain";
+import { isInsideWithdrawalWindow, isMonthKey, monthKey, nfData, type Balance, type NfData } from "@/domain";
 import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import { readLedger, statementForMonth, type Statement } from "@/lib/commission/statement";
 import { PortalError, type PortalContext } from "./context";
@@ -27,8 +27,8 @@ export type WithdrawalTab = {
   balance: Balance;
   release: ReleaseProgress;
   policy: { windowStartDay: number; windowEndDay: number };
-  /** Dados para emitir a nota antes de pedir (D-NF): CNPJ do tomador e a sugestão de descrição/código. */
-  nf: { takerDocument: string | null; instructions: string | null };
+  /** Dados para emitir a nota antes de pedir (D-NF, M1.3 D-NFDATA): tomador, código e descrição do serviço, observações. */
+  nf: NfData;
   /** D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota). */
   individual: boolean;
   blocks: WithdrawalBlock[];
@@ -50,7 +50,10 @@ export async function portalWithdrawalTab(
         timezone: true,
         withdrawalWindowStartDay: true,
         withdrawalWindowEndDay: true,
+        legalName: true,
         nfTakerDocument: true,
+        nfServiceCode: true,
+        nfServiceDescription: true,
         nfInstructions: true,
       },
     }),
@@ -78,7 +81,7 @@ export async function portalWithdrawalTab(
     balance: ledger.balance,
     release,
     policy,
-    nf: { takerDocument: brand.nfTakerDocument, instructions: brand.nfInstructions },
+    nf: nfData(brand),
     individual: creator.receivesAsIndividual,
     blocks,
     withdrawals,
