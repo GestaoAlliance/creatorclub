@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeTab, allianceNav, hasAlliancePanel, staffNav } from "@/lib/staff/nav";
+import { activeTab, allianceNav, hasAlliancePanel, inAllBrands, staffNav } from "@/lib/staff/nav";
 
 const labels = (role: "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER", brandId: string | null = "b") =>
   staffNav([{ role, brandId }]).map((i) => i.label);
@@ -36,6 +36,9 @@ describe("menu da equipe por papel", () => {
     expect(hasAlliancePanel([{ role: "GESTAO", brandId: "a" }, { role: "GESTAO", brandId: "b" }], 2)).toBe(true);
     expect(allianceNav([{ role: "SUPER_ADMIN", brandId: null }]).map((i) => i.label)).toEqual(["Início", "Configurações"]);
     expect(allianceNav([{ role: "GESTAO", brandId: "a" }]).map((i) => i.label)).toEqual(["Início"]);
+    // Configurações de "Todas as marcas" abre Marcas com as três; dentro de uma marca, Marcas mostra só ela.
+    expect(allianceNav([{ role: "SUPER_ADMIN", brandId: null }])[1]!.href).toBe("/marcas?todas=1");
+    expect([inAllBrands("/admin", null), inAllBrands("/admin/marcas", "1"), inAllBrands("/admin/marcas", null), inAllBrands("/admin/vendas", "1")]).toEqual([true, true, false, false]);
     expect(staffNav([{ role: "ENVIO", brandId: "a" }])[0]).toEqual({ href: "/marca", label: "Início", icon: "home" });
   });
 });

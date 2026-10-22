@@ -67,7 +67,10 @@ export const PORTAL_ITEMS: NavItem[] = [
 
 function useActive(base: string, items: NavItem[]) {
   const path = usePathname();
-  const hit = (href: string) => (href === "" ? path === base : path === `${base}${href}` || path.startsWith(`${base}${href}/`));
+  const hit = (raw: string) => {
+    const href = raw.split("?")[0]!; // ex.: "/marcas?todas=1" acende em /admin/marcas
+    return href === "" ? path === base : path === `${base}${href}` || path.startsWith(`${base}${href}/`);
+  };
   // O item aceso é o que tem a aba (ou o endereço) mais específica para o caminho.
   const best = items
     .flatMap((i) => [i.href, ...(i.tabs ?? []).map((t) => t.href)].filter(hit).map((h) => ({ href: i.href, len: h.length })))

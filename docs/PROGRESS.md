@@ -261,6 +261,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-158 — 2026-10-22 — Marcas: todas em "Todas as marcas", só a escolhida dentro de uma marca
+- **Pedido (responsável):** a tela Marcas, dentro da Botanika, mostrava e editava as três.
+- **Feito:** Configurações de "Todas as marcas" abre Marcas com as três e a "Nova marca"; dentro de uma marca, Marcas
+  mostra e edita só ela, com o atalho "Ver todas as marcas". A moldura reconhece Marcas aberta de "Todas as marcas".
+- **Verificado:** unitário (menu e `inAllBrands`), testes, typecheck, build; capturas.
+
 ### CP-157 — 2026-10-22 — "Todas as marcas" no seletor; produto certo de cada marca (D-ALLBRANDS)
 - **Feito (M0.0.4):** o seletor do topo tem "Todas as marcas" (o item "Alliance" saiu do menu); `/admin` virou o Início
   da Alliance: período com comparação, números somados das marcas, vendas por dia, comparação entre as marcas, top
