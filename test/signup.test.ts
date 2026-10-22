@@ -1,122 +1,80 @@
 import { describe, expect, it } from "vitest";
-import { partnershipTerms, signupAddress, SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, SIGNUP_STEPS, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid, withBrand } from "@/domain";
+import { partnershipTerms, signupAddress, SIGNUP_BRANDS, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, socialHandle, validateSignup, wantedBrands, signupBrandFor, signupBrandSlug, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onboarding/applications";
 
 const full: Record<string, string> = {
-  fullName: "  Maria   Exemplo ", kind: "Influencer e UGC", phone: "(11) 91234-5678", email: "Maria@Example.com",
-  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", followers: "12 mil", storiesViews: "800", niche: "Saúde",
-  content: "Rotina\nfitness", why: "Uso os produtos", knows: "Sim", commissioned: "Não", accepts: "Sim",
-  brands: "Botanika, VermeFree", collab: "Sim", address: "Rua A, 1\nSão Paulo - SP", coupon: "MARIA", cpf: "529.982.247-25", pix: "maria@example.com",
+  fullName: "  Maria   Exemplo ", cpf: "529.982.247-25", cnpj: "", email: "Maria@Example.com", phone: "(11) 91234-5678",
+  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria10",
+  addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp",
 };
+const ADDRESS = "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
 
-describe("formulário de inscrição do sistema (D-SIGNUP)", () => {
-  it("resposta completa vira o mesmo formato do Google e é lida igual pela equipe", () => {
-    const r = validateSignup(full, true);
+describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
+  it("cadastro completo vira as respostas no formato do Google e os dados da conta", () => {
+    const r = validateSignup(full);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.answers["@ do seu Instagram:"]).toBe("@maria.exemplo");
-    expect(r.answers["ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)"]).toBe("Rua A, 1\nSão Paulo - SP");
+    expect(r.answers["@ do seu TikTok:"]).toBe("@maria.tt");
+    expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
+    expect(r.account).toEqual({
+      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, instagram: "maria.exemplo", tiktok: "maria.tt", coupon: "MARIA10",
+      address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
+    });
     const f = parseHunterAnswers(r.answers);
-    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", followers: "12 mil", storiesViews: "800", brandsWanted: "Botanika, VermeFree", collabInterest: "Sim", suggestedCoupon: "MARIA", cnpj: null });
+    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", tiktok: "@maria.tt", suggestedCoupon: "MARIA10", kindAnswer: null });
+    // Sem a pergunta "Sou:", entra como Influencer; a Ana muda na aprovação.
     expect(categoryFromAnswer(f.kindAnswer)).toBe("INFLUENCER");
-    // As perguntas sem campo próprio aparecem para a equipe como antes.
-    expect(extraAnswers(r.answers).map((x) => x.question)).toEqual(expect.arrayContaining([
-      "O que você normalmente compartilha nos seus stories e feed? Fale um pouco do seu conteúdo",
-      "Você já trabalhou de forma comissionada para outras marcas?",
-    ]));
+    expect(extraAnswers(r.answers)).toEqual([]);
   });
 
-  it("endereço em campos vira o texto de sempre, com o CEP no fim (D-SIGNUPADDR)", () => {
-    const parts = { addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp" };
-    const { address: _, ...rest } = full;
-    const r = validateSignup({ ...rest, ...parts }, true);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.answers["ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)"]).toBe(
-      "Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100",
-    );
-    expect(signupAddress({ ...parts, addrComplement: "" }).text).toBe("Avenida Paulista, 1000, Bela Vista, São Paulo/SP, CEP 01310-100");
-    // Erro em cada campo, sem repetir "preencha" no endereço inteiro; complemento é opcional.
-    const bad = validateSignup({ ...rest, ...parts, addrZip: "0131", addrNumber: " ", addrComplement: "", addrState: "" }, true);
-    expect(bad.ok).toBe(false);
-    if (bad.ok) return;
-    expect(bad.errors).toEqual({ addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.", addrState: "Preencha este campo." });
-  });
-
-  it("obrigatórias, opções, e-mail, WhatsApp, CPF, CNPJ e o aceite", () => {
-    const r = validateSignup({ ...full, fullName: "", kind: "Outro", email: "x@", phone: "1234", cpf: "111.111.111-11", cnpj: "123" }, false);
+  it("obrigatórios, e-mail, telefone, CPF, CNPJ, @ e endereço com erro em cada campo", () => {
+    const r = validateSignup({ ...full, fullName: "", email: "x@", phone: "1234", cpf: "111.111.111-11", cnpj: "123", instagram: "@", tiktok: "", addrZip: "0131", addrNumber: " " });
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.errors).toEqual({
-      fullName: "Preencha este campo.", kind: "Escolha uma das opções.", email: "E-mail inválido.", phone: "Informe o WhatsApp com DDD.",
-      cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.", consent: "É preciso concordar para enviar.",
+      fullName: "Preencha este campo.", email: "E-mail inválido.", phone: "Informe o telefone com DDD.", cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.",
+      instagram: "Informe o seu @.", addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.",
     });
-    // CNPJ e razão social são opcionais; a marca vem do endereço (D-SIGNUPBRAND); o resto é obrigatório, como no Google.
-    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["brands", "cnpj", "companyName"]);
+    // Opcionais: CNPJ, TikTok e complemento.
+    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "tiktok"]);
+    expect(validateSignup({ ...full, tiktok: "", addrComplement: "" }).ok).toBe(true);
+    expect(signupAddress({ ...full, addrComplement: "" }).text).toBe("Avenida Paulista, 1000, Bela Vista, São Paulo/SP, CEP 01310-100");
   });
 
-  it("marcas de interesse: caixas de seleção só com as opções; leitura também das respostas antigas do Google", () => {
-    expect(SIGNUP_BRANDS).toEqual(["Botanika", "VermeFree", "Revita Derma"]);
-    expect(validateSignup({ ...full, brands: "VermeFree" }, true).ok).toBe(true);
-    const bad = validateSignup({ ...full, brands: "Botanika, Shoty" }, true);
-    expect(bad.ok ? null : bad.errors.brands).toBe("Escolha entre as opções.");
-    expect(wantedBrands("Botanika, Revita Derma")).toEqual(["Botanika", "Revita Derma"]);
-    expect(wantedBrands("Botanika e VermeFree")).toEqual(["Botanika", "VermeFree"]);
-    expect(SIGNUP_BRANDS.map(signupBrandSlug)).toEqual(["botanika", "vermefree", "revita-derma"]);
-    expect(wantedBrands("Só a vermefree")).toEqual(["VermeFree"]);
-    expect(wantedBrands("revita  derma")).toEqual(["Revita Derma"]);
-    expect(wantedBrands(null)).toEqual([]);
+  it("cupom: letras e números, de 3 a 20; acento cai; grava em maiúsculas", () => {
+    expect(signupCouponValid("maria10")).toBe(true);
+    expect(signupCouponValid("Júlia")).toBe(true);
+    expect(signupCouponValid("ABC")).toBe(true);
+    expect(signupCouponValid("AB")).toBe(false);
+    expect(signupCouponValid("ABCDEFGHIJKLMNOPQRST")).toBe(true);
+    expect(signupCouponValid("ABCDEFGHIJKLMNOPQRSTU")).toBe(false);
+    expect(signupCouponValid("ana maria")).toBe(false);
+    expect(signupCouponValid("ana-b")).toBe(false);
+    expect(signupCouponPreview("maria 10!")).toBe("MARIA10");
+    expect(signupCouponPreview("Júlia_Colares")).toBe("JULIACOLARES");
+    expect(validateSignup({ ...full, coupon: "ab" })).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/de 3 a 20/) } });
   });
-});
 
-describe("blocos da página de inscrição (D-SIGNUPDESIGN)", () => {
-  it("cada pergunta aparece em exatamente um bloco; a marca não é pergunta (vem do endereço, D-SIGNUPBRAND)", () => {
+  it("@ das redes sem o endereço do site e sem o @", () => {
+    expect(socialHandle("https://www.tiktok.com/@maria.tt?lang=pt")).toBe("maria.tt");
+    expect(socialHandle("@@maria")).toBe("maria");
+    expect(socialHandle("  ")).toBe("");
+  });
+
+  it("cada campo aparece em exatamente um bloco; marcas e aceite", () => {
     const keys = SIGNUP_SECTIONS.flatMap((s) => s.keys);
     expect(new Set(keys).size).toBe(keys.length);
-    expect([...keys].sort()).toEqual(SIGNUP_QUESTIONS.map((q) => q.key).filter((k) => k !== "brands").sort());
-  });
-
-  it("perguntas com o nome da marca do formulário", () => {
-    const label = (key: string) => withBrand(SIGNUP_QUESTIONS.find((q) => q.key === key)!.label, "VermeFree");
-    expect(label("knows")).toBe("Você já conhece a VermeFree?");
-    expect(label("collab")).toContain("perfil do Instagram da VermeFree");
+    expect([...keys].sort()).toEqual(SIGNUP_QUESTIONS.map((q) => q.key).sort());
+    expect(SIGNUP_BRANDS.map(signupBrandSlug)).toEqual(["botanika", "vermefree", "revita-derma"]);
+    expect(wantedBrands("Botanika e VermeFree")).toEqual(["Botanika", "VermeFree"]);
+    expect(wantedBrands("revita  derma")).toEqual(["Revita Derma"]);
+    expect(wantedBrands(null)).toEqual([]);
     expect(signupBrandFor("revita-derma")).toBe("Revita Derma");
     expect(signupBrandFor("shoty")).toBeNull();
     expect(signupConsentText("Botanika")).toBe(
       "Concordo com o uso dos meus dados pessoais pela Botanika para análise da minha inscrição e, caso seja aprovado(a), para elaboração do contrato de parceria e criação do meu acesso ao Creator Club, portal de influenciadores da Botanika.",
     );
-  });
-
-  it("prévia do cupom: só letras, maiúsculas, até 8", () => {
-    expect(signupCouponPreview("maria 10")).toBe("MARIA");
-    expect(signupCouponPreview("Júlia_Colares")).toBe("JULIACOL");
-    expect(signupCouponPreview("")).toBe("");
-  });
-});
-
-describe("etapas da inscrição (D-SIGNUPSTEPS)", () => {
-  it("duas etapas e cada bloco em exatamente uma", () => {
-    expect(SIGNUP_STEPS).toHaveLength(2);
-    const ids = SIGNUP_STEPS.flatMap((s) => s.sections);
-    expect([...ids].sort()).toEqual(SIGNUP_SECTIONS.map((s) => s.id).sort());
-  });
-});
-
-describe("sugestão de cupom só com letras (D-SIGNUPCOUPON)", () => {
-  it("aceita letras (com acento) de 2 a 8 e recusa números, espaços e símbolos", () => {
-    expect(signupCouponValid("maria")).toBe(true);
-    expect(signupCouponValid("Júlia")).toBe(true);
-    expect(signupCouponValid("MARIA10")).toBe(false);
-    expect(signupCouponValid("ana maria")).toBe(false);
-    expect(signupCouponValid("ana-b")).toBe(false);
-    expect(signupCouponValid("A")).toBe(false);
-    expect(signupCouponValid("ABCDEFGHI")).toBe(false);
-  });
-
-  it("a inscrição recusa cupom com número e grava o válido em maiúsculas", () => {
-    expect(validateSignup({ ...full, coupon: "maria10" }, true)).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/só letras/) } });
-    const ok = validateSignup({ ...full, coupon: "júlia" }, true);
-    expect(ok.ok && Object.values(ok.answers)).toContain("JULIA");
   });
 });
 

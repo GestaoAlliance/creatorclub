@@ -15,6 +15,8 @@ export type ApproveState =
       error?: string;
       ok?: {
         coupon: string; discountBps: number; contract: boolean; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string;
+        /** D-SIGNUPACCOUNT: ela criou a senha no cadastro; não há convite, ela entra com o e-mail. */
+        loginUrl?: string;
         /** D-AUTENTIQUE: contrato enviado pelo Autentique (o cupom e o convite vêm depois da assinatura). */
         autentique?: { sent: true; email: string; sandbox: boolean } | { sent: false; error: string };
       };
@@ -39,6 +41,12 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     // atualiza quando a equipe clica em "Concluir" (router.refresh).
     // D-AUTENTIQUE: pelo Autentique, o convite do portal só sai depois de assinado (pela ficha).
     if (r.contract) return { ok: { coupon: r.couponCode, discountBps, contract: true, creatorId: r.creatorId, link: null, autentique: r.contract } };
+    // D-SIGNUPACCOUNT: quem se cadastrou pelo site já tem senha: sem convite, ela entra pelo login.
+    const account = await db().creatorAccount.findUnique({ where: { id: r.accountId }, select: { userId: true } });
+    if (account?.userId) {
+      const origin = (await headers()).get("origin") ?? "";
+      return { ok: { coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link: null, loginUrl: `${origin}/entrar` } };
+    }
     // O convite sai logo depois; se falhar (ex.: pessoa já tem login), a creator já está criada e o aviso aparece.
     let link: string | null = null;
     let inviteError: string | undefined;

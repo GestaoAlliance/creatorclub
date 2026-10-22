@@ -197,6 +197,7 @@ model CreatorAccount {
   cnpj           String?
   pixKey         String?
   instagram      String? // sem o @
+  tiktok         String? // sem o @ (D-SIGNUPACCOUNT)
   /// Endereço de entrega (D-SHIPADDR): a creator mantém no portal; cada envio guarda uma cópia.
   addrZip        String?
   addrStreet     String?
@@ -209,9 +210,10 @@ model CreatorAccount {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user     User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  creators Creator[]
-  invites  CreatorInvite[]
+  user         User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  creators     Creator[]
+  invites      CreatorInvite[]
+  applications CreatorApplication[]
 }
 
 /// Convite de uso único para a creator entrar no portal (E2.5). Ligado à conta, nunca ao e-mail solto.
@@ -842,6 +844,9 @@ model CreatorApplication {
   note            String? // observação da equipe (ex.: status da planilha antiga)
   hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
   hunterLinkId    String?
+  tiktok          String? // D-SIGNUPACCOUNT
+  /// D-SIGNUPACCOUNT: conta criada no próprio cadastro (com login); a aprovação usa esta conta.
+  accountId       String?
   /// D-SIGNUP: inscrição pelo formulário do próprio sistema — quando aceitou o uso dos dados e hash do IP do dia
   /// (só para limitar envios repetidos; o IP em si nunca é gravado).
   consentAt       DateTime?
@@ -854,10 +859,12 @@ model CreatorApplication {
   creatorId       String?
   createdAt       DateTime          @default(now())
 
-  brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  hunterLink HunterLink? @relation(fields: [hunterLinkId], references: [id], onDelete: Restrict)
+  brand      Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  hunterLink HunterLink?     @relation(fields: [hunterLinkId], references: [id], onDelete: Restrict)
+  account    CreatorAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, source, externalKey])
+  @@index([accountId])
   @@index([brandId, status, submittedAt])
 }
 

@@ -83,8 +83,8 @@ describe("criar cupom na Shopify pela ficha (D-COUPONCREATE, banco real, Shopify
     await expect(call(await userWith("GESTAO", (await seedBrand(prisma)).brand.id), "ABC")).rejects.toThrow(/Sem permissão/);
     await expect(call(gestao, "ABC")).rejects.toThrow(/Defina a taxa/);
     await prisma.commissionPolicy.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, rateBps: 1500, validFrom: new Date("2026-01-01T00:00:00Z"), confirmedAt: new Date(), confirmedById: "x" } });
-    await expect(call(gestao, "ABC1")).rejects.toThrow(/só letras/);
-    await expect(call(gestao, "ABCDEFGHI")).rejects.toThrow(/só letras/);
+    await expect(call(gestao, "ABC-1")).rejects.toThrow(/letras e números/);
+    await expect(call(gestao, "ABCDEFGHIJKLMNOPQRSTU")).rejects.toThrow(/letras e números/);
     await expect(call(gestao, "ABC", 0)).rejects.toThrow(/entre/);
     await expect(call(gestao, "ABC", 5001)).rejects.toThrow(/entre/);
     await prisma.creator.update({ where: { id: a.creator.id }, data: { status: "DEACTIVATED" } });

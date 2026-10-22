@@ -219,7 +219,7 @@ export function CouponCreateForm({ creatorId }: { creatorId: string }) {
       <input type="hidden" name="creatorId" value={creatorId} />
       <div className="flex flex-wrap items-end gap-2">
         <label className={ui.label}>Código
-          <input className={`${ui.inputSm} font-mono uppercase`} name="code" placeholder="SÓ LETRAS, ATÉ 8" maxLength={8} required />
+          <input className={`${ui.inputSm} font-mono uppercase`} name="code" placeholder="LETRAS E NÚMEROS, ATÉ 20" maxLength={20} required />
         </label>
         <label className={ui.label}>Desconto (%)
           <input className={`${ui.inputSm} w-20`} name="discount" defaultValue="5" inputMode="decimal" required />

@@ -100,7 +100,7 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     const existing = letters(6);
     await prisma.coupon.create({ data: { brandId: brand.id, code: existing, kind: "PROMO", classifiedAt: new Date(), classifiedById: "x" } });
     await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: existing, category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/já existe/);
-    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: "AB12", category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/só letras/);
+    await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: "AB-12", category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, shop.clientFor)).rejects.toThrow(/letras e números/);
     await expect(approveApplication(prisma, gestao, { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: "x" }, shop.clientFor)).rejects.toThrow(/e-mail/);
 
     const pagamento = await userWith("PAGAMENTO", brand.id);

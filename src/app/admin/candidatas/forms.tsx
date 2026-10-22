@@ -52,7 +52,7 @@ function Done({ children }: { children: React.ReactNode }) {
  * Aprovar com um clique (F3): cria o cupom na Shopify, a creator e o convite do portal (por e-mail quando houver
  * remetente) e oferece o WhatsApp de boas-vindas pronto.
  */
-function ApproveForm(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
+function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
   const { onDone } = p;
   useEffect(() => { if (state?.ok) onDone(); }, [state, onDone]);
@@ -85,7 +85,12 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
     return (
       <Done>
         <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos).</p>
-        {o.link ? (
+        {o.loginUrl ? (
+          <>
+            <p>Ela já criou a senha no cadastro: entra no portal com o e-mail dela, sem convite.</p>
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, loginUrl: o.loginUrl, contract: o.contract })} />
+          </>
+        ) : o.link ? (
           <>
             {o.mail && <p>Convite enviado por e-mail para {o.mail}.</p>}
             {o.mailError && <p>O e-mail do convite não foi enviado ({o.mailError}). Mande pelo WhatsApp.</p>}
@@ -112,7 +117,7 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label className={ui.label}>
           Cupom
-          <input name="coupon" defaultValue={p.coupon} required maxLength={8} className={`${ui.inputSm} font-mono uppercase`} />
+          <input name="coupon" defaultValue={p.coupon} required maxLength={20} className={`${ui.inputSm} font-mono uppercase`} />
         </label>
         <label className={ui.label}>
           Tipo
@@ -142,12 +147,12 @@ function ApproveForm(p: Person & { email: string | null; coupon: string; categor
           </label>
         )}
         <label className={`${ui.label} col-span-full ${p.templates.length > 0 ? "sm:col-span-2" : ""}`}>
-          E-mail do convite
-          <input name="email" type="email" defaultValue={p.email ?? ""} required className={ui.inputSm} />
+          {p.hasLogin ? "E-mail (do login dela)" : "E-mail do convite"}
+          <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />
         </label>
       </div>
       <Msg state={state?.error ? { error: state.error } : undefined} />
-      <button className={`${ui.btn} self-start`} disabled={pending}>{pending ? "Criando cupom e convite…" : "Aprovar: criar cupom na Shopify e convite"}</button>
+      <button className={`${ui.btn} self-start`} disabled={pending}>{pending ? "Aprovando…" : p.hasLogin ? "Aprovar: criar cupom na Shopify" : "Aprovar: criar cupom na Shopify e convite"}</button>
     </form>
   );
 }
@@ -179,7 +184,7 @@ function RejectForm(p: Person & { onDone: () => void }) {
 }
 
 /** Aprovar e recusar juntos: decidido um, o outro some (a linha só sai da lista no "Concluir"). */
-export function DecisionForms(p: Person & { email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number }) {
+export function DecisionForms(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number }) {
   const [done, setDone] = useState<"approved" | "rejected" | null>(null);
   const approved = useCallback(() => setDone("approved"), []);
   const rejected = useCallback(() => setDone("rejected"), []);

@@ -7,7 +7,7 @@ import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 
 /**
  * Cupom criado pelo sistema na Shopify (D-COUPONCREATE), a partir da ficha da creator. Quem edita creators escolhe o
- * código (só letras, até 8) e o desconto; o sistema cria o cupom na Shopify (todos os produtos, qualquer cliente,
+ * código (letras e números, até 20) e o desconto; o sistema cria o cupom na Shopify (todos os produtos, qualquer cliente,
  * combinável com pedido, produto e frete) e, só depois do OK da Shopify, grava o cupom de creator já ligado a ela.
  * Contrato de permuta (UGC, sem comissão) sem taxa vigente ganha taxa 0%: as vendas aparecem, sem comissão.
  */
@@ -90,7 +90,7 @@ export async function createCouponInShopify(
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new CouponCreateError("Sem permissão.");
   if (creator.status === "DEACTIVATED") throw new CouponCreateError("Creator desligada não ganha cupom.");
   const v = validateNewCouponCode(input.code);
-  if (!v.ok) throw new CouponCreateError("Cupom inválido: só letras, até 8.");
+  if (!v.ok) throw new CouponCreateError("Cupom inválido: letras e números, até 20.");
   try {
     assertBps(input.discountBps);
   } catch {

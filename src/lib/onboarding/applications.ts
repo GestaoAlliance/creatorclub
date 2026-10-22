@@ -27,6 +27,7 @@ export type HunterFields = {
   email: string | null;
   phone: string | null;
   instagram: string | null;
+  tiktok: string | null;
   followers: string | null;
   niche: string | null;
   kindAnswer: string | null;
@@ -51,6 +52,7 @@ const QUESTIONS: [keyof HunterFields, string][] = [
   ["phone", "seu whatsapp"],
   ["email", "email"],
   ["instagram", "@ do seu instagram"],
+  ["tiktok", "@ do seu tiktok"],
   ["followers", "quantidade de seguidores"],
   ["niche", "qual seu nicho"],
   ["address", "endereco para entrega"],
@@ -100,6 +102,7 @@ export function parseHunterAnswers(answers: Record<string, unknown>): HunterFiel
     email: email || null,
     phone: out.phone ?? null,
     instagram: out.instagram ?? null,
+    tiktok: out.tiktok ?? null,
     followers: out.followers ?? null,
     niche: out.niche ?? null,
     kindAnswer: out.kindAnswer ?? null,
@@ -124,17 +127,17 @@ export function categoryFromAnswer(answer: string | null): Category {
   return "INFLUENCER";
 }
 
-/** Sugestão de cupom já no formato aceito (só letras, até 8); vazio se não der. */
+/** Sugestão de cupom já no formato aceito (letras e números, até 20); vazio se não der. */
 export function couponFromSuggestion(suggestion: string | null): string {
   const s = (suggestion ?? "").split(/[,/;\n]| ou /i)[0] ?? "";
   const v = validateNewCouponCode(s);
   if (v.ok) return v.code;
-  return normalizeCouponCode(s.normalize("NFD").replace(/[^A-Za-z]/g, "")).slice(0, 8);
+  return normalizeCouponCode(s.normalize("NFD").replace(/[^A-Za-z0-9]/g, "")).slice(0, 20);
 }
 
 export async function receiveApplication(
   prisma: PrismaClient,
-  input: { brandSlug: string; source: string; externalKey: string; submittedAt: Date; answers: Record<string, unknown>; consentAt?: Date; ipHash?: string | null },
+  input: { brandSlug: string; source: string; externalKey: string; submittedAt: Date; answers: Record<string, unknown>; consentAt?: Date; ipHash?: string | null; accountId?: string },
 ): Promise<{ id: string; created: boolean }> {
   const brand = await prisma.brand.findUnique({ where: { slug: input.brandSlug }, select: { id: true, archivedAt: true } });
   if (!brand || brand.archivedAt) throw new ApplicationError("Marca não encontrada.");
@@ -170,6 +173,7 @@ export async function receiveApplication(
         hunterLinkId: await hunterLinkIdFor(prisma, brand.id, fields.hunterCode),
         ...(input.consentAt ? { consentAt: input.consentAt } : {}),
         ...(input.ipHash ? { ipHash: input.ipHash } : {}),
+        ...(input.accountId ? { accountId: input.accountId } : {}),
         raw: input.answers as object,
       },
     });
@@ -232,6 +236,9 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         email: r.email,
         phone: r.phone,
         instagram: r.instagram,
+        tiktok: r.tiktok,
+        /** D-SIGNUPACCOUNT: criou a conta com senha no cadastro (aprovar não gera convite). */
+        hasLogin: r.accountId !== null,
         followers: r.followers,
         niche: r.niche,
         kindAnswer: r.kindAnswer,
@@ -282,7 +289,7 @@ export async function approveApplication(
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
   const coupon = validateNewCouponCode(input.couponCode);
-  if (!coupon.ok) throw new ApplicationError("Cupom inválido: só letras, até 8.");
+  if (!coupon.ok) throw new ApplicationError("Cupom inválido: letras e números, até 20.");
   if (!["INFLUENCER", "PRESCRITOR", "UGC"].includes(input.category)) throw new ApplicationError("Tipo inválido.");
   try {
     assertBps(input.rateBps);
@@ -291,7 +298,9 @@ export async function approveApplication(
     throw new ApplicationError("Taxa ou desconto inválido.");
   }
   if (!validCouponDiscount(input.discountBps)) throw new ApplicationError("O desconto precisa ficar entre 0,01% e 50%.");
-  const email = normalizeEmail(input.email ?? app.email ?? "");
+  // D-SIGNUPACCOUNT: cadastro do site já tem conta com login; a aprovação usa ela (o e-mail é o do login).
+  const own = app.accountId ? await prisma.creatorAccount.findUnique({ where: { id: app.accountId }, select: { email: true } }) : null;
+  const email = normalizeEmail(own?.email ?? input.email ?? app.email ?? "");
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApplicationError("Informe um e-mail válido para o convite.");
   const cpfDigits = app.cpf?.replace(/\D/g, "") ?? "";
   const cnpjDigits = app.cnpj?.replace(/\D/g, "") ?? "";
