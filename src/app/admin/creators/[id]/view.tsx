@@ -364,7 +364,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 <div className="flex min-w-0 flex-col gap-6">
           <Card title="Contato" icon={<UserRound className="size-4" />}>
             {p.canEdit ? (
-              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} />
+              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} instagram={p.instagram} tiktok={p.tiktok} />
             ) : (
               <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
             )}

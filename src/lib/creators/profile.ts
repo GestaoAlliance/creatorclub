@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractStatus, creatorPendings, dayKey, type CreatorCategoryValue } from "@/domain";
+import { assertBps, contractStatus, creatorPendings, dayKey, socialHandle, type CreatorCategoryValue } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -199,7 +199,7 @@ export async function updateContact(
   prisma: PrismaClient,
   actor: Actor | null,
   creatorId: string,
-  input: { name: string; email: string; phone: string },
+  input: { name: string; email: string; phone: string; instagram?: string; tiktok?: string },
 ) {
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
@@ -216,9 +216,16 @@ export async function updateContact(
   if (email !== a.email && (await prisma.creatorAccount.findUnique({ where: { email } }))) {
     throw new ProfileError("Este e-mail já é de outra creator.");
   }
+  // Redes: só mudam quando o formulário as envia (vazio apaga). Gravadas sem @ e sem o endereço do site.
+  const instagram = input.instagram === undefined ? a.instagram : socialHandle(input.instagram) || null;
+  const tiktok = input.tiktok === undefined ? a.tiktok : socialHandle(input.tiktok) || null;
   await prisma.$transaction([
-    prisma.creatorAccount.update({ where: { id: a.id }, data: { name, email, phone } }),
-    audit(prisma, actor, creator.brandId, "creator.contact", "CreatorAccount", a.id, { name: a.name, email: a.email, phone: a.phone }, { name, email, phone }),
+    prisma.creatorAccount.update({ where: { id: a.id }, data: { name, email, phone, instagram, tiktok } }),
+    audit(
+      prisma, actor, creator.brandId, "creator.contact", "CreatorAccount", a.id,
+      { name: a.name, email: a.email, phone: a.phone, instagram: a.instagram, tiktok: a.tiktok },
+      { name, email, phone, instagram, tiktok },
+    ),
   ]);
 }
 
