@@ -7,7 +7,8 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
+- **Próxima tarefa:** **M0.1 (Vendas da equipe)**, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+  pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
   `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
@@ -26,6 +27,14 @@
 ## Fila de tarefas (uma por vez, nesta ordem)
 
 Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado · `[-]` adiado
+
+### M — Plano de melhorias (`docs/PLANO-MELHORIAS.md`; uma etapa por vez, cada uma com PR e capturas)
+- [ ] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
+- [ ] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
+- [ ] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração
+- [ ] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
+- [ ] **M0.5** Busca de creator no painel inteiro
+- Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -246,6 +255,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-143 — 2026-10-22 — Plano de melhorias aprovado
+- **Pedido (responsável):** mapear o painel e o portal de referência (Bigboom) e montar um plano por setor; depois,
+  revisar o plano pensando na Alliance ("o que você faria diferente?") e juntar os dois.
+- **Feito:** `docs/PLANO-MELHORIAS.md` (fases 0 a 5, o que não muda, o que fica fora de propósito e 13 decisões em
+  aberto) e a fila "M" no topo da fila de tarefas. Nada do app mudou.
+- **Próxima:** M0.1 (Vendas da equipe).
 
 ### CP-142 — 2026-10-22 — Cupom do cadastro: exemplo com nome, sem número
 - **Pedido (responsável):** o exemplo "SEUCUPOM10" sugere 10% de desconto ou comissão e pode conflitar com campanhas;
