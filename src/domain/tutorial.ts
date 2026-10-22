@@ -4,7 +4,7 @@
  * (PR com capturas). Passo de botão que a pessoa não tem (pelo papel) não aparece, porque o botão não está na tela.
  */
 
-export type PortalScreen = "inicio" | "vendas" | "cupom" | "saque" | "envios";
+export type PortalScreen = "inicio" | "vendas" | "saque" | "envios";
 export type StaffScreen =
   | "equipe-inicio"
   | "equipe-candidatas"
@@ -47,11 +47,6 @@ export const HELP = {
   movimentacoes: {
     title: "Últimas movimentações",
     text: "Tudo o que entra e sai do seu saldo: comissões, saques e ajustes. Se um pedido for devolvido, a comissão dele sai daqui.",
-  },
-  "cupom-inicio": {
-    title: "Seu cupom",
-    text: "Seu código para divulgar. Copie e cole nos stories, na bio e nas conversas: cada pedido pago com ele vira comissão para você.",
-    ugcText: "Seu código para divulgar. Copie e cole nos stories, na bio e nas conversas: as vendas com ele aparecem em Vendas.",
   },
   periodo: {
     title: "Período",
@@ -279,9 +274,8 @@ export type HelpId = keyof typeof HELP;
 
 /** Ordem dos balões no primeiro acesso a cada tela. Passo sem cartão na tela (ex.: sem gráfico) é pulado. */
 export const TOURS: Record<TourScreen, HelpId[]> = {
-  inicio: ["saldo", "a-liberar", "vendas-mes", "comissao-mes", "pedidos-mes", "movimentacoes", "cupom-inicio"],
+  inicio: ["saldo", "a-liberar", "vendas-mes", "comissao-mes", "pedidos-mes", "cupom-codigo", "cupom-link", "cupom-cliques", "movimentacoes"],
   vendas: ["periodo", "vendas-resumo", "vendas-grafico", "vendas-lista"],
-  cupom: ["cupom-codigo", "cupom-link", "cupom-cliques"],
   saque: ["saque-saldo", "saque-nf", "saque-recibo", "meus-saques", "extrato"],
   envios: ["solicitar-pedido", "endereco", "meus-envios"],
   "equipe-inicio": ["eq-indicacoes", "eq-candidatas", "eq-contratos", "eq-semvender", "eq-saques", "eq-envios", "eq-cupons", "eq-creators"],
@@ -320,7 +314,7 @@ export function tourScreenFor(pathname: string): TourScreen | null {
   if (parts.length === 2) return "inicio";
   if (parts.length > 3) return null;
   const tab = parts[2] as TourScreen;
-  return ["vendas", "cupom", "saque", "envios"].includes(tab) ? tab : null;
+  return ["vendas", "saque", "envios"].includes(tab) ? tab : null;
 }
 
 /** Passos que existem nesta tela agora (o cartão está visível). */

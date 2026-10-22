@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Portal da creator com 4 telas** (Início com cupom e link, Vendas, Saque, Envios; avisos só no sininho); depois "Todas as marcas" no seletor, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **"Todas as marcas" no seletor** (substitui o painel Alliance; M0.0.4); depois a Fase 0 restante, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -260,6 +260,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-155 — 2026-10-22 — Portal da creator com 4 telas (D-PORTAL4)
+- **Feito (M0.0.5):** menu Início · Vendas · Saque · Envios; cupom, link (copiar e compartilhar) e cliques no Início,
+  numa faixa abaixo dos números (no celular, um embaixo do outro); `/cupom` leva ao Início; avisos só no sininho.
+  Tutorial do Início ganhou os passos do cupom, do link e dos cliques (o da tela Cupom saiu).
+- **Verificado:** testes (tutorial), integração, typecheck, build; capturas no computador e no celular; `/cupom` redireciona.
 
 ### CP-154 — 2026-10-22 — Vendas no modelo da referência (gráfico e top creators)
 - **Feito:** período (7, 30, 90 dias, este mês ou de–até; padrão 30 dias) com comparação com o período anterior;
