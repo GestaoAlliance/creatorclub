@@ -149,3 +149,13 @@ body {
     transform: none;
   }
 }
+
+/* Dashboard da equipe: "olho" fechado esconde os valores em dinheiro (M0.0.4). */
+[data-hide-values] .money {
+  filter: blur(7px);
+  user-select: none;
+}
+[data-hide-values] .money-chart {
+  filter: blur(6px);
+  pointer-events: none;
+}
