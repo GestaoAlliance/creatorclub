@@ -247,6 +247,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-141 — 2026-10-22 — Cadastro de creator com conta, no modelo da referência
+- **Pedido (responsável):** o formulário de inscrição estava burocrático; seguir o cadastro da referência (Bigboom) e
+  adaptar o sistema a ele. Respostas: a conta nasce com senha e a Ana aprova depois; Pix pedido no saque; cupom igual
+  à referência (letras e números, 3 a 20); tipo Influencer por padrão.
+- **Feito (D-SIGNUPACCOUNT):** `/inscricao/[marca]` virou um cartão só (marca na cor dela, "Cadastro de creator") com
+  Seus dados, Contato, Redes sociais (TikTok novo), Seu cupom (aviso na hora se já está em uso), Endereço (CEP
+  primeiro) e Senha. O envio cria login, conta e inscrição ligada (migração `20261022120000_signup_account`: `tiktok` e
+  `CreatorApplication.accountId`); falhou no banco, o login criado é apagado. Logada antes da aprovação, `/conta`
+  mostra "cadastro em análise" (ou "não aprovado"). Na aprovação, a conta do cadastro é usada (e-mail do login, sem
+  convite) e o WhatsApp de boas-vindas manda entrar com a senha. Cupom novo da equipe também aceita números, até 20.
+- **Fora desta tarefa:** a página não mostra mais a abertura com "Como funciona a parceria" (a referência não tem);
+  o bloco segue no código esperando as mudanças da Ana.
+- **Verificado:** unitários, integração (conta + inscrição, cupom reservado, e-mail/CPF repetidos, limite, robô,
+  login apagado em falha, aprovação usando a conta), typecheck, build, migração sem divergência; capturas.
+
 ### CP-140 — 2026-10-21 — Referência: portal de creators da Bigboom (tarefa avulsa, só documento)
 - **Pedido do responsável:** engenharia reversa do portal da Bigboom (autorizada pelo dono) e comparação com o nosso,
   adaptada às 3 marcas. Tarefa fora da fila; a fila não muda e nada do app foi alterado.

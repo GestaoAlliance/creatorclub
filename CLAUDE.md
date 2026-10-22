@@ -47,7 +47,8 @@ Onboarding de novas creators, Hunter, UGC, alertas e Autentique vêm depois.
 - Webhook: valida HMAC, grava evento + tarefa na fila do Postgres na mesma transação, depois responde 200.
   Nada roda "depois da resposta".
 - Todo cupom gravado no Shopify (criar ou editar) leva `combinesWith` com order/product/shipping = true.
-- Login por convite; não existe "reivindicar cupom". "Entrar como" fora do escopo; exceção: super admin vê o portal
+- Login por convite ou pelo cadastro do site, que cria a conta com senha e espera a aprovação da Ana (D-SIGNUPACCOUNT);
+  não existe "reivindicar cupom". "Entrar como" fora do escopo; exceção: super admin vê o portal
   de uma creator só para leitura (D-VIEWAS).
 
 ## Decisões em aberto (marcar no código com `// DECISÃO-ABERTA: <id>`)

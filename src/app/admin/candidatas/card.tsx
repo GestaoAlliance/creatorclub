@@ -17,7 +17,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
         <div>
           <p className="font-semibold">{a.fullName}</p>
           <p className={ui.hint}>
-            {a.source === "site_form" ? "Inscrição pelo site" : a.source === "captacao_form" ? "Captação (Google)" : "Hunter (Google)"} · respondeu em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
+            {a.source === "site_form" ? (a.hasLogin ? "Cadastro pelo site (já tem login)" : "Inscrição pelo site") : a.source === "captacao_form" ? "Captação (Google)" : "Hunter (Google)"} · respondeu em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
           </p>
         </div>
         <span className="flex flex-wrap justify-end gap-1.5">
@@ -31,6 +31,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       {a.note && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{a.note}</p>}
       <div className="grid gap-1.5 text-sm sm:grid-cols-2">
         {a.instagram && <p><InstagramLink handle={a.instagram} /></p>}
+        {a.tiktok && <p className="text-stone-600 dark:text-stone-400">TikTok: <a href={`https://www.tiktok.com/@${a.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className={ui.link}>@{a.tiktok.replace(/^@/, "")}</a></p>}
         {a.followers && <p className="flex items-center gap-1.5"><Users className="size-3.5 text-stone-500" /> {a.followers} seguidores</p>}
         {a.storiesViews && <p className="flex items-center gap-1.5"><Eye className="size-3.5 text-stone-500" /> {a.storiesViews} views nos stories</p>}
         {a.collabInterest && <p className="text-stone-600 dark:text-stone-400">Collab com a marca: {a.collabInterest}</p>}
@@ -61,7 +62,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       )}
       {status === "NEW" && a.canDecide && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
-          <DecisionForms applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} />
+          <DecisionForms hasLogin={a.hasLogin} applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal} templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} />
         </div>
       )}
       {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
