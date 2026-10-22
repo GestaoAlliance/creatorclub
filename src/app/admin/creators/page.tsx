@@ -20,13 +20,16 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "creators.view", brand.id)) redirect("/conta");
   const { portal, contrato, semvenda, categoria, pendencia } = await searchParams;
-  const creators = await listCreators(db(), scopedActor(actor, brand.id), brand.id);
+  const [creators, pendingApplications] = await Promise.all([
+    listCreators(db(), scopedActor(actor, brand.id), brand.id),
+    db().creatorApplication.count({ where: { brandId: brand.id, status: "NEW" } }),
+  ]);
   const active = creators.filter((c) => c.status === "ACTIVE").length;
 
   return (
     <>
       <PageHeader title="Creators">
-        {creators.length} creators na {brand.name} · {active} ativas. Toque numa creator para ver a ficha.
+        {creators.length} creators na {brand.name} · {active} ativas. Toque no nome para abrir a ficha.
       </PageHeader>
       {can(actor.grants, "creators.edit", brand.id) && (
         <Link href="/admin/creators/revisar" className={`${ui.link} self-start text-sm`}>
@@ -39,7 +42,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
           visualização vale só neste aparelho, por 1 hora.
         </p>
       )}
-      <CreatorList rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} />
+      <CreatorList rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} pendingApplications={pendingApplications} />
     </>
   );
 }
