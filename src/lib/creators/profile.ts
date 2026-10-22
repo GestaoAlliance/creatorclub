@@ -161,6 +161,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,
     categories: creator.categories,
     instagram: a.instagram,
+    tiktok: a.tiktok,
     contract: {
       start: dayOf(creator.contractStart),
       end: dayOf(creator.contractEnd),

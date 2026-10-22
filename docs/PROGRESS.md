@@ -261,6 +261,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-149 — 2026-10-22 — Lista mais bonita e ficha completa da creator
+- **Pedido (responsável):** lista no modelo da referência com mini ícones de Instagram, TikTok e WhatsApp; ao clicar
+  no nome abrir a ficha com tudo da creator, como antes, otimizada e mais bonita.
+- **Feito:** ícones próprios das redes (`src/components/ui/social-icons.tsx`); avatar com iniciais; **linha inteira
+  clicável** (e o cartão no celular) abre a ficha, sem atrapalhar os links de rede e o copiar. **Ficha**: cabeçalho com
+  avatar, situação, tipo, acesso ao portal, conferência, botões de Instagram, TikTok e WhatsApp, "Ver o portal como
+  ela", cupom com o link (copiar) e os números principais (vendas 30 dias, ticket, aguardando pagamento, disponível);
+  o resto em **abas** (`src/components/ui/tabs.tsx`): Resumo (saldo, conferência, UGC, cupons, últimos eventos),
+  Extrato, Contrato, Cadastro e Linha do tempo. Nada saiu da ficha; o link do extrato do mês abre na aba Extrato.
+- **Verificado:** testes, integração, typecheck, build; capturas no computador e no celular.
+
 ### CP-148 — 2026-10-22 — Lista de creators no modelo da referência
 - **Feito (M0.0.2):** situação em abas (Ativas, Pausadas, Encerradas, Pendentes → candidatas) e **tipo em abas**
   (Todos, Influencer, UGC, Prescritor, com contadores); busca por nome, cupom, @, e-mail, WhatsApp ou CPF; **alertas

@@ -1,7 +1,9 @@
 "use client";
 
-import { AtSign, ChevronDown, ChevronUp, MessageCircle, Music2, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { useMemo, useState } from "react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { HelpTip } from "@/components/ui/tour";
@@ -61,6 +63,12 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
  */
 export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number }) {
   const { rows } = p;
+  const router = useRouter();
+  // A linha inteira abre a ficha (links e botões de dentro continuam funcionando sozinhos).
+  const open = (id: string) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a,button")) return;
+    router.push(`/admin/creators/${id}`);
+  };
   const [q, setQ] = useState("");
   const [situation, setSituation] = useState<Situation>("ACTIVE");
   const [category, setCategory] = useState<CategoryFilter>(p.category ?? "");
@@ -173,14 +181,15 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
             {shown.map((c) => {
               const wa = c.phone ? whatsappChatUrl(c.phone) : null;
               return (
-                <li key={c.id} className="flex flex-col gap-1.5 py-3">
+                <li key={c.id} onClick={open(c.id)} className="flex cursor-pointer flex-col gap-1.5 py-3">
                   <div className="flex items-baseline justify-between gap-2">
                     <Link href={`/admin/creators/${c.id}`} className="truncate font-medium">{c.name}</Link>
                     {c.stats && <span className="shrink-0 text-sm font-semibold tabular-nums">{formatBRL(c.stats.salesCents)}</span>}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    {wa && <a href={wa} {...ext} className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400"><MessageCircle className="size-3" />WhatsApp</a>}
-                    {c.instagram && <span className="inline-flex items-center gap-1"><AtSign className="size-3 text-stone-400" />{c.instagram.replace(/^@/, "")}</span>}
+                    {wa && <a href={wa} {...ext} className="inline-flex items-center gap-1"><WhatsAppIcon className="size-3.5 text-emerald-600" />WhatsApp</a>}
+                    {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
+                    {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</span>}
                     {c.coupon && <span className="font-mono font-semibold">{c.coupon}</span>}
                     <span className="text-stone-500">{c.lastOrder ? `última venda há ${daysSince(c.lastOrder.day)} dias` : "nunca vendeu"}</span>
                   </div>
@@ -212,14 +221,14 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
                   const wa = c.phone ? whatsappChatUrl(c.phone) : null;
                   const ig = c.instagram ? instagramUrl(c.instagram) : null;
                   return (
-                    <tr key={c.id} className="group align-top [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
+                    <tr key={c.id} onClick={open(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
                       <td className="max-w-64">
                         <div className="flex items-start gap-2.5">
-                          <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-sm font-semibold text-brand dark:bg-brand-2/15 dark:text-brand-2">{c.name.slice(0, 1).toUpperCase()}</span>
+                          <span className="grid size-10 shrink-0 place-content-center rounded-full bg-gradient-to-br from-brand to-brand/60 text-sm font-semibold text-white shadow-sm dark:from-brand-2 dark:to-brand-2/60">{c.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
                           <div className="min-w-0">
                             <Link href={`/admin/creators/${c.id}`} className="block truncate font-medium hover:underline">{c.name}</Link>
                             {wa ? (
-                              <a href={wa} {...ext} className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline dark:text-emerald-400"><MessageCircle className="size-3" />{c.phone}</a>
+                              <a href={wa} {...ext} className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-emerald-700 dark:text-stone-300"><WhatsAppIcon className="size-3.5 text-emerald-600" />{c.phone}</a>
                             ) : (
                               <span className="text-xs text-stone-500">{c.phone ?? "sem WhatsApp"}</span>
                             )}
@@ -236,12 +245,12 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
                       <td>
                         <div className="flex flex-col gap-0.5 text-xs">
                           {c.instagram ? (
-                            ig ? <a href={ig} {...ext} className="inline-flex items-center gap-1 hover:underline"><AtSign className="size-3 text-stone-400" />{c.instagram.replace(/^@/, "")}</a> : <span>@{c.instagram}</span>
+                            ig ? <a href={ig} {...ext} className="inline-flex items-center gap-1.5 hover:underline"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</a> : <span>@{c.instagram}</span>
                           ) : (
                             <span className="text-stone-400">—</span>
                           )}
                           {c.tiktok && (
-                            <a href={`https://www.tiktok.com/@${c.tiktok.replace(/^@/, "")}`} {...ext} className="inline-flex items-center gap-1 hover:underline"><Music2 className="size-3 text-stone-400" />{c.tiktok.replace(/^@/, "")}</a>
+                            <a href={`https://www.tiktok.com/@${c.tiktok.replace(/^@/, "")}`} {...ext} className="inline-flex items-center gap-1.5 hover:underline"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</a>
                           )}
                         </div>
                       </td>
@@ -255,7 +264,12 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
                       )}
                       {money && <td className="text-right tabular-nums">{c.stats?.orders ?? 0}</td>}
                       <td className="whitespace-nowrap text-xs">{c.lastOrder ? <>{br(c.lastOrder.day)}<span className="block text-stone-500">há {daysSince(c.lastOrder.day)} dias</span></> : <span className="text-stone-400">nunca</span>}</td>
-                      <td className="whitespace-nowrap text-xs text-stone-500">{new Date(c.joinedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
+                      <td className="whitespace-nowrap text-xs text-stone-500">
+                        <span className="flex items-center justify-between gap-2">
+                          {new Date(c.joinedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                          <ChevronRight className="size-4 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-stone-500" />
+                        </span>
+                      </td>
                     </tr>
                   );
                 })}

@@ -1,5 +1,7 @@
 import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
+import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
+import { Tabs } from "@/components/ui/tabs";
 import type { creatorNumbers, TimelineEvent, TimelineKind } from "@/lib/creators/timeline";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
@@ -7,7 +9,7 @@ import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
-import { formatBRL, isUgcOnly } from "@/domain";
+import { CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
@@ -61,40 +63,90 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase }: { p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes }: { mes?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <Link href="/admin/creators" className={`${ui.link} inline-flex items-center gap-1 self-start text-sm`}>
-          <ArrowLeft className="size-4" /> Creators
-        </Link>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid size-12 place-content-center rounded-2xl bg-brand text-lg font-bold text-white shadow-sm">
+      <Link href="/admin/creators" className={`${ui.link} inline-flex items-center gap-1 self-start text-sm`}>
+        <ArrowLeft className="size-4" /> Creators
+      </Link>
+      {/* Cabeçalho no modelo da referência: quem é, redes, cupom com o link e os números principais. */}
+      <section className={`${ui.card} gap-5`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-12 shrink-0 place-content-center rounded-2xl bg-brand text-xl sm:size-16 sm:rounded-3xl sm:text-2xl font-bold text-white shadow-sm">
               {p.contact.name.slice(0, 1).toUpperCase()}
             </span>
-            <div>
-              <h1 className={ui.title}>{p.contact.name}</h1>
-              <div className="mt-1 flex flex-wrap gap-1.5">
+            <div className="min-w-0">
+              <h1 className={`${ui.title} truncate`}>{p.contact.name}</h1>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <span className={STATUS_BADGE[p.status]}>{STATUS_LABEL[p.status]}</span>
-                <span className={p.hasLogin ? badge.sky : badge.neutral}>{p.hasLogin ? "já entrou no portal" : "ainda sem acesso ao portal"}</span>
+                {p.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k as CreatorCategoryValue]}</span>)}
+                <span className={p.hasLogin ? badge.sky : badge.neutral}>{p.hasLogin ? "já entrou no portal" : "sem acesso ao portal"}</span>
                 {p.reviewedAt && <span className={badge.green}>conferida pela Ana</span>}
                 {p.contact.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {p.instagram && instagramUrl(p.instagram) && (
+                  <a href={instagramUrl(p.instagram)!} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
+                    <InstagramIcon className="size-4 text-pink-600" /> {p.instagram.replace(/^@/, "")}
+                  </a>
+                )}
+                {p.tiktok && (
+                  <a href={`https://www.tiktok.com/@${p.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
+                    <TikTokIcon className="size-4" /> {p.tiktok.replace(/^@/, "")}
+                  </a>
+                )}
+                {p.contact.phone && whatsappChatUrl(p.contact.phone) && (
+                  <a href={whatsappChatUrl(p.contact.phone)!} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
+                    <WhatsAppIcon className="size-4 text-emerald-600" /> {p.contact.phone}
+                  </a>
+                )}
               </div>
             </div>
           </div>
           {p.canViewAs && (
             <form action={viewAsAction} data-tour="fi-vercomo" className="flex items-center gap-1">
               <input type="hidden" name="creatorId" value={p.id} />
-              <button className={ui.ghost}><Eye className="size-4" /> Ver o portal como esta creator</button>
+              <button className={ui.ghost}><Eye className="size-4" /> Ver o portal como ela</button>
               <HelpTip id="fi-vercomo" />
             </form>
           )}
         </div>
-      </div>
+        {(() => {
+          const c = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until);
+          return c ? (
+            <div className={`${ui.inset} flex flex-wrap items-center justify-between gap-3`}>
+              <div className="min-w-0">
+                <p className="text-xs text-stone-500">Cupom e link dela</p>
+                <p className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-mono text-lg font-bold tracking-wide">{c.code}</span>
+                  <span className="truncate font-mono text-xs text-stone-500">{linkBase}{c.code}</span>
+                </p>
+              </div>
+              <CopyButton value={`${linkBase}${c.code}`} label="Copiar link" />
+            </div>
+          ) : null;
+        })()}
+        {numbers && (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <Kpi label="Vendas em 30 dias" value={formatBRL(numbers.last30.salesCents)} hint={`${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido pago" : "pedidos pagos"}`} />
+            <Kpi label="Ticket médio" value={formatBRL(numbers.last30.ticketCents)} hint="últimos 30 dias" />
+            <Kpi label="Aguardando pagamento" value={formatBRL(numbers.pending.salesCents)} hint={`${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão` : ""}`} />
+            {st && !ugcOnly ? <Kpi label="Disponível para saque" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} hint={`saldo ${formatBRL(st.balance.totalCents)}`} /> : <Kpi label="Comissão estornada" value={formatBRL(numbers.reversedCents)} />}
+          </div>
+        )}
+      </section>
 
+      <Tabs
+        initial={st?.month && mes ? "extrato" : undefined}
+        tabs={[
+          {
+            id: "resumo",
+            label: "Resumo",
+            content: (
+              <>
       {st && !ugcOnly && (
         <Card title="Saldo" icon={<Receipt className="size-4" />} help="fi-saldo">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -103,18 +155,6 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             <Kpi label="Em saque" value={formatBRL(st.balance.reservedCents)} />
             <Kpi label="Disponível" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} />
           </div>
-          {numbers && (
-            <div className="grid grid-cols-2 gap-4 border-t border-stone-200/70 pt-4 md:grid-cols-4 dark:border-white/10">
-              <Kpi label="Vendas em 30 dias" value={formatBRL(numbers.last30.salesCents)} hint={`${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido pago" : "pedidos pagos"}`} />
-              <Kpi label="Ticket médio (30 dias)" value={formatBRL(numbers.last30.ticketCents)} />
-              <Kpi
-                label="Aguardando pagamento"
-                value={formatBRL(numbers.pending.salesCents)}
-                hint={`${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão se pagos` : ""}`}
-              />
-              <Kpi label="Comissão estornada" value={formatBRL(numbers.reversedCents)} hint="vendas canceladas ou devolvidas depois de pagas" />
-            </div>
-          )}
           <ReleaseProgressBar r={st.release} />
           <p className={ui.hint}>
             {st.release.minCents === null
@@ -124,9 +164,8 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
           </p>
         </Card>
       )}
-      {/* Duas colunas independentes (sem buracos): à esquerda o trabalho do dia a dia, à direita a consulta. */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
+                <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                  <div className="flex min-w-0 flex-col gap-6">
           {!p.reviewedAt && !ugcOnly && (
             <Card title="Conferência da Ana" icon={<ClipboardCheck className="size-4" />} help="fi-conferencia">
               {p.reviewedAt ? (
@@ -168,31 +207,15 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             {p.canEdit && p.status !== "DEACTIVATED" && <CouponCreateForm creatorId={p.id} />}
             <Link href="/admin/cupons" className={`${ui.link} text-sm`}>Abrir a conferência de cupons</Link>
           </Card>
-          <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />} help="fi-contrato">
-            {p.contract.status === "EXPIRED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Contrato vencido em {dmy(p.contract.end)}: renovar ou encerrar.</p>}
-            {p.contract.status === "EXPIRING" && (
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                Contrato vence em {p.contract.daysLeft} {p.contract.daysLeft === 1 ? "dia" : "dias"} ({dmy(p.contract.end)}).
-              </p>
-            )}
-            {p.idle && (
-              <p className={p.idle.idle ? "text-sm font-medium text-amber-700 dark:text-amber-300" : ui.muted}>
-                {p.idle.lastSaleDay ? `Última venda em ${dmy(p.idle.lastSaleDay)}` : "Ainda não vendeu"}
-                {(p.idle.lastSaleDay === null || p.idle.days > 0) && ` · ${p.idle.days} ${p.idle.days === 1 ? "dia" : "dias"} sem vender`}
-                {p.idle.idle && ": falar com a creator."}
-              </p>
-            )}
-            {p.canEdit ? (
-              <ChecklistForm creatorId={p.id} c={p.contract} templates={p.contractTemplates} noPayout={ugcOnly} />
-            ) : (
-              <p className="text-sm">
-                {p.contractTemplates.find((t) => t.id === p.contract.templateId)?.name ?? "Modelo padrão da marca"} ·{" "}
-                {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "sem datas de contrato"}
-                {!ugcOnly && p.contract.receivesAsIndividual && " · recebe como pessoa física (recibo)"}
-              </p>
-            )}
-            {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
-          </Card>
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-6">
+                    <Timeline events={timeline.slice(0, 8)} creatorId={p.id} canEdit={p.canEdit} />
+                  </div>
+                </div>
+              </>
+            ),
+          },
+          ...(st && !ugcOnly ? [{ id: "extrato", label: "Extrato", content: <>
           {st && !ugcOnly && (
             <Card title="Extrato" icon={<Receipt className="size-4" />} help="fi-extrato">
               {st.months.length > 0 && (
@@ -231,84 +254,40 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               )}
             </Card>
           )}
-        </div>
-        <div className="flex min-w-0 flex-col gap-6">
-          <Timeline events={timeline} creatorId={p.id} canEdit={p.canEdit} />
-          <Card title="Contato" icon={<UserRound className="size-4" />}>
+          </> }] : []),
+          {
+            id: "contrato",
+            label: "Contrato",
+            content: (
+              <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                <div className="flex min-w-0 flex-col gap-6">
+          <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />} help="fi-contrato">
+            {p.contract.status === "EXPIRED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Contrato vencido em {dmy(p.contract.end)}: renovar ou encerrar.</p>}
+            {p.contract.status === "EXPIRING" && (
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                Contrato vence em {p.contract.daysLeft} {p.contract.daysLeft === 1 ? "dia" : "dias"} ({dmy(p.contract.end)}).
+              </p>
+            )}
+            {p.idle && (
+              <p className={p.idle.idle ? "text-sm font-medium text-amber-700 dark:text-amber-300" : ui.muted}>
+                {p.idle.lastSaleDay ? `Última venda em ${dmy(p.idle.lastSaleDay)}` : "Ainda não vendeu"}
+                {(p.idle.lastSaleDay === null || p.idle.days > 0) && ` · ${p.idle.days} ${p.idle.days === 1 ? "dia" : "dias"} sem vender`}
+                {p.idle.idle && ": falar com a creator."}
+              </p>
+            )}
             {p.canEdit ? (
-              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} />
+              <ChecklistForm creatorId={p.id} c={p.contract} templates={p.contractTemplates} noPayout={ugcOnly} />
             ) : (
-              <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
+              <p className="text-sm">
+                {p.contractTemplates.find((t) => t.id === p.contract.templateId)?.name ?? "Modelo padrão da marca"} ·{" "}
+                {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "sem datas de contrato"}
+                {!ugcOnly && p.contract.receivesAsIndividual && " · recebe como pessoa física (recibo)"}
+              </p>
             )}
-            {(p.instagram || p.contact.phone) && (
-              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-                {p.instagram && <InstagramLink handle={p.instagram} />}
-                {p.contact.phone && <WhatsappLink phone={p.contact.phone} />}
-              </div>
-            )}
-            {p.fiscal && (
-              <div className={`${ui.inset} grid gap-1 text-sm`}>
-                <p><span className="text-stone-500">CPF</span> {p.fiscal.cpf ?? "—"}</p>
-                <p><span className="text-stone-500">CNPJ</span> {p.fiscal.cnpj ?? "—"}</p>
-                <p><span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}</p>
-              </div>
-            )}
-            {p.address && (
-              <div className={`${ui.inset} grid gap-1 text-sm`}>
-                <p className="flex items-center gap-2">
-                  <MapPin className="size-3.5 text-stone-500" />
-                  <span className="text-stone-500">Endereço de entrega</span>
-                  {p.address.lines.length > 0 && !p.address.confirmed && <span className={badge.amber}>a confirmar pela creator</span>}
-                </p>
-                {p.address.lines.length ? p.address.lines.map((l) => <p key={l}>{l}</p>) : <p className="text-stone-500">Nenhum endereço no sistema.</p>}
-              </div>
-            )}
+            {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
           </Card>
-          {p.canEdit && !p.hasLogin && (
-            <Card title="Convite para o portal" icon={<Mail className="size-4" />}>
-              {p.contact.fakeEmail ? (
-                <p className="text-sm text-amber-700 dark:text-amber-300">Salve o e-mail real antes de convidar.</p>
-              ) : (
-                <InviteButton creatorId={p.id} accountId={p.accountId} />
-              )}
-            </Card>
-          )}
-          {p.canEdit && (
-            <Card title="Situação">
-              <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />
-            </Card>
-          )}
-          {!ugcOnly && (
-            <Card title="Taxa de comissão" icon={<Percent className="size-4" />} help="fi-taxa">
-              {p.policies.length === 0 && <p className={ui.muted}>Nenhuma taxa definida.</p>}
-              <ul className={ui.list}>
-                {p.policies.map((t, i) => (
-                  <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0">
-                    <span>
-                      <span className="text-lg font-semibold">{pct(t.rateBps)}</span>
-                      <span className={`${ui.hint} ml-2`}>desde {date(t.since)}{t.until && ` até ${date(t.until)}`}</span>
-                    </span>
-                    <span className={t.confirmed ? badge.green : badge.amber}>{t.confirmed ? "confirmada" : "a confirmar"}</span>
-                  </li>
-                ))}
-              </ul>
-              {p.canEdit && p.policies[0]?.confirmed && !p.policies[0].until && (
-                <>
-                  <p className={ui.hint}>Mudar a taxa vale só para pedidos pagos depois da mudança; o passado não muda.</p>
-                  <RateChangeForm creatorId={p.id} />
-                </>
-              )}
-              {p.canAdjust && !p.withdrawalsUnlocked && p.policies.length === 1 && (
-                <div className={`${ui.inset} flex flex-col gap-2`}>
-                  <p className={ui.hint}>
-                    Taxa errada desde o começo (veio do app antigo)? Corrija para todos os pedidos: a diferença entra no extrato como
-                    estorno ou comissão. Só enquanto o saque está travado.
-                  </p>
-                  <RateFixForm creatorId={p.id} />
                 </div>
-              )}
-            </Card>
-          )}
+                <div className="flex min-w-0 flex-col gap-6">
           {(autentique.connected || autentique.requests.length > 0) && (
             <Card title="Contrato pelo Autentique" icon={<FileSignature className="size-4" />} help="fi-autentique">
               {autentique.requests.length === 0 && <p className={ui.muted}>Nenhum contrato enviado ainda.</p>}
@@ -373,6 +352,93 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               {terms.last && <p className={ui.hint}>Registro: {terms.last.name} · CPF {terms.last.cpf}{terms.last.ip ? ` · IP ${terms.last.ip}` : ""}</p>}
             </Card>
           )}
+                </div>
+              </div>
+            ),
+          },
+          {
+            id: "cadastro",
+            label: "Cadastro",
+            content: (
+              <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                <div className="flex min-w-0 flex-col gap-6">
+          <Card title="Contato" icon={<UserRound className="size-4" />}>
+            {p.canEdit ? (
+              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} />
+            ) : (
+              <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
+            )}
+            {(p.instagram || p.contact.phone) && (
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+                {p.instagram && <InstagramLink handle={p.instagram} />}
+                {p.contact.phone && <WhatsappLink phone={p.contact.phone} />}
+              </div>
+            )}
+            {p.fiscal && (
+              <div className={`${ui.inset} grid gap-1 text-sm`}>
+                <p><span className="text-stone-500">CPF</span> {p.fiscal.cpf ?? "—"}</p>
+                <p><span className="text-stone-500">CNPJ</span> {p.fiscal.cnpj ?? "—"}</p>
+                <p><span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}</p>
+              </div>
+            )}
+            {p.address && (
+              <div className={`${ui.inset} grid gap-1 text-sm`}>
+                <p className="flex items-center gap-2">
+                  <MapPin className="size-3.5 text-stone-500" />
+                  <span className="text-stone-500">Endereço de entrega</span>
+                  {p.address.lines.length > 0 && !p.address.confirmed && <span className={badge.amber}>a confirmar pela creator</span>}
+                </p>
+                {p.address.lines.length ? p.address.lines.map((l) => <p key={l}>{l}</p>) : <p className="text-stone-500">Nenhum endereço no sistema.</p>}
+              </div>
+            )}
+          </Card>
+          {p.canEdit && !p.hasLogin && (
+            <Card title="Convite para o portal" icon={<Mail className="size-4" />}>
+              {p.contact.fakeEmail ? (
+                <p className="text-sm text-amber-700 dark:text-amber-300">Salve o e-mail real antes de convidar.</p>
+              ) : (
+                <InviteButton creatorId={p.id} accountId={p.accountId} />
+              )}
+            </Card>
+          )}
+                </div>
+                <div className="flex min-w-0 flex-col gap-6">
+          {p.canEdit && (
+            <Card title="Situação">
+              <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />
+            </Card>
+          )}
+          {!ugcOnly && (
+            <Card title="Taxa de comissão" icon={<Percent className="size-4" />} help="fi-taxa">
+              {p.policies.length === 0 && <p className={ui.muted}>Nenhuma taxa definida.</p>}
+              <ul className={ui.list}>
+                {p.policies.map((t, i) => (
+                  <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0">
+                    <span>
+                      <span className="text-lg font-semibold">{pct(t.rateBps)}</span>
+                      <span className={`${ui.hint} ml-2`}>desde {date(t.since)}{t.until && ` até ${date(t.until)}`}</span>
+                    </span>
+                    <span className={t.confirmed ? badge.green : badge.amber}>{t.confirmed ? "confirmada" : "a confirmar"}</span>
+                  </li>
+                ))}
+              </ul>
+              {p.canEdit && p.policies[0]?.confirmed && !p.policies[0].until && (
+                <>
+                  <p className={ui.hint}>Mudar a taxa vale só para pedidos pagos depois da mudança; o passado não muda.</p>
+                  <RateChangeForm creatorId={p.id} />
+                </>
+              )}
+              {p.canAdjust && !p.withdrawalsUnlocked && p.policies.length === 1 && (
+                <div className={`${ui.inset} flex flex-col gap-2`}>
+                  <p className={ui.hint}>
+                    Taxa errada desde o começo (veio do app antigo)? Corrija para todos os pedidos: a diferença entra no extrato como
+                    estorno ou comissão. Só enquanto o saque está travado.
+                  </p>
+                  <RateFixForm creatorId={p.id} />
+                </div>
+              )}
+            </Card>
+          )}
           {p.adjustments && !ugcOnly && (
             <Card title="Ajustes manuais" icon={<Scale className="size-4" />} help="fi-ajustes">
               {p.adjustments.length === 0 && <p className={ui.muted}>Nenhum.</p>}
@@ -392,8 +458,13 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               )}
             </Card>
           )}
-        </div>
-      </div>
+                </div>
+              </div>
+            ),
+          },
+          { id: "historico", label: "Linha do tempo", badge: timeline.length, content: <Timeline events={timeline} creatorId={p.id} canEdit={p.canEdit} /> },
+        ]}
+      />
     </>
   );
 }
