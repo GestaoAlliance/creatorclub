@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 1 — M1.1 Saques em duas etapas** (em análise → Ana aprova → Juci marca como pago; aba Aprovados; selo da nota; resumo "comissão a pagar"), do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 1 — M1.2 Aprovação automática do saque** quando a nota passa em todas as conferências (a Ana só vê as exceções); depende da **decisão 2** do plano: perguntar ao responsável antes, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -37,8 +37,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
 - [x] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
 - [ ] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração
-- [ ] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
-- [ ] **M0.5** Busca de creator no painel inteiro
+- [x] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
+- [x] **M0.5** Busca de creator no painel inteiro
+- [x] **M1.1** Saques em duas etapas: em análise → Gestão aprova → Pagamento paga; aba Aprovados; selo da nota; "conferir de novo"; resumo "comissão a pagar" (D-WDAPPROVE)
+- [ ] **M1.2** Aprovação automática quando a nota passa em todas as conferências (**decisão** 2 do plano)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -260,6 +262,22 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-161 — 2026-10-22 — Saques em duas etapas (M1.1, D-WDAPPROVE)
+- **Feito:** saque passa a ter **em análise → aprovado → pago**. A Gestão (Ana) e o super admin aprovam ou recusam o
+  pedido em análise; o Pagamento (Juci) faz o Pix e marca como pago, ou recusa o aprovado com motivo (o valor volta
+  para a creator). Pedidos já em análise passam pela Ana também. Tela de saques com abas Em análise / Aprovados /
+  Decididos (quem só paga abre nos Aprovados), selo da nota em cada pedido, botão "Conferir de novo" (lê a nota outra
+  vez e grava o selo) e o resumo **"Comissão a pagar"**: sacável, em análise, aprovados, a liberar e aguardando (vendas
+  ainda sem pagamento). Início da equipe e cartões das marcas: "saques para aprovar" e "saques para pagar". Portal:
+  selo "Aprovado" e aviso novo "Saque aprovado" para a creator; aprovado não se cancela mais pela creator.
+- **Banco:** status `APPROVED`, colunas `approvedAt`/`approvedById` e travas `Withdrawal_approved_has_author`,
+  `Withdrawal_approval_pair`; aprovado conta como pedido aberto (`Withdrawal_one_open_per_creator`), segura a nota
+  (`Withdrawal_nf_access_key_once`) e reserva o saldo. Aviso `WITHDRAWAL_APPROVED` em `Notification_valid`.
+- **Permissões:** `withdrawals.view` (Gestão e Pagamento: fila, nota e recibo) e `withdrawals.approve` (Gestão);
+  `withdrawals.manage` fica com o Pagamento (pagar, abertura, conferência da planilha).
+- **Verificado:** testes (223), integração (233; novos: duas etapas, recusa do aprovado, resumo, conferir de novo,
+  travas novas), typecheck, build, migração sem divergência; capturas no PR.
 
 ### CP-160 — 2026-10-22 — Busca de creator no painel inteiro (M0.5, D-SEARCH)
 - **Feito:** "Buscar creator" no topo (Ctrl K / ⌘K), em todas as marcas do acesso: nome, cupom, @, e-mail e CPF (só

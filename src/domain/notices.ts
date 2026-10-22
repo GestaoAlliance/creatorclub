@@ -11,6 +11,7 @@ export type NoticeKind =
   | "KIT_AVAILABLE"
   | "SHIPPED"
   | "WITHDRAWAL_PAID"
+  | "WITHDRAWAL_APPROVED"
   | "WITHDRAWAL_REJECTED"
   | "FIRST_SALE"
   | "WITHDRAWAL_WINDOW"
@@ -56,6 +57,14 @@ export const notices = {
     dedupeKey: `withdrawal:${withdrawalId}:paid`,
     title: "Saque pago",
     body: `O pagamento de ${brl(amountCents)} foi feito por Pix na sua chave cadastrada.`,
+    path: "/saque",
+  }),
+  /** M1.1 (D-WDAPPROVE): a Gestão aprovou; o Pagamento faz o Pix. */
+  withdrawalApproved: (withdrawalId: string, amountCents: number): Notice => ({
+    kind: "WITHDRAWAL_APPROVED",
+    dedupeKey: `withdrawal:${withdrawalId}:approved`,
+    title: "Saque aprovado",
+    body: `Seu pedido de ${brl(amountCents)} foi aprovado e está na fila de pagamento. O Pix cai na sua chave cadastrada.`,
     path: "/saque",
   }),
   withdrawalRejected: (withdrawalId: string, amountCents: number, reason: string): Notice => ({

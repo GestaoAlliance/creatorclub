@@ -79,7 +79,7 @@ export async function ledgerEntriesWithMonth(
 export async function creatorBalance(prisma: Db, creator: { id: string; brandId: string }, timeZone: string, now: Date): Promise<Balance> {
   const [entries, open, released] = await Promise.all([
     ledgerEntriesWithMonth(prisma, [creator.id], timeZone),
-    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: "REQUESTED" }, select: { amountCents: true } }),
+    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: { in: ["REQUESTED", "APPROVED"] } }, select: { amountCents: true } }),
     releasedThroughFor(prisma, [creator.id]),
   ]);
   return computeBalance(entries, open, now, { releasedThrough: released.get(creator.id) ?? null });

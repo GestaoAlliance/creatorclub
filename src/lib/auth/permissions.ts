@@ -10,7 +10,9 @@ export type Permission =
   | "creators.view" // lista e ficha das creators da marca
   | "creators.edit" // creator, cupom, % de comissão e desconto
   | "money.view" // vendas, comissões, saldos
-  | "withdrawals.manage" // ver saques e NF, marcar como pago
+  | "withdrawals.view" // ver a fila de saques e a NF (Gestão e Pagamento)
+  | "withdrawals.approve" // M1.1 (D-WDAPPROVE): aprovar ou recusar o pedido em análise (Gestão)
+  | "withdrawals.manage" // pagar (ou recusar) o saque aprovado; abertura e conferência da planilha (Pagamento)
   | "shipping.view" // lista de envio
   | "shipping.manage" // registrar e atualizar envios de produtos (D-SHIPWHO)
   | "personal.address" // endereço da creator
@@ -25,6 +27,8 @@ const ALL: readonly Permission[] = [
   "creators.view",
   "creators.edit",
   "money.view",
+  "withdrawals.view",
+  "withdrawals.approve",
   "withdrawals.manage",
   "shipping.view",
   "shipping.manage",
@@ -39,10 +43,10 @@ const ALL: readonly Permission[] = [
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
-  GESTAO: ["creators.view", "creators.edit", "money.view", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
+  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
   ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
-  PAGAMENTO: ["creators.view", "money.view", "withdrawals.manage", "personal.fiscal"],
+  PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],
 };
 

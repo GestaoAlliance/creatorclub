@@ -7,7 +7,8 @@ const labels = (role: "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER
 describe("menu da equipe por papel", () => {
   it("cada papel vê só o que pode usar, em grupos com abas (D-MENUGROUPS)", () => {
     expect(labels("SUPER_ADMIN", null)).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
-    expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Envios"]);
+    // M1.1 (D-WDAPPROVE): a Gestão aprova saques, então vê Pagamentos (só a aba Saques).
+    expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios"]);
     expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
     expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos"]);
     expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações"]);
@@ -19,6 +20,7 @@ describe("menu da equipe por papel", () => {
     expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas"]);
     expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas"]);
     expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Cupons", "Desempenho"]);
+    expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques"]);
     expect(staffNav([{ role: "GESTAO", brandId: "b" }]).find((i) => i.label === "Vendas")?.href).toBe("/vendas");
   });
 

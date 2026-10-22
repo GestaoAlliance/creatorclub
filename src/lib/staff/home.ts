@@ -16,7 +16,8 @@ export type StaffHome = {
   creators?: { active: number; toReview: number; applications: number; contractsExpiring: number; contractsExpired: number; idle: number };
   coupons?: { unclassified: number; ownerPending: number };
   shipments?: { preparing: number; shipped: number; kitsPending: number; awaiting: number };
-  withdrawals?: { open: number; openCents: number; openingsPending: number };
+  /** M1.1 (D-WDAPPROVE): em análise (a Gestão aprova) e aprovados (o Pagamento faz o Pix); `null` = não é tarefa desta pessoa. */
+  withdrawals?: { toApprove: number; toApproveCents: number; toPay: number; toPayCents: number; mine: { approve: boolean; pay: boolean }; openingsPending: number | null };
   /** U3: a hunter vê as próprias indicações. */
   hunter?: { clicks30: number; inReview: number; approved: number; hasLink: boolean };
 };
@@ -45,6 +46,7 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
   const view = scope(actor, "creators.view");
   const edit = scope(actor, "creators.edit");
   const ship = scope(actor, "shipping.view");
+  const wd = scope(actor, "withdrawals.view");
   const pay = scope(actor, "withdrawals.manage");
   const isHunter = actor.grants.some((g) => g.role === "HUNTER");
   await Promise.all([
@@ -89,11 +91,21 @@ export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<Sta
         prisma.kitGrant.count({ where: { ...ship, status: "PENDING" } }), // D-KIT: esperando a creator escolher
         prisma.shipment.count({ where: { ...ship, status: "AWAITING_APPROVAL" } }), // D-KITAPPROVAL: pedido esperando a Gestão
       ]).then(([preparing, shipped, kitsPending, awaiting]) => (out.shipments = { preparing, shipped, kitsPending, awaiting })),
-    pay &&
+    wd &&
       Promise.all([
-        prisma.withdrawal.aggregate({ where: { ...pay, status: "REQUESTED" }, _count: true, _sum: { amountCents: true } }),
-        prisma.creator.count({ where: { ...pay, status: { not: "DEACTIVATED" }, withdrawalsUnlockedAt: null } }),
-      ]).then(([w, openingsPending]) => (out.withdrawals = { open: w._count, openCents: w._sum.amountCents ?? 0, openingsPending })),
+        prisma.withdrawal.aggregate({ where: { ...wd, status: "REQUESTED" }, _count: true, _sum: { amountCents: true } }),
+        prisma.withdrawal.aggregate({ where: { ...wd, status: "APPROVED" }, _count: true, _sum: { amountCents: true } }),
+        pay ? prisma.creator.count({ where: { ...pay, status: { not: "DEACTIVATED" }, withdrawalsUnlockedAt: null } }) : null,
+      ]).then(([a, p, openingsPending]) => {
+        out.withdrawals = {
+          toApprove: a._count,
+          toApproveCents: a._sum.amountCents ?? 0,
+          toPay: p._count,
+          toPayCents: p._sum.amountCents ?? 0,
+          mine: { approve: scope(actor, "withdrawals.approve") !== null, pay: pay !== null },
+          openingsPending,
+        };
+      }),
   ]);
   return out;
 }
