@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **M4.7** Desligar as planilhas, marca a marca (combinar com a equipe; perguntar antes); depois U6 e junho da VermeFree. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **U6** Conteúdo das influencers e prospecção antes do formulário (perguntar antes se a equipe quer); depois junho da VermeFree. Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -59,7 +59,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.4b** Último acesso e nova senha (link e e-mail) para equipe e creators (D-ACCESS)
 - [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
 - [x] **M4.6** Link do post no portal: Meus posts, vendas em 3 dias, aba Conteúdo, tela geral, posts da campanha, sem post há 15 dias (D-POSTS)
-- [ ] **M4.7** Desligar as planilhas, marca a marca (combinado com a equipe)
+- [x] **M4.7** Desligar as planilhas, marca a marca: checklist e "Desligar leitura" por planilha (D-SHEETOFF); o dia de cada uma é com a equipe
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -281,6 +281,32 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-181 — 2026-10-23 — Convite do portal sozinho depois da assinatura e "Comissão" em Cupons (D-INVITEAUTO)
+- **Origem:** dúvidas da Ana: a "Taxa" de 10% em Cupons é comissão ou desconto? E depois de assinar, a creator recebe o
+  acesso sozinha ou a Ana libera o link?
+- **Decisões do responsável:** trocar "Taxa" por "Comissão" e mostrar o desconto do cupom ao lado (só leitura);
+  convite automático ao assinar.
+- **Feito:** Cupons diz "Comissão dela · desconto do cupom X%", "Confirmar comissão" e "Comissão confirmada". O worker
+  (`/api/jobs/run`) manda o convite do portal sozinho quando o contrato está assinado (e o cupom criado, se ficou para
+  depois): por e-mail (com remetente configurado e e-mail real) e pelo WhatsApp da marca (instância em Marcas, 9h–20h).
+  Uma vez por contrato (`ContractRequest.inviteSentAt`). Quem se cadastrou pelo site já tem senha: só marca. Sem canal,
+  nada é criado e a Ana gera pela ficha (Cadastro → Convite para o portal). Nada entregue: o convite é cancelado e
+  tenta de novo. Auditoria `creator_invite.auto`. Só contratos assinados nos últimos 30 dias.
+- **Banco:** `ContractRequest.inviteSentAt`.
+- **Verificado:** 250 unitários, 264 de integração (novo `invite-after-signature.test.ts`), typecheck, build, migração
+  sem divergência.
+
+### CP-180 — 2026-10-23 — Desligar as planilhas, marca a marca (M4.7, D-SHEETOFF)
+- **Decisões do responsável:** botão por planilha com checklist; só super admin desliga e religa.
+- **Feito:** em Configurações → Shopify → Planilhas, cada planilha (Central, Envios, Pagamentos) de cada marca mostra a
+  situação (última leitura, ainda não lida ou "desligada em …"), o checklist "o que ela faz e onde fica no sistema" e
+  o botão "Desligar leitura" / "Religar leitura". Desligada, o script continua rodando, mas o sistema responde
+  "desligada" e não aplica nada. Religar a Central zera o ponto de partida (não aplica por cima do sistema o que mudou
+  enquanto estava desligada); Envios mantém linha → envio (não duplica). Auditoria.
+- **Banco:** `SheetSync.disabledAt` e `disabledById` (trava `SheetSync_disabled`).
+- **Verificado:** testes (250), integração (novo: desligar/religar, permissão, ponto de partida, trava), typecheck,
+  build, migração sem divergência.
 
 ### CP-179 — 2026-10-23 — Planilhas da VermeFree, só leitura (S4, D-SHEETVF)
 - **Decisões do responsável:** ler as 3 planilhas da VermeFree (Central, Envios e Pagamentos), como na Botanika;

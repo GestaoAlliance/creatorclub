@@ -53,6 +53,7 @@ export async function couponReview(prisma: PrismaClient, actor: Actor | null, br
       id: c.id,
       code: c.code,
       kind: c.kind,
+      discountBps: c.discountBps,
       uses: uses[i]!,
       owner: a ? { assignmentId: a.id, creatorId: a.creatorId, name: a.creator.account.name, since: a.validFrom, confirmed: a.confirmedAt !== null } : null,
       rate: policy ? { policyId: policy.id, rateBps: policy.rateBps, confirmed: policy.confirmedAt !== null } : null,

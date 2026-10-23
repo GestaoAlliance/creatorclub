@@ -39,6 +39,6 @@ export async function confirmOwnerAction(_prev: ActionState, form: FormData): Pr
 export async function confirmRateAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(
     async () => confirmRate(db(), await currentActor(), { policyId: String(form.get("policyId")), rateBps: percentToBps(String(form.get("rate") ?? "")) }),
-    "Taxa confirmada.",
+    "Comissão confirmada.",
   );
 }
