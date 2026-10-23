@@ -10,9 +10,11 @@ import { brandList } from "@/lib/brands/manage";
 import { db } from "@/lib/db";
 import { staffContext } from "@/lib/staff/context";
 import { ALL_BRANDS_PARAM } from "@/lib/staff/nav";
-import { BrandForm } from "./forms";
+import { BrandForm, BrandImage } from "./forms";
 
 export const dynamic = "force-dynamic";
+
+const pct = (bps: number) => String(bps / 100).replace(".", ",");
 
 // Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin. Em "Todas as marcas" (?todas=1) aparecem
 // todas e a criação de marca nova; dentro de uma marca, só a marca escolhida no topo (pedido do responsável).
@@ -59,7 +61,20 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
             <details>
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "" }} />
+                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps) }} />
+              </div>
+            </details>
+            {/* M4.4a (D-BRANDLOGIN): a tela de entrar com a cara da marca. */}
+            <details>
+              <summary className={`${ui.h2} cursor-pointer text-sm`}>Tela de entrar da marca</summary>
+              <div className="mt-3 flex flex-col gap-4">
+                <p className={ui.hint}>
+                  Aparece em <Link href={`/entrar?marca=${b.slug}`} target="_blank" className={ui.link}>/entrar?marca={b.slug}</Link> (link das boas-vindas) e quando a creator volta para o portal da marca.
+                </p>
+                <div className="flex flex-wrap gap-8">
+                  <BrandImage brandId={b.id} slug={b.slug} kind="LOGO" label="Logo" hint="PNG, JPG ou WebP, até 300 KB. Fundo transparente fica melhor." version={b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null} />
+                  <BrandImage brandId={b.id} slug={b.slug} kind="BACKGROUND" label="Imagem de fundo" hint="JPG ou WebP, até 1 MB, deitada (ex.: 1600×1000)." version={b.assets.find((a) => a.kind === "BACKGROUND")?.sha256.slice(0, 12) ?? null} />
+                </div>
               </div>
             </details>
           </Card>
@@ -67,7 +82,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
       })}
       {all && (
         <Card title="Nova marca" icon={<Plus className="size-4" />}>
-          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "", whatsappInstance: "" }} />
+          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "", whatsappInstance: "", defaultRate: "15", defaultDiscount: "5" }} />
         </Card>
       )}
     </>

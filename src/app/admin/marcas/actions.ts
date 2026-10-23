@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { BrandError, createBrand, updateBrand } from "@/lib/brands/manage";
+import { removeBrandAsset, setBrandAsset } from "@/lib/brands/assets";
+import type { BrandAssetKind } from "@/domain";
 import { db } from "@/lib/db";
 
 export type BrandState = { error?: string; ok?: string } | undefined;
@@ -18,6 +20,8 @@ const input = (form: FormData) => ({
   nfServiceDescription: String(form.get("nfServiceDescription") ?? ""),
   nfInstructions: String(form.get("nfInstructions") ?? ""),
   whatsappInstance: String(form.get("whatsappInstance") ?? ""),
+  defaultRate: String(form.get("defaultRate") ?? ""),
+  defaultDiscount: String(form.get("defaultDiscount") ?? ""),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {
@@ -36,6 +40,28 @@ export async function updateBrandAction(_prev: BrandState, form: FormData): Prom
     await updateBrand(db(), await currentActor(), String(form.get("brandId") ?? ""), input(form));
     revalidatePath("/admin/marcas");
     return { ok: "Salvo." };
+  } catch (error) {
+    if (error instanceof BrandError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** M4.4a (D-BRANDLOGIN): logo e fundo da tela de entrar. */
+export async function brandAssetAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  const brandId = String(form.get("brandId") ?? "");
+  const kind = String(form.get("kind") ?? "") as BrandAssetKind;
+  if (kind !== "LOGO" && kind !== "BACKGROUND") return { error: "Tipo inválido." };
+  try {
+    if (form.get("remove")) {
+      await removeBrandAsset(db(), await currentActor(), brandId, kind);
+    } else {
+      const file = form.get("file");
+      if (!(file instanceof File) || file.size === 0) return { error: "Escolha uma imagem." };
+      if (file.size > 1024 * 1024) return { error: "Imagem grande demais." };
+      await setBrandAsset(db(), await currentActor(), brandId, kind, new Uint8Array(await file.arrayBuffer()));
+    }
+    revalidatePath("/admin/marcas");
+    return { ok: form.get("remove") ? "Imagem tirada." : "Imagem salva." };
   } catch (error) {
     if (error instanceof BrandError) return { error: error.message };
     throw error;
