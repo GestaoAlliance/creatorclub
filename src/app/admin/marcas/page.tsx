@@ -47,6 +47,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
           { done: b._count.contractTemplates > 0, label: "versões de contrato" },
           { done: Boolean(b.nfTakerDocument && b.legalName), label: "dados para a nota" },
           { done: Boolean(b.storeUrl), label: "site da loja" },
+          { done: Boolean(b.whatsappInstance), label: "WhatsApp dos avisos" },
         ];
         return (
           <Card key={b.id} title={b.name} icon={<span className="size-4 rounded-full" style={{ background: b.primaryColor }} />}>
@@ -58,7 +59,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
             <details>
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "" }} />
+                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "" }} />
               </div>
             </details>
           </Card>
@@ -66,7 +67,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
       })}
       {all && (
         <Card title="Nova marca" icon={<Plus className="size-4" />}>
-          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "" }} />
+          <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "", whatsappInstance: "" }} />
         </Card>
       )}
     </>

@@ -17,6 +17,7 @@ const input = (form: FormData) => ({
   nfServiceCode: String(form.get("nfServiceCode") ?? ""),
   nfServiceDescription: String(form.get("nfServiceDescription") ?? ""),
   nfInstructions: String(form.get("nfInstructions") ?? ""),
+  whatsappInstance: String(form.get("whatsappInstance") ?? ""),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

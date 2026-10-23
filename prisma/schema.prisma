@@ -42,6 +42,7 @@ model Brand {
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
+  whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
   legacyId                  String?   @unique
@@ -1123,6 +1124,8 @@ model Notification {
   createdAt DateTime  @default(now())
   readAt    DateTime?
   emailedAt DateTime?
+  /// M2.2 (D-WHATSAPP): quando o aviso foi entregue ao n8n para o WhatsApp da creator.
+  whatsappAt DateTime?
 
   brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)

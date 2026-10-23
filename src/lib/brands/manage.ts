@@ -27,6 +27,7 @@ export type BrandInput = {
   nfServiceCode?: string;
   nfServiceDescription?: string;
   nfInstructions?: string;
+  whatsappInstance?: string;
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -48,11 +49,14 @@ function clean(input: BrandInput) {
   if (nfServiceCode && !NF_SERVICE_CODE.test(nfServiceCode)) throw new BrandError("Código do serviço no formato 17.06 ou 17.06.01.");
   const nfServiceDescription = (input.nfServiceDescription ?? "").trim().replace(/\s+/g, " ").slice(0, 500) || null;
   const nfInstructions = (input.nfInstructions ?? "").trim().replace(/\n{3,}/g, "\n\n").slice(0, 1000) || null;
-  // Campo da nota que não veio no formulário fica como está.
+  const whatsappInstance = (input.whatsappInstance ?? "").trim().slice(0, 60) || null;
+  if (whatsappInstance && !/^[A-Za-z0-9][A-Za-z0-9 _.-]*$/.test(whatsappInstance)) throw new BrandError("Instância do WhatsApp: use o nome exato da Evolution (letras, números, espaço, ponto, hífen).");
+  // Campo da nota (e do WhatsApp) que não veio no formulário fica como está.
   const nf = {
     ...(input.nfServiceCode !== undefined && { nfServiceCode }),
     ...(input.nfServiceDescription !== undefined && { nfServiceDescription }),
     ...(input.nfInstructions !== undefined && { nfInstructions }),
+    ...(input.whatsappInstance !== undefined && { whatsappInstance }),
   };
   return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf };
 }
@@ -88,7 +92,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -115,6 +119,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfServiceCode: true,
       nfServiceDescription: true,
       nfInstructions: true,
+      whatsappInstance: true,
       storeUrl: true,
       createdAt: true,
       integrations: { where: { kind: "SHOPIFY" }, select: { status: true, externalId: true } },

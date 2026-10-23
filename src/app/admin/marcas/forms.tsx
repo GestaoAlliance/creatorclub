@@ -17,6 +17,7 @@ type Values = {
   nfServiceCode: string;
   nfServiceDescription: string;
   nfInstructions: string;
+  whatsappInstance: string;
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -81,6 +82,12 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
           <textarea name="nfInstructions" defaultValue={initial.nfInstructions} placeholder="Ex.: não destacar ISS; emita no mesmo mês do pedido." rows={2} maxLength={1000} className={ui.input} />
         </label>
       </fieldset>
+      {/* M2.2 (D-WHATSAPP): avisos à creator pelo WhatsApp da marca, via n8n + Evolution. */}
+      <label className={ui.label}>
+        Instância do WhatsApp para os avisos (Evolution, no n8n)
+        <input name="whatsappInstance" defaultValue={initial.whatsappInstance} placeholder="ex.: Botanika" className={ui.input} />
+        <span className={ui.hint}>Com o nome preenchido, os avisos da creator (comissão liberada, kit, saque…) vão pelo WhatsApp desta instância, das 9h às 20h, e saem do e-mail. Vazio = portal e e-mail.</span>
+      </label>
       <Msg state={state} />
       <button className={`${ui.btn} self-start`} disabled={pending}>{create ? "Criar marca" : "Salvar"}</button>
     </form>

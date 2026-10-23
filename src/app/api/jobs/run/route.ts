@@ -2,6 +2,7 @@ import { closeDueMonths } from "@/lib/commission/release";
 import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
 import { emailPendingNotices, runDueNotices, siteOrigin } from "@/lib/notifications/scheduled";
+import { configuredWhatsApp, whatsappPendingNotices } from "@/lib/notifications/whatsapp";
 import { jobHandlers } from "@/lib/jobs/handlers";
 import { runJobs } from "@/lib/jobs/queue";
 import { isAuthorizedBearer } from "@/lib/jobs/secret";
@@ -24,9 +25,12 @@ export async function POST(request: Request): Promise<Response> {
     const released = await closeDueMonths(prisma);
     // U5b (D-NOTICES): avisos por data (uma rodada por marca e dia) e e-mail dos avisos recentes, se houver remetente.
     const notices = await runDueNotices(prisma);
-    const emailed = await emailPendingNotices(prisma, configuredSender(), siteOrigin());
+    // M2.2 (D-WHATSAPP): com o n8n configurado, a marca com instância da Evolution avisa pelo WhatsApp (sem e-mail).
+    const whatsapp = configuredWhatsApp();
+    const emailed = await emailPendingNotices(prisma, configuredSender(), siteOrigin(), new Date(), { whatsappOn: whatsapp !== null });
+    const whatsapped = await whatsappPendingNotices(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

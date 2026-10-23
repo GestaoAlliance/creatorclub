@@ -1,34 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { contractSentMessage, welcomeMessage, whatsappLink } from "@/domain";
+import { configuredWhatsApp, inWhatsAppHours, n8nSender, whatsappText } from "@/lib/notifications/whatsapp";
 
-describe("mensagens prontas de WhatsApp (F3)", () => {
-  it("link wa.me: número brasileiro com ou sem 55; sem número utilizável, nada", () => {
-    expect(whatsappLink("(11) 91234-5678", "oi")).toBe("https://wa.me/5511912345678?text=oi");
-    expect(whatsappLink("+55 11 3456-7890", "a b")).toBe("https://wa.me/551134567890?text=a%20b");
-    expect(whatsappLink("011 91234-5678", "x")).toBe("https://wa.me/5511912345678?text=x");
-    expect(whatsappLink("1234", "x")).toBeNull();
-    expect(whatsappLink(null, "x")).toBeNull();
+describe("avisos pelo WhatsApp (M2.2, D-WHATSAPP)", () => {
+  it("só das 9h às 20h de São Paulo", () => {
+    expect(inWhatsAppHours(new Date("2026-10-22T11:59:00Z"))).toBe(false); // 8h59
+    expect(inWhatsAppHours(new Date("2026-10-22T12:00:00Z"))).toBe(true); // 9h
+    expect(inWhatsAppHours(new Date("2026-10-22T22:59:00Z"))).toBe(true); // 19h59
+    expect(inWhatsAppHours(new Date("2026-10-22T23:00:00Z"))).toBe(false); // 20h
   });
 
-  it("aprovada com contrato no Autentique: texto da Ana, com marca, tipo, nome e e-mail; propósito só onde existe", () => {
-    const b = contractSentMessage({ name: "Vitória Souza", brand: "Botanika", email: "vitoria@x.com", category: "INFLUENCER" });
-    expect(b).toContain("Oi, Vitória! Tudo bem? Sou a Ana, da Botanika!");
-    expect(b).toContain("sua inscrição para ser influencer da Botanika foi aprovada! 🎉");
-    expect(b).toContain("para o seu e-mail (vitoria@x.com), pelo Autentique");
-    expect(b).toContain("Nascemos com o propósito de cuidar da saúde das pessoas");
-    expect(b.endsWith("Que seja o início de uma parceria incrível! ✨")).toBe(true);
-    const v = contractSentMessage({ name: "Ana", brand: "VermeFree", email: "a@x.com", category: "PRESCRITOR" });
-    expect(v).toContain("ser prescritor(a) da VermeFree");
-    expect(v).toContain("Seja muito bem-vinda à família VermeFree!");
-    expect(v).not.toContain("Nascemos");
+  it("texto: título em negrito, corpo e link", () => {
+    expect(whatsappText({ title: "Saque pago", body: "O Pix caiu." }, "https://x.test/portal/botanika/saque")).toBe("*Saque pago*\n\nO Pix caiu.\n\nhttps://x.test/portal/botanika/saque");
   });
 
-  it("boas-vindas com cupom, desconto e convite", () => {
-    const w = welcomeMessage({ name: "  Maria Exemplo ", brand: "Botanika", coupon: "MARIA", discountBps: 750, inviteLink: "https://x/convite/abc" });
-    expect(w).toContain("Oi, Maria!");
-    expect(w).toContain("*MARIA*");
-    expect(w).toContain("7,5% de desconto");
-    expect(w).toContain("https://x/convite/abc");
-    expect(welcomeMessage({ name: "Ana", brand: "Botanika", coupon: "ANA", discountBps: 500, inviteLink: null })).not.toContain("convite");
+  it("só liga com endereço https e senha de 32 ou mais; manda com a senha no cabeçalho", async () => {
+    const secret = "s".repeat(32);
+    expect(configuredWhatsApp({})).toBeNull();
+    expect(configuredWhatsApp({ N8N_NOTICES_URL: "https://n8n.test/webhook/x", N8N_NOTICES_SECRET: "curta" })).toBeNull();
+    expect(configuredWhatsApp({ N8N_NOTICES_URL: "http://n8n.test/webhook/x", N8N_NOTICES_SECRET: secret })).toBeNull();
+    expect(configuredWhatsApp({ N8N_NOTICES_URL: "https://n8n.test/webhook/x", N8N_NOTICES_SECRET: secret })).not.toBeNull();
+    const calls: { url: string; init: RequestInit }[] = [];
+    const ok = n8nSender("https://n8n.test/webhook/x", secret, (async (url: string, init: RequestInit) => (calls.push({ url, init }), new Response("{}"))) as typeof fetch);
+    await ok({ instance: "Botanika", phone: "5531999999999", text: "oi", notificationId: "n1", kind: "FIRST_SALE", brand: "Botanika" });
+    expect(calls[0]!.init.headers).toMatchObject({ Authorization: `Bearer ${secret}` });
+    expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({ instance: "Botanika", phone: "5531999999999", text: "oi" });
+    const bad = n8nSender("https://n8n.test/webhook/x", secret, (async () => new Response("no", { status: 500 })) as typeof fetch);
+    await expect(bad({ instance: "B", phone: "1", text: "t", notificationId: "n", kind: "k", brand: "b" })).rejects.toThrow(/recusou/);
   });
 });

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 2 — M2.2 Avisos à creator pelo WhatsApp** (comissão liberada, kit enviado, saque pago, faltam R$ X para o mínimo); depende da **decisão 1** do plano (SendFlow ou outro número?): perguntar ao responsável antes. Pendente do responsável: conectar a loja Shopify da Revita Derma (já existe) e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 2 — M2.3 Prioridade nas candidatas** (sinais: hunter, @, CPF/cadastro repetido, cupom, para a Ana começar pelas melhores). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -45,7 +45,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] ~~**M1.4** Saque mínimo~~ — **não será feito**: decisão 5 respondida em 2026-10-22, sem mínimo por pedido (D-CONTRACT segue)
 - [x] **M1.5** Pagamento em lote: planilha dos aprovados e marcar vários como pagos (D-WDBATCH). **Fim da Fase 1.**
 - [x] **M2.1** Fila de ações por creator (D-ACTIONS)
-- [ ] **M2.2** Avisos à creator pelo WhatsApp (**decisão** 1 do plano)
+- [x] **M2.2** Avisos à creator pelo WhatsApp da marca, via n8n + Evolution (D-WHATSAPP)
+- [ ] **M2.3** Prioridade nas candidatas
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -267,6 +268,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-165 — 2026-10-22 — Avisos à creator pelo WhatsApp da marca (M2.2, D-WHATSAPP)
+- **Decisão 1 do plano respondida:** pelo n8n, com o WhatsApp (Evolution) de cada marca; avisos no WhatsApp e no
+  portal, sem e-mail; das 9h às 20h.
+- **Feito:** o worker entrega cada aviso novo (comissão liberada, kit, saque pago/aprovado/recusado, perto do mínimo,
+  janela de saque, contrato…) ao fluxo do n8n, que manda pela instância da Evolution da marca. Só das 9h às 20h de São
+  Paulo, só avisos das últimas 24 h, poucos por minuto; falha do n8n tenta de novo na rodada seguinte. Em Marcas, campo
+  "Instância do WhatsApp para os avisos"; marca com instância deixa de receber e-mail. Fluxo
+  "[Creator Club] Avisos WhatsApp" criado no n8n **desligado**, com senha.
+- **Banco:** `Brand.whatsappInstance` (trava `Brand_whatsapp_instance_format`) e `Notification.whatsappAt`.
+- **Para ligar (responsável):** `N8N_NOTICES_URL` (endereço de produção do fluxo) e `N8N_NOTICES_SECRET` na Vercel;
+  instância de cada marca em Marcas; ligar o fluxo no n8n e testar com uma creator.
+- **Verificado:** testes (228), integração (238; novo: instância, horário, 24 h, sem celular, falha do n8n, e-mail
+  desligado), typecheck, build, migração sem divergência.
 
 ### CP-164 — 2026-10-22 — Fila de ações por creator (M2.1, D-ACTIONS)
 - **Decisão 3 do plano respondida:** por enquanto a Ana cuida de todas; em breve cada marca terá a sua gerente (papel
