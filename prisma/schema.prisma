@@ -94,6 +94,9 @@ model Brand {
   creatorNotes       CreatorNote[]
   creatorTags        CreatorTag[]
   assets             BrandAsset[]
+  campaigns          Campaign[]
+  campaignEntries    CampaignEntry[]
+  campaignPrizes     CampaignPrize[]
 }
 
 enum IntegrationKind {
@@ -330,6 +333,8 @@ model Creator {
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
   creatorNotes       CreatorNote[]
   tagLinks           CreatorTagLink[]
+  campaignEntries    CampaignEntry[]
+  campaignPrizes     CampaignPrize[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -493,6 +498,7 @@ enum LedgerType {
   WITHDRAWAL
   ADJUSTMENT
   OPENING_BALANCE
+  PRIZE // M4.5 (D-CAMPAIGN): prêmio de campanha, disponível na hora
 }
 
 /// Cada centavo que entra ou sai do saldo. Só recebe inserções (trigger na migração).
@@ -512,10 +518,11 @@ model LedgerEntry {
   createdById    String?
   createdAt      DateTime   @default(now())
 
-  brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  creator    Creator     @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
-  order      Order?      @relation(fields: [orderId, brandId], references: [id, brandId], onDelete: Restrict)
-  withdrawal Withdrawal? @relation(fields: [withdrawalId, brandId], references: [id, brandId], onDelete: Restrict)
+  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator    Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  order      Order?         @relation(fields: [orderId, brandId], references: [id, brandId], onDelete: Restrict)
+  withdrawal Withdrawal?    @relation(fields: [withdrawalId, brandId], references: [id, brandId], onDelete: Restrict)
+  prize      CampaignPrize?
 
   @@index([brandId, creatorId, createdAt])
   @@index([orderId])
@@ -1397,4 +1404,75 @@ model BrandAsset {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, kind])
+}
+
+// ───────────────────────────── Campanhas e desafios (M4.5, D-CAMPAIGN) ─────────────────────────────
+
+/// Campanha da marca para as creators: briefing, período (dias em São Paulo), público (tipos e tags; vazio = todas),
+/// prêmios por posição no ranking de vendas e/ou por meta individual. Rascunho até publicar; prêmios confirmados uma
+/// vez (`settledAt`), a partir de 7 dias depois do fim.
+model Campaign {
+  id             String            @id @default(uuid())
+  brandId        String
+  name           String
+  briefing       String
+  startDay       String // AAAA-MM-DD (São Paulo)
+  endDay         String // AAAA-MM-DD (inclusive)
+  startsAt       DateTime
+  endsAt         DateTime // exclusivo: 00:00 do dia seguinte ao fim
+  categories     CreatorCategory[]
+  tagIds         String[]
+  rankingPrizes  Int[] // centavos por posição (1º, 2º…)
+  goalCents      Int?
+  goalPrizeCents Int?
+  allianceOsUrl  String?
+  createdById    String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  publishedAt    DateTime?
+  settledAt      DateTime?
+  settledById    String?
+
+  brand   Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  entries CampaignEntry[]
+  prizes  CampaignPrize[]
+
+  @@unique([id, brandId])
+  @@index([brandId, startsAt])
+}
+
+/// Inscrição da creator na campanha ("Quero participar").
+model CampaignEntry {
+  campaignId String
+  creatorId  String
+  brandId    String
+  joinedAt   DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId, brandId], references: [id, brandId], onDelete: Restrict)
+  creator  Creator  @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@id([campaignId, creatorId])
+}
+
+/// Prêmio confirmado: uma linha por creator e motivo (posição ou meta), com o lançamento no extrato.
+model CampaignPrize {
+  id            String   @id @default(uuid())
+  campaignId    String
+  creatorId     String
+  brandId       String
+  kind          String // RANK | GOAL
+  position      Int?
+  salesCents    Int
+  amountCents   Int
+  ledgerEntryId String   @unique
+  createdById   String
+  createdAt     DateTime @default(now())
+
+  campaign    Campaign    @relation(fields: [campaignId, brandId], references: [id, brandId], onDelete: Restrict)
+  creator     Creator     @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  brand       Brand       @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  ledgerEntry LedgerEntry @relation(fields: [ledgerEntryId], references: [id], onDelete: Restrict)
+
+  @@unique([campaignId, creatorId, kind])
 }

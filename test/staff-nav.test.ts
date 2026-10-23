@@ -14,12 +14,12 @@ describe("menu da equipe por papel", () => {
     expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações"]);
     const tabs = (role: "SUPER_ADMIN" | "GESTAO" | "PAGAMENTO", label: string) =>
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
-    expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações"]);
+    expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas"]);
     expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar", "Claude"]);
     // M3.4b: quem não é super admin vê em Configurações só a aba Claude (ligar o próprio Claude).
     expect(tabs("GESTAO", "Configurações")).toEqual(["Claude"]);
     // Cada papel só vê as abas que pode usar; o item do menu abre a primeira delas.
-    expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas"]);
+    expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas", "Campanhas"]);
     expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);
     expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Produtos", "Cupons", "Desempenho"]);
     expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques"]);

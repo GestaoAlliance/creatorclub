@@ -19,6 +19,7 @@ export const LEDGER_LABEL: Record<LedgerType, string> = {
   REVERSAL: "Estorno",
   WITHDRAWAL: "Saque",
   ADJUSTMENT: "Ajuste",
+  PRIZE: "Prêmio de campanha",
   OPENING_BALANCE: "Saldo de abertura",
 };
 
