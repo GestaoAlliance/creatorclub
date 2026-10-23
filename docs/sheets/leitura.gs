@@ -26,6 +26,7 @@ function instalar() {
 
 function ler() {
   PLANILHAS.forEach(function (p) {
+    if (/^COLE/.test(p.id)) return; // planilha ainda sem o código: pula
     var linhas = [];
     SpreadsheetApp.openById(p.id).getSheets().forEach(function (aba) {
       var n = normal_(aba.getName()).replace(/[^A-Z]/g, "");

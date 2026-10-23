@@ -133,7 +133,7 @@ export default async function SyncPage() {
                 <>
                   <p className="text-sm">O sistema lê as planilhas a cada 15 minutos e não escreve nada nelas.</p>
                   {read.length === 0 ? (
-                    <p className={ui.hint}>Leitura ainda não ligada: o script de docs/sheets/leitura.gs roda na conta da marca, fora das planilhas.</p>
+                    <p className={ui.hint}>Leitura ainda não ligada: o script de {h.brand.slug === "vermefree" ? "docs/sheets/leitura-vermefree.gs" : "docs/sheets/leitura.gs"} roda na conta da marca, fora das planilhas.</p>
                   ) : (
                     <ul className={ui.list}>
                       {read.map((x) => (

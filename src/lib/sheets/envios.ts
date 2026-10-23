@@ -8,7 +8,8 @@ import { brandOf, findCreator, issue } from "./central";
  * Planilha "Envios de pedidos" lida pelo sistema, só leitura (D-SHEETREADONLY, S2). Cada linha vira um envio na ficha
  * e no portal da creator: produtos em texto (nota), endereço em texto, "ENVIADO?" Sim com rastreio = Enviado, senão
  * Preparando. Se a equipe já criou o envio no sistema, a linha só completa o rastreio dele. Nunca mexe em envio
- * entregue ou cancelado; não conta como kit. A primeira leitura traz o histórico sem avisar as creators; depois, envio
+ * entregue ou cancelado; não conta como kit. Coluna "FRETE" (planilha da VermeFree, S4) vira o frete do envio (custo do
+ * programa, D-COST). A primeira leitura traz o histórico sem avisar as creators; depois, envio
  * que passa a "Enviado" pela planilha avisa a creator como no sistema.
  */
 
@@ -18,7 +19,7 @@ const ACTOR = "sheet:envios";
 export type EnviosReadRow = { tab: string; row: number; values: Record<string, unknown> };
 export type EnviosReadResult = { rows: number; matched: number; unmatched: number; created: number; shipped: number; baseline: boolean };
 
-const COLUMNS: Record<string, "name" | "phone" | "cpf" | "email" | "address" | "products" | "sent" | "tracking"> = {
+const COLUMNS: Record<string, "name" | "phone" | "cpf" | "email" | "address" | "products" | "sent" | "tracking" | "freight"> = {
   NOME: "name",
   "NOME COMPLETO": "name",
   TELEFONE: "phone",
@@ -32,6 +33,8 @@ const COLUMNS: Record<string, "name" | "phone" | "cpf" | "email" | "address" | "
   ENVIADO: "sent",
   "CODIGO DE RASTREIO": "tracking",
   RASTREIO: "tracking",
+  FRETE: "freight",
+  "VALOR DO FRETE": "freight",
 };
 
 type Fields = Partial<Record<(typeof COLUMNS)[string], string>>;
@@ -55,6 +58,13 @@ function idsOf(f: Fields) {
 
 const cleanTracking = (v: string | undefined) => (v ?? "").replace(/\s+/g, "").toUpperCase().slice(0, 60);
 const carrierOf = (code: string) => (/^[A-Z]{2}\d{9}[A-Z]{2}$/.test(code) ? "Correios" : null);
+/** "R$ 85,90" → 8590; vazio ou ilegível → null (frete não muda). */
+export function freightCentsOf(v: string | undefined): number | null {
+  const t = (v ?? "").replace(/R\$|\s/g, "");
+  if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+([,.]\d{1,2})?$/.test(t)) return null;
+  const n = t.includes(",") ? Number(t.replace(/\./g, "").replace(",", ".")) : Number(t);
+  return Number.isFinite(n) ? Math.round(n * 100) : null;
+}
 const noteOf = (products: string | undefined) => `Produtos: ${products?.trim() || "(sem produtos na planilha)"} · planilha de envios`.slice(0, 500);
 
 export async function readEnvios(prisma: PrismaClient, slug: string, rows: EnviosReadRow[], now = new Date()): Promise<EnviosReadResult> {
@@ -83,6 +93,7 @@ export async function readEnvios(prisma: PrismaClient, slug: string, rows: Envio
     const tracking = cleanTracking(f.tracking);
     const sent = parseYesNo(f.sent) === true && !!tracking;
     const note = noteOf(f.products);
+    const freightCents = freightCentsOf(f.freight);
 
     // Mesmo envio de antes: pela linha; senão pelo rastreio; senão um envio da equipe ainda sem rastreio.
     let shipment = before?.[key] ? await prisma.shipment.findFirst({ where: { id: before[key], creatorId } }) : null;
@@ -104,6 +115,7 @@ export async function readEnvios(prisma: PrismaClient, slug: string, rows: Envio
             note,
             address: { raw: f.address?.trim() || "(sem endereço na planilha)" },
             createdById: ACTOR,
+            ...(freightCents !== null ? { freightCents } : {}),
             ...(sent ? { status: "SHIPPED" as const, carrier: carrierOf(tracking), trackingCode: tracking, shippedAt: now, shippedById: ACTOR } : {}),
           },
         });
@@ -136,6 +148,8 @@ export async function readEnvios(prisma: PrismaClient, slug: string, rows: Envio
         data: { note, ...(shipment.status === "SHIPPED" && tracking ? { trackingCode: tracking, carrier: carrierOf(tracking) } : {}) },
       });
     }
+    // Frete da planilha: completa o envio que ainda não tem (nunca troca o que a equipe pôs no sistema).
+    if (freightCents !== null && shipment.freightCents === null) await prisma.shipment.update({ where: { id: shipment.id }, data: { freightCents } });
   }
 
   await prisma.sheetSync.upsert({
