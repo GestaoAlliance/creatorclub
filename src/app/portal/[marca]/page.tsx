@@ -3,6 +3,7 @@ import { HomeView } from "@/components/portal/home-view";
 import { KitBanner } from "@/components/portal/kit-banner";
 import { BirthdayAsk } from "@/components/portal/birthday-ask";
 import { TiktokAsk } from "@/components/portal/tiktok-ask";
+import { InstallCard, InstallModal } from "@/components/portal/install-app";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { portalCoupons } from "@/lib/portal/coupons";
@@ -34,6 +35,9 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
   return (
     <div className="flex flex-col gap-6">
       {kit && <KitBanner base={base} brandSlug={ctx.brand.slug} products={kit.products} welcome={kit.kind === "WELCOME"} />}
+      {/* D-INSTALLAPP: portal na tela de início (cartão até ela fechar; aviso uma vez, depois do tutorial). */}
+      {!ctx.viewAs && <InstallCard brandName={ctx.brand.name} base={base} />}
+      {!ctx.viewAs && <InstallModal brandName={ctx.brand.name} base={base} />}
       {!account.tiktok && <TiktokAsk marca={ctx.brand.slug} />}
       {/* M4.2 (D-TAGS): aniversário, enquanto não informado. */}
       {open.length > 0 && (
