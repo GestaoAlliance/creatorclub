@@ -42,6 +42,9 @@ model Brand {
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
+  /// U6 (D-PROSPECT): mensagens prontas da prospecção ({NOME} e {LINK}); null = texto padrão da marca.
+  prospectFirstMessage      String?
+  prospectProposalMessage   String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
@@ -98,6 +101,7 @@ model Brand {
   campaignEntries    CampaignEntry[]
   campaignPrizes     CampaignPrize[]
   creatorPosts       CreatorPost[]
+  prospects          Prospect[]
 }
 
 enum IntegrationKind {
@@ -148,6 +152,7 @@ model User {
   roleGrants     RoleGrant[]
   creatorAccount CreatorAccount?
   hunterLinks    HunterLink[]
+  prospects      Prospect[]
   creatorNotes   CreatorNote[]
 }
 
@@ -906,6 +911,7 @@ model CreatorApplication {
   decidedById     String?
   decisionNote    String?
   creatorId       String?
+  prospects       Prospect[]
   createdAt       DateTime          @default(now())
 
   brand      Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
@@ -1509,4 +1515,37 @@ model CreatorPost {
 
   @@index([brandId, postedDay])
   @@index([creatorId, postedDay])
+}
+
+/// U6 (D-PROSPECT): situação da abordagem antes do formulário (as da aba "Prospecção Hunter" + Inscrita).
+enum ProspectStatus {
+  FIRST_MESSAGE
+  FOLLOW_UP
+  FORM_SENT
+  SIGNED_UP
+  DECLINED
+}
+
+/// U6 (D-PROSPECT): perfil abordado por alguém da marca (Gestão ou hunter), antes de se inscrever. Um @ por marca.
+model Prospect {
+  id            String         @id @default(uuid())
+  brandId       String
+  /// @ do Instagram, sem "@", em minúsculas.
+  handle        String
+  ownerId       String
+  approachedOn  DateTime       @db.Date
+  status        ProspectStatus @default(FIRST_MESSAGE)
+  statusAt      DateTime
+  note          String?
+  applicationId String?
+  source        String         @default("manual") // manual | sheet_import
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  brand       Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  owner       User                @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  application CreatorApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, handle])
+  @@index([brandId, ownerId])
 }

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **U6** Conteúdo das influencers e prospecção antes do formulário (perguntar antes se a equipe quer); depois junho da VermeFree. Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **junho da VermeFree** (reimportar desde 01/06 e conferir agosto com a Ana e a Juci; perguntar antes). Depois do deploy do U6: importar uma vez a aba "Prospecção Hunter" da Central da Botanika (só leitura) em nome da Ana. Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -241,7 +241,7 @@ já existem antes de desenhar.
     primeira venda.
   - [x] **U5b** Avisos por data (janela de saque, perto do mínimo, contrato vencendo) e envio por e-mail quando houver
     remetente.
-- [ ] **U6** Conteúdo das influencers e prospecção antes do formulário, se a equipe quiser.
+- [x] **U6** Prospecção antes do formulário (D-PROSPECT); conteúdo das influencers já coberto pelo M4.6 (D-POSTS).
 
 ### Planilhas automáticas (decidido pelo responsável em 2026-10-16, D-SHEETREADONLY substitui D-SHEETSYNC; uma por vez, nesta ordem)
 - [x] **S0** Desfazer a primeira ligação da Central (CP-129, CP-130): planilha restaurada pelo responsável; no sistema
@@ -281,6 +281,22 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-182 — 2026-10-23 — Prospecção antes do formulário (U6, D-PROSPECT)
+- **Decisões do responsável:** prospecção no sistema, no lugar da aba "Prospecção Hunter" da Central; Gestão e hunters
+  (a Gestão vê todos, a hunter só os dela); situações da planilha + Inscrita automática; importar a aba uma vez;
+  follow up depois de 3 dias; @ repetido avisa e não duplica; mensagens prontas editáveis por marca. Conteúdo das
+  influencers: o M4.6 já cobre.
+- **Feito:** Hunters → Prospecção (`/admin/prospeccao`; para a hunter, item "Prospecção" no menu): números do mês,
+  registrar um ou vários @ de uma vez (dia, situação, observação), mensagens prontas para copiar (inicial e proposta,
+  com o nome de quem manda, o link de inscrição dela e o desconto e a comissão padrão da marca; a Gestão edita),
+  lista com filtros (situação, fazer follow up, pessoa, busca), troca de situação e observação. Quem se inscreve com o
+  mesmo @ vira "Inscrita" e liga à candidata (a situação trava). A Gestão ganhou `prospects.own`. A aba entrou no
+  checklist da Central (M4.7). Auditoria.
+- **Banco:** `Prospect` (travas `Prospect_handle_format`, `Prospect_note_length`, `Prospect_source`,
+  `Prospect_application_signed_up`), `Brand.prospectFirstMessage`/`prospectProposalMessage` (`Brand_prospect_messages`).
+- **Verificado:** 255 unitários, 268 de integração (novo `prospects.test.ts`), typecheck, build, migração sem divergência.
+- **Falta (depois do deploy):** importar o histórico da aba (só leitura) em nome da Ana.
 
 ### CP-181 — 2026-10-23 — Convite do portal sozinho depois da assinatura e "Comissão" em Cupons (D-INVITEAUTO)
 - **Origem:** dúvidas da Ana: a "Taxa" de 10% em Cupons é comissão ou desconto? E depois de assinar, a creator recebe o

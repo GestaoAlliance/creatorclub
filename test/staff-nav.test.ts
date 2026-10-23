@@ -11,7 +11,7 @@ describe("menu da equipe por papel", () => {
     expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
     expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
     expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos", "Configurações"]);
-    expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações"]);
+    expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações", "Prospecção"]);
     const tabs = (role: "SUPER_ADMIN" | "GESTAO" | "PAGAMENTO", label: string) =>
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
     expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas", "Conteúdo"]);
@@ -23,6 +23,7 @@ describe("menu da equipe por papel", () => {
     expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);
     expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Produtos", "Cupons", "Desempenho"]);
     expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques"]);
+    expect(tabs("GESTAO", "Hunters")).toEqual(["Hunters", "Prospecção"]);
     expect(staffNav([{ role: "GESTAO", brandId: "b" }]).find((i) => i.label === "Vendas")?.href).toBe("/vendas");
   });
 

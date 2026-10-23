@@ -43,7 +43,8 @@ const ALL: readonly Permission[] = [
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
-  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
+  // U6 (D-PROSPECT): a Gestão também prospecta (e vê as prospecções de todas pela creators.edit).
+  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own"],
   ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
   PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
