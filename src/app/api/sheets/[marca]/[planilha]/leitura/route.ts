@@ -3,6 +3,7 @@ import { isAuthorizedBearer } from "@/lib/jobs/secret";
 import { readCentral, SheetError, type CentralReadRow } from "@/lib/sheets/central";
 import { readEnvios, type EnviosReadRow } from "@/lib/sheets/envios";
 import { readPagamentos, type PagamentosReadRow } from "@/lib/sheets/pagamentos";
+import { sheetDisabled } from "@/lib/sheets/switch";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/sheets/[mar
     return Response.json({ ok: false, error: "json" }, { status: 400 });
   }
   if (!Array.isArray(body.rows)) return Response.json({ ok: false, error: "corpo inválido" }, { status: 400 });
+  // M4.7 (D-SHEETOFF): planilha desligada pelo super admin: responde ok (o script não acusa erro) e não aplica nada.
+  const off = await sheetDisabled(db(), marca, planilha);
+  if (off) return Response.json({ ok: true, planilha, disabled: true, since: off.toISOString() });
   try {
     const result =
       planilha === "central"

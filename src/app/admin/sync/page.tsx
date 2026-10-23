@@ -5,9 +5,11 @@ import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { syncHealth } from "@/lib/shopify/health";
 import { sheetSyncStatus } from "@/lib/sheets/central";
+import { SHEET_COVERAGE, SHEET_LABEL, SHEETS } from "@/lib/sheets/switch";
+import { sheetSwitchAction } from "./actions";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
-import { ui } from "@/components/ui/styles";
+import { badge, ui } from "@/components/ui/styles";
 import { AutentiqueForm, BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,7 @@ export default async function SyncPage() {
   // A1 (D-ALLIANCE): só a loja da marca escolhida.
   const health = await syncHealth(db(), scopedActor(actor, (await staffContext(actor)).brand?.id));
   const sheets = new Map(await Promise.all(health.map(async (h) => [h.brand.id, await sheetSyncStatus(db(), h.brand.id)] as const)));
+  const superAdmin = brandsWith(actor.grants, "staff.manage") === "ALL";
   const autentique = new Map(
     (await db().brandIntegration.findMany({ where: { kind: "AUTENTIQUE", brandId: { in: health.map((h) => h.brand.id) } }, select: { brandId: true, status: true, externalId: true, scopes: true } })).map((r) => [r.brandId, r]),
   );
@@ -127,22 +130,46 @@ export default async function SyncPage() {
           <Card title="Planilhas (só leitura)">
             {(() => {
               const st = sheets.get(h.brand.id)!;
-              const LABEL: Record<string, string> = { central: "Central de creators", envios: "Envios de pedidos" };
-              const read = st.syncs.filter((x) => x.snapshot);
+              const LABEL: Record<string, string> = SHEET_LABEL;
               return (
                 <>
-                  <p className="text-sm">O sistema lê as planilhas a cada 15 minutos e não escreve nada nelas.</p>
-                  {read.length === 0 ? (
-                    <p className={ui.hint}>Leitura ainda não ligada: o script de {h.brand.slug === "vermefree" ? "docs/sheets/leitura-vermefree.gs" : "docs/sheets/leitura.gs"} roda na conta da marca, fora das planilhas.</p>
-                  ) : (
-                    <ul className={ui.list}>
-                      {read.map((x) => (
-                        <li key={x.sheet} className="py-2 text-sm">
-                          {LABEL[x.sheet] ?? x.sheet} · última leitura <strong>{fmt(x.lastPushAt)}</strong>
+                  <p className="text-sm">
+                    O sistema lê as planilhas a cada 15 minutos e não escreve nada nelas (script{" "}
+                    {h.brand.slug === "vermefree" ? "docs/sheets/leitura-vermefree.gs" : "docs/sheets/leitura.gs"}, na conta da marca). Quando a equipe
+                    parar de usar uma planilha, confira o checklist e desligue a leitura (M4.7).
+                  </p>
+                  <ul className={ui.list}>
+                    {SHEETS.map((sheet) => {
+                      const x = st.syncs.find((y) => y.sheet === sheet);
+                      const off = x?.disabledAt ?? null;
+                      return (
+                        <li key={sheet} className="flex flex-col gap-2 py-3 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span>
+                              <strong>{SHEET_LABEL[sheet]}</strong> ·{" "}
+                              {off ? <span className={badge.neutral}>desligada em {fmt(off)}</span> : x?.lastPushAt ? <>última leitura {fmt(x.lastPushAt)}</> : <span className="text-stone-500">ainda não lida</span>}
+                            </span>
+                            {superAdmin && (
+                              <form action={sheetSwitchAction}>
+                                <input type="hidden" name="brandId" value={h.brand.id} />
+                                <input type="hidden" name="sheet" value={sheet} />
+                                <input type="hidden" name="on" value={off ? "1" : "0"} />
+                                <button className={off ? ui.ghostSm : ui.dangerSm}>{off ? "Religar leitura" : "Desligar leitura"}</button>
+                              </form>
+                            )}
+                          </div>
+                          <details>
+                            <summary className="cursor-pointer text-xs text-stone-500">O que ela faz e onde fica no sistema</summary>
+                            <ul className="mt-2 flex flex-col gap-1 text-xs">
+                              {SHEET_COVERAGE[sheet].map((c) => (
+                                <li key={c.task} className="flex flex-wrap gap-x-2"><span>✓ {c.task}</span><span className="text-stone-500">→ {c.where}</span></li>
+                              ))}
+                            </ul>
+                          </details>
                         </li>
-                      ))}
-                    </ul>
-                  )}
+                      );
+                    })}
+                  </ul>
                   {st.issues.length > 0 && (
                     <>
                       <p className={ui.hint}>Avisos dos últimos 30 dias (o que não foi aplicado; resolva no sistema ou na planilha):</p>

@@ -86,3 +86,10 @@ export async function autentiqueConnectAction(_prev: FormState, form: FormData):
     throw error;
   }
 }
+
+/** M4.7 (D-SHEETOFF): desligar ou religar a leitura de uma planilha (só super admin). */
+export async function sheetSwitchAction(form: FormData): Promise<void> {
+  const { setSheetReading } = await import("@/lib/sheets/switch");
+  await setSheetReading(db(), await currentActor(), String(form.get("brandId") ?? ""), String(form.get("sheet") ?? ""), form.get("on") === "1");
+  revalidatePath("/admin/sync");
+}

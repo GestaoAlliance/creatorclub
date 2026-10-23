@@ -1239,12 +1239,15 @@ model FieldStamp {
 
 /// D-SHEETSYNC: planilha ligada de cada marca (última entrada e saída).
 model SheetSync {
-  brandId    String
-  sheet      String // central | envios | pagamentos
-  lastPushAt DateTime?
-  lastPullAt DateTime?
+  brandId      String
+  sheet        String // central | envios | pagamentos
+  lastPushAt   DateTime?
+  lastPullAt   DateTime?
   /// D-SHEETREADONLY: última leitura (creatorId → coluna → texto), para achar as células que mudaram.
-  snapshot   Json?
+  snapshot     Json?
+  /// M4.7 (D-SHEETOFF): leitura desligada pelo super admin (a equipe parou de usar a planilha); religar limpa.
+  disabledAt   DateTime?
+  disabledById String?
 
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
