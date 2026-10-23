@@ -3,6 +3,8 @@ import {
   accumulatedSales,
   ACTION_OWNER,
   BIRTHDAY_WARN_DAYS,
+  NO_POST_DAYS,
+  POSTS_SINCE,
   actionDetail,
   actionMessage,
   CONTRACT_WARN_DAYS,
@@ -23,6 +25,7 @@ import { can } from "@/lib/auth/permissions";
 import { releasedThroughFor, salesByMonth } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
+import { lastPostDays } from "@/lib/posts/posts";
 
 /**
  * Fila de ações por creator (M2.1, D-ACTIONS). Montada na hora a partir dos dados (nada fica "aberto" no banco):
@@ -31,7 +34,8 @@ import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
  * - perto do mínimo: passou de 70% do mínimo de vendas do mês e ainda não chegou (como o aviso NEAR_MINIMUM);
  * - kit sem escolher: kit liberado há 7 dias ou mais;
  * - envio parado: em preparação há 3 dias ou mais (tarefa de quem envia);
- * - aniversário: de 3 dias antes até o dia (M4.2, D-TAGS), com a mensagem de parabéns.
+ * - aniversário: de 3 dias antes até o dia (M4.2, D-TAGS), com a mensagem de parabéns;
+ * - sem post: parceira ativa sem post registrado há 15 dias (M4.6, D-POSTS; conta desde o início dos registros).
  * Resolvido o motivo, a tarefa some sozinha. "Feito" grava a ocorrência em `ActionDone` e ela sai da fila; uma
  * ocorrência nova (outro mês, outro fim de contrato, outro kit) volta.
  */
@@ -123,6 +127,16 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
     if (!c.account.birthDate) continue;
     const next = nextBirthday(c.account.birthDate.toISOString().slice(0, 10), todayKey);
     if (next.days <= BIRTHDAY_WARN_DAYS) push(c.id, `BIRTHDAY:${c.id}:${next.day}`, { kind: "BIRTHDAY", day: next.day, days: next.days });
+  }
+
+  // Sem post registrado há 15 dias (parceiras ativas; desde o último post, a entrada dela ou o início dos registros).
+  const lastPost = await lastPostDays(prisma, partners.map((c) => c.id));
+  for (const c of partners) {
+    const last = lastPost.get(c.id) ?? null;
+    const activated = dayKey(c.createdAt, tz);
+    const from = [last ?? POSTS_SINCE, POSTS_SINCE, activated].sort().at(-1)!;
+    const days = Math.floor((today - Date.parse(`${from}T00:00:00Z`)) / DAY);
+    if (days >= NO_POST_DAYS) push(c.id, `NO_POST:${c.id}:${last ?? "nunca"}`, { kind: "NO_POST", days, never: last === null });
   }
 
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });

@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 4 — M4.6** Link do post no portal (perguntar antes); depois, na ordem combinada em 2026-10-23: S4 (planilhas da VermeFree), M4.7, U6, junho da VermeFree. Fase 5 só depois de resolver as pendências (pedido do responsável). Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **S4** Planilhas da VermeFree e modelo para planilhas novas (perguntar antes); depois, na ordem combinada em 2026-10-23: M4.7, U6, junho da VermeFree. Fase 5 só depois de resolver as pendências (pedido do responsável). Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -58,7 +58,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.4a** Marcas: comissão e desconto padrão editáveis; tela de entrar com o logo da marca (D-BRANDLOGIN)
 - [x] **M4.4b** Último acesso e nova senha (link e e-mail) para equipe e creators (D-ACCESS)
 - [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
-- [ ] **M4.6** Link do post no portal
+- [x] **M4.6** Link do post no portal: Meus posts, vendas em 3 dias, aba Conteúdo, tela geral, posts da campanha, sem post há 15 dias (D-POSTS)
 - [ ] **M4.7** Desligar as planilhas, marca a marca (combinado com a equipe)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
@@ -281,6 +281,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-178 — 2026-10-23 — Posts das creators e vendas depois do post (M4.6, D-POSTS)
+- **Decisões do responsável:** a creator registra o link e o dia do post; "vendas depois do post" = vendas pagas em 3
+  dias × o normal dos 14 dias antes; aba Conteúdo na ficha, tela geral de posts, a equipe também registra; extras:
+  post ligado à campanha, tirar post errado e tarefa "sem post há 15 dias" (o responsável marcou todos).
+- **Feito:** portal "Meus posts" (link, dia, campanha em que está inscrita; lista com as vendas e "acima do normal";
+  tirar o próprio post) e atalho no Início; na campanha, "registre o link em Meus posts". Equipe: Creators →
+  Conteúdo (posts de 60 dias e "os que mais venderam acima do normal"), aba Conteúdo na ficha (lista e "Registrar
+  post" em nome dela), posts na página da campanha; tirar post (Gestão). Fila de ações: "Sem post" para parceira
+  ativa sem post registrado há 15 dias (conta desde 24/10/2026, início dos registros), com mensagem pronta.
+- **Banco:** tabela `CreatorPost` (RLS; trava `CreatorPost_valid`; tirar = `removedAt`).
+- **Verificado:** testes (250), integração (255; novo: registro, permissões, janela em São Paulo, campanha, tirar,
+  fila), typecheck, build, migração sem divergência.
 
 ### CP-177 — 2026-10-23 — Campanhas e desafios (M4.5, D-CAMPAIGN)
 - **Decisões do responsável (decisão 10):** campanha criada no Creator Club (link do AllianceOS opcional); ranking de

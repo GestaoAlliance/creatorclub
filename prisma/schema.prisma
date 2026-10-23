@@ -97,6 +97,7 @@ model Brand {
   campaigns          Campaign[]
   campaignEntries    CampaignEntry[]
   campaignPrizes     CampaignPrize[]
+  creatorPosts       CreatorPost[]
 }
 
 enum IntegrationKind {
@@ -335,6 +336,7 @@ model Creator {
   tagLinks           CreatorTagLink[]
   campaignEntries    CampaignEntry[]
   campaignPrizes     CampaignPrize[]
+  posts              CreatorPost[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -1436,6 +1438,7 @@ model Campaign {
   brand   Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   entries CampaignEntry[]
   prizes  CampaignPrize[]
+  posts   CreatorPost[]
 
   @@unique([id, brandId])
   @@index([brandId, startsAt])
@@ -1475,4 +1478,30 @@ model CampaignPrize {
   ledgerEntry LedgerEntry @relation(fields: [ledgerEntryId], references: [id], onDelete: Restrict)
 
   @@unique([campaignId, creatorId, kind])
+}
+
+// ───────────────────────────── Posts das creators (M4.6, D-POSTS) ─────────────────────────────
+
+/// Post da creator (link e dia em que postou), registrado por ela no portal ou pela equipe na ficha; pode ser de uma
+/// campanha em que ela está inscrita. Tirar = `removedAt` (fica na auditoria).
+model CreatorPost {
+  id          String    @id @default(uuid())
+  brandId     String
+  creatorId   String
+  url         String
+  platform    String // INSTAGRAM | TIKTOK | YOUTUBE | KWAI | OUTRO
+  postedDay   String // AAAA-MM-DD (São Paulo)
+  campaignId  String?
+  createdById String
+  byStaff     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  removedAt   DateTime?
+  removedById String?
+
+  brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator  Creator   @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  campaign Campaign? @relation(fields: [campaignId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([brandId, postedDay])
+  @@index([creatorId, postedDay])
 }

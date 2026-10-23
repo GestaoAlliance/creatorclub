@@ -15,7 +15,7 @@ describe("fila de ações (M2.1, D-ACTIONS)", () => {
   });
 
   it("quem cuida: Gestão; envio parado é de quem envia", () => {
-    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO" });
+    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO", NO_POST: "GESTAO" });
   });
 
   it("link do WhatsApp com o texto codificado", () => {
