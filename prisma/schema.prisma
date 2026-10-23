@@ -92,6 +92,7 @@ model Brand {
   sheetSyncs         SheetSync[]
   sheetSyncIssues    SheetSyncIssue[]
   creatorNotes       CreatorNote[]
+  creatorTags        CreatorTag[]
 }
 
 enum IntegrationKind {
@@ -194,10 +195,10 @@ model StaffInvite {
 
 /// Dados da pessoa creator, únicos para todas as marcas.
 model CreatorAccount {
-  id             String   @id @default(uuid())
-  userId         String?  @unique // preenchido quando o convite é aceito
+  id             String    @id @default(uuid())
+  userId         String?   @unique // preenchido quando o convite é aceito
   name           String
-  email          String   @unique
+  email          String    @unique
   phone          String?
   cpf            String?
   cnpj           String?
@@ -212,9 +213,11 @@ model CreatorAccount {
   addrDistrict   String?
   addrCity       String?
   addrState      String?
-  legacyId       String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  /// M4.2 (D-TAGS): data de nascimento (opcional; cadastro do site, portal ou ficha). Só o dia, sem hora.
+  birthDate      DateTime? @db.Date
+  legacyId       String?   @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user         User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
   creators     Creator[]
@@ -315,6 +318,7 @@ model Creator {
   ugcVideos          UgcVideo[]
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
   creatorNotes       CreatorNote[]
+  tagLinks           CreatorTagLink[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -400,24 +404,24 @@ model CouponAssignment {
 
 /// Espelho do pedido do Shopify. Todos os pedidos da loja, com poucos campos.
 model Order {
-  id               String    @id @default(uuid())
-  brandId          String
-  shopifyId        String // gid://shopify/Order/…
-  name             String // #1234
-  createdAtShop    DateTime
-  paidAt           DateTime?
-  cancelledAt      DateTime?
-  financialStatus  String
-  test             Boolean   @default(false)
-  taxesIncluded    Boolean?
-  subtotalCents    Int // currentSubtotalPriceSet: produtos, com descontos e reembolsos, sem frete
-  totalCents       Int
-  currency         String    @default("BRL")
-  discountCodes    String[]
+  id                String    @id @default(uuid())
+  brandId           String
+  shopifyId         String // gid://shopify/Order/…
+  name              String // #1234
+  createdAtShop     DateTime
+  paidAt            DateTime?
+  cancelledAt       DateTime?
+  financialStatus   String
+  test              Boolean   @default(false)
+  taxesIncluded     Boolean?
+  subtotalCents     Int // currentSubtotalPriceSet: produtos, com descontos e reembolsos, sem frete
+  totalCents        Int
+  currency          String    @default("BRL")
+  discountCodes     String[]
   /// M3.3 (D-RETURN): id da cliente na Shopify (só com `read_customers`); nada de nome, e-mail ou telefone.
   customerShopifyId String?
-  shopifyUpdatedAt DateTime // versão desta foto do pedido
-  syncedAt         DateTime  @default(now())
+  shopifyUpdatedAt  DateTime // versão desta foto do pedido
+  syncedAt          DateTime  @default(now())
 
   brand         Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
   lines         OrderLine[]
@@ -432,7 +436,7 @@ model Order {
 }
 
 model OrderLine {
-  id                   String @id @default(uuid())
+  id                   String  @id @default(uuid())
   brandId              String
   orderId              String
   shopifyId            String
@@ -713,16 +717,16 @@ model Click {
 
 /// Produto da loja (catálogo da Shopify), para escolher o que vai em cada envio.
 model Product {
-  id        String   @id @default(uuid())
-  brandId   String
-  shopifyId String
-  title     String
-  active    Boolean  @default(true)
+  id           String    @id @default(uuid())
+  brandId      String
+  shopifyId    String
+  title        String
+  active       Boolean   @default(true)
   /// M3.2 (D-COST): custo unitário (primeira variante) lido da Shopify com `read_inventory`; null = sem custo cadastrado.
   costCents    Int?
   costSyncedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   brand Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
   items ShipmentItem[]
@@ -868,6 +872,8 @@ model CreatorApplication {
   hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
   hunterLinkId    String?
   tiktok          String? // D-SIGNUPACCOUNT
+  /// M4.2 (D-TAGS): data de nascimento informada na candidatura (vai para a conta na aprovação).
+  birthDate       DateTime?         @db.Date
   /// D-SIGNUPACCOUNT: conta criada no próprio cadastro (com login); a aprovação usa esta conta.
   accountId       String?
   /// D-SIGNUP: inscrição pelo formulário do próprio sistema — quando aceitou o uso dos dados e hash do IP do dia
@@ -1123,17 +1129,17 @@ model ContractSignature {
 /// U5 (D-NOTICES): aviso para a creator no portal (sininho) e, quando houver remetente, por e-mail. Um aviso por
 /// acontecimento: `dedupeKey` não repete para a mesma creator (o worker pode rodar de novo sem duplicar).
 model Notification {
-  id        String    @id @default(uuid())
-  brandId   String
-  creatorId String
-  kind      String
-  dedupeKey String
-  title     String
-  body      String
-  href      String?
-  createdAt DateTime  @default(now())
-  readAt    DateTime?
-  emailedAt DateTime?
+  id         String    @id @default(uuid())
+  brandId    String
+  creatorId  String
+  kind       String
+  dedupeKey  String
+  title      String
+  body       String
+  href       String?
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+  emailedAt  DateTime?
   /// M2.2 (D-WHATSAPP): quando o aviso foi entregue ao n8n para o WhatsApp da creator.
   whatsappAt DateTime?
 
@@ -1313,17 +1319,50 @@ model McpAuthCode {
 
 /// Chave de acesso (1 h) ou de renovação (30 dias, troca a cada uso) de uma pessoa da equipe. Só o hash fica no banco.
 model McpToken {
-  id        String    @id @default(uuid())
-  tokenHash String    @unique
-  kind      String // ACCESS | REFRESH
-  clientId  String
-  userId    String
-  expiresAt DateTime
-  revokedAt DateTime?
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique
+  kind       String // ACCESS | REFRESH
+  clientId   String
+  userId     String
+  expiresAt  DateTime
+  revokedAt  DateTime?
   lastUsedAt DateTime?
-  createdAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
 
   client McpClient @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
   @@index([userId])
+}
+
+// ───────────────────────────── Tags das creators (M4.2, D-TAGS) ─────────────────────────────
+
+/// Tag livre da marca, criada pela Gestão (ex.: "fitness", "mãe"). `key` = nome sem acento e minúsculo (não repete).
+model CreatorTag {
+  id          String   @id @default(uuid())
+  brandId     String
+  name        String
+  key         String
+  createdAt   DateTime @default(now())
+  createdById String
+
+  brand Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  links CreatorTagLink[]
+
+  @@unique([brandId, key])
+  @@unique([id, brandId])
+}
+
+/// Tag marcada numa creator (mesma marca da tag e da creator, pela chave composta).
+model CreatorTagLink {
+  creatorId   String
+  tagId       String
+  brandId     String
+  createdAt   DateTime @default(now())
+  createdById String
+
+  creator Creator    @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  tag     CreatorTag @relation(fields: [tagId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@id([creatorId, tagId])
+  @@index([tagId])
 }

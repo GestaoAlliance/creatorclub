@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractStatus, creatorPendings, dayKey, socialHandle, type CreatorCategoryValue } from "@/domain";
+import { assertBps, contractStatus, creatorPendings, dayKey, parseBirthDate, socialHandle, type CreatorCategoryValue } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -38,10 +38,11 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       where: { brandId },
       orderBy: { account: { name: "asc" } },
       include: {
-        account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true } },
+        account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true, birthDate: true } },
         contractTemplate: { select: { releaseMinCents: true } },
         couponAssignments: { where: { validTo: null }, select: { confirmedAt: true, coupon: { select: { code: true, kind: true } } } },
         commissionPolicies: { where: { validTo: null }, select: { confirmedAt: true } },
+        tagLinks: { select: { tag: { select: { id: true, name: true } } } },
       },
     }),
     prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } }),
@@ -97,6 +98,9 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       phone: c.account.phone,
       instagram: c.account.instagram,
       tiktok: c.account.tiktok,
+      // M4.2 (D-TAGS): tags da marca e o dia do aniversário.
+      tags: c.tagLinks.map((l) => l.tag).sort((x, y) => x.name.localeCompare(y.name, "pt-BR")),
+      birthDate: c.account.birthDate ? c.account.birthDate.toISOString().slice(0, 10) : null,
       cpf: fiscal ? (c.account.cpf ?? null) : null,
       coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
       stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null }) : null,
@@ -134,7 +138,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
   // D-ADDRINFORMED: sem endereço completo, mostra o que já está no sistema em texto (carga, inscrição, contrato, envio).
   const address = !seeAddress ? null : full ? { lines: formatAddress(full), confirmed: true } : await informedAddressFor(prisma, creator.id).then((t) => (t ? { lines: [t], confirmed: false } : { lines: [], confirmed: false }));
   const money = can(actor.grants, "money.view", creator.brandId);
-  const [assignments, policies, invites, adjustments, templates] = await Promise.all([
+  const [assignments, policies, invites, adjustments, templates, tags] = await Promise.all([
     prisma.couponAssignment.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" }, include: { coupon: true } }),
     prisma.commissionPolicy.findMany({ where: { creatorId }, orderBy: { validFrom: "desc" } }),
     prisma.creatorInvite.findMany({ where: { accountId: creator.accountId }, orderBy: { createdAt: "desc" }, take: 3 }),
@@ -142,6 +146,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
       ? prisma.ledgerEntry.findMany({ where: { creatorId, type: "ADJUSTMENT" }, orderBy: { createdAt: "desc" }, take: 20 })
       : Promise.resolve([]),
     prisma.contractTemplate.findMany({ where: { brandId: creator.brandId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.creatorTagLink.findMany({ where: { creatorId }, select: { tag: { select: { id: true, name: true } } } }),
   ]);
   const a = creator.account;
   return {
@@ -162,6 +167,9 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     categories: creator.categories,
     instagram: a.instagram,
     tiktok: a.tiktok,
+    /** M4.2 (D-TAGS): data de nascimento ("AAAA-MM-DD") e tags da creator. */
+    birthDate: a.birthDate ? a.birthDate.toISOString().slice(0, 10) : null,
+    tags: tags.map((l) => l.tag).sort((x, y) => x.name.localeCompare(y.name, "pt-BR")),
     contract: {
       start: dayOf(creator.contractStart),
       end: dayOf(creator.contractEnd),
@@ -200,7 +208,8 @@ export async function updateContact(
   prisma: PrismaClient,
   actor: Actor | null,
   creatorId: string,
-  input: { name: string; email: string; phone: string; instagram?: string; tiktok?: string },
+  input: { name: string; email: string; phone: string; instagram?: string; tiktok?: string; birthDate?: string },
+  now = new Date(),
 ) {
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
@@ -220,12 +229,20 @@ export async function updateContact(
   // Redes: só mudam quando o formulário as envia (vazio apaga). Gravadas sem @ e sem o endereço do site.
   const instagram = input.instagram === undefined ? a.instagram : socialHandle(input.instagram) || null;
   const tiktok = input.tiktok === undefined ? a.tiktok : socialHandle(input.tiktok) || null;
+  // M4.2 (D-TAGS): nascimento só muda quando o formulário o envia (vazio apaga).
+  let birthDate = a.birthDate;
+  if (input.birthDate !== undefined) {
+    const b = parseBirthDate(input.birthDate, dayKey(now, "America/Sao_Paulo"));
+    if (!b.ok) throw new ProfileError(b.error);
+    birthDate = b.day ? new Date(`${b.day}T00:00:00Z`) : null;
+  }
+  const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
   await prisma.$transaction([
-    prisma.creatorAccount.update({ where: { id: a.id }, data: { name, email, phone, instagram, tiktok } }),
+    prisma.creatorAccount.update({ where: { id: a.id }, data: { name, email, phone, instagram, tiktok, birthDate } }),
     audit(
       prisma, actor, creator.brandId, "creator.contact", "CreatorAccount", a.id,
-      { name: a.name, email: a.email, phone: a.phone, instagram: a.instagram, tiktok: a.tiktok },
-      { name, email, phone, instagram, tiktok },
+      { name: a.name, email: a.email, phone: a.phone, instagram: a.instagram, tiktok: a.tiktok, birthDate: day(a.birthDate) },
+      { name, email, phone, instagram, tiktok, birthDate: day(birthDate) },
     ),
   ]);
 }

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { HomeView } from "@/components/portal/home-view";
 import { KitBanner } from "@/components/portal/kit-banner";
+import { BirthdayAsk } from "@/components/portal/birthday-ask";
 import { TiktokAsk } from "@/components/portal/tiktok-ask";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
@@ -18,7 +19,7 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
     portalSummary(db(), ctx),
     // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
     db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
-    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { tiktok: true } } } }).then((c) => c.account),
+    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { tiktok: true, birthDate: true } } } }).then((c) => c.account),
     portalCoupons(db(), ctx),
   ]);
   // O link usa o endereço por onde o portal foi aberto (funciona no domínio novo sem mudar nada).
@@ -29,6 +30,8 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
     <div className="flex flex-col gap-6">
       {kit && <KitBanner base={base} brandSlug={ctx.brand.slug} products={kit.products} welcome={kit.kind === "WELCOME"} />}
       {!account.tiktok && <TiktokAsk marca={ctx.brand.slug} />}
+      {/* M4.2 (D-TAGS): aniversário, enquanto não informado. */}
+      {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
       <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin: `${proto}://${host}`, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
     </div>
   );

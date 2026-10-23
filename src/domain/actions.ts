@@ -3,7 +3,7 @@
  * mensagem pronta para mandar pelo WhatsApp. Regra pura (testada): quem decide o que entra é `src/lib/actions/queue.ts`.
  */
 
-export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK";
+export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY";
 
 /** Quem cuida de cada tipo (decisão 3 do plano): por enquanto a Gestão (Ana) da marca; envio parado é de quem envia. */
 export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
@@ -12,6 +12,7 @@ export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
   NEAR_MIN: "GESTAO",
   KIT_PENDING: "GESTAO",
   SHIP_STUCK: "ENVIO",
+  BIRTHDAY: "GESTAO",
 };
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -20,6 +21,7 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   NEAR_MIN: "Perto do mínimo",
   KIT_PENDING: "Kit sem escolher",
   SHIP_STUCK: "Envio parado",
+  BIRTHDAY: "Aniversário",
 };
 
 /** Prazos do kit parado (pedido do responsável em 2026-10-22). */
@@ -35,7 +37,8 @@ export type ActionFacts =
   | { kind: "CONTRACT"; endDay: string; expired: boolean }
   | { kind: "NEAR_MIN"; missingCents: number }
   | { kind: "KIT_PENDING"; days: number }
-  | { kind: "SHIP_STUCK"; days: number };
+  | { kind: "SHIP_STUCK"; days: number }
+  | { kind: "BIRTHDAY"; day: string; days: number };
 
 /** O motivo curto que a equipe lê na fila. */
 export function actionDetail(f: ActionFacts): string {
@@ -50,6 +53,8 @@ export function actionDetail(f: ActionFacts): string {
       return `kit liberado há ${f.days} dias e ainda não escolhido`;
     case "SHIP_STUCK":
       return `envio em preparação há ${f.days} dias`;
+    case "BIRTHDAY":
+      return f.days === 0 ? "faz aniversário hoje" : f.days === 1 ? `faz aniversário amanhã (${br(f.day).slice(0, 5)})` : `faz aniversário em ${f.days} dias (${br(f.day).slice(0, 5)})`;
   }
 }
 
@@ -69,6 +74,8 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
       return `${oi} Seu kit está liberado há ${f.days} dias e ainda falta você escolher os produtos no portal (aba Envios). Escolhe lá pra gente já mandar!`;
     case "SHIP_STUCK":
       return null;
+    case "BIRTHDAY":
+      return `${oi} Feliz aniversário! 🎉 Que seu novo ano seja incrível. Obrigada por fazer parte do nosso time!`;
   }
 }
 

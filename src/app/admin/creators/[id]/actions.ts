@@ -20,6 +20,7 @@ import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/cr
 import { formatBRL } from "@/domain";
 import { checkCreatorContracts, ContractSendError, sendContract } from "@/lib/autentique/contracts";
 import { addCreatorNote, NoteError } from "@/lib/creators/timeline";
+import { addCreatorTag, removeCreatorTag, TagError } from "@/lib/creators/tags";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -29,7 +30,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError || error instanceof NoteError || error instanceof DiscountChangeError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof ContractSendError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError) {
       return { error: error.message };
     }
     throw error;
@@ -44,6 +45,7 @@ export async function contactAction(_p: State, form: FormData): Promise<State> {
     phone: String(form.get("phone") ?? ""),
     instagram: String(form.get("instagram") ?? ""),
     tiktok: String(form.get("tiktok") ?? ""),
+    birthDate: String(form.get("birthDate") ?? ""),
   }), "Contato salvo.");
 }
 
@@ -217,4 +219,18 @@ export async function pricingAction(_p: State, form: FormData): Promise<State> {
     }
     return { ok: done.length ? `Salvo: ${done.join("; ")}.` : "Nada mudou." };
   }, "");
+}
+
+/** M4.2 (D-TAGS): marcar e tirar tags da creator. */
+export async function addTagAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => {
+    const tag = await addCreatorTag(db(), await currentActor(), id, String(form.get("tag") ?? ""));
+    return { ok: `Tag "${tag.name}" marcada.` };
+  }, "Tag marcada.");
+}
+
+export async function removeTagAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(id, async () => removeCreatorTag(db(), await currentActor(), id, String(form.get("tagId") ?? "")), "Tag retirada.");
 }

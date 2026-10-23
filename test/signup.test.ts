@@ -18,7 +18,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.answers["@ do seu TikTok:"]).toBe("@maria.tt");
     expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
     expect(r.account).toEqual({
-      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, instagram: "maria.exemplo", tiktok: "maria.tt", coupon: "MARIA10",
+      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, instagram: "maria.exemplo", tiktok: "maria.tt", birthDate: null, coupon: "MARIA10",
       address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
     });
     const f = parseHunterAnswers(r.answers);
@@ -36,8 +36,13 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
       fullName: "Preencha este campo.", email: "E-mail inválido.", phone: "Informe o telefone com DDD.", cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.",
       instagram: "Informe o seu @.", addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.",
     });
-    // Opcionais: CNPJ, TikTok e complemento.
-    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "tiktok"]);
+    // Opcionais: CNPJ, nascimento (M4.2), TikTok e complemento.
+    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "birthDate", "tiktok"]);
+    // M4.2 (D-TAGS): nascimento do campo de data; vai para a conta e, em texto, para as respostas.
+    const b = validateSignup({ ...full, birthDate: "1995-03-15" }, "2026-10-23");
+    expect(b.ok && b.account.birthDate).toBe("1995-03-15");
+    expect(b.ok && b.answers["Data de nascimento:"]).toBe("15/03/1995");
+    expect(validateSignup({ ...full, birthDate: "2027-01-01" }, "2026-10-23")).toMatchObject({ ok: false, errors: { birthDate: "Data de nascimento inválida." } });
     expect(validateSignup({ ...full, tiktok: "", addrComplement: "" }).ok).toBe(true);
     expect(signupAddress({ ...full, addrComplement: "" }).text).toBe("Avenida Paulista, 1000, Bela Vista, São Paulo/SP, CEP 01310-100");
   });

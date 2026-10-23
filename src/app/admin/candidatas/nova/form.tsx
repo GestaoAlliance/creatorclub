@@ -43,6 +43,10 @@ export function NewApplicationForm() {
         </select>
       </label>
       <label className={ui.label}>
+        Data de nascimento
+        <input name="birthDate" type="date" className={ui.input} />
+      </label>
+      <label className={ui.label}>
         Sugestão de cupom
         <input name="suggestedCoupon" maxLength={40} className={`${ui.input} font-mono uppercase`} />
       </label>

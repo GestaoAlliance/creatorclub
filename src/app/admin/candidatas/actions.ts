@@ -118,7 +118,7 @@ export async function createApplicationAction(_prev: CreateState, form: FormData
   try {
     await createStaffApplication(db(), actor, brand.id, {
       fullName: f("fullName"), phone: f("phone"), email: f("email"), instagram: f("instagram"), tiktok: f("tiktok"),
-      followers: f("followers"), category: f("category") as Category, suggestedCoupon: f("suggestedCoupon"), note: f("note"),
+      followers: f("followers"), category: f("category") as Category, suggestedCoupon: f("suggestedCoupon"), note: f("note"), birthDate: f("birthDate"),
     });
   } catch (error) {
     if (error instanceof ApplicationError) return { error: error.message };

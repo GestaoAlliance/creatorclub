@@ -14,8 +14,8 @@ import { DoneButton } from "./done";
 
 export const dynamic = "force-dynamic";
 
-const KINDS: ActionKind[] = ["IDLE", "NEAR_MIN", "CONTRACT", "KIT_PENDING", "SHIP_STUCK"];
-const TONE: Record<ActionKind, string> = { IDLE: badge.red, NEAR_MIN: badge.green, CONTRACT: badge.amber, KIT_PENDING: badge.sky, SHIP_STUCK: badge.neutral };
+const KINDS: ActionKind[] = ["IDLE", "NEAR_MIN", "CONTRACT", "KIT_PENDING", "SHIP_STUCK", "BIRTHDAY"];
+const TONE: Record<ActionKind, string> = { IDLE: badge.red, NEAR_MIN: badge.green, CONTRACT: badge.amber, KIT_PENDING: badge.sky, SHIP_STUCK: badge.neutral, BIRTHDAY: badge.green };
 const OWNER = { GESTAO: "Gestão", ENVIO: "Envio" } as const;
 
 // Fila de ações por creator (M2.1, D-ACTIONS): o que a equipe precisa fazer hoje, com a mensagem pronta no WhatsApp.

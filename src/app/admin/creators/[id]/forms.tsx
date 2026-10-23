@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { pricingAction, adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction } from "./actions";
+import { Tag as TagIcon, X } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { pricingAction, adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -9,7 +10,7 @@ import { ui } from "@/components/ui/styles";
 const input = ui.input;
 const btn = `${ui.btn} self-start`;
 
-export function ContactForm(p: { creatorId: string; name: string; email: string; phone: string | null; fakeEmail: boolean; instagram: string | null; tiktok: string | null }) {
+export function ContactForm(p: { creatorId: string; name: string; email: string; phone: string | null; fakeEmail: boolean; instagram: string | null; tiktok: string | null; birthDate: string | null }) {
   const [state, action, pending] = useActionState(contactAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -18,7 +19,10 @@ export function ContactForm(p: { creatorId: string; name: string; email: string;
       <label className={ui.label}>E-mail
         <input className={input} name="email" type="email" defaultValue={p.fakeEmail ? "" : p.email} placeholder={p.fakeEmail ? "e-mail real (o do app antigo era falso)" : ""} required />
       </label>
-      <label className={ui.label}>Telefone<input className={input} name="phone" defaultValue={p.phone ?? ""} /></label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={ui.label}>Telefone<input className={input} name="phone" defaultValue={p.phone ?? ""} /></label>
+        <label className={ui.label}>Data de nascimento<input className={input} name="birthDate" type="date" defaultValue={p.birthDate ?? ""} /></label>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={ui.label}>Instagram<input className={input} name="instagram" defaultValue={p.instagram ?? ""} placeholder="@ dela" autoCapitalize="none" /></label>
         <label className={ui.label}>TikTok<input className={input} name="tiktok" defaultValue={p.tiktok ?? ""} placeholder="@ dela (se tiver)" autoCapitalize="none" /></label>
@@ -364,6 +368,56 @@ export function PricingEditor(p: { creatorId: string; rateBps: number | null; di
           </div>
         </form>
       )}
+    </div>
+  );
+}
+
+/** M4.2 (D-TAGS): tags da creator; quem edita marca (escolhendo uma da marca ou criando) e tira. Só a equipe vê. */
+export function TagsEditor({ creatorId, tags, suggestions, canEdit }: { creatorId: string; tags: { id: string; name: string }[]; suggestions: string[]; canEdit: boolean }) {
+  const [state, action, pending] = useActionState(addTagAction, undefined);
+  const [removeState, remove, removing] = useActionState(removeTagAction, undefined);
+  const [value, setValue] = useState("");
+  useEffect(() => {
+    if (state?.ok) setValue("");
+  }, [state]);
+  const free = suggestions.filter((n) => !tags.some((t) => t.name === n));
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {tags.length === 0 && <span className="text-xs text-stone-500">Sem tags.</span>}
+        {tags.map((t) => (
+          <form key={t.id} action={remove} className="inline-flex">
+            <input type="hidden" name="creatorId" value={creatorId} />
+            <input type="hidden" name="tagId" value={t.id} />
+            <span className="inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand dark:border-brand-2/30 dark:bg-brand-2/15 dark:text-brand-2">
+              <TagIcon className="size-3" /> {t.name}
+              {canEdit && (
+                <button disabled={removing} aria-label={`Tirar a tag ${t.name}`} className="-mr-1 rounded-full p-0.5 hover:bg-brand/15">
+                  <X className="size-3" />
+                </button>
+              )}
+            </span>
+          </form>
+        ))}
+      </div>
+      {canEdit && (
+        <form action={action} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="creatorId" value={creatorId} />
+          <input
+            name="tag"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            list={`tags-${creatorId}`}
+            maxLength={30}
+            placeholder="Nova tag ou escolha uma da marca"
+            aria-label="Tag"
+            className={`${ui.inputSm} min-w-0 flex-1 sm:max-w-64`}
+          />
+          <datalist id={`tags-${creatorId}`}>{free.map((n) => <option key={n} value={n} />)}</datalist>
+          <button className={ui.btnSm} disabled={pending || !value.trim()}>Marcar</button>
+        </form>
+      )}
+      <Msg state={state?.error ? state : removeState?.error ? removeState : undefined} />
     </div>
   );
 }
