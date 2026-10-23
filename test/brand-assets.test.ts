@@ -11,11 +11,11 @@ describe("imagens da tela de entrar (M4.4a, D-BRANDLOGIN)", () => {
     expect([sniffImage(PNG), sniffImage(JPG), sniffImage(WEBP), sniffImage(SVG), sniffImage(new Uint8Array())]).toEqual(["image/png", "image/jpeg", "image/webp", null, null]);
   });
 
-  it("limite: logo até 300 KB, fundo até 1 MB", () => {
+  it("limite: logo até 300 KB", () => {
     const big = new Uint8Array(301 * 1024);
     big.set(PNG);
     expect(checkBrandImage("LOGO", big)).toEqual({ ok: false, error: "Logo: no máximo 300 KB." });
-    expect(checkBrandImage("BACKGROUND", big)).toEqual({ ok: true, mime: "image/png" });
+    expect(checkBrandImage("LOGO", PNG)).toEqual({ ok: true, mime: "image/png" });
     expect(checkBrandImage("LOGO", SVG)).toEqual({ ok: false, error: "Use uma imagem PNG, JPG ou WebP." });
   });
 

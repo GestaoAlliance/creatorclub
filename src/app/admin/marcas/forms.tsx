@@ -111,16 +111,15 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
   );
 }
 
-/** M4.4a (D-BRANDLOGIN): logo e imagem de fundo da tela de entrar da marca. */
-export function BrandImage({ brandId, slug, kind, label, hint, version }: { brandId: string; slug: string; kind: "LOGO" | "BACKGROUND"; label: string; hint: string; version: string | null }) {
+/** M4.4a (D-BRANDLOGIN): logo da tela de entrar da marca. */
+export function BrandImage({ brandId, slug, kind, label, hint, version }: { brandId: string; slug: string; kind: "LOGO"; label: string; hint: string; version: string | null }) {
   const [state, action, pending] = useActionState(brandAssetAction, undefined);
-  const path = kind === "LOGO" ? "logo" : "fundo";
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium">{label}</p>
       {version ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`/marca/${slug}/${path}?v=${version}`} alt={label} className={`rounded-xl border border-stone-200/70 bg-white object-contain dark:border-white/10 ${kind === "LOGO" ? "h-14 w-44 p-2" : "h-24 w-44 object-cover"}`} />
+        <img src={`/marca/${slug}/logo?v=${version}`} alt={label} className="h-14 w-44 rounded-xl border border-stone-200/70 bg-white object-contain p-2 dark:border-white/10" />
       ) : (
         <span className="grid h-14 w-44 place-content-center rounded-xl border border-dashed border-stone-300 text-xs text-stone-500 dark:border-white/15">sem imagem</span>
       )}

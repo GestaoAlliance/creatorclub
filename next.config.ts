@@ -11,8 +11,6 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // M4.4a (D-BRANDLOGIN): imagem de fundo da marca (até 1 MB) sobe por Server Action.
-  experimental: { serverActions: { bodySizeLimit: "2mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

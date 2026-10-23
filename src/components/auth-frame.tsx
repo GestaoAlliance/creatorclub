@@ -16,14 +16,13 @@ async function loginColors(): Promise<Record<string, string>> {
 
 /**
  * Moldura das telas de entrada (entrar, senha, convite): o mesmo vidro do sistema, centralizado (D-DESIGNALL). Com a
- * marca (M4.4a, D-BRANDLOGIN): a cor, o logo e a imagem de fundo dela (sem imagem, o de sempre).
+ * marca (M4.4a, D-BRANDLOGIN): a cor e o logo dela, no fundo liso de sempre.
  */
 export async function AuthFrame({ title, subtitle, children, brandSlug = null }: { title: string; subtitle?: string; children: ReactNode; brandSlug?: string | null }) {
   const brand = brandSlug ? await loginBrand(db(), brandSlug).catch(() => null) : null;
   const vars = brand ? brandCssVars(brand) : await loginColors();
-  const bg = brand?.background ? { backgroundImage: `linear-gradient(rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.25)), url(/marca/${brand.slug}/fundo?v=${brand.background})`, backgroundSize: "cover", backgroundPosition: "center" } : {};
   return (
-    <div style={{ ...vars, ...bg } as CSSProperties} className="portal-bg flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <div style={vars as CSSProperties} className="portal-bg flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
@@ -33,7 +32,7 @@ export async function AuthFrame({ title, subtitle, children, brandSlug = null }:
           <img src={`/marca/${brand.slug}/logo?v=${brand.logo}`} alt={brand.name} className="max-h-14 max-w-56 object-contain" />
         </div>
       ) : (
-        <div className={`mb-6 flex items-center gap-3 ${brand?.background ? "glass rounded-2xl px-4 py-2" : ""}`}>
+        <div className="mb-6 flex items-center gap-3">
           <div className="grid size-11 place-content-center rounded-2xl bg-brand text-lg font-bold text-white shadow-sm">{brand ? brand.name.slice(0, 1).toUpperCase() : "C"}</div>
           <span className="text-lg font-semibold tracking-tight">{brand ? brand.name : "Creator Club"}</span>
         </div>

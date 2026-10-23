@@ -55,7 +55,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.1** Candidatas: recusar em massa e "Nova candidata" pela equipe (D-MANUALAPP)
 - [x] **M4.2** Tags e aniversário; gerente continua a da marca (D-TAGS)
 - [x] **M4.3** Tipos ficam os 3; perfil opcional (registro, nichos, YouTube, Kwai, alergias, mídia kit) e cidade/UF (D-PROFILEFIELDS)
-- [x] **M4.4a** Marcas: comissão e desconto padrão editáveis; tela de entrar com logo e fundo da marca (D-BRANDLOGIN)
+- [x] **M4.4a** Marcas: comissão e desconto padrão editáveis; tela de entrar com o logo da marca (D-BRANDLOGIN)
 - [ ] **M4.4b** Equipe: último acesso e resetar senha (e-mail e link)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
@@ -279,17 +279,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
-### CP-175 — 2026-10-23 — Padrões da marca e tela de entrar com a cara dela (M4.4a, D-BRANDLOGIN)
+### CP-175 — 2026-10-23 — Padrões da marca e tela de entrar com o logo dela (M4.4a, D-BRANDLOGIN)
 - **Decisões do responsável:** cada marca edita os próprios padrões (não há "padrão da Alliance"); só comissão e
-  desconto padrão (mínimo de vendas e janela de saque continuam fixos); login com logo e imagem de fundo por marca.
+  desconto padrão (mínimo de vendas e janela de saque continuam fixos); login com o logo da marca e fundo liso (a
+  imagem de fundo foi tirada a pedido do responsável: "pode ser simples").
   Equipe (último acesso e resetar senha por e-mail e por link) fica na M4.4b.
 - **Feito:** em Marcas → Editar dados, "Padrões para novas creators" (comissão e desconto em %, vêm preenchidos na
-  aprovação; quem já é creator mantém os dela). "Tela de entrar da marca": enviar/tirar logo (até 300 KB) e fundo
-  (até 1 MB), só PNG/JPG/WebP conferidos pelos bytes (SVG fora). `/entrar?marca=<slug>` (e a volta para o portal da
-  marca) abre com a cor, o logo e o fundo dela; o link de entrar das boas-vindas já leva a marca. Imagens servidas
-  em `/marca/<slug>/logo` e `/fundo`, com cache e versão no endereço. Auditoria em tudo.
-- **Banco:** tabela `BrandAsset` (RLS; trava `BrandAsset_valid`). Server Actions aceitam até 2 MB (imagem de fundo).
-- **Verificado:** testes (243), integração (252; novo: imagens, permissão, trava, padrões), typecheck, build,
+  aprovação; quem já é creator mantém os dela). "Tela de entrar da marca": enviar/tirar o logo (até 300 KB), só
+  PNG/JPG/WebP conferidos pelos bytes (SVG fora). `/entrar?marca=<slug>` (e a volta para o portal da marca) abre com
+  a cor e o logo dela; o link de entrar das boas-vindas já leva a marca. Logo servido em `/marca/<slug>/logo`, com
+  cache e versão no endereço. Auditoria em tudo.
+- **Banco:** tabela `BrandAsset` (RLS; trava `BrandAsset_valid`).
+- **Verificado:** testes (243), integração (252; novo: logo, permissão, trava, padrões), typecheck, build,
   migração sem divergência.
 
 ### CP-174 — 2026-10-23 — Perfil opcional e cidade/UF (M4.3, D-PROFILEFIELDS)

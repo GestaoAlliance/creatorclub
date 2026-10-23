@@ -1,15 +1,15 @@
 /**
- * Imagens da tela de entrar da marca (M4.4a, D-BRANDLOGIN): logo e fundo. Só PNG, JPG ou WebP, reconhecidos pelos
+ * Logo da tela de entrar da marca (M4.4a, D-BRANDLOGIN; fundo liso, a pedido do responsável). Só PNG, JPG ou WebP, reconhecidos pelos
  * primeiros bytes (nunca pelo nome ou pelo tipo que o navegador diz); SVG fica de fora porque pode levar código.
  */
 
-export type BrandAssetKind = "LOGO" | "BACKGROUND";
+export type BrandAssetKind = "LOGO";
 
-export const BRAND_ASSET_MAX: Record<BrandAssetKind, number> = { LOGO: 300 * 1024, BACKGROUND: 1024 * 1024 };
-export const BRAND_ASSET_LABEL: Record<BrandAssetKind, string> = { LOGO: "Logo", BACKGROUND: "Imagem de fundo" };
+export const BRAND_ASSET_MAX: Record<BrandAssetKind, number> = { LOGO: 300 * 1024 };
+export const BRAND_ASSET_LABEL: Record<BrandAssetKind, string> = { LOGO: "Logo" };
 
-/** Endereço público da imagem: /marca/<slug>/logo ou /marca/<slug>/fundo. */
-export const BRAND_ASSET_PATH: Record<BrandAssetKind, string> = { LOGO: "logo", BACKGROUND: "fundo" };
+/** Endereço público da imagem: /marca/<slug>/logo. */
+export const BRAND_ASSET_PATH: Record<BrandAssetKind, string> = { LOGO: "logo" };
 
 /** Tipo da imagem pelos primeiros bytes; null se não é PNG, JPG ou WebP. */
 export function sniffImage(b: Uint8Array): "image/png" | "image/jpeg" | "image/webp" | null {

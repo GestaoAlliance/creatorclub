@@ -17,7 +17,7 @@ async function user(role: "SUPER_ADMIN" | "GESTAO", brandId: string | null) {
 }
 
 describe("marca: padrões e tela de entrar (M4.4a, D-BRANDLOGIN, banco real)", () => {
-  it("logo e fundo: só super admin; troca substitui; tirar; trava do banco", async () => {
+  it("logo: só super admin; troca substitui; tirar; trava do banco", async () => {
     const { brand } = await seedBrand(prisma);
     const admin = await user("SUPER_ADMIN", null);
     await expect(setBrandAsset(prisma, await user("GESTAO", brand.id), brand.id, "LOGO", PNG)).rejects.toThrow(/super admin/);
@@ -29,7 +29,7 @@ describe("marca: padrões e tela de entrar (M4.4a, D-BRANDLOGIN, banco real)", (
     expect(a?.mime).toBe("image/png");
     expect(a?.bytes.length).toBe(PNG.length + 1);
     const lb = await loginBrand(prisma, brand.slug);
-    expect(lb).toMatchObject({ slug: brand.slug, logo: a!.sha256.slice(0, 12), background: null });
+    expect(lb).toMatchObject({ slug: brand.slug, logo: a!.sha256.slice(0, 12) });
     await removeBrandAsset(prisma, admin, brand.id, "LOGO");
     expect(await brandAssetBySlug(prisma, brand.slug, "LOGO")).toBeNull();
     expect(await prisma.auditLog.count({ where: { entityId: brand.id, action: { startsWith: "brand.asset" } } })).toBe(3);

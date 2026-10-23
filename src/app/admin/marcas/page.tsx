@@ -71,10 +71,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
                 <p className={ui.hint}>
                   Aparece em <Link href={`/entrar?marca=${b.slug}`} target="_blank" className={ui.link}>/entrar?marca={b.slug}</Link> (link das boas-vindas) e quando a creator volta para o portal da marca.
                 </p>
-                <div className="flex flex-wrap gap-8">
-                  <BrandImage brandId={b.id} slug={b.slug} kind="LOGO" label="Logo" hint="PNG, JPG ou WebP, até 300 KB. Fundo transparente fica melhor." version={b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null} />
-                  <BrandImage brandId={b.id} slug={b.slug} kind="BACKGROUND" label="Imagem de fundo" hint="JPG ou WebP, até 1 MB, deitada (ex.: 1600×1000)." version={b.assets.find((a) => a.kind === "BACKGROUND")?.sha256.slice(0, 12) ?? null} />
-                </div>
+                <BrandImage brandId={b.id} slug={b.slug} kind="LOGO" label="Logo" hint="PNG, JPG ou WebP, até 300 KB. Fundo transparente fica melhor." version={b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null} />
               </div>
             </details>
           </Card>

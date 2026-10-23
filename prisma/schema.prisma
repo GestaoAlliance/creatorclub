@@ -1378,12 +1378,12 @@ model CreatorTagLink {
 
 // ───────────────────────────── Imagens da marca (M4.4a, D-BRANDLOGIN) ─────────────────────────────
 
-/// Logo e imagem de fundo da tela de entrar da marca. Guardadas no banco (pequenas: logo até 300 KB, fundo até 1 MB);
-/// só PNG, JPG ou WebP (conferido pelos bytes). Trocar substitui; tirar apaga (não é dado financeiro).
+/// Logo da tela de entrar da marca (fundo liso). Guardado no banco (até 300 KB); só PNG, JPG ou WebP (conferido pelos
+/// bytes). Trocar substitui; tirar apaga (não é dado financeiro).
 model BrandAsset {
   id           String   @id @default(uuid())
   brandId      String
-  kind         String // LOGO | BACKGROUND
+  kind         String // LOGO
   mime         String
   bytes        Bytes
   sizeBytes    Int

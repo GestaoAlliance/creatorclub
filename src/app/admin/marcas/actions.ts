@@ -46,18 +46,17 @@ export async function updateBrandAction(_prev: BrandState, form: FormData): Prom
   }
 }
 
-/** M4.4a (D-BRANDLOGIN): logo e fundo da tela de entrar. */
+/** M4.4a (D-BRANDLOGIN): logo da tela de entrar. */
 export async function brandAssetAction(_prev: BrandState, form: FormData): Promise<BrandState> {
   const brandId = String(form.get("brandId") ?? "");
   const kind = String(form.get("kind") ?? "") as BrandAssetKind;
-  if (kind !== "LOGO" && kind !== "BACKGROUND") return { error: "Tipo inválido." };
+  if (kind !== "LOGO") return { error: "Tipo inválido." };
   try {
     if (form.get("remove")) {
       await removeBrandAsset(db(), await currentActor(), brandId, kind);
     } else {
       const file = form.get("file");
       if (!(file instanceof File) || file.size === 0) return { error: "Escolha uma imagem." };
-      if (file.size > 1024 * 1024) return { error: "Imagem grande demais." };
       await setBrandAsset(db(), await currentActor(), brandId, kind, new Uint8Array(await file.arrayBuffer()));
     }
     revalidatePath("/admin/marcas");

@@ -5,7 +5,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { brandsWith } from "@/lib/auth/permissions";
 import { BrandError } from "./manage";
 
-/** Logo e fundo da tela de entrar (M4.4a, D-BRANDLOGIN). Só super admin troca; todos veem (a imagem é pública). */
+/** Logo da tela de entrar (M4.4a, D-BRANDLOGIN). Só super admin troca; todos veem (a imagem é pública). */
 
 function superAdmin(actor: Actor | null): Actor {
   if (!actor || brandsWith(actor.grants, "staff.manage") !== "ALL") throw new BrandError("Só super admin.");
@@ -37,13 +37,13 @@ export async function brandAssetBySlug(prisma: PrismaClient, slug: string, kind:
   return prisma.brandAsset.findFirst({ where: { kind, brand: { slug, archivedAt: null } }, select: { mime: true, bytes: true, sha256: true } });
 }
 
-/** O que a tela de entrar precisa da marca: cores e a versão (hash) de cada imagem, para o endereço mudar ao trocar. */
+/** O que a tela de entrar precisa da marca: cores e a versão (hash) do logo, para o endereço mudar ao trocar. */
 export async function loginBrand(prisma: PrismaClient, slug: string) {
   const b = await prisma.brand.findFirst({
     where: { slug, archivedAt: null },
     select: { slug: true, name: true, primaryColor: true, secondaryColor: true, assets: { select: { kind: true, sha256: true } } },
   });
   if (!b) return null;
-  const v = (k: BrandAssetKind) => b.assets.find((a) => a.kind === k)?.sha256.slice(0, 12) ?? null;
-  return { slug: b.slug, name: b.name, primaryColor: b.primaryColor, secondaryColor: b.secondaryColor, logo: v("LOGO"), background: v("BACKGROUND") };
+  const logo = b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null;
+  return { slug: b.slug, name: b.name, primaryColor: b.primaryColor, secondaryColor: b.secondaryColor, logo };
 }
