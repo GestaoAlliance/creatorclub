@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **junho da VermeFree** (reimportar desde 01/06 e conferir agosto com a Ana e a Juci; perguntar antes). Depois do deploy do U6: importar uma vez a aba "Prospecção Hunter" da Central da Botanika (só leitura) em nome da Ana. Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **junho da VermeFree** (reimportar desde 01/06 e conferir agosto com a Ana e a Juci; perguntar antes). Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -281,6 +281,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-184 — 2026-10-23 — Histórico da prospecção importado (U6, D-PROSPECT)
+- **Decisões do responsável:** em nome da Ana (login de Gestão); perfis sem situação entram como "1ª mensagem".
+- **Aplicado em produção (SQL atômico, auditoria `prospect.sheet_import`):** 169 perfis da aba "Prospecção Hunter" da
+  Central da Botanika (29/09 a 13/10; lida só para leitura), com dia, situação e observação: 127 em 1ª mensagem,
+  31 Forms enviado, 5 Follow up, 3 Inscrita (Forms? = Sim) e 3 Recusou. 9 já batem com candidatas pelo @ e viram
+  Inscrita (ligadas à candidata) na primeira vez que a tela abrir. Os @ ficam só no banco (D-PUBLIC).
 
 ### CP-183 — 2026-10-23 — Portal na tela de início do celular (tarefa avulsa, D-INSTALLAPP)
 - **Pedido do responsável:** mini tutorial no portal de como pôr o app na tela do celular, "estilo BigBoom".
