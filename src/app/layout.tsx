@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Creator Club",
-  description: "Gestão de creators da Botanika",
+  description: "Portal das creators da Alliance",
   robots: { index: false, follow: false },
 };
 

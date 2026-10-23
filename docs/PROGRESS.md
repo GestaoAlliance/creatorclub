@@ -273,6 +273,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-169 — 2026-10-23 — Boas-vindas sem pedido de assinatura (pedido do responsável)
+- **Feito:** a mensagem de boas-vindas depois de aprovar (WhatsApp) não fala mais de assinar o contrato: quando ela a
+  recebe, o contrato já está assinado. A prévia do link do site deixou de dizer "da Botanika" ("Portal das creators da
+  Alliance"). Revisadas as outras mensagens à creator: só o aviso "contrato no e-mail" (Autentique) fala de assinar,
+  porque é nele que ela assina.
+- **Verificado:** teste novo (boas-vindas nunca pede assinatura), testes, typecheck, build.
+
 ### CP-168 — 2026-10-23 — Retorno por creator (M3.3, D-RETURN)
 - **Feito:** **lucro que cada creator deixa** (receita dos pedidos dela − custo dos produtos − comissão − kits enviados
   a ela − frete, a régua do D-COST) e **clientes novas × recorrentes** (nova = primeira compra registrada da cliente na

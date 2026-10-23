@@ -13,8 +13,11 @@ export function whatsappLink(phone: string | null | undefined, text: string): st
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
 
-/** Boas-vindas depois de aprovar: cupom, desconto e, se houver, o link do convite do portal. */
-export function welcomeMessage(p: { name: string; brand: string; coupon: string; discountBps: number; inviteLink: string | null; contract?: boolean; loginUrl?: string }): string {
+/**
+ * Boas-vindas depois de aprovar: cupom, desconto e, se houver, o link do convite do portal. Não fala de contrato: quando
+ * ela recebe esta mensagem o contrato já está assinado (pedido do responsável, 2026-10-23).
+ */
+export function welcomeMessage(p: { name: string; brand: string; coupon: string; discountBps: number; inviteLink: string | null; loginUrl?: string }): string {
   const pct = (p.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   return [
     `Oi, ${firstName(p.name)}! Sua inscrição no Creator Club da ${p.brand} foi aprovada!`,
@@ -24,7 +27,6 @@ export function welcomeMessage(p: { name: string; brand: string; coupon: string;
       : p.loginUrl
         ? [`Para entrar no seu portal (vendas, saldo, extrato e saque), use o e-mail e a senha que você criou no cadastro:\n${p.loginUrl}`]
         : []),
-    ...(p.contract ? ["No primeiro acesso, você lê e assina o contrato da parceria no próprio portal."] : []),
     "Qualquer dúvida, é só chamar por aqui.",
   ].join("\n\n");
 }
