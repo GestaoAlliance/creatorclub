@@ -224,7 +224,7 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
   const [users, invites, brands] = await Promise.all([
     prisma.user.findMany({
       where: { disabledAt: null, roleGrants: { some: {} } },
-      select: { id: true, email: true, name: true, roleGrants: { select: { id: true, role: true, brandId: true } } },
+      select: { id: true, email: true, name: true, phone: true, roleGrants: { select: { id: true, role: true, brandId: true } } },
       orderBy: { name: "asc" },
     }),
     prisma.staffInvite.findMany({
@@ -237,3 +237,20 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
   return { users, invites, brands };
 }
 
+
+/**
+ * WhatsApp de quem é da equipe (M3.4, D-WEEKLY): para onde vai o resumo semanal. Só celular do Brasil (com DDD);
+ * vazio tira o número. Super admin muda; auditoria.
+ */
+export async function setStaffPhone(prisma: PrismaClient, actor: Actor | null, userId: string, raw: string) {
+  const manager = requireStaffManager(actor);
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "");
+  const phone = digits ? (digits.length === 10 || digits.length === 11 ? `55${digits}` : digits) : null;
+  if (phone && !/^55\d{10,11}$/.test(phone)) throw new TeamError("WhatsApp inválido: use DDD + número, ex.: (31) 99876-5432.");
+  const before = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+  if (!before) throw new TeamError("Pessoa não encontrada.");
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { phone } }),
+    prisma.auditLog.create({ data: { actorType: "USER", actorId: manager.userId, action: "staff.phone", entity: "User", entityId: userId, before, after: { phone } } }),
+  ]);
+}

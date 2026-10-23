@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
 import { emailPendingNotices, runDueNotices, siteOrigin } from "@/lib/notifications/scheduled";
 import { configuredWhatsApp, whatsappPendingNotices } from "@/lib/notifications/whatsapp";
+import { runWeeklySummaries } from "@/lib/notifications/weekly";
 import { jobHandlers } from "@/lib/jobs/handlers";
 import { runJobs } from "@/lib/jobs/queue";
 import { isAuthorizedBearer } from "@/lib/jobs/secret";
@@ -29,8 +30,10 @@ export async function POST(request: Request): Promise<Response> {
     const whatsapp = configuredWhatsApp();
     const emailed = await emailPendingNotices(prisma, configuredSender(), siteOrigin(), new Date(), { whatsappOn: whatsapp !== null });
     const whatsapped = await whatsappPendingNotices(prisma, whatsapp, siteOrigin());
+    // M3.4 (D-WEEKLY): resumo semanal da gestão, segunda a partir das 9h.
+    const weekly = await runWeeklySummaries(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

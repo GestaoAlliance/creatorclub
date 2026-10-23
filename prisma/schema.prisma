@@ -1275,3 +1275,12 @@ model ActionDone {
   @@unique([brandId, key])
   @@index([creatorId])
 }
+
+/// M3.4 (D-WEEKLY): um resumo semanal por marca, semana e pessoa (a chave impede mandar duas vezes).
+model SummaryRun {
+  id      String   @id @default(uuid())
+  key     String   @unique // weekly:<marca>:<segunda AAAA-MM-DD>:<usuário>
+  brandId String?
+  userId  String
+  sentAt  DateTime @default(now())
+}

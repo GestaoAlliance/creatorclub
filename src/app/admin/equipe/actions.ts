@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revokeStaffInvite, TeamError } from "@/lib/team/invites";
+import { createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revokeStaffInvite, setStaffPhone, TeamError } from "@/lib/team/invites";
 import { emailStaffInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
 
@@ -62,6 +62,18 @@ export async function grantRoleAction(_prev: GrantState, form: FormData): Promis
     await grantRole(db(), await currentActor(), { userId: String(form.get("userId") ?? ""), role: form.get("role"), brandId: form.get("brandId") });
     revalidatePath("/admin/equipe");
     return { ok: "Papel adicionado." };
+  } catch (error) {
+    if (error instanceof TeamError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** M3.4: WhatsApp da pessoa (resumo semanal). */
+export async function phoneAction(_prev: GrantState, form: FormData): Promise<GrantState> {
+  try {
+    await setStaffPhone(db(), await currentActor(), String(form.get("userId") ?? ""), String(form.get("phone") ?? ""));
+    revalidatePath("/admin/equipe");
+    return { ok: "WhatsApp salvo." };
   } catch (error) {
     if (error instanceof TeamError) return { error: error.message };
     throw error;

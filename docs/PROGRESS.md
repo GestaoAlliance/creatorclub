@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 3 — M3.4 Perguntar ao Claude e resumo semanal** para a gestão: perguntar ao responsável o que depender de decisão antes. Pendente do responsável: `read_inventory`, `read_customers` (com "dados protegidos de clientes") e, na Revita, `read_all_orders` nos apps do Creator Club; depois "Atualizar catálogo" e reimportar o histórico para gravar as clientes. Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 3 — M3.4b Conector do Creator Club no Claude** (só leitura, cada pessoa entra com o login dela e vê só o que já vê no painel; decisão do responsável em 2026-10-23). Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -50,7 +50,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M3.1** Dashboard com comparação, loja inteira, gráfico, top creators e produtos, esconder valores e as 3 marcas (já entregue no M0.0.4 e em "Todas as marcas")
 - [x] **M3.2** Produtos e custo: receita, pedidos, unidades, custo da Shopify, margem e lucro do programa (D-COST)
 - [x] **M3.3** Retorno por creator: lucro que ela deixa e clientes novas × recorrentes (D-RETURN)
-- [ ] **M3.4** Perguntar ao Claude (conector só leitura) e resumo semanal para a gestão
+- [x] **M3.4a** Resumo semanal da gestão pelo WhatsApp (D-WEEKLY)
+- [ ] **M3.4b** Perguntar ao Claude: conector só leitura no Claude de cada pessoa, com o login dela
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -272,6 +273,19 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-170 — 2026-10-23 — Resumo semanal da gestão pelo WhatsApp (M3.4a, D-WEEKLY)
+- **Decisões do responsável:** resumo pelo WhatsApp (n8n), toda segunda às 9h, um por marca para a Gestão da marca e o
+  super admin; só a Botanika no começo (as outras quando a instância delas estiver em Marcas). "Perguntar ao Claude"
+  será um conector no Claude de cada pessoa (M3.4b).
+- **Feito:** o worker manda, segunda a partir das 9h (até as 20h), o resumo da semana anterior (segunda a domingo) de
+  cada marca com instância da Evolution: vendas com cupom e a variação, pedidos, % da loja, comissão, lucro do programa
+  (quando há custo), top 3 creators, pendências (candidatas, saques para aprovar e pagar, ações) e alertas (paradas,
+  perto do mínimo, contratos, kits parados), com o link do painel. Uma vez por marca, semana e pessoa (`SummaryRun`);
+  falha do n8n tenta de novo. Em Equipe, campo "WhatsApp" para Gestão e super admin (só celular do Brasil; auditoria).
+- **Banco:** tabela `SummaryRun` (RLS).
+- **Verificado:** testes (234), integração (243; novo: WhatsApp da equipe, segunda 9h, quem recebe, uma vez por semana,
+  falha tenta de novo), typecheck, build, migração sem divergência.
 
 ### CP-169 — 2026-10-23 — Boas-vindas sem pedido de assinatura (pedido do responsável)
 - **Feito:** a mensagem de boas-vindas depois de aprovar (WhatsApp) não fala mais de assinar o contrato: quando ela a
