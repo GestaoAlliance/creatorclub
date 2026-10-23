@@ -53,8 +53,8 @@ export function RateForm({ policyId, rateBps }: { policyId: string; rateBps: num
   return (
     <form action={action} className="flex flex-wrap items-center gap-1.5">
       <input type="hidden" name="policyId" value={policyId} />
-      <input name="rate" defaultValue={pct} className={`${field} w-16`} inputMode="decimal" aria-label="Taxa (%)" />%
-      <button className={ui.btnSm} disabled={pending}>Confirmar taxa</button>
+      <input name="rate" defaultValue={pct} className={`${field} w-16`} inputMode="decimal" aria-label="Comissão (%)" />%
+      <button className={ui.btnSm} disabled={pending}>Confirmar comissão</button>
       <Msg state={state} />
     </form>
   );

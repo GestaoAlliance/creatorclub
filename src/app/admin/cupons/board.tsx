@@ -11,6 +11,7 @@ type Row = {
   id: string;
   code: string;
   kind: "CREATOR" | "PROMO" | null;
+  discountBps: number | null;
   uses: number;
   owner: { creatorId: string; name: string; confirmed: boolean } | null;
   rate: { policyId: string; rateBps: number; confirmed: boolean } | null;
@@ -86,7 +87,10 @@ export function CouponsBoard({ rows, creators }: { rows: Row[]; creators: Creato
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-stone-500">Taxa</span>
+                    {/* Pergunta da Ana (2026-10-23): "Taxa" era a comissão; o desconto do cupom vai ao lado, só leitura. */}
+                    <span className="text-xs font-medium text-stone-500">
+                      Comissão dela{r.discountBps != null && <span className="font-normal"> · desconto do cupom {pct(r.discountBps)}</span>}
+                    </span>
                     {!r.rate ? (
                       <span className={ui.hint}>confirme a dona primeiro</span>
                     ) : r.rate.confirmed ? (

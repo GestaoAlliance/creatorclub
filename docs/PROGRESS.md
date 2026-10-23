@@ -282,6 +282,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-181 — 2026-10-23 — Convite do portal sozinho depois da assinatura e "Comissão" em Cupons (D-INVITEAUTO)
+- **Origem:** dúvidas da Ana: a "Taxa" de 10% em Cupons é comissão ou desconto? E depois de assinar, a creator recebe o
+  acesso sozinha ou a Ana libera o link?
+- **Decisões do responsável:** trocar "Taxa" por "Comissão" e mostrar o desconto do cupom ao lado (só leitura);
+  convite automático ao assinar.
+- **Feito:** Cupons diz "Comissão dela · desconto do cupom X%", "Confirmar comissão" e "Comissão confirmada". O worker
+  (`/api/jobs/run`) manda o convite do portal sozinho quando o contrato está assinado (e o cupom criado, se ficou para
+  depois): por e-mail (com remetente configurado e e-mail real) e pelo WhatsApp da marca (instância em Marcas, 9h–20h).
+  Uma vez por contrato (`ContractRequest.inviteSentAt`). Quem se cadastrou pelo site já tem senha: só marca. Sem canal,
+  nada é criado e a Ana gera pela ficha (Cadastro → Convite para o portal). Nada entregue: o convite é cancelado e
+  tenta de novo. Auditoria `creator_invite.auto`. Só contratos assinados nos últimos 30 dias.
+- **Banco:** `ContractRequest.inviteSentAt`.
+- **Verificado:** 250 unitários, 264 de integração (novo `invite-after-signature.test.ts`), typecheck, build, migração
+  sem divergência.
+
 ### CP-180 — 2026-10-23 — Desligar as planilhas, marca a marca (M4.7, D-SHEETOFF)
 - **Decisões do responsável:** botão por planilha com checklist; só super admin desliga e religa.
 - **Feito:** em Configurações → Shopify → Planilhas, cada planilha (Central, Envios, Pagamentos) de cada marca mostra a

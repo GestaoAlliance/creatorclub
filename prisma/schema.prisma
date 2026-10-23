@@ -1208,6 +1208,8 @@ model ContractRequest {
   pendingCouponCode  String?
   pendingDiscountBps Int?
   couponCreatedAt    DateTime?
+  /// Pedido do responsável (2026-10-23): convite do portal mandado sozinho depois da assinatura (e-mail e/ou WhatsApp).
+  inviteSentAt       DateTime?
   status             ContractRequestStatus @default(SENT)
   sentAt             DateTime              @default(now())
   signedAt           DateTime?
