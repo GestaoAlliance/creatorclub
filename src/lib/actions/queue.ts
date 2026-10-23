@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import {
   accumulatedSales,
   ACTION_OWNER,
+  BIRTHDAY_WARN_DAYS,
   actionDetail,
   actionMessage,
   CONTRACT_WARN_DAYS,
@@ -9,6 +10,7 @@ import {
   isUgcOnly,
   KIT_PENDING_DAYS,
   monthKey,
+  nextBirthday,
   releaseMinFor,
   SHIP_STUCK_DAYS,
   whatsappChatUrl,
@@ -28,7 +30,8 @@ import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
  * - contrato vencendo: fim em até 30 dias ou já vencido (creator não desligada);
  * - perto do mínimo: passou de 70% do mínimo de vendas do mês e ainda não chegou (como o aviso NEAR_MINIMUM);
  * - kit sem escolher: kit liberado há 7 dias ou mais;
- * - envio parado: em preparação há 3 dias ou mais (tarefa de quem envia).
+ * - envio parado: em preparação há 3 dias ou mais (tarefa de quem envia);
+ * - aniversário: de 3 dias antes até o dia (M4.2, D-TAGS), com a mensagem de parabéns.
  * Resolvido o motivo, a tarefa some sozinha. "Feito" grava a ocorrência em `ActionDone` e ela sai da fila; uma
  * ocorrência nova (outro mês, outro fim de contrato, outro kit) volta.
  */
@@ -62,7 +65,7 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   const [creators, kits, ships, done] = await Promise.all([
     prisma.creator.findMany({
       where: { brandId, status: { not: "DEACTIVATED" } },
-      select: { ...IDLE_SELECT, categories: true, contractEnd: true, account: { select: { name: true, phone: true } } },
+      select: { ...IDLE_SELECT, categories: true, contractEnd: true, account: { select: { name: true, phone: true, birthDate: true } } },
     }),
     prisma.kitGrant.findMany({ where: { brandId, status: "PENDING", createdAt: { lte: new Date(now.getTime() - KIT_PENDING_DAYS * DAY) } }, select: { id: true, creatorId: true, createdAt: true } }),
     prisma.shipment.findMany({
@@ -112,6 +115,14 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
     if (!min) continue;
     const acc = accumulatedSales(sales.get(c.id)!, released.get(c.id) ?? null, month);
     if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, `NEAR_MIN:${c.id}:${month}`, { kind: "NEAR_MIN", missingCents: min - acc });
+  }
+
+  // Aniversário (creators não desligadas com data de nascimento).
+  const todayKey = dayKey(now, tz);
+  for (const c of creators) {
+    if (!c.account.birthDate) continue;
+    const next = nextBirthday(c.account.birthDate.toISOString().slice(0, 10), todayKey);
+    if (next.days <= BIRTHDAY_WARN_DAYS) push(c.id, `BIRTHDAY:${c.id}:${next.day}`, { kind: "BIRTHDAY", day: next.day, days: next.days });
   }
 
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });

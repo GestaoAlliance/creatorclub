@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { applicationPriority, assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { applicationPriority, assertBps, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -362,12 +362,13 @@ export async function approveApplication(
       // Redes respondidas no formulário vão para o cadastro (D-SOCIALFILL); o que a conta já tem não é trocado.
       const instagram = usableHandle(app.instagram);
       const tiktok = usableHandle(app.tiktok);
-      let account = await tx.creatorAccount.findUnique({ where: { email }, select: { id: true, instagram: true, tiktok: true } });
+      let account = await tx.creatorAccount.findUnique({ where: { email }, select: { id: true, instagram: true, tiktok: true, birthDate: true } });
       if (account) {
         const already = await tx.creator.findUnique({ where: { brandId_accountId: { brandId: app.brandId, accountId: account.id } }, select: { id: true } });
         if (already) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
-        if ((!account.instagram && instagram) || (!account.tiktok && tiktok)) {
-          await tx.creatorAccount.update({ where: { id: account.id }, data: { instagram: account.instagram ?? instagram, tiktok: account.tiktok ?? tiktok } });
+        // M4.2 (D-TAGS): o nascimento da candidatura também completa a conta (sem trocar o que ela já tem).
+        if ((!account.instagram && instagram) || (!account.tiktok && tiktok) || (!account.birthDate && app.birthDate)) {
+          await tx.creatorAccount.update({ where: { id: account.id }, data: { instagram: account.instagram ?? instagram, tiktok: account.tiktok ?? tiktok, birthDate: account.birthDate ?? app.birthDate } });
         }
       } else {
         account = await tx.creatorAccount.create({
@@ -380,8 +381,9 @@ export async function approveApplication(
             cpf: isValidCpf(cpfDigits) ? cpfDigits : null,
             cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
             pixKey: app.pixKey && !/^(n\/?a|nao tenho|não tenho|-)$/i.test(app.pixKey.trim()) ? app.pixKey.slice(0, 140) : null,
+            birthDate: app.birthDate,
           },
-          select: { id: true, instagram: true, tiktok: true },
+          select: { id: true, instagram: true, tiktok: true, birthDate: true },
         });
       }
       const creator = await tx.creator.create({
@@ -461,6 +463,8 @@ export type StaffApplicationInput = {
   category: Category;
   suggestedCoupon: string;
   note: string;
+  /** M4.2 (D-TAGS): opcional. */
+  birthDate?: string;
 };
 
 const KIND_ANSWER: Record<Category, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
@@ -481,6 +485,8 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
   const email = clean(input.email) ? normalizeEmail(input.email) : null;
   if (clean(input.email) && !email) throw new ApplicationError("E-mail inválido.");
   if (!(input.category in KIND_ANSWER)) throw new ApplicationError("Escolha o tipo.");
+  const birth = parseBirthDate(input.birthDate, dayKey(now, "America/Sao_Paulo"));
+  if (!birth.ok) throw new ApplicationError(birth.error);
   const fields = {
     fullName,
     phone,
@@ -491,6 +497,7 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
     kindAnswer: KIND_ANSWER[input.category],
     suggestedCoupon: clean(input.suggestedCoupon, 40),
     note: clean(input.note, 300),
+    birthDate: birth.day ? new Date(`${birth.day}T00:00:00Z`) : null,
   };
   const raw = {
     "Seu nome completo": fields.fullName,
@@ -501,6 +508,7 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
     "@ do seu TikTok": fields.tiktok,
     "Quantidade de seguidores": fields.followers,
     "Sugestão de nome de cupom": fields.suggestedCoupon,
+    ...(birth.day ? { "Data de nascimento": birthdayLabel(birth.day, true) } : {}),
   };
   return prisma.$transaction(async (tx) => {
     const a = await tx.creatorApplication.create({

@@ -32,6 +32,8 @@ type Row = {
   cpf: string | null;
   coupon: string | null;
   stats: { salesCents: number; orders: number; sales30Cents: number } | null;
+  /** M4.2 (D-TAGS). */
+  tags: { id: string; name: string }[];
 };
 
 type Situation = "ACTIVE" | "INACTIVE" | "DEACTIVATED";
@@ -61,7 +63,7 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
  * cupom, @, e-mail, WhatsApp ou CPF, e a tabela com redes, WhatsApp, cupom e vendas (ordenável). Tudo no navegador:
  * a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só para quem vê dados fiscais).
  */
-export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number }) {
+export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number }) {
   const { rows } = p;
   const router = useRouter();
   // A linha inteira abre a ficha (links e botões de dentro continuam funcionando sozinhos).
@@ -72,6 +74,13 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
   const [q, setQ] = useState("");
   const [situation, setSituation] = useState<Situation>("ACTIVE");
   const [category, setCategory] = useState<CategoryFilter>(p.category ?? "");
+  const [tag, setTag] = useState(p.tag ?? "");
+  // M4.2 (D-TAGS): tags em uso na marca, com quantas creators da situação têm cada uma.
+  const tagOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) for (const t of r.tags) m.set(t.id, t.name);
+    return [...m].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [rows]);
   const [alert, setAlert] = useState<Alert>(p.contractsOnly ? "contract" : p.idleOnly ? "idle60" : p.pendingOnly ? "pending" : "");
   const [sort, setSort] = useState<{ by: Sort; desc: boolean }>({ by: rows.some((r) => r.stats) ? "sales" : "name", desc: rows.some((r) => r.stats) });
   const money = rows.some((r) => r.stats !== null);
@@ -92,6 +101,7 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
     const digits = q.replace(/\D/g, "");
     const list = inSituation.filter((r) => {
       if (!matchesCategory(r.categories, category) || !alertTest(r)) return false;
+      if (tag && !r.tags.some((t) => t.id === tag)) return false;
       if (!words.length) return true;
       const hay = norm(`${r.name} ${r.coupon ?? ""} ${r.instagram ?? ""} ${r.tiktok ?? ""} ${r.email ?? ""}`);
       const nums = `${(r.phone ?? "").replace(/\D/g, "")} ${r.cpf ?? ""}`;
@@ -105,7 +115,7 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
       const c = x < y ? -1 : x > y ? 1 : 0;
       return sort.desc ? -c : c;
     });
-  }, [q, situation, category, alert, sort, rows]);
+  }, [q, situation, category, alert, sort, rows, tag]);
 
   const total = inSituation.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
   const top = [...inSituation].map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
@@ -150,6 +160,14 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, cupom, @, e-mail, WhatsApp ou CPF" aria-label="Buscar creator" className={`${ui.input} pl-9`} />
             </label>
+            {tagOptions.length > 0 && (
+              <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={`${ui.input} w-auto max-w-48`}>
+                <option value="">Todas as tags</option>
+                {tagOptions.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name} ({inSituation.filter((r) => r.tags.some((x) => x.id === t.id)).length})</option>
+                ))}
+              </select>
+            )}
             <HelpTip id="cr-filtros" />
           </div>
           {situation !== "DEACTIVATED" && (
@@ -195,6 +213,7 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {c.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>)}
+                    {c.tags.map((t) => <span key={t.id} className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand dark:border-brand-2/30 dark:bg-brand-2/15 dark:text-brand-2">{t.name}</span>)}
                     {!c.hasLogin && <span className={badge.neutral}>sem acesso</span>}
                     {c.pendings.filter((x) => !x.startsWith("contrato")).map((x) => <span key={x} className={badge.amber}>{x}</span>)}
                   </div>
@@ -255,7 +274,7 @@ export function CreatorList(p: { rows: Row[]; contractsOnly?: boolean; idleOnly?
                         </div>
                       </td>
                       <td>{c.coupon ? <span className="flex items-center gap-1.5"><span className="font-mono text-xs font-semibold">{c.coupon}</span><span className="opacity-0 transition-opacity group-hover:opacity-100"><CopyButton value={c.coupon} label="Copiar" /></span></span> : <span className="text-stone-400">—</span>}</td>
-                      <td><div className="flex flex-wrap gap-1">{c.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>)}</div></td>
+                      <td><div className="flex flex-wrap gap-1">{c.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>)}{c.tags.map((t) => <span key={t.id} className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand dark:border-brand-2/30 dark:bg-brand-2/15 dark:text-brand-2">{t.name}</span>)}</div></td>
                       {money && (
                         <td className="text-right tabular-nums">
                           <span className="font-semibold">{formatBRL(c.stats?.salesCents ?? 0)}</span>

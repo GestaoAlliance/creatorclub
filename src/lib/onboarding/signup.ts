@@ -99,6 +99,7 @@ export async function submitSignup(
           cnpj: acc.cnpj,
           instagram: acc.instagram,
           tiktok: acc.tiktok,
+          birthDate: acc.birthDate ? new Date(`${acc.birthDate}T00:00:00Z`) : null,
           addrZip: acc.address.zip,
           addrStreet: acc.address.street,
           addrNumber: acc.address.number,

@@ -178,6 +178,9 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
           <Field label={q("cpf").label} error={errors.cpf}>{text("cpf", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
           <Field label={q("cnpj").label} optional hint={q("cnpj").hint} error={errors.cnpj}>{text("cnpj", { inputMode: "numeric", autoComplete: "off" })}</Field>
         </div>
+        <Field label={q("birthDate").label} optional hint="Para a equipe comemorar com você." error={errors.birthDate} className="sm:max-w-[calc(50%-0.5rem)]">
+          {text("birthDate", { type: "date", autoComplete: "bday" })}
+        </Field>
       </Block>
 
       <Block title={sec("contato").title}>

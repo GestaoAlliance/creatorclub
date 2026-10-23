@@ -1,3 +1,6 @@
+import { birthdayLabel, parseBirthDate } from "./birthday";
+import { dayKey } from "./time";
+
 /**
  * Formulário de inscrição do próprio sistema (D-SIGNUP): um formulário por marca (D-SIGNUPBRAND), com as mesmas perguntas
  * dos formulários do Google (Hunter e Captação). Onde o texto diz `{marca}`, entra o nome da marca do formulário. Os títulos são os mesmos, então a resposta é gravada e lida igual (`parseHunterAnswers`).
@@ -35,6 +38,8 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "fullName", title: "Seu nome completo:", label: "Nome completo", kind: "text", required: true },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
   { key: "cnpj", title: "CNPJ: ", label: "CNPJ", kind: "text", required: false, hint: "Se você emite nota como empresa ou MEI, informe aqui." },
+  // M4.2 (D-TAGS): aniversário (opcional), para a equipe comemorar.
+  { key: "birthDate", title: "Data de nascimento:", label: "Data de nascimento", kind: "text", required: false },
   { key: "email", title: "EMAIL:", label: "E-mail", kind: "email", required: true, hint: "É com ele que você entra no portal." },
   { key: "phone", title: "Seu whatsapp com DDD:", label: "Telefone (WhatsApp)", kind: "tel", required: true },
   { key: "instagram", title: "@ do seu Instagram:", label: "Instagram", kind: "text", required: true },
@@ -45,7 +50,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 
 /** Blocos do cadastro, na ordem da página (a senha vem no fim, fora das respostas). */
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: string; keys: readonly string[] }[] = [
-  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj"] },
+  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj", "birthDate"] },
   { id: "contato", title: "Contato", keys: ["email", "phone"] },
   { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok"] },
   { id: "cupom", title: "Seu cupom", hint: "O código que seus seguidores usam na compra. É por ele que contamos as suas vendas.", keys: ["coupon"] },
@@ -150,6 +155,8 @@ export type SignupAccount = {
   cnpj: string | null;
   instagram: string;
   tiktok: string | null;
+  /** "AAAA-MM-DD" ou null (M4.2). */
+  birthDate: string | null;
   coupon: string;
   address: { zip: string; street: string; number: string; complement: string | null; district: string; city: string; state: string };
 };
@@ -158,7 +165,7 @@ export type SignupAccount = {
  * Confere o cadastro e devolve as respostas no formato do Google ({ título: resposta }, para a equipe ler igual) e os
  * dados da conta, ou os erros por campo. A senha é conferida à parte (regra de login).
  */
-export function validateSignup(values: Record<string, string | undefined>): SignupResult {
+export function validateSignup(values: Record<string, string | undefined>, today = dayKey(new Date(), "America/Sao_Paulo")): SignupResult {
   const errors: Record<string, string> = {};
   const answers: Record<string, string> = {};
   const addr = signupAddress(values);
@@ -179,6 +186,15 @@ export function validateSignup(values: Record<string, string | undefined>): Sign
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
     else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
+    if (q.key === "birthDate") {
+      const b = parseBirthDate(v, today);
+      if (!b.ok || !b.day) errors[q.key] = "Data de nascimento inválida.";
+      else {
+        clean[q.key] = b.day;
+        answers[q.title] = birthdayLabel(b.day, true);
+      }
+      continue;
+    }
     const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : v;
     clean[q.key] = out;
     answers[q.title] = q.key === "instagram" || q.key === "tiktok" ? `@${out}` : out;
@@ -197,6 +213,7 @@ export function validateSignup(values: Record<string, string | undefined>): Sign
       cnpj: clean.cnpj ? clean.cnpj.replace(/\D/g, "") : null,
       instagram: clean.instagram!,
       tiktok: clean.tiktok || null,
+      birthDate: clean.birthDate || null,
       coupon: clean.coupon!,
       address: {
         zip,

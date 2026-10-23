@@ -10,7 +10,7 @@ import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
-import { CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
+import { birthdayLabel, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
@@ -18,7 +18,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm } from "./forms";
+import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -64,7 +64,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90 }: { mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [] }: { tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -87,6 +87,11 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 <span className={p.hasLogin ? badge.sky : badge.neutral}>{p.hasLogin ? "já entrou no portal" : "sem acesso ao portal"}</span>
                 {p.reviewedAt && <span className={badge.green}>conferida pela Ana</span>}
                 {p.contact.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
+                {p.birthDate && <span className={badge.neutral}>🎂 {birthdayLabel(p.birthDate)}</span>}
+              </div>
+              {/* M4.2 (D-TAGS): tags da marca, só a equipe vê. */}
+              <div className="mt-2">
+                <TagsEditor creatorId={p.id} tags={p.tags} suggestions={tagSuggestions} canEdit={p.canEdit} />
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {p.instagram && instagramUrl(p.instagram) && (
@@ -398,7 +403,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 <div className="flex min-w-0 flex-col gap-6">
           <Card title="Contato" icon={<UserRound className="size-4" />}>
             {p.canEdit ? (
-              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} instagram={p.instagram} tiktok={p.tiktok} />
+              <ContactForm creatorId={p.id} name={p.contact.name} email={p.contact.email} phone={p.contact.phone} fakeEmail={p.contact.fakeEmail} instagram={p.instagram} tiktok={p.tiktok} birthDate={p.birthDate} />
             ) : (
               <p className="text-sm">{p.contact.fakeEmail ? "e-mail a confirmar" : p.contact.email} · {p.contact.phone ?? "sem telefone"}</p>
             )}

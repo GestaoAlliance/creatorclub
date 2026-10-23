@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 4 — M4.2** Tags, gerente e aniversário (`docs/PLANO-MELHORIAS.md`): perguntar antes as decisões 3, 7 e 8. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 4 — M4.3** Tipos de creator configuráveis e campos extras do cadastro (`docs/PLANO-MELHORIAS.md`): perguntar antes a decisão 9. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -53,7 +53,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M3.4a** Resumo semanal da gestão pelo WhatsApp (D-WEEKLY)
 - [x] **M3.4b** Perguntar ao Claude: conector só leitura no Claude de cada pessoa, com o login dela (D-MCP)
 - [x] **M4.1** Candidatas: recusar em massa e "Nova candidata" pela equipe (D-MANUALAPP)
-- [ ] **M4.2** Tags, gerente e aniversário (decisões 3, 7, 8)
+- [x] **M4.2** Tags e aniversário; gerente continua a da marca (D-TAGS)
+- [ ] **M4.3** Tipos de creator configuráveis e campos extras (decisão 9)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -275,6 +276,21 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-173 — 2026-10-23 — Tags e aniversário das creators (M4.2, D-TAGS)
+- **Decisões do responsável:** tags livres que a Gestão cria e marca (só a equipe vê); sem gerente por creator (quem
+  cuida é a Gestão da marca, como no D-ACTIONS); data de nascimento opcional no cadastro do site e no portal (cartão no
+  Início enquanto faltar); aniversariante na fila de ações de 3 dias antes até o dia, com mensagem de parabéns.
+- **Feito:** tags na ficha (marcar escolhendo uma da marca ou criando; tirar no "x"; mesmo nome sem acento/maiúscula é
+  a mesma tag), nas linhas da lista de Creators e filtro "Todas as tags". Nascimento: campo no cadastro do site, na
+  "Nova candidata" (vai para a conta na aprovação), na ficha (Cadastro → Contato) e o cartão "Quando é o seu
+  aniversário?" no Início do portal (uma vez; depois só a equipe corrige; nada muda na visualização da equipe). Selo
+  🎂 dd/mm na ficha. Tarefa "Aniversário" na fila de ações (Gestão), com "Mandar no WhatsApp". Auditoria em tudo.
+- **Banco:** `CreatorAccount.birthDate` e `CreatorApplication.birthDate` (DATE); tabelas `CreatorTag` e
+  `CreatorTagLink` (RLS; chave composta com a marca; travas `CreatorTag_name`, `CreatorAccount_birthDate`,
+  `CreatorApplication_birthDate`).
+- **Verificado:** testes (238), integração (249; novo: tags e isolamento por marca, nascimento na ficha e no portal,
+  fila de aniversário, candidata → conta), typecheck, build, migração sem divergência.
 
 ### CP-172 — 2026-10-23 — Candidatas: recusa em massa e nova candidata pela equipe (M4.1, D-MANUALAPP)
 - **Decisões do responsável:** a aba continua "Candidatas"; em massa só recusar (aprovar segue uma a uma, porque cria
