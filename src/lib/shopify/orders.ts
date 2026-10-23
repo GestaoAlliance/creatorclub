@@ -26,7 +26,7 @@ export type ShopifyOrderNode = {
   transactions: Array<{ kind: string; status: string; processedAt: string | null }>;
   lineItems: {
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
-    nodes: Array<{ id: string; title: string; currentQuantity: number; discountedTotalSet: Money }>;
+    nodes: Array<{ id: string; title: string; currentQuantity: number; discountedTotalSet: Money; product?: { id: string } | null }>;
   };
 };
 
@@ -38,7 +38,7 @@ export const ORDER_FIELDS = `
 
 export const LINE_ITEMS = `
   pageInfo { hasNextPage endCursor }
-  nodes { id title currentQuantity discountedTotalSet { shopMoney { amount } } }`;
+  nodes { id title currentQuantity discountedTotalSet { shopMoney { amount } } product { id } }`;
 
 export const ORDER_QUERY = `query Order($id: ID!, $after: String) {
   order(id: $id) { ${ORDER_FIELDS}
@@ -78,6 +78,7 @@ export function mapShopifyOrder(node: ShopifyOrderNode, brandId: string) {
     title: l.title,
     quantity: l.currentQuantity,
     discountedTotalCents: parseDecimalToCents(l.discountedTotalSet.shopMoney.amount),
+    productShopifyId: l.product?.id ?? null,
   }));
   return { order, lines };
 }
@@ -123,7 +124,7 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
       await tx.orderLine.upsert({
         where: { orderId_shopifyId: { orderId, shopifyId: line.shopifyId } },
         create: { ...line, orderId, brandId },
-        update: { title: line.title, quantity: line.quantity, discountedTotalCents: line.discountedTotalCents },
+        update: { title: line.title, quantity: line.quantity, discountedTotalCents: line.discountedTotalCents, productShopifyId: line.productShopifyId },
       });
     }
     return { outcome, orderId, warnings };

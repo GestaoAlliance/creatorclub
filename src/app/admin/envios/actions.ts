@@ -37,6 +37,7 @@ export async function shippedAction(_prev: ActionState, form: FormData): Promise
         shipmentId: String(form.get("shipmentId")),
         carrier: String(form.get("carrier") ?? ""),
         trackingCode: String(form.get("trackingCode") ?? ""),
+        freight: String(form.get("freight") ?? ""),
       }),
     "Marcado como enviado.",
   );

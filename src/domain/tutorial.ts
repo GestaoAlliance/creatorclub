@@ -248,6 +248,10 @@ export const HELP = {
     title: "Marcar enviado",
     text: "Depois de postar, informe a transportadora e o código de rastreio. A creator acompanha a entrega pelo portal.",
   },
+  "pr-lucro": {
+    title: "Lucro do programa",
+    text: "Receita com cupom de creator menos custo dos produtos (Shopify), comissão, kits enviados e frete. O desconto do cupom já está fora da receita.",
+  },
   "sq-abas": {
     title: "Situação",
     text: "Em análise: a Gestão confere e aprova. Aprovados: o Pagamento faz o Pix. Decididos guarda os pagos e os recusados.",

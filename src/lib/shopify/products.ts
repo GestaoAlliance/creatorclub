@@ -8,39 +8,54 @@ import { defaultClientFactory, type ClientFactory } from "./jobs";
 /**
  * Catálogo da loja (D-SHIPPRODUCTS): os produtos do Shopify de cada marca em `Product`, para envios e kits.
  * Roda uma vez por dia, ao conectar a loja e pelo botão na tela Shopify. Produto que sumiu ou não está ativo fica
- * inativo (nada é apagado: envios antigos apontam para ele).
+ * inativo (nada é apagado: envios antigos apontam para ele). Com `read_inventory` no app, traz também o custo
+ * unitário da primeira variante (M3.2, D-COST); sem a permissão, o catálogo segue sem custo.
  */
 export const PRODUCTS_JOB = "shopify.products.sync";
 export const PRODUCTS_MAX_PAGES = 20;
 
-const PRODUCTS_QUERY = `query Products($after: String) {
-  products(first: 100, after: $after, sortKey: ID) { nodes { id title status } pageInfo { hasNextPage endCursor } } }`;
+const productsQuery = (withCost: boolean) => `query Products($after: String) {
+  products(first: 100, after: $after, sortKey: ID) { nodes { id title status${
+    withCost ? " variants(first: 1) { nodes { inventoryItem { unitCost { amount } } } }" : ""
+  } } pageInfo { hasNextPage endCursor } } }`;
 
-type ProductsPage = { products: { nodes: Array<{ id: string; title: string; status: string }>; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+type ProductNode = { id: string; title: string; status: string; variants?: { nodes: Array<{ inventoryItem: { unitCost: { amount: string } | null } | null }> } };
+type ProductsPage = { products: { nodes: ProductNode[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+
+/** "12.5" → 1250 centavos; vazio ou inválido → null. */
+function costCents(node: ProductNode): number | null {
+  const amount = node.variants?.nodes[0]?.inventoryItem?.unitCost?.amount;
+  if (amount === undefined || amount === null || amount === "") return null;
+  const n = Math.round(Number(amount) * 100);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
 
 export type ProductsSyncResult = { seen: number; created: number; updated: number; deactivated: number };
 
-export async function syncProducts(prisma: PrismaClient, brandId: string, client: ShopifyClient): Promise<ProductsSyncResult> {
-  const seen = new Map<string, { title: string; active: boolean }>();
+export async function syncProducts(prisma: PrismaClient, brandId: string, client: ShopifyClient, now = new Date()): Promise<ProductsSyncResult> {
+  const integration = await prisma.brandIntegration.findFirst({ where: { brandId, kind: "SHOPIFY" }, select: { scopes: true } });
+  const withCost = (integration?.scopes ?? "").split(",").map((s) => s.trim()).some((s) => s === "read_inventory" || s === "write_inventory");
+  const seen = new Map<string, { title: string; active: boolean; costCents: number | null }>();
   let after: string | null = null;
   for (let page = 0; page < PRODUCTS_MAX_PAGES; page++) {
-    const res: ProductsPage = await client.graphql<ProductsPage>(PRODUCTS_QUERY, { after });
-    for (const p of res.products.nodes) seen.set(p.id, { title: p.title.trim(), active: p.status === "ACTIVE" });
+    const res: ProductsPage = await client.graphql<ProductsPage>(productsQuery(withCost), { after });
+    for (const p of res.products.nodes) seen.set(p.id, { title: p.title.trim(), active: p.status === "ACTIVE", costCents: withCost ? costCents(p) : null });
     if (!res.products.pageInfo.hasNextPage) break;
     after = res.products.pageInfo.endCursor;
     if (page === PRODUCTS_MAX_PAGES - 1) throw new Error("Catálogo maior que o limite de páginas; nada foi desativado.");
   }
-  const existing = await prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, active: true } });
+  const existing = await prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, active: true, costCents: true } });
   const byShopify = new Map(existing.map((p) => [p.shopifyId, p]));
   const result: ProductsSyncResult = { seen: seen.size, created: 0, updated: 0, deactivated: 0 };
   await prisma.$transaction(async (tx) => {
     for (const [shopifyId, p] of seen) {
       const old = byShopify.get(shopifyId);
+      const cost = withCost ? { costCents: p.costCents, costSyncedAt: now } : {};
       if (!old) {
-        await tx.product.create({ data: { brandId, shopifyId, title: p.title, active: p.active } });
+        await tx.product.create({ data: { brandId, shopifyId, title: p.title, active: p.active, ...cost } });
         result.created++;
-      } else if (old.title !== p.title || old.active !== p.active) {
-        await tx.product.update({ where: { id: old.id }, data: { title: p.title, active: p.active } });
+      } else if (old.title !== p.title || old.active !== p.active || (withCost && old.costCents !== p.costCents)) {
+        await tx.product.update({ where: { id: old.id }, data: { title: p.title, active: p.active, ...cost } });
         result.updated++;
       }
     }

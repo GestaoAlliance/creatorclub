@@ -57,6 +57,7 @@ export function ShippedForm({ shipmentId }: { shipmentId: string }) {
       <input type="hidden" name="shipmentId" value={shipmentId} />
       <input name="carrier" defaultValue="Correios" className={`${field} w-28`} aria-label="Transportadora" />
       <input name="trackingCode" required placeholder="código de rastreio" className={`${field} w-40 font-mono`} />
+      <input name="freight" inputMode="decimal" placeholder="frete R$ (opcional)" className={`${field} w-36`} aria-label="Frete pago (R$)" />
       <button className={ui.btnSm} disabled={pending}>Marcar enviado</button>
       <Msg state={state} />
     </form>

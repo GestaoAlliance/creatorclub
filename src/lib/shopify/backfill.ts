@@ -26,7 +26,7 @@ export function bulkOrdersQuery(since: Date): string {
     id name createdAt updatedAt cancelledAt test taxesIncluded displayFinancialStatus currencyCode discountCodes
     currentSubtotalPriceSet { shopMoney { amount } } currentTotalPriceSet { shopMoney { amount } }
     transactions { kind status processedAt }
-    lineItems { edges { node { id title currentQuantity discountedTotalSet { shopMoney { amount } } } } } } } } }`;
+    lineItems { edges { node { id title currentQuantity discountedTotalSet { shopMoney { amount } } product { id } } } } } } } }`;
 }
 
 const START_MUTATION = `mutation Start($query: String!) {

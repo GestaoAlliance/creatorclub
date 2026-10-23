@@ -107,17 +107,32 @@ async function transition(
   });
 }
 
-export async function markShipped(prisma: PrismaClient, actor: Actor | null, input: { shipmentId: string; carrier: string; trackingCode: string }, now = new Date()) {
+/** Frete digitado ao marcar como enviado (M3.2, D-COST): "23,90" → 2390; vazio → null. */
+export function freightToCents(raw: string | undefined): number | null {
+  const s = (raw ?? "").replace(/R\$|\s/g, "");
+  if (!s) return null;
+  if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$/.test(s)) throw new ShipmentError("Frete inválido. Use, por exemplo, 23,90 (ou deixe em branco).");
+  const [int, dec = ""] = s.replace(/\./g, "").split(",");
+  return Number(int) * 100 + Number(dec.padEnd(2, "0"));
+}
+
+export async function markShipped(
+  prisma: PrismaClient,
+  actor: Actor | null,
+  input: { shipmentId: string; carrier: string; trackingCode: string; freight?: string },
+  now = new Date(),
+) {
   const carrier = input.carrier.trim().slice(0, 60) || "Correios";
   const trackingCode = input.trackingCode.trim().toUpperCase().slice(0, 60);
   if (!trackingCode) throw new ShipmentError("Informe o código de rastreio.");
+  const freightCents = freightToCents(input.freight);
   await transition(
     prisma,
     input.shipmentId,
     ["PREPARING"],
-    { status: "SHIPPED", carrier, trackingCode, shippedAt: now, shippedById: actor?.userId },
+    { status: "SHIPPED", carrier, trackingCode, shippedAt: now, shippedById: actor?.userId, freightCents },
     (brandId) => assertManage(actor, brandId),
-    { actorId: actor?.userId ?? "", action: "shipment.shipped", after: { carrier, trackingCode } },
+    { actorId: actor?.userId ?? "", action: "shipment.shipped", after: { carrier, trackingCode, freightCents } },
     notices.shipped(input.shipmentId, carrier, trackingCode),
   );
 }

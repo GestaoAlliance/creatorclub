@@ -18,8 +18,8 @@ describe("menu da equipe por papel", () => {
     expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar"]);
     // Cada papel só vê as abas que pode usar; o item do menu abre a primeira delas.
     expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas"]);
-    expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas"]);
-    expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Cupons", "Desempenho"]);
+    expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);
+    expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Produtos", "Cupons", "Desempenho"]);
     expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques"]);
     expect(staffNav([{ role: "GESTAO", brandId: "b" }]).find((i) => i.label === "Vendas")?.href).toBe("/vendas");
   });
