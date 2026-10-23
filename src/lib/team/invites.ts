@@ -224,7 +224,7 @@ export async function teamOverview(prisma: PrismaClient, actor: Actor | null, no
   const [users, invites, brands] = await Promise.all([
     prisma.user.findMany({
       where: { disabledAt: null, roleGrants: { some: {} } },
-      select: { id: true, email: true, name: true, phone: true, roleGrants: { select: { id: true, role: true, brandId: true } } },
+      select: { id: true, email: true, name: true, phone: true, lastSeenAt: true, roleGrants: { select: { id: true, role: true, brandId: true } } },
       orderBy: { name: "asc" },
     }),
     prisma.staffInvite.findMany({

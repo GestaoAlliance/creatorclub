@@ -136,6 +136,8 @@ model User {
   name       String
   phone      String? // telefone da pessoa da equipe (ex.: hunter), opcional
   disabledAt DateTime?
+  /// M4.4b (D-ACCESS): último acesso ao sistema (painel ou portal), gravado no máximo uma vez por hora.
+  lastSeenAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
