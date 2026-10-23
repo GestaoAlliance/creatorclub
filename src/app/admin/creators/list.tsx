@@ -34,6 +34,9 @@ type Row = {
   stats: { salesCents: number; orders: number; sales30Cents: number } | null;
   /** M4.2 (D-TAGS). */
   tags: { id: string; name: string }[];
+  /** M4.3 (D-PROFILEFIELDS). */
+  city: string | null;
+  state: string | null;
 };
 
 type Situation = "ACTIVE" | "INACTIVE" | "DEACTIVATED";
@@ -75,6 +78,8 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
   const [situation, setSituation] = useState<Situation>("ACTIVE");
   const [category, setCategory] = useState<CategoryFilter>(p.category ?? "");
   const [tag, setTag] = useState(p.tag ?? "");
+  const [uf, setUf] = useState("");
+  const ufs = useMemo(() => [...new Set(rows.map((r) => r.state).filter((x): x is string => Boolean(x)))].sort(), [rows]);
   // M4.2 (D-TAGS): tags em uso na marca, com quantas creators da situação têm cada uma.
   const tagOptions = useMemo(() => {
     const m = new Map<string, string>();
@@ -102,6 +107,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
     const list = inSituation.filter((r) => {
       if (!matchesCategory(r.categories, category) || !alertTest(r)) return false;
       if (tag && !r.tags.some((t) => t.id === tag)) return false;
+      if (uf && r.state !== uf) return false;
       if (!words.length) return true;
       const hay = norm(`${r.name} ${r.coupon ?? ""} ${r.instagram ?? ""} ${r.tiktok ?? ""} ${r.email ?? ""}`);
       const nums = `${(r.phone ?? "").replace(/\D/g, "")} ${r.cpf ?? ""}`;
@@ -115,7 +121,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
       const c = x < y ? -1 : x > y ? 1 : 0;
       return sort.desc ? -c : c;
     });
-  }, [q, situation, category, alert, sort, rows, tag]);
+  }, [q, situation, category, alert, sort, rows, tag, uf]);
 
   const total = inSituation.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
   const top = [...inSituation].map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
@@ -160,16 +166,26 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, cupom, @, e-mail, WhatsApp ou CPF" aria-label="Buscar creator" className={`${ui.input} pl-9`} />
             </label>
+            <HelpTip id="cr-filtros" />
+          </div>
+          {(ufs.length > 0 || tagOptions.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+            {ufs.length > 0 && (
+              <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado" className={ui.inputSm}>
+                <option value="">Todos os estados</option>
+                {ufs.map((x) => <option key={x} value={x}>{x} ({inSituation.filter((r) => r.state === x).length})</option>)}
+              </select>
+            )}
             {tagOptions.length > 0 && (
-              <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={`${ui.input} w-auto max-w-48`}>
+              <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={ui.inputSm}>
                 <option value="">Todas as tags</option>
                 {tagOptions.map((t) => (
                   <option key={t.id} value={t.id}>{t.name} ({inSituation.filter((r) => r.tags.some((x) => x.id === t.id)).length})</option>
                 ))}
               </select>
             )}
-            <HelpTip id="cr-filtros" />
-          </div>
+            </div>
+          )}
           {situation !== "DEACTIVATED" && (
             <div className="flex flex-wrap gap-2">
               {ALERTS.map((a) => {
@@ -209,6 +225,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
                     {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
                     {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</span>}
                     {c.coupon && <span className="font-mono font-semibold">{c.coupon}</span>}
+                    {c.state && <span className="text-stone-500">📍 {c.city ? `${c.city}/${c.state}` : c.state}</span>}
                     <span className="text-stone-500">{c.lastOrder ? `última venda há ${daysSince(c.lastOrder.day)} dias` : "nunca vendeu"}</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -251,6 +268,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
                             ) : (
                               <span className="text-xs text-stone-500">{c.phone ?? "sem WhatsApp"}</span>
                             )}
+                            {c.state && <span className="block text-xs text-stone-500">📍 {c.city ? `${c.city}/${c.state}` : c.state}</span>}
                             <div className="mt-1 flex flex-wrap gap-1">
                               {!c.hasLogin && <span className={badge.neutral}>sem acesso</span>}
                               {c.pendings.filter((x) => !x.startsWith("contrato")).map((x) => <span key={x} className={badge.amber}>{x}</span>)}

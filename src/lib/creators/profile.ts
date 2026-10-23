@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractStatus, creatorPendings, dayKey, parseBirthDate, socialHandle, type CreatorCategoryValue } from "@/domain";
+import { assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, parseBirthDate, socialHandle, type CreatorCategoryValue, type ProfileKey } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -38,7 +38,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       where: { brandId },
       orderBy: { account: { name: "asc" } },
       include: {
-        account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true, birthDate: true } },
+        account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true, birthDate: true, addrCity: true, addrState: true, niches: true } },
         contractTemplate: { select: { releaseMinCents: true } },
         couponAssignments: { where: { validTo: null }, select: { confirmedAt: true, coupon: { select: { code: true, kind: true } } } },
         commissionPolicies: { where: { validTo: null }, select: { confirmedAt: true } },
@@ -101,6 +101,10 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       // M4.2 (D-TAGS): tags da marca e o dia do aniversário.
       tags: c.tagLinks.map((l) => l.tag).sort((x, y) => x.name.localeCompare(y.name, "pt-BR")),
       birthDate: c.account.birthDate ? c.account.birthDate.toISOString().slice(0, 10) : null,
+      // M4.3 (D-PROFILEFIELDS): cidade/UF do endereço e nichos.
+      city: c.account.addrCity,
+      state: c.account.addrState,
+      niches: c.account.niches,
       cpf: fiscal ? (c.account.cpf ?? null) : null,
       coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
       stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null }) : null,
@@ -170,6 +174,9 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     /** M4.2 (D-TAGS): data de nascimento ("AAAA-MM-DD") e tags da creator. */
     birthDate: a.birthDate ? a.birthDate.toISOString().slice(0, 10) : null,
     tags: tags.map((l) => l.tag).sort((x, y) => x.name.localeCompare(y.name, "pt-BR")),
+    /** M4.3 (D-PROFILEFIELDS): perfil opcional e cidade/UF do endereço. */
+    profile: { professionalId: a.professionalId, niches: a.niches, youtube: a.youtube, kwai: a.kwai, allergies: a.allergies, mediaKitUrl: a.mediaKitUrl },
+    place: a.addrCity && a.addrState ? `${a.addrCity}/${a.addrState}` : (a.addrState ?? null),
     contract: {
       start: dayOf(creator.contractStart),
       end: dayOf(creator.contractEnd),
@@ -243,6 +250,28 @@ export async function updateContact(
       prisma, actor, creator.brandId, "creator.contact", "CreatorAccount", a.id,
       { name: a.name, email: a.email, phone: a.phone, instagram: a.instagram, tiktok: a.tiktok, birthDate: day(a.birthDate) },
       { name, email, phone, instagram, tiktok, birthDate: day(birthDate) },
+    ),
+  ]);
+}
+
+/** M4.3 (D-PROFILEFIELDS): perfil opcional da creator na ficha (quem edita creators). Vazio apaga. */
+export async function updateProfile(
+  prisma: PrismaClient,
+  actor: Actor | null,
+  creatorId: string,
+  input: Partial<Record<ProfileKey, string | readonly string[]>>,
+) {
+  const creator = await loadCreator(prisma, creatorId);
+  if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
+  const r = cleanProfile(input);
+  if (!r.ok) throw new ProfileError(Object.values(r.errors)[0]!);
+  const a = creator.account;
+  await prisma.$transaction([
+    prisma.creatorAccount.update({ where: { id: a.id }, data: r.value }),
+    audit(
+      prisma, actor, creator.brandId, "creator.profile", "CreatorAccount", a.id,
+      { professionalId: a.professionalId, niches: a.niches, youtube: a.youtube, kwai: a.kwai, allergies: a.allergies, mediaKitUrl: a.mediaKitUrl },
+      r.value,
     ),
   ]);
 }

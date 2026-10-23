@@ -1,5 +1,5 @@
 import type { CreatorReturn } from "@/lib/reports/creator-return";
-import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound, Sparkles, FileText, Play } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { Tabs } from "@/components/ui/tabs";
@@ -18,7 +18,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor } from "./forms";
+import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -88,6 +88,9 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 {p.reviewedAt && <span className={badge.green}>conferida pela Ana</span>}
                 {p.contact.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
                 {p.birthDate && <span className={badge.neutral}>🎂 {birthdayLabel(p.birthDate)}</span>}
+                {p.place && <span className={badge.neutral}>📍 {p.place}</span>}
+                {p.profile.professionalId && <span className={badge.sky}>{p.profile.professionalId}</span>}
+                {p.profile.niches.map((n) => <span key={n} className={badge.neutral}>{n}</span>)}
               </div>
               {/* M4.2 (D-TAGS): tags da marca, só a equipe vê. */}
               <div className="mt-2">
@@ -102,6 +105,17 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 {p.tiktok && (
                   <a href={`https://www.tiktok.com/@${p.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
                     <TikTokIcon className="size-4" /> {p.tiktok.replace(/^@/, "")}
+                  </a>
+                )}
+                {p.profile.youtube && (
+                  <a href={`https://www.youtube.com/@${p.profile.youtube}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
+                    <Play className="size-4 text-red-600" /> {p.profile.youtube}
+                  </a>
+                )}
+                {p.profile.kwai && <span className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">Kwai · {p.profile.kwai}</span>}
+                {p.profile.mediaKitUrl && (
+                  <a href={p.profile.mediaKitUrl} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
+                    <FileText className="size-4" /> Mídia kit
                   </a>
                 )}
                 {p.contact.phone && whatsappChatUrl(p.contact.phone) && (
@@ -428,6 +442,18 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                   {p.address.lines.length > 0 && !p.address.confirmed && <span className={badge.amber}>a confirmar pela creator</span>}
                 </p>
                 {p.address.lines.length ? p.address.lines.map((l) => <p key={l}>{l}</p>) : <p className="text-stone-500">Nenhum endereço no sistema.</p>}
+              </div>
+            )}
+          </Card>
+          {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}
+          <Card title="Perfil" icon={<Sparkles className="size-4" />}>
+            {p.canEdit ? (
+              <ProfileForm creatorId={p.id} p={p.profile} />
+            ) : (
+              <div className="grid gap-1 text-sm">
+                <p><span className="text-stone-500">Nicho</span> {p.profile.niches.join(", ") || "—"}</p>
+                <p><span className="text-stone-500">Registro</span> {p.profile.professionalId ?? "—"}</p>
+                <p><span className="text-stone-500">Alergias/restrições</span> {p.profile.allergies ?? "—"}</p>
               </div>
             )}
           </Card>

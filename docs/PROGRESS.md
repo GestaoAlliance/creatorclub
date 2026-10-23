@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 4 — M4.3** Tipos de creator configuráveis e campos extras do cadastro (`docs/PLANO-MELHORIAS.md`): perguntar antes a decisão 9. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 4 — M4.4** Configurações: padrão da Alliance e exceções por marca; equipe com último acesso e resetar senha (`docs/PLANO-MELHORIAS.md`): perguntar antes o que muda. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -54,7 +54,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M3.4b** Perguntar ao Claude: conector só leitura no Claude de cada pessoa, com o login dela (D-MCP)
 - [x] **M4.1** Candidatas: recusar em massa e "Nova candidata" pela equipe (D-MANUALAPP)
 - [x] **M4.2** Tags e aniversário; gerente continua a da marca (D-TAGS)
-- [ ] **M4.3** Tipos de creator configuráveis e campos extras (decisão 9)
+- [x] **M4.3** Tipos ficam os 3; perfil opcional (registro, nichos, YouTube, Kwai, alergias, mídia kit) e cidade/UF (D-PROFILEFIELDS)
+- [ ] **M4.4** Configurações: padrão da Alliance e exceções por marca
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -276,6 +277,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-174 — 2026-10-23 — Perfil opcional e cidade/UF (M4.3, D-PROFILEFIELDS)
+- **Decisões do responsável:** os tipos continuam Influencer, UGC e Prescritor (decisão 9); campos novos, todos
+  opcionais: registro profissional (CRN, CRM…), nicho (lista sugerida), YouTube, Kwai, alergias/restrições e link do
+  mídia kit; cidade/UF na ficha e na lista, com filtro por estado.
+- **Feito:** bloco "Sobre você" e YouTube/Kwai no cadastro do site (vão para a conta e para as respostas que a Ana lê);
+  cartão "Perfil" na ficha (Cadastro) para editar; topo da ficha com cidade/UF, registro, nichos, YouTube e mídia kit;
+  lista de Creators com cidade/UF e filtros "Todos os estados" e "Todas as tags" numa linha própria; alergias
+  aparecem no cartão do envio (Envios). Auditoria ao salvar o perfil.
+- **Banco:** colunas do perfil em `CreatorAccount` (trava `CreatorAccount_profile`: tamanhos e mídia kit só https).
+- **Verificado:** testes (240), integração (250; novo: perfil na ficha, permissões, lista, envios, trava), typecheck,
+  build, migração sem divergência.
 
 ### CP-173 — 2026-10-23 — Tags e aniversário das creators (M4.2, D-TAGS)
 - **Decisões do responsável:** tags livres que a Gestão cria e marca (só a equipe vê); sem gerente por creator (quem

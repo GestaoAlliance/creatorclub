@@ -3,7 +3,7 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
+import { NICHES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, signupAction, type CouponCheck, type SignupState } from "./actions";
@@ -40,6 +40,9 @@ const PLACEHOLDER: Record<string, string> = {
   phone: "(00) 00000-0000",
   instagram: "usuario",
   tiktok: "usuario",
+  youtube: "seucanal",
+  kwai: "usuario",
+  mediaKitUrl: "https://",
   coupon: "SEUNOME",
   addrZip: "00000-000",
   addrComplement: "Apto 101",
@@ -150,10 +153,10 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
     />
   );
   const q = (k: string) => BY_KEY.get(k)!;
-  const handle = (k: "instagram" | "tiktok") => (
+  const handle = (k: "instagram" | "tiktok" | "youtube" | "kwai") => (
     <span className="flex">
       <span className="grid place-content-center rounded-l-xl border border-r-0 border-stone-300 bg-stone-50 px-3 text-sm text-stone-500 dark:border-white/15 dark:bg-white/5">@</span>
-      {text(k, { required: q(k).required, autoComplete: "off", className: `${input} rounded-l-none`, onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k, e.target.value.replace(/^@+/, "")) })}
+      {text(k, { required: BY_KEY.get(k)?.required ?? false, autoComplete: "off", className: `${input} rounded-l-none`, onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k, e.target.value.replace(/^@+/, "")) })}
     </span>
   );
   const couponCode = signupCouponPreview(v.coupon ?? "");
@@ -194,7 +197,45 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={q("instagram").label} error={errors.instagram}>{handle("instagram")}</Field>
           <Field label={q("tiktok").label} optional error={errors.tiktok}>{handle("tiktok")}</Field>
+          <Field label="YouTube" optional error={errors.youtube}>{handle("youtube")}</Field>
+          <Field label="Kwai" optional error={errors.kwai}>{handle("kwai")}</Field>
         </div>
+      </Block>
+
+      {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}
+      <Block title="Sobre você" hint="Tudo opcional. Ajuda a equipe a conhecer o seu trabalho.">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-sm font-medium text-stone-900 dark:text-stone-100">Nicho do seu conteúdo <span className="font-normal text-stone-500">(pode marcar mais de um)</span></legend>
+          <div className="flex flex-wrap gap-2">
+            {NICHES.map((n) => {
+              const on = (v.niches ?? "").split("|").includes(n);
+              return (
+                <label key={n} className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition ${on ? "border-[var(--b)] bg-[color-mix(in_srgb,var(--b)_10%,transparent)] font-medium" : "border-stone-300 dark:border-white/15"}`}>
+                  <input
+                    type="checkbox"
+                    name="niches"
+                    value={n}
+                    checked={on}
+                    onChange={() => set("niches", (on ? (v.niches ?? "").split("|").filter((x) => x && x !== n) : [...(v.niches ?? "").split("|").filter(Boolean), n]).join("|"))}
+                    className="sr-only"
+                  />
+                  {n}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Registro profissional" optional hint="CRN, CRM, CRF… se você é profissional de saúde." error={errors.professionalId}>
+            {text("professionalId", { maxLength: 40, autoComplete: "off" })}
+          </Field>
+          <Field label="Link do mídia kit" optional hint="Drive, Canva ou site com os seus números." error={errors.mediaKitUrl}>
+            {text("mediaKitUrl", { inputMode: "url", maxLength: 500, autoComplete: "off" })}
+          </Field>
+        </div>
+        <Field label="Alergias ou restrições" optional hint="Para montarmos o seu kit (ex.: lactose, glúten)." error={errors.allergies}>
+          {text("allergies", { maxLength: 300, autoComplete: "off" })}
+        </Field>
       </Block>
 
       <Block title={sec("cupom").title} hint={sec("cupom").hint}>
