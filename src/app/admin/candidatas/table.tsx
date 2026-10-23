@@ -24,6 +24,8 @@ export type CandidateRow = {
   hunter: string | null;
   brands: string[];
   duplicate: boolean;
+  /** M2.3 (D-PRIORITY): selo e os motivos (aparecem ao passar o mouse e no celular). */
+  priority: { level: "ALTA" | "MEDIA" | "BAIXA" | "REPETIDA"; label: string; reasons: string };
   days: number;
   canDecide: boolean;
   creatorId: string | null;
@@ -85,6 +87,12 @@ function Socials({ c }: { c: CandidateRow }) {
       {c.followers && <span className="text-stone-500">{c.followers} seguidores</span>}
     </div>
   );
+}
+
+const PRIORITY_TONE = { ALTA: badge.green, MEDIA: badge.amber, BAIXA: badge.neutral, REPETIDA: badge.red } as const;
+
+function PriorityBadge({ c }: { c: CandidateRow }) {
+  return <span title={c.priority.reasons} className={PRIORITY_TONE[c.priority.level]}>{c.priority.label}</span>;
 }
 
 function Who({ c }: { c: CandidateRow }) {
@@ -166,6 +174,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                   {c.followers && <span className="text-stone-500">{c.followers} seg.</span>}
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 pl-12">
+                  <PriorityBadge c={c} />
                   <span className={badge[c.kindTone]}>{c.kind}</span>
                   <span className={ui.hint}>{c.origin}{c.hunter && ` · ${c.hunter}`} · {ago(c.days)}</span>
                 </div>
@@ -177,9 +186,10 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
             ))}
           </ul>
           <div className="-mx-2 hidden overflow-x-auto md:block">
-            <table data-tour="cand-lista" className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
+            <table data-tour="cand-lista" className="w-full min-w-[1000px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-stone-500">
+                  <th>Prioridade</th>
                   <th>Candidata</th>
                   <th>Redes</th>
                   <th>Tipo</th>
@@ -192,6 +202,10 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                 {shown.map((c) => (
                   <Fragment key={c.id}>
                     <tr onClick={() => toggle(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
+                      <td>
+                        <PriorityBadge c={c} />
+                        {c.priority.reasons && <span className="mt-1 block max-w-36 text-[11px] leading-tight text-stone-500">{c.priority.reasons}</span>}
+                      </td>
                       <td className="max-w-72"><Who c={c} /></td>
                       <td><Socials c={c} /></td>
                       <td><span className={badge[c.kindTone]}>{c.kind}</span></td>
@@ -209,7 +223,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                     </tr>
                     {open?.id === c.id && (
                       <tr>
-                        <td colSpan={6} className="px-3">{expanded(c)}</td>
+                        <td colSpan={7} className="px-3">{expanded(c)}</td>
                       </tr>
                     )}
                   </Fragment>

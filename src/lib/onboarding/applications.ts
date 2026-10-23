@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { applicationPriority, assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -201,7 +201,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     where: { ...scope, status },
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
     take: 1000,
-    include: { brand: { select: { name: true, defaultCommissionBps: true, defaultDiscountBps: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
+    include: { brand: { select: { name: true, slug: true, defaultCommissionBps: true, defaultDiscountBps: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
   const counts = await prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true });
   // F2: repetidas — mesmo e-mail, CPF ou @ em outra candidata (qualquer situação) ou numa creator da marca.
@@ -261,6 +261,25 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         followersCount: parseFollowers(r.followers),
         duplicates: findDuplicates(r, pool(r.brandId)).filter((d) => !(d.kind === "creator" && d.id === r.creatorId)),
       };
+  }).map((a, i) => {
+      const r = rows[i]!;
+      // M2.3 (D-PRIORITY): a prioridade usa os dados completos (mesmo os que a pessoa não vê, como o CPF).
+      const priority = applicationPriority(
+        {
+          hunter: a.hunter,
+          instagram: a.instagram,
+          tiktok: a.tiktok,
+          followersCount: a.followersCount,
+          storiesViews: a.storiesViews,
+          complete: Boolean((r.cpf || r.cnpj) && r.address && (r.suggestedCoupon || r.accountId)),
+          niche: a.niche,
+          categoryProposal: a.categoryProposal,
+          collabInterest: a.collabInterest,
+          duplicate: a.duplicates.length > 0,
+        },
+        r.brand.slug,
+      );
+      return { ...a, priority };
   });
   const templates = await prisma.contractTemplate.findMany({
     where: { brandId: { in: brandIds } },

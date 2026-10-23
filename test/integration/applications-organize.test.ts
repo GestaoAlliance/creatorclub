@@ -46,4 +46,19 @@ describe("organização das candidatas (F2, banco real)", () => {
     expect(f.rows).toHaveLength(0);
     expect(f.total).toBe(3);
   });
+  it("M2.3: abre por prioridade (hunter, seguidores, nicho, cadastro completo…); repetida no fim", async () => {
+    const a = await seedBrand(prisma);
+    const g = await gestao(a.brand.id);
+    await answer(a.brand.slug, "Baixa Velha", "baixa@x.com", {}, new Date("2026-10-01T12:00:00Z"));
+    await answer(a.brand.slug, "Alta Nova", "alta@x.com", {
+      "Quantidade de seguidores no instagram": "120 mil", "@ do seu Instagram:": "@alta.nova", "Sou:": "Prescritor (nutricionista)",
+    }, new Date("2026-10-05T12:00:00Z"));
+    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { instagram: "ja.creator2" } });
+    await answer(a.brand.slug, "Repetida", "rep@x.com", { "Quantidade de seguidores no instagram": "500 mil", "@ do seu Instagram:": "@ja.creator2" }, new Date("2026-10-02T12:00:00Z"));
+    const list = await listApplications(prisma, g, "NEW");
+    expect(list.rows.map((r) => r.fullName)).toEqual(["Alta Nova", "Baixa Velha", "Repetida"]);
+    expect(list.rows[0]!.priority).toMatchObject({ level: "ALTA", reasons: expect.arrayContaining(["prescritora", "100 mil+ seguidores", "tem @"]) });
+    expect(list.rows[2]!.priority.level).toBe("REPETIDA");
+    expect((await listApplications(prisma, g, "NEW", { sort: "antigas" })).rows.map((r) => r.fullName)).toEqual(["Baixa Velha", "Repetida", "Alta Nova"]);
+  });
 });

@@ -23,7 +23,7 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
     ...(sp.origem ? { source: sp.origem } : {}),
     ...(sp.hunter ? { hunter: sp.hunter } : {}),
     ...(sp.marca ? { brand: sp.marca } : {}),
-    sort: SORTS.find(([s]) => s === sp.ordem)?.[0] ?? "antigas",
+    sort: SORTS.find(([s]) => s === sp.ordem)?.[0] ?? "prioridade",
   };
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
