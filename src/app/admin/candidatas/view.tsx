@@ -1,4 +1,4 @@
-import { Search as SearchIcon } from "lucide-react";
+import { Plus, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
@@ -11,7 +11,7 @@ import { CandidateTable } from "./table";
 export const TABS: [ApplicationFilter, string][] = [["NEW", "Pendentes"], ["APPROVED", "Aprovadas"], ["REJECTED", "Recusadas"]];
 export const SORTS: [ApplicationSort, string][] = [["prioridade", "Prioridade"], ["antigas", "Mais antigas primeiro"], ["novas", "Mais novas primeiro"], ["seguidores", "Mais seguidores"]];
 const KINDS: [string, string][] = [["", "Todos os tipos"], ["INFLUENCER", "Influencer"], ["UGC", "UGC"], ["PRESCRITOR", "Prescritor"]];
-const SOURCES: [string, string][] = [["", "Todas as origens"], ["site_form", "Site"], ["captacao_form", "Captação"], ["hunter_form", "Hunter"]];
+const SOURCES: [string, string][] = [["", "Todas as origens"], ["site_form", "Site"], ["captacao_form", "Captação"], ["hunter_form", "Hunter"], ["staff_form", "Equipe"]];
 
 export type Search = { ver?: string; q?: string; tipo?: string; origem?: string; hunter?: string; marca?: string; ordem?: string };
 type Data = Awaited<ReturnType<typeof listApplications>>;
@@ -23,15 +23,18 @@ const qs = (sp: Search, patch: Partial<Search>) => {
 };
 
 /** Tela Candidatas no modelo da referência: situação, origem em abas, busca e filtros, tabela com aprovar/recusar na linha. */
-export function CandidatasView({ status, sp, filters, data }: { status: ApplicationFilter; sp: Search; filters: ApplicationFilters; data: Data }) {
+export function CandidatasView({ status, sp, filters, data, canCreate }: { status: ApplicationFilter; sp: Search; filters: ApplicationFilters; data: Data; canCreate: boolean }) {
   const { rows, counts, total, hunters } = data;
   const filtered = rows.length !== total;
   const base: Search = status === "NEW" ? {} : { ver: status };
   return (
     <>
-      <PageHeader title="Candidatas">
-        Inscrições pelo site e pelos formulários do Google. Aprovar cria a creator com cupom, taxa e acesso ao portal; clique na
-        linha para ver tudo o que ela respondeu.
+      <PageHeader
+        title="Candidatas"
+        actions={canCreate && <Link href="/admin/candidatas/nova" className={`${ui.btnSm} inline-flex items-center gap-1.5`}><Plus className="size-4" /> Nova candidata</Link>}
+      >
+        Inscrições pelo site, pelos formulários do Google e cadastros da equipe. Aprovar cria a creator com cupom, taxa e acesso ao portal; clique na
+        linha para ver tudo o que ela respondeu. Marque várias para recusar de uma vez.
       </PageHeader>
       <nav aria-label="Situação" data-tour="cand-abas" className="flex flex-wrap items-center gap-2">
         {TABS.map(([s, label]) => (

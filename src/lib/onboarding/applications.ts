@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { applicationPriority, assertBps, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
@@ -447,6 +448,99 @@ export async function approveApplication(
     if (error instanceof ContractSendError) return { ...created, contract: { sent: false, error: error.message } };
     throw error;
   }
+}
+
+/** Dados da candidata cadastrada pela equipe (M4.1, D-MANUALAPP). */
+export type StaffApplicationInput = {
+  fullName: string;
+  phone: string;
+  email: string;
+  instagram: string;
+  tiktok: string;
+  followers: string;
+  category: Category;
+  suggestedCoupon: string;
+  note: string;
+};
+
+const KIND_ANSWER: Record<Category, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
+
+/**
+ * "Nova candidata" (M4.1, D-MANUALAPP): quem não veio por formulário entra pela equipe (Gestão e super admin) e segue
+ * o mesmo fluxo de aprovação (cupom, contrato, convite). Origem "Cadastro da equipe"; auditoria com quem cadastrou.
+ */
+export async function createStaffApplication(prisma: PrismaClient, actor: Actor | null, brandId: string, input: StaffApplicationInput, now = new Date()) {
+  if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new ApplicationError("Sem permissão.");
+  const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { archivedAt: true } });
+  if (!brand || brand.archivedAt) throw new ApplicationError("Marca não encontrada.");
+  const clean = (v: string, max = 200) => v.replace(/\s+/g, " ").trim().slice(0, max) || null;
+  const fullName = clean(input.fullName, 120);
+  if (!fullName) throw new ApplicationError("Informe o nome.");
+  const phone = clean(input.phone, 40);
+  if (!phone || phone.replace(/\D/g, "").length < 10) throw new ApplicationError("Informe o WhatsApp com DDD.");
+  const email = clean(input.email) ? normalizeEmail(input.email) : null;
+  if (clean(input.email) && !email) throw new ApplicationError("E-mail inválido.");
+  if (!(input.category in KIND_ANSWER)) throw new ApplicationError("Escolha o tipo.");
+  const fields = {
+    fullName,
+    phone,
+    email,
+    instagram: clean(input.instagram, 100),
+    tiktok: clean(input.tiktok, 100),
+    followers: clean(input.followers, 40),
+    kindAnswer: KIND_ANSWER[input.category],
+    suggestedCoupon: clean(input.suggestedCoupon, 40),
+    note: clean(input.note, 300),
+  };
+  const raw = {
+    "Seu nome completo": fields.fullName,
+    "Sou": fields.kindAnswer,
+    "Seu WhatsApp": fields.phone,
+    "Email": fields.email,
+    "@ do seu Instagram": fields.instagram,
+    "@ do seu TikTok": fields.tiktok,
+    "Quantidade de seguidores": fields.followers,
+    "Sugestão de nome de cupom": fields.suggestedCoupon,
+  };
+  return prisma.$transaction(async (tx) => {
+    const a = await tx.creatorApplication.create({
+      data: { brandId, source: "staff_form", externalKey: `equipe:${randomUUID()}`, submittedAt: now, ...fields, raw },
+      select: { id: true },
+    });
+    await tx.auditLog.create({
+      data: { brandId, actorType: "USER", actorId: actor.userId, action: "application.created", entity: "CreatorApplication", entityId: a.id, after: { source: "staff_form", name: fullName } },
+    });
+    return a;
+  });
+}
+
+/**
+ * Recusar várias de uma vez (M4.1, D-MANUALAPP): só as que ainda estão "Novas" e da marca em que a pessoa edita
+ * creators; as outras são ignoradas e contadas. Mesmo motivo (opcional) para todas; uma auditoria por candidata.
+ */
+export async function rejectApplications(prisma: PrismaClient, actor: Actor | null, applicationIds: readonly string[], note: string, now = new Date()) {
+  if (!actor) throw new ApplicationError("Sem permissão.");
+  const ids = [...new Set(applicationIds)].slice(0, 500);
+  if (ids.length === 0) throw new ApplicationError("Marque ao menos uma candidata.");
+  const apps = await prisma.creatorApplication.findMany({ where: { id: { in: ids } }, select: { id: true, brandId: true, status: true } });
+  const ok = apps.filter((a) => a.status === "NEW" && can(actor.grants, "creators.edit", a.brandId));
+  const decisionNote = note.trim().replace(/\s+/g, " ").slice(0, 300) || null;
+  const rejected = await prisma.$transaction(async (tx) => {
+    let n = 0;
+    for (const app of ok) {
+      const { count } = await tx.creatorApplication.updateMany({
+        where: { id: app.id, status: "NEW" },
+        data: { status: "REJECTED", decidedAt: now, decidedById: actor.userId, decisionNote },
+      });
+      if (count === 0) continue;
+      n += 1;
+      await tx.auditLog.create({
+        data: { brandId: app.brandId, actorType: "USER", actorId: actor.userId, action: "application.rejected", entity: "CreatorApplication", entityId: app.id, after: { note: decisionNote, bulk: true } },
+      });
+    }
+    return n;
+  });
+  return { rejected, skipped: ids.length - rejected };
 }
 
 export async function rejectApplication(prisma: PrismaClient, actor: Actor | null, applicationId: string, note: string, now = new Date()) {
