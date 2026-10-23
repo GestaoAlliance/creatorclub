@@ -8,14 +8,16 @@ describe("menu da equipe por papel", () => {
   it("cada papel vê só o que pode usar, em grupos com abas (D-MENUGROUPS)", () => {
     expect(labels("SUPER_ADMIN", null)).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
     // M1.1 (D-WDAPPROVE): a Gestão aprova saques, então vê Pagamentos (só a aba Saques).
-    expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios"]);
+    expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
     expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
-    expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos"]);
+    expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos", "Configurações"]);
     expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações"]);
     const tabs = (role: "SUPER_ADMIN" | "GESTAO" | "PAGAMENTO", label: string) =>
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
     expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações"]);
-    expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar"]);
+    expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar", "Claude"]);
+    // M3.4b: quem não é super admin vê em Configurações só a aba Claude (ligar o próprio Claude).
+    expect(tabs("GESTAO", "Configurações")).toEqual(["Claude"]);
     // Cada papel só vê as abas que pode usar; o item do menu abre a primeira delas.
     expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas"]);
     expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);

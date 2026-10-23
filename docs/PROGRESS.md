@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 3 — M3.4b Conector do Creator Club no Claude** (só leitura, cada pessoa entra com o login dela e vê só o que já vê no painel; decisão do responsável em 2026-10-23). Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 4 do plano de melhorias** (`docs/PLANO-MELHORIAS.md`): perguntar ao responsável as decisões da fase (7 a 13) antes de construir. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -51,7 +51,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M3.2** Produtos e custo: receita, pedidos, unidades, custo da Shopify, margem e lucro do programa (D-COST)
 - [x] **M3.3** Retorno por creator: lucro que ela deixa e clientes novas × recorrentes (D-RETURN)
 - [x] **M3.4a** Resumo semanal da gestão pelo WhatsApp (D-WEEKLY)
-- [ ] **M3.4b** Perguntar ao Claude: conector só leitura no Claude de cada pessoa, com o login dela
+- [x] **M3.4b** Perguntar ao Claude: conector só leitura no Claude de cada pessoa, com o login dela (D-MCP)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -273,6 +273,23 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-171 — 2026-10-23 — Conector do Creator Club no Claude (M3.4b, D-MCP)
+- **Decisão do responsável:** "perguntar ao Claude" é um conector no Claude de cada pessoa, só leitura, com o login dela.
+- **Feito:** servidor MCP em `/api/mcp` (HTTP, sem estado) com login OAuth 2.1: descoberta (`/.well-known/...`),
+  registro do cliente, tela "Conectar o Claude ao Creator Club" (Permitir/Cancelar) com PKCE S256 obrigatório, código
+  de uso único (10 min), acesso de 1 h e renovação de 30 dias que troca a cada uso. No banco só o hash dos códigos e
+  tokens. Endereços de retorno aceitos: claude.ai e claude.com (e localhost para teste).
+- **Ferramentas (só leitura, com as permissões e marcas de quem conectou):** listar marcas, resumo de vendas, produtos
+  e lucro, desempenho do mês, buscar creator, ficha da creator (sem CPF, CNPJ, Pix, endereço, e-mail ou telefone),
+  saques e pendências. Períodos por nome ou datas; valores em reais.
+- **Tela:** Configurações → Claude ("Perguntar ao Claude"): passos, endereço para copiar, conexões ativas, última
+  consulta e "Desconectar o Claude" (revoga tudo; auditoria). Gestão e Pagamento passam a ver Configurações só com
+  essa aba.
+- **Banco:** tabelas `McpClient`, `McpAuthCode` e `McpToken` (RLS; travas `McpToken_kind` e `McpAuthCode_s256`).
+- **Verificado:** testes (234), integração (244; novo: fluxo completo, endereço recusado, PKCE, código de uso único,
+  ferramentas só da marca dela, ficha sem dados pessoais, renovação, desconectar, usuário desativado), typecheck,
+  build, migração sem divergência; fluxo testado no navegador local até `tools/call`.
 
 ### CP-170 — 2026-10-23 — Resumo semanal da gestão pelo WhatsApp (M3.4a, D-WEEKLY)
 - **Decisões do responsável:** resumo pelo WhatsApp (n8n), toda segunda às 9h, um por marca para a Gestão da marca e o
