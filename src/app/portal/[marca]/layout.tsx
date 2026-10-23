@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { PortalShell } from "@/components/portal/shell";
@@ -10,8 +11,27 @@ import { pendingTerms } from "@/lib/terms/terms";
 import { ContractGate } from "@/components/portal/contract-gate";
 import { pendingContract } from "@/lib/contracts/sign";
 import { unreadCount } from "@/lib/notifications/notify";
+import { loginBrand } from "@/lib/brands/assets";
 
 export const dynamic = "force-dynamic";
+
+// D-INSTALLAPP: o portal vira app na tela de início do celular, com o nome, o ícone e a cor da marca.
+export async function generateMetadata({ params }: { params: Promise<{ marca: string }> }): Promise<Metadata> {
+  const b = await loginBrand(db(), (await params).marca);
+  if (!b) return {};
+  const v = b.logo ? `?v=${b.logo}` : "";
+  return {
+    title: `${b.name} · Creator Club`,
+    manifest: `/marca/${b.slug}/manifest.webmanifest`,
+    appleWebApp: { capable: true, title: b.name, statusBarStyle: "default" },
+    icons: { icon: `/marca/${b.slug}/app-icon/192${v}`, apple: `/marca/${b.slug}/app-icon/180${v}` },
+  };
+}
+
+export async function generateViewport({ params }: { params: Promise<{ marca: string }> }): Promise<Viewport> {
+  const b = await loginBrand(db(), (await params).marca);
+  return b ? { themeColor: b.primaryColor } : {};
+}
 
 // Portal da creator: confere o acesso (ou a visualização da equipe, D-VIEWAS), o termo (D-TERMS) e monta a moldura.
 export default async function PortalLayout({ children, params }: { children: ReactNode; params: Promise<{ marca: string }> }) {

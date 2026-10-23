@@ -16,6 +16,7 @@ import {
   Package,
   RefreshCw,
   Settings,
+  Smartphone,
   Scale,
   ShoppingBag,
   Target,
@@ -28,6 +29,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useStandalone } from "./use-standalone";
 
 /** Ícones do menu por nome (o servidor manda só o nome; componentes não atravessam para o navegador). */
 const ICONS = {
@@ -51,18 +53,21 @@ const ICONS = {
   inbox: Inbox,
   hunter: Target,
   settings: Settings,
+  phone: Smartphone,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;
 /** Item do menu; `tabs` = telas do mesmo grupo (D-MENUGROUPS), mostradas como abas e que deixam o item aceso. */
 export type NavItem = { href: string; label: string; icon: NavIcon; tabs?: { href: string; label: string }[] };
 
-/** Menu do portal da creator (D-E7ORDER; M0.0.5: 4 telas, o cupom fica no Início e os avisos no sininho). */
+/** Menu do portal da creator (D-E7ORDER; M0.0.5: 4 telas, o cupom fica no Início e os avisos no sininho; D-INSTALLAPP: + Instalar app). */
 export const PORTAL_ITEMS: NavItem[] = [
   { href: "", label: "Início", icon: "home" },
   { href: "/vendas", label: "Vendas", icon: "sales" },
   { href: "/saque", label: "Saque", icon: "wallet" },
   { href: "/envios", label: "Envios", icon: "package" },
+  // D-INSTALLAPP: some quando o portal já está aberto pelo ícone (como app).
+  { href: "/app", label: "Instalar", icon: "phone" },
 ];
 
 function useActive(base: string, items: NavItem[]) {
@@ -80,7 +85,8 @@ function useActive(base: string, items: NavItem[]) {
 
 /** Computador: barra lateral de vidro, recolhível (lembra a escolha neste navegador). */
 export function SideNav({ base, brandName, items: all, hidden = [] }: { base: string; brandName: string; items: NavItem[]; hidden?: string[] }) {
-  const items = all.filter((i) => !hidden.includes(i.href));
+  const standalone = useStandalone();
+  const items = all.filter((i) => !hidden.includes(i.href) && !(standalone && i.href === "/app"));
   const [open, setOpen] = useState(true);
   const isActive = useActive(base, items);
   useEffect(() => {
@@ -142,7 +148,8 @@ export function SideNav({ base, brandName, items: all, hidden = [] }: { base: st
 
 /** Celular: barra de vidro fixa embaixo, tipo app. Mais de 5 itens: os 4 primeiros e "Mais" com o resto. */
 export function BottomNav({ base, items: all, hidden = [] }: { base: string; items: NavItem[]; hidden?: string[] }) {
-  const items = all.filter((i) => !hidden.includes(i.href));
+  const standalone = useStandalone();
+  const items = all.filter((i) => !hidden.includes(i.href) && !(standalone && i.href === "/app"));
   const isActive = useActive(base, items);
   const [more, setMore] = useState(false);
   const path = usePathname();

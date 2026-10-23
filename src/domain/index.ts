@@ -35,3 +35,4 @@ export * from "./brand-assets";
 export * from "./campaign";
 export * from "./posts";
 export * from "./prospect";
+export * from "./install";

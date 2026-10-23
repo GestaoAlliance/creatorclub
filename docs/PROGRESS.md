@@ -282,6 +282,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-183 — 2026-10-23 — Portal na tela de início do celular (tarefa avulsa, D-INSTALLAPP)
+- **Pedido do responsável:** mini tutorial no portal de como pôr o app na tela do celular, "estilo BigBoom".
+- **Decisões do responsável:** tela de início (na tela de bloqueio um site não entra); cartão no Início, item no menu e
+  aviso depois de entrar; ícone e nome da marca dela; no Android, botão "Instalar agora" além dos passos.
+- **Feito:** manifesto por marca (`/marca/[slug]/manifest.webmanifest`: abre no Início do portal dela, em tela cheia,
+  com o nome e a cor da marca) e ícone gerado (`/marca/[slug]/app-icon/[180|192|512]`: o logo de Marcas centrado em
+  fundo branco; sem logo ou WebP, a inicial na cor da marca). No portal: cartão "Tenha o portal na tela do seu
+  celular" no Início (só no celular, até ela fechar), aviso único depois do tutorial do Início, item "Instalar" no menu
+  (página "Instalar app" com abas iPhone e Android, já na do aparelho dela). iPhone: passos do Safari (aberto pelo
+  Instagram/WhatsApp/Chrome, avisa para abrir no Safari); Android: botão "Instalar agora" quando o Chrome oferece, e os
+  passos. Aberto pelo ícone, o cartão, o aviso e o item somem.
+- **Verificado:** 258 unitários (novo `install.test.ts`), 268 de integração, typecheck, build.
+
 ### CP-182 — 2026-10-23 — Prospecção antes do formulário (U6, D-PROSPECT)
 - **Decisões do responsável:** prospecção no sistema, no lugar da aba "Prospecção Hunter" da Central; Gestão e hunters
   (a Gestão vê todos, a hunter só os dela); situações da planilha + Inscrita automática; importar a aba uma vez;
