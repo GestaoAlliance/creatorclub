@@ -22,6 +22,7 @@ export const SHEET_COVERAGE: Record<SheetName, { task: string; where: string }[]
     { task: "Contrato (início, fim, assinatura) e checklist (cupom cadastrado, grupo, segue no Instagram, marcada)", where: "Creators → ficha → Contrato" },
     { task: "Situação (ativa, pausada, encerrada) e observações", where: "Creators → ficha (situação e linha do tempo)" },
     { task: "Novas creators", where: "Candidatas (site, formulários e Nova candidata)" },
+    { task: "Aba Prospecção Hunter (perfis abordados, situação, forms enviado)", where: "Hunters → Prospecção (U6)" },
   ],
   envios: [
     { task: "O que mandar para cada creator (kit, produtos)", where: "Envios (e kit escolhido pela creator no portal)" },

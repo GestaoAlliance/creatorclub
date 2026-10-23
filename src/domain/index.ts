@@ -34,3 +34,4 @@ export * from "./profile";
 export * from "./brand-assets";
 export * from "./campaign";
 export * from "./posts";
+export * from "./prospect";

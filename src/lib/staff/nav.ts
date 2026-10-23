@@ -21,7 +21,15 @@ const GROUPS: Group[] = [
     ],
   },
   // Hunters trazem as creators (influencers, UGC, prescritores): grupo próprio (pedido do responsável).
-  { label: "Hunters", icon: "hunter", tabs: [{ href: "/hunters", label: "Hunters", needs: "creators.edit" }] },
+  // U6 (D-PROSPECT): a prospecção antes do formulário, da Gestão e das hunters.
+  {
+    label: "Hunters",
+    icon: "hunter",
+    tabs: [
+      { href: "/hunters", label: "Hunters", needs: "creators.edit" },
+      { href: "/prospeccao", label: "Prospecção", needs: "prospects.own" },
+    ],
+  },
   {
     label: "Vendas",
     icon: "sales",
@@ -67,7 +75,9 @@ function allowedTab(grants: readonly Grant[], t: Tab): boolean {
 export function staffNav(grants: readonly Grant[]): NavItem[] {
   const groups = GROUPS.flatMap((g): NavItem[] => {
     const tabs = g.tabs.filter((t) => allowedTab(grants, t)).map(({ href, label }) => ({ href, label }));
-    return tabs.length ? [{ href: tabs[0]!.href, label: g.label, icon: g.icon, tabs }] : [];
+    // U6: a hunter (sem a aba Hunters) vê o item com o nome da única aba dela, "Prospecção".
+    const label = g.icon === "hunter" && tabs.length === 1 ? tabs[0]!.label : g.label;
+    return tabs.length ? [{ href: tabs[0]!.href, label, icon: g.icon, tabs }] : [];
   });
   // U3: a própria hunter vê as indicações dela (super admin acompanha pela aba Hunters).
   const hunter: NavItem[] = grants.some((g) => g.role === "HUNTER") ? [{ href: "/indicacoes", label: "Minhas indicações", icon: "hunter" }] : [];

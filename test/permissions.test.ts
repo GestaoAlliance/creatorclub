@@ -11,7 +11,7 @@ describe("matriz de permissões (D-ROLES)", () => {
       "personal.address", "personal.fiscal", "ledger.adjust", "prospects.own", "integrations.manage", "staff.manage",
       "portal.viewAs",
     ],
-    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage"],
+    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own"],
     ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
     PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
     HUNTER: ["prospects.own"],
