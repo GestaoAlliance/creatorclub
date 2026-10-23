@@ -5,7 +5,8 @@ import { enqueueJob, type ClaimedJob, type JobHandler } from "@/lib/jobs/queue";
 import type { ShopifyClient } from "./client";
 import { settleOrder, sweepUnpostedCommissions } from "@/lib/commission/ledger";
 import { ORDER_SYNC_JOB, defaultClientFactory, recordOrderWarnings, type ClientFactory } from "./jobs";
-import { LINE_ITEMS, ORDER_FIELDS, processOrder, type ShopifyOrderNode } from "./orders";
+import { canReadCustomers, shopifyScopes } from "./credentials";
+import { LINE_ITEMS, orderFields, processOrder, type ShopifyOrderNode } from "./orders";
 
 /**
  * Reconciliação (rede de segurança do webhook): a cada 15 min, relê no Shopify os pedidos alterados desde a última
@@ -19,10 +20,10 @@ export const RECONCILE_MARGIN_MS = 30 * 60_000;
 /** Limite por passada (25 pedidos por página); o que sobrar entra na passada seguinte. */
 export const RECONCILE_MAX_PAGES = 20;
 
-const CHANGED_ORDERS_QUERY = `query Changed($q: String!, $after: String) {
+const changedOrdersQuery = (withCustomer: boolean) => `query Changed($q: String!, $after: String) {
   orders(first: 25, after: $after, query: $q, sortKey: UPDATED_AT) {
     pageInfo { hasNextPage endCursor }
-    nodes { ${ORDER_FIELDS} lineItems(first: 50) { ${LINE_ITEMS} } } } }`;
+    nodes { ${orderFields(withCustomer)} lineItems(first: 50) { ${LINE_ITEMS} } } } }`;
 
 type ChangedOrders = { orders: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: ShopifyOrderNode[] } };
 
@@ -45,6 +46,7 @@ export async function reconcileBrand(
 ): Promise<ReconcileResult> {
   const now = opts.now ?? new Date();
   const since = await reconcileSince(prisma, brandId, now);
+  const withCustomer = canReadCustomers(await shopifyScopes(prisma, brandId));
   const run = await prisma.syncRun.create({ data: { brandId, kind: "incremental", startedAt: now } });
   const counts = { ordersSeen: 0, ordersFixed: 0, deferred: 0 };
   let cursor = now;
@@ -53,7 +55,7 @@ export async function reconcileBrand(
     let after: string | null = null;
     let lastSeen: Date | null = null;
     for (let page = 0; ; page++) {
-      const data: ChangedOrders = await client.graphql(CHANGED_ORDERS_QUERY, { q, after });
+      const data: ChangedOrders = await client.graphql(changedOrdersQuery(withCustomer), { q, after });
       for (const node of data.orders.nodes) {
         counts.ordersSeen++;
         lastSeen = new Date(node.updatedAt);

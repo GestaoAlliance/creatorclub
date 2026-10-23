@@ -248,6 +248,10 @@ export const HELP = {
     title: "Marcar enviado",
     text: "Depois de postar, informe a transportadora e o código de rastreio. A creator acompanha a entrega pelo portal.",
   },
+  "fi-retorno": {
+    title: "Retorno",
+    text: "Lucro que ela deixa: receita dos pedidos dela menos custo dos produtos, comissão, kits e frete. Clientes novas = primeira compra na loja.",
+  },
   "pr-lucro": {
     title: "Lucro do programa",
     text: "Receita com cupom de creator menos custo dos produtos (Shopify), comissão, kits enviados e frete. O desconto do cupom já está fora da receita.",

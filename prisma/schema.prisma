@@ -414,6 +414,8 @@ model Order {
   totalCents       Int
   currency         String    @default("BRL")
   discountCodes    String[]
+  /// M3.3 (D-RETURN): id da cliente na Shopify (só com `read_customers`); nada de nome, e-mail ou telefone.
+  customerShopifyId String?
   shopifyUpdatedAt DateTime // versão desta foto do pedido
   syncedAt         DateTime  @default(now())
 
@@ -426,6 +428,7 @@ model Order {
   @@unique([id, brandId])
   @@index([brandId, shopifyUpdatedAt])
   @@index([brandId, createdAtShop])
+  @@index([brandId, customerShopifyId])
 }
 
 model OrderLine {

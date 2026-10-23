@@ -6,15 +6,18 @@ import {
   kitProgress,
   lastMonths,
   monthKey,
+  nextMonthKey,
   parseKitTiers,
   previousMonthKey,
   releaseMinFor,
   sortPerformance,
+  startOfLocalDay,
   type PerformanceSort,
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { releasedThroughFor } from "@/lib/commission/release";
+import { creatorReturns } from "@/lib/reports/creator-return";
 import { IDLE_SELECT, idleFor } from "./idle";
 import { ugcCyclesFor } from "./ugc";
 
@@ -55,7 +58,9 @@ export async function monthPerformance(
     },
   });
   const ids = creators.map((c) => c.id);
-  const [attributions, released, idle, cycles] = await Promise.all([
+  // M3.3 (D-RETURN): lucro que cada uma deixa e clientes novas no mês escolhido.
+  const range = { gte: startOfLocalDay(`${month}-01`, tz), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, tz) };
+  const [attributions, released, idle, cycles, returns] = await Promise.all([
     prisma.orderAttribution.findMany({
       where: { creatorId: { in: ids }, order: { paidAt: { not: null }, financialStatus: { in: PAID }, cancelledAt: null, test: false } },
       select: { creatorId: true, order: { select: { paidAt: true, subtotalCents: true } } },
@@ -63,6 +68,7 @@ export async function monthPerformance(
     releasedThroughFor(prisma, ids),
     idleFor(prisma, creators, tz, now),
     ugcCyclesFor(prisma, creators, tz, now),
+    creatorReturns(prisma, brandId, range, ids),
   ]);
 
   // Vendas e pedidos por creator e mês.
@@ -97,6 +103,7 @@ export async function monthPerformance(
       kit: tiers.length ? kitProgress(tiers, s.cents) : null,
       idle: st?.idle ? { days: st.days, neverSold: !st.lastSaleDay } : null,
       cycle: cycles.get(c.id) ?? null,
+      ret: returns.get(c.id) ?? null,
     };
   });
 
@@ -116,6 +123,9 @@ export async function monthPerformance(
       sellers: partners.filter((r) => r.orders > 0).length,
       reachedMin: partners.filter((r) => r.release && r.release.accumulatedCents >= r.release.minCents).length,
       idle: partners.filter((r) => r.idle).length,
+      profitCents: partners.reduce((acc, r) => acc + (r.ret?.profitCents ?? 0), 0),
+      newCustomers: partners.reduce((acc, r) => acc + (r.ret?.customers.new ?? 0), 0),
+      customersKnown: partners.some((r) => r.ret && r.ret.customers.unknown < r.ret.orders),
     },
     partners,
     ugc,

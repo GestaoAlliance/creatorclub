@@ -72,3 +72,12 @@ export async function loadStoredShopifyCredentials(
   const secrets = JSON.parse(decryptSecret(row.secretEncrypted, encKey, context(brandId))) as ShopifyCredentials;
   return { shop: row.externalId, clientId: secrets.clientId, clientSecret: secrets.clientSecret };
 }
+
+/** Permissões do app da loja (gravadas ao conectar), para pedir só os campos que ele pode ler. */
+export async function shopifyScopes(prisma: PrismaClient, brandId: string): Promise<string[]> {
+  const row = await prisma.brandIntegration.findFirst({ where: { brandId, kind: "SHOPIFY" }, select: { scopes: true } });
+  return (row?.scopes ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/** Lê clientes (M3.3, D-RETURN): `read_customers` ou `write_customers`. */
+export const canReadCustomers = (scopes: readonly string[]) => scopes.includes("read_customers") || scopes.includes("write_customers");

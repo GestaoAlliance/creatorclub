@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { ClaimedJob, JobHandler } from "@/lib/jobs/queue";
 import { createShopifyClient, ShopifyError, type ShopifyClient } from "./client";
-import { loadShopifyConnection } from "./credentials";
+import { loadShopifyConnection, canReadCustomers, shopifyScopes } from "./credentials";
 import { accessTokenFor, forgetAccessToken } from "./token";
 import { settleOrder } from "@/lib/commission/ledger";
 import { fetchOrder, processOrder, type ProcessOrderResult } from "./orders";
@@ -56,7 +56,7 @@ export function orderSyncHandler(prisma: PrismaClient, clientFor: ClientFactory 
       if (typeof payload.webhookEventId !== "string") return;
       await prisma.webhookEvent.update({ where: { id: payload.webhookEventId }, data: { status: "PROCESSED", processedAt: new Date() } });
     };
-    const node = await fetchOrder(await clientFor(prisma, job.brandId), orderGid);
+    const node = await fetchOrder(await clientFor(prisma, job.brandId), orderGid, canReadCustomers(await shopifyScopes(prisma, job.brandId)));
     if (!node) return markWebhook(); // Pedido apagado no Shopify: nada a gravar.
     const result = await processOrder(prisma, job.brandId, node);
     if (result.orderId) await settleOrder(prisma, result.orderId);

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { canReadCustomers, shopifyScopes } from "./credentials";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { enqueueJob, type ClaimedJob, type JobHandler } from "@/lib/jobs/queue";
@@ -21,11 +22,11 @@ export const POLL_EVERY_MS = 30_000;
 export const MAX_POLLS = 240; // 2 h
 export const IMPORT_BATCH = 200;
 
-export function bulkOrdersQuery(since: Date): string {
+export function bulkOrdersQuery(since: Date, withCustomer = false): string {
   return `{ orders(query: "created_at:>='${since.toISOString()}'") { edges { node {
     id name createdAt updatedAt cancelledAt test taxesIncluded displayFinancialStatus currencyCode discountCodes
     currentSubtotalPriceSet { shopMoney { amount } } currentTotalPriceSet { shopMoney { amount } }
-    transactions { kind status processedAt }
+    transactions { kind status processedAt }${withCustomer ? " customer { id }" : ""}
     lineItems { edges { node { id title currentQuantity discountedTotalSet { shopMoney { amount } } product { id } } } } } } } }`;
 }
 
@@ -103,7 +104,7 @@ export function backfillHandlers(prisma: PrismaClient, deps: BackfillDeps = {}):
     const client = await clientFor(prisma, job.brandId!);
     const data: {
       bulkOperationRunQuery: { bulkOperation: { id: string } | null; userErrors: Array<{ message: string }> };
-    } = await client.graphql(START_MUTATION, { query: bulkOrdersQuery(run.cursor!) });
+    } = await client.graphql(START_MUTATION, { query: bulkOrdersQuery(run.cursor!, canReadCustomers(await shopifyScopes(prisma, job.brandId!))) });
     const { bulkOperation, userErrors } = data.bulkOperationRunQuery;
     if (!bulkOperation) throw new Error(`Shopify recusou a exportação: ${userErrors.map((e) => e.message).join("; ")}`);
     await enqueueJob(prisma, {
