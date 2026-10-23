@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
+import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
 import { signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
@@ -31,6 +31,8 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
   const values: Record<string, string> = Object.fromEntries([
     ...SIGNUP_QUESTIONS.filter((q) => q.key !== "address").map((q) => [q.key, String(form.get(q.key) ?? "")]),
     ...SIGNUP_ADDRESS_PARTS.map((k) => [k, String(form.get(k) ?? "")]),
+    // M4.3 (D-PROFILEFIELDS): perfil opcional; nichos chegam marcados um a um.
+    ...PROFILE_KEYS.map((k) => [k, k === "niches" ? form.getAll(k).map(String).join("|") : String(form.get(k) ?? "")]),
   ]);
   const password = String(form.get("password") ?? "");
   let email: string | null;

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { percentToBps, ReviewError } from "@/lib/coupons/review";
-import { changeRate, ProfileError, setCreatorStatus, updateContact, type CreatorStatusValue } from "@/lib/creators/profile";
+import { changeRate, ProfileError, setCreatorStatus, updateContact, updateProfile, type CreatorStatusValue } from "@/lib/creators/profile";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
@@ -233,4 +233,13 @@ export async function addTagAction(_p: State, form: FormData): Promise<State> {
 export async function removeTagAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId") ?? "");
   return run(id, async () => removeCreatorTag(db(), await currentActor(), id, String(form.get("tagId") ?? "")), "Tag retirada.");
+}
+
+/** M4.3 (D-PROFILEFIELDS): perfil opcional (registro, nichos, redes, alergias, mídia kit). */
+export async function profileAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  const f = (k: string) => String(form.get(k) ?? "");
+  return run(id, async () => updateProfile(db(), await currentActor(), id, {
+    professionalId: f("professionalId"), niches: form.getAll("niches").map(String), youtube: f("youtube"), kwai: f("kwai"), allergies: f("allergies"), mediaKitUrl: f("mediaKitUrl"),
+  }), "Perfil salvo.");
 }

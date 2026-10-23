@@ -2,9 +2,10 @@
 
 import { Tag as TagIcon, X } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
-import { pricingAction, adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction } from "./actions";
+import { pricingAction, adjustAction, checkContractAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, sendContractAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
+import { NICHES } from "@/domain";
 import { ui } from "@/components/ui/styles";
 
 const input = ui.input;
@@ -419,5 +420,34 @@ export function TagsEditor({ creatorId, tags, suggestions, canEdit }: { creatorI
       )}
       <Msg state={state?.error ? state : removeState?.error ? removeState : undefined} />
     </div>
+  );
+}
+
+/** M4.3 (D-PROFILEFIELDS): perfil opcional da creator na ficha. */
+export function ProfileForm({ creatorId, p }: { creatorId: string; p: { professionalId: string | null; niches: string[]; youtube: string | null; kwai: string | null; allergies: string | null; mediaKitUrl: string | null } }) {
+  const [state, action, pending] = useActionState(profileAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="mb-1 text-sm text-stone-600 dark:text-stone-300">Nicho</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {NICHES.map((n) => (
+            <label key={n} className="inline-flex items-center gap-1.5 text-sm">
+              <input type="checkbox" name="niches" value={n} defaultChecked={p.niches.includes(n)} className="size-4 accent-current" /> {n}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={ui.label}>Registro profissional<input className={input} name="professionalId" defaultValue={p.professionalId ?? ""} maxLength={40} placeholder="CRN, CRM, CRF…" /></label>
+        <label className={ui.label}>Link do mídia kit<input className={input} name="mediaKitUrl" defaultValue={p.mediaKitUrl ?? ""} maxLength={500} placeholder="https://" /></label>
+        <label className={ui.label}>YouTube<input className={input} name="youtube" defaultValue={p.youtube ?? ""} placeholder="@ do canal" autoCapitalize="none" /></label>
+        <label className={ui.label}>Kwai<input className={input} name="kwai" defaultValue={p.kwai ?? ""} placeholder="@ dela" autoCapitalize="none" /></label>
+      </div>
+      <label className={ui.label}>Alergias ou restrições (aparece em Envios)<input className={input} name="allergies" defaultValue={p.allergies ?? ""} maxLength={300} placeholder="ex.: lactose, glúten" /></label>
+      <Msg state={state} />
+      <button className={btn} disabled={pending}>Salvar perfil</button>
+    </form>
   );
 }

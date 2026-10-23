@@ -19,6 +19,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
     expect(r.account).toEqual({
       name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, instagram: "maria.exemplo", tiktok: "maria.tt", birthDate: null, coupon: "MARIA10",
+      profile: { professionalId: null, niches: [], youtube: null, kwai: null, allergies: null, mediaKitUrl: null },
       address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
     });
     const f = parseHunterAnswers(r.answers);

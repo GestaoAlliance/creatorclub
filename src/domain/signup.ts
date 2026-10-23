@@ -1,4 +1,5 @@
 import { birthdayLabel, parseBirthDate } from "./birthday";
+import { cleanProfile, profileAnswers, type ProfileFields } from "./profile";
 import { dayKey } from "./time";
 
 /**
@@ -157,6 +158,8 @@ export type SignupAccount = {
   tiktok: string | null;
   /** "AAAA-MM-DD" ou null (M4.2). */
   birthDate: string | null;
+  /** M4.3 (D-PROFILEFIELDS): perfil opcional. */
+  profile: ProfileFields;
   coupon: string;
   address: { zip: string; street: string; number: string; complement: string | null; district: string; city: string; state: string };
 };
@@ -199,7 +202,10 @@ export function validateSignup(values: Record<string, string | undefined>, today
     clean[q.key] = out;
     answers[q.title] = q.key === "instagram" || q.key === "tiktok" ? `@${out}` : out;
   }
-  if (Object.keys(errors).length) return { ok: false, errors };
+  const profile = cleanProfile(values);
+  if (!profile.ok) Object.assign(errors, profile.errors);
+  if (Object.keys(errors).length || !profile.ok) return { ok: false, errors };
+  Object.assign(answers, profileAnswers(profile.value));
   const zip = (values.addrZip ?? "").replace(/\D/g, "");
   const part = (k: SignupAddressPart) => (values[k] ?? "").replace(/\s+/g, " ").trim();
   return {
@@ -214,6 +220,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       instagram: clean.instagram!,
       tiktok: clean.tiktok || null,
       birthDate: clean.birthDate || null,
+      profile: profile.value,
       coupon: clean.coupon!,
       address: {
         zip,

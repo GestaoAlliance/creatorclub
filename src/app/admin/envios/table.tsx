@@ -24,6 +24,9 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
               <div>
                 <Link href={`/admin/creators/${s.creator.id}`} className="font-semibold hover:underline">{s.creator.account.name}</Link>
                 <p className={ui.hint}>registrado em {day(s.createdAt)}</p>
+                {s.creator.account.allergies && (
+                  <p className="mt-1 text-xs font-medium text-amber-800 dark:text-amber-300">Alergias/restrições: {s.creator.account.allergies}</p>
+                )}
               </div>
               <span className="flex items-center gap-1">
                 <span className={STATUS_BADGE[s.status]}>{SHIPMENT_STATUS_LABEL[s.status]}</span>

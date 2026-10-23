@@ -204,7 +204,8 @@ export async function staffShipments(prisma: PrismaClient, actor: Actor | null, 
     where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), ...(opts.status ? { status: opts.status } : {}) },
     orderBy: { createdAt: "desc" },
     take: 200,
-    select: { ...SHIPMENT_SELECT, brandId: true, creator: { select: { id: true, account: { select: { name: true } } } } },
+    // M4.3 (D-PROFILEFIELDS): alergias e restrições aparecem para quem monta o envio.
+    select: { ...SHIPMENT_SELECT, brandId: true, creator: { select: { id: true, account: { select: { name: true, allergies: true } } } } },
   });
 }
 

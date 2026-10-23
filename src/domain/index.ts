@@ -30,3 +30,4 @@ export * from "./sales";
 export * from "./actions";
 export * from "./weekly";
 export * from "./birthday";
+export * from "./profile";
