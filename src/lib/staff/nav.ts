@@ -50,6 +50,8 @@ const GROUPS: Group[] = [
       { href: "/termo", label: "Termo", needs: "staff.manage", global: true },
       { href: "/sync", label: "Shopify", needs: "integrations.manage", global: true },
       { href: "/importar", label: "Importar", needs: "integrations.manage", global: true },
+      // M3.4b (D-MCP): cada pessoa liga o próprio Claude.
+      { href: "/claude", label: "Claude", needs: "creators.view" },
     ],
   },
 ];

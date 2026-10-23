@@ -1284,3 +1284,46 @@ model SummaryRun {
   userId  String
   sentAt  DateTime @default(now())
 }
+
+/// M3.4b (D-MCP): aplicativo que pede acesso pelo login OAuth (ex.: o Claude). Cadastro dinâmico (RFC 7591).
+model McpClient {
+  id           String   @id @default(uuid())
+  name         String
+  redirectUris String[]
+  createdAt    DateTime @default(now())
+
+  codes  McpAuthCode[]
+  tokens McpToken[]
+}
+
+/// Código de autorização (uso único, 10 min, PKCE S256). Só o hash fica no banco.
+model McpAuthCode {
+  id            String    @id @default(uuid())
+  codeHash      String    @unique
+  clientId      String
+  userId        String
+  redirectUri   String
+  codeChallenge String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  client McpClient @relation(fields: [clientId], references: [id], onDelete: Restrict)
+}
+
+/// Chave de acesso (1 h) ou de renovação (30 dias, troca a cada uso) de uma pessoa da equipe. Só o hash fica no banco.
+model McpToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  kind      String // ACCESS | REFRESH
+  clientId  String
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  lastUsedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  client McpClient @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+}
