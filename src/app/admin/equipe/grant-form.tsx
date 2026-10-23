@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { grantRoleAction } from "./actions";
+import { grantRoleAction, phoneAction } from "./actions";
 
 /** A1b (D-ALLIANCE): dar mais um papel, marca por marca, a quem já está na equipe. */
 export function GrantForm({ userId, brands }: { userId: string; brands: { id: string; name: string }[] }) {
@@ -26,5 +26,18 @@ export function GrantForm({ userId, brands }: { userId: string; brands: { id: st
         <Msg state={state} />
       </form>
     </details>
+  );
+}
+
+/** M3.4 (D-WEEKLY): WhatsApp da pessoa, para o resumo semanal (Gestão e super admin). */
+export function PhoneForm({ userId, phone }: { userId: string; phone: string | null }) {
+  const [state, action, pending] = useActionState(phoneAction, undefined);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="userId" value={userId} />
+      <input name="phone" defaultValue={phone ? phone.replace(/^55/, "") : ""} inputMode="tel" placeholder="WhatsApp com DDD" aria-label="WhatsApp" className={`${ui.inputSm} w-48`} />
+      <button className={ui.ghostSm} disabled={pending}>Salvar WhatsApp</button>
+      <Msg state={state} />
+    </form>
   );
 }
