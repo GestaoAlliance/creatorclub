@@ -1,5 +1,5 @@
 import type { CreatorReturn } from "@/lib/reports/creator-return";
-import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound, Sparkles, FileText, Play } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound, Sparkles, FileText, Play, KeyRound } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { Tabs } from "@/components/ui/tabs";
@@ -19,6 +19,7 @@ import type { creatorContractSignature } from "@/lib/contracts/sign";
 import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
 import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
+import { AccessBox } from "@/components/staff/access-box";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -445,6 +446,12 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               </div>
             )}
           </Card>
+          {/* M4.4b (D-ACCESS): último acesso ao portal e nova senha. */}
+          {p.userId && (
+            <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
+              <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} />
+            </Card>
+          )}
           {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}
           <Card title="Perfil" icon={<Sparkles className="size-4" />}>
             {p.canEdit ? (

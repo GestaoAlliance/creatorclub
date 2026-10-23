@@ -103,3 +103,27 @@ export function noticeEmail(input: { name: string; brandName: string; title: str
     text: [`Oi, ${firstName(input.name)}!`, "", input.title, input.body, "", `Abrir o portal: ${input.link}`].join("\n"),
   };
 }
+
+/** M4.4b (D-ACCESS): link para criar uma nova senha, pedido pela equipe. */
+export function passwordResetEmail(input: { name: string; brandName: string; link: string }): EmailContent {
+  const brand = escapeHtml(input.brandName);
+  const name = escapeHtml(firstName(input.name));
+  return {
+    subject: `Nova senha do Creator Club ${input.brandName}`,
+    html: layout({
+      title: `Oi, ${name}!`,
+      paragraphs: [`A equipe da <strong>${brand}</strong> mandou um link para você criar uma nova senha do portal.`, "Toque no botão e escolha a nova senha."],
+      button: { label: "Criar nova senha", href: input.link },
+      footer: ["O link vale por 1 hora e só funciona uma vez.", "Se você não pediu, pode ignorar esta mensagem: sua senha atual continua valendo."],
+    }),
+    text: [
+      `Oi, ${firstName(input.name)}!`,
+      "",
+      `A equipe da ${input.brandName} mandou um link para você criar uma nova senha do portal:`,
+      input.link,
+      "",
+      "O link vale por 1 hora e só funciona uma vez.",
+      "Se você não pediu, pode ignorar esta mensagem: sua senha atual continua valendo.",
+    ].join("\n"),
+  };
+}

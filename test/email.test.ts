@@ -28,3 +28,14 @@ describe("e-mails do sistema (D-EMAIL)", () => {
     expect(staffInviteEmail({ name: "A", roleLabel: "Super admin", brandName: null, link: "https://x", expiresAt }).text).toContain("como Super admin.");
   });
 });
+
+describe("e-mail de nova senha (M4.4b, D-ACCESS)", () => {
+  it("assunto com a marca, botão com o link e aviso de 1 hora; nome escapado", async () => {
+    const { passwordResetEmail } = await import("@/domain");
+    const e = passwordResetEmail({ name: "Ana <b>Silva</b>", brandName: "Botanika", link: "https://x.test/auth/confirm?t=1" });
+    expect(e.subject).toBe("Nova senha do Creator Club Botanika");
+    expect(e.html).toContain('href="https://x.test/auth/confirm?t=1"');
+    expect(e.html).not.toContain("<b>Silva");
+    expect(e.text).toContain("vale por 1 hora");
+  });
+});

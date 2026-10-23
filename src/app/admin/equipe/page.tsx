@@ -9,6 +9,7 @@ import { teamOverview } from "@/lib/team/invites";
 import { disableUserAction, revokeGrantAction, revokeInviteAction } from "./actions";
 import { GrantForm, PhoneForm } from "./grant-form";
 import { InviteForm } from "./invite-form";
+import { AccessBox } from "@/components/staff/access-box";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export default async function EquipePage() {
                       </li>
                     ))}
                   </ul>
+                  {/* M4.4b (D-ACCESS): último acesso e nova senha. */}
+                  <AccessBox userId={u.id} lastSeenAt={u.lastSeenAt?.toISOString() ?? null} canReset={u.id !== actor.userId} name={u.name} phone={u.phone} />
                   {u.roleGrants.some((g) => g.role === "GESTAO" || g.role === "SUPER_ADMIN") && <PhoneForm userId={u.id} phone={u.phone} />}
                   {u.id !== actor.userId && !u.roleGrants.some((g) => g.role === "SUPER_ADMIN") && brands.length > 0 && <GrantForm userId={u.id} brands={brands} />}
                 </li>
