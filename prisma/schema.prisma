@@ -93,6 +93,7 @@ model Brand {
   sheetSyncIssues    SheetSyncIssue[]
   creatorNotes       CreatorNote[]
   creatorTags        CreatorTag[]
+  assets             BrandAsset[]
 }
 
 enum IntegrationKind {
@@ -1373,4 +1374,25 @@ model CreatorTagLink {
 
   @@id([creatorId, tagId])
   @@index([tagId])
+}
+
+// ───────────────────────────── Imagens da marca (M4.4a, D-BRANDLOGIN) ─────────────────────────────
+
+/// Logo da tela de entrar da marca (fundo liso). Guardado no banco (até 300 KB); só PNG, JPG ou WebP (conferido pelos
+/// bytes). Trocar substitui; tirar apaga (não é dado financeiro).
+model BrandAsset {
+  id           String   @id @default(uuid())
+  brandId      String
+  kind         String // LOGO
+  mime         String
+  bytes        Bytes
+  sizeBytes    Int
+  sha256       String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, kind])
 }

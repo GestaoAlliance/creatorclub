@@ -28,6 +28,9 @@ export type BrandInput = {
   nfServiceDescription?: string;
   nfInstructions?: string;
   whatsappInstance?: string;
+  /** M4.4a: comissão e desconto padrão das aprovações novas, em % (ex.: "15" ou "12,5"). */
+  defaultRate?: string;
+  defaultDiscount?: string;
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -58,7 +61,22 @@ function clean(input: BrandInput) {
     ...(input.nfInstructions !== undefined && { nfInstructions }),
     ...(input.whatsappInstance !== undefined && { whatsappInstance }),
   };
-  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf };
+  // M4.4a (D-BRANDLOGIN): padrões das aprovações novas (quem já é creator mantém a dela).
+  const pct = (raw: string | undefined, label: string, max: number) => {
+    if (raw === undefined) return undefined;
+    const t = raw.trim().replace(",", ".").replace("%", "");
+    if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) throw new BrandError(`${label}: informe a porcentagem (ex.: 15 ou 12,5).`);
+    const bps = Math.round(Number(t) * 100);
+    if (bps < 1 || bps > max) throw new BrandError(`${label}: entre 0,01% e ${max / 100}%.`);
+    return bps;
+  };
+  const defaultCommissionBps = pct(input.defaultRate, "Comissão padrão", 5000);
+  const defaultDiscountBps = pct(input.defaultDiscount, "Desconto padrão", 5000);
+  const defaults = {
+    ...(defaultCommissionBps !== undefined && { defaultCommissionBps }),
+    ...(defaultDiscountBps !== undefined && { defaultDiscountBps }),
+  };
+  return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf, ...defaults };
 }
 
 /** "vermefree.com.br" → "https://vermefree.com.br" (sem barra no fim); vazio = sem site. */
@@ -92,7 +110,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -121,6 +139,9 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfInstructions: true,
       whatsappInstance: true,
       storeUrl: true,
+      defaultCommissionBps: true,
+      defaultDiscountBps: true,
+      assets: { select: { kind: true, sha256: true, sizeBytes: true } },
       createdAt: true,
       integrations: { where: { kind: "SHOPIFY" }, select: { status: true, externalId: true } },
       _count: { select: { roleGrants: true, termsVersions: true, contractDocuments: true, contractTemplates: true } },

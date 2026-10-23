@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 4 — M4.4** Configurações: padrão da Alliance e exceções por marca; equipe com último acesso e resetar senha (`docs/PLANO-MELHORIAS.md`): perguntar antes o que muda. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 4 — M4.4b** Equipe: último acesso, resetar senha por e-mail e por link (decidido em 2026-10-23). Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -55,7 +55,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.1** Candidatas: recusar em massa e "Nova candidata" pela equipe (D-MANUALAPP)
 - [x] **M4.2** Tags e aniversário; gerente continua a da marca (D-TAGS)
 - [x] **M4.3** Tipos ficam os 3; perfil opcional (registro, nichos, YouTube, Kwai, alergias, mídia kit) e cidade/UF (D-PROFILEFIELDS)
-- [ ] **M4.4** Configurações: padrão da Alliance e exceções por marca
+- [x] **M4.4a** Marcas: comissão e desconto padrão editáveis; tela de entrar com o logo da marca (D-BRANDLOGIN)
+- [ ] **M4.4b** Equipe: último acesso e resetar senha (e-mail e link)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -277,6 +278,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-175 — 2026-10-23 — Padrões da marca e tela de entrar com o logo dela (M4.4a, D-BRANDLOGIN)
+- **Decisões do responsável:** cada marca edita os próprios padrões (não há "padrão da Alliance"); só comissão e
+  desconto padrão (mínimo de vendas e janela de saque continuam fixos); login com o logo da marca e fundo liso (a
+  imagem de fundo foi tirada a pedido do responsável: "pode ser simples").
+  Equipe (último acesso e resetar senha por e-mail e por link) fica na M4.4b.
+- **Feito:** em Marcas → Editar dados, "Padrões para novas creators" (comissão e desconto em %, vêm preenchidos na
+  aprovação; quem já é creator mantém os dela). "Tela de entrar da marca": enviar/tirar o logo (até 300 KB), só
+  PNG/JPG/WebP conferidos pelos bytes (SVG fora). `/entrar?marca=<slug>` (e a volta para o portal da marca) abre com
+  a cor e o logo dela; o link de entrar das boas-vindas já leva a marca. Logo servido em `/marca/<slug>/logo`, com
+  cache e versão no endereço. Auditoria em tudo.
+- **Banco:** tabela `BrandAsset` (RLS; trava `BrandAsset_valid`).
+- **Verificado:** testes (243), integração (252; novo: logo, permissão, trava, padrões), typecheck, build,
+  migração sem divergência.
 
 ### CP-174 — 2026-10-23 — Perfil opcional e cidade/UF (M4.3, D-PROFILEFIELDS)
 - **Decisões do responsável:** os tipos continuam Influencer, UGC e Prescritor (decisão 9); campos novos, todos

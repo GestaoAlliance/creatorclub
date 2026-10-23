@@ -31,3 +31,4 @@ export * from "./actions";
 export * from "./weekly";
 export * from "./birthday";
 export * from "./profile";
+export * from "./brand-assets";

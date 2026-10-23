@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { NF_DEFAULT_SERVICE } from "@/domain";
-import { createBrandAction, updateBrandAction } from "./actions";
+import { brandAssetAction, createBrandAction, updateBrandAction } from "./actions";
 
 type Values = {
   brandId?: string;
@@ -18,6 +18,8 @@ type Values = {
   nfServiceDescription: string;
   nfInstructions: string;
   whatsappInstance: string;
+  defaultRate: string;
+  defaultDiscount: string;
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -63,6 +65,21 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
           </span>
         </label>
       </div>
+      {/* M4.4a (D-BRANDLOGIN): padrões que a aprovação de candidata já traz preenchidos. */}
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
+        <legend className="px-1 text-sm font-semibold">Padrões para novas creators</legend>
+        <p className={ui.hint}>Vêm preenchidos na aprovação de cada candidata (a Ana pode mudar). Quem já é creator mantém a comissão e o desconto dela.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className={ui.label}>
+            Comissão padrão (%)
+            <input name="defaultRate" defaultValue={initial.defaultRate} inputMode="decimal" required className={ui.input} />
+          </label>
+          <label className={ui.label}>
+            Desconto do cupom padrão (%)
+            <input name="defaultDiscount" defaultValue={initial.defaultDiscount} inputMode="decimal" required className={ui.input} />
+          </label>
+        </div>
+      </fieldset>
       {/* M1.3 (D-NFDATA): o que a creator vê na tela de saque para emitir a nota. Vazio = serviço padrão. */}
       <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
         <legend className="px-1 text-sm font-semibold">Dados para a creator emitir a nota</legend>
@@ -91,5 +108,30 @@ export function BrandForm({ initial, create = false }: { initial: Values; create
       <Msg state={state} />
       <button className={`${ui.btn} self-start`} disabled={pending}>{create ? "Criar marca" : "Salvar"}</button>
     </form>
+  );
+}
+
+/** M4.4a (D-BRANDLOGIN): logo da tela de entrar da marca. */
+export function BrandImage({ brandId, slug, kind, label, hint, version }: { brandId: string; slug: string; kind: "LOGO"; label: string; hint: string; version: string | null }) {
+  const [state, action, pending] = useActionState(brandAssetAction, undefined);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-medium">{label}</p>
+      {version ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`/marca/${slug}/logo?v=${version}`} alt={label} className="h-14 w-44 rounded-xl border border-stone-200/70 bg-white object-contain p-2 dark:border-white/10" />
+      ) : (
+        <span className="grid h-14 w-44 place-content-center rounded-xl border border-dashed border-stone-300 text-xs text-stone-500 dark:border-white/15">sem imagem</span>
+      )}
+      <form action={action} className="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="brandId" value={brandId} />
+        <input type="hidden" name="kind" value={kind} />
+        <input type="file" name="file" accept="image/png,image/jpeg,image/webp" aria-label={label} className="max-w-56 text-xs file:mr-2 file:rounded-full file:border-0 file:bg-stone-900 file:px-3 file:py-1 file:text-xs file:text-white dark:file:bg-white dark:file:text-stone-900" />
+        <button className={ui.btnSm} disabled={pending}>Enviar</button>
+        {version && <button name="remove" value="1" className={ui.ghostSm} disabled={pending}>Tirar</button>}
+      </form>
+      <p className={ui.hint}>{hint}</p>
+      <Msg state={state} />
+    </div>
   );
 }

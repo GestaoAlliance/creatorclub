@@ -48,7 +48,9 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     const account = await db().creatorAccount.findUnique({ where: { id: r.accountId }, select: { userId: true } });
     if (account?.userId) {
       const origin = (await headers()).get("origin") ?? "";
-      return { ok: { coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link: null, loginUrl: `${origin}/entrar` } };
+      // M4.4a (D-BRANDLOGIN): o link de entrar abre com a cara da marca.
+      const slug = (await db().creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { brand: { select: { slug: true } } } })).brand.slug;
+      return { ok: { coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link: null, loginUrl: `${origin}/entrar?marca=${slug}` } };
     }
     // O convite sai logo depois; se falhar (ex.: pessoa já tem login), a creator já está criada e o aviso aparece.
     let link: string | null = null;
