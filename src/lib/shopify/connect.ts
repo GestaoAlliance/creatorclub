@@ -17,7 +17,7 @@ import { ORDER_TOPICS } from "./webhook";
  * Cupons (`read_discounts`/`write_discounts`) só entram na E4: até lá o app é só leitura (D-REALSTORE).
  */
 export const REQUIRED_SCOPES = ["read_orders"];
-export const RECOMMENDED_SCOPES = ["read_all_orders", "read_discounts", "write_discounts"];
+export const RECOMMENDED_SCOPES = ["read_all_orders", "read_discounts", "write_discounts", "read_products", "read_inventory"];
 
 /** Para que serve cada permissão recomendada (aparece na tela de sync quando falta). */
 export const SCOPE_PURPOSE: Record<string, string> = {

@@ -436,6 +436,8 @@ model OrderLine {
   title                String
   quantity             Int
   discountedTotalCents Int
+  /// M3.2 (D-COST): produto da Shopify da linha (para o custo); linhas antigas sem ele casam pelo nome.
+  productShopifyId     String?
 
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
   order Order @relation(fields: [orderId, brandId], references: [id, brandId], onDelete: Restrict)
@@ -713,6 +715,9 @@ model Product {
   shopifyId String
   title     String
   active    Boolean  @default(true)
+  /// M3.2 (D-COST): custo unitário (primeira variante) lido da Shopify com `read_inventory`; null = sem custo cadastrado.
+  costCents    Int?
+  costSyncedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -742,6 +747,8 @@ model Shipment {
   address       Json
   carrier       String?
   trackingCode  String?
+  /// M3.2 (D-COST): frete pago pelo envio (digitado ao marcar como enviado); null = não informado.
+  freightCents  Int?
   createdById   String
   shippedAt     DateTime?
   shippedById   String?

@@ -22,8 +22,8 @@ describe("pedido do Shopify → Order", () => {
     expect(order.paidAt?.toISOString()).toBe("2026-09-30T23:49:58.000Z");
     expect(order.shopifyUpdatedAt.toISOString()).toBe("2026-10-01T00:00:00.000Z");
     expect(lines).toEqual([
-      { shopifyId: "gid://shopify/LineItem/1", title: "Sérum", quantity: 2, discountedTotalCents: 11_990 },
-      { shopifyId: "gid://shopify/LineItem/2", title: "Sabonete", quantity: 1, discountedTotalCents: 7_000 },
+      { shopifyId: "gid://shopify/LineItem/1", title: "Sérum", quantity: 2, discountedTotalCents: 11_990, productShopifyId: null },
+      { shopifyId: "gid://shopify/LineItem/2", title: "Sabonete", quantity: 1, discountedTotalCents: 7_000, productShopifyId: null },
     ]);
   });
 

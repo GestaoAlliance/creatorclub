@@ -47,7 +47,7 @@ describe("conectar loja (banco real)", () => {
       { fetch: tokenFetch("read_orders"), client, encKey },
     );
     expect(r).toMatchObject({ shop: "loja-dev.myshopify.com", webhooksCreated: 4, warnings: [] });
-    expect(r.missingRecommended).toEqual(["read_all_orders", "read_discounts", "write_discounts"]);
+    expect(r.missingRecommended).toEqual(["read_all_orders", "read_discounts", "write_discounts", "read_products", "read_inventory"]);
     expect(created.map((c) => c.topic)).toEqual(["ORDERS_CREATE", "ORDERS_UPDATED", "ORDERS_CANCELLED", "REFUNDS_CREATE"]);
     expect(created[0]!.uri).toBe(`https://app.test/api/webhooks/shopify/${brand.slug}`);
     expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid", clientSecret: "csec", scopes: "read_orders" });
@@ -71,10 +71,10 @@ describe("conectar loja (banco real)", () => {
       { fetch: fetchSpy, client: fakeClient().client, encKey },
     );
     expect(new URLSearchParams(sent).get("client_secret")).toBe("csec-salvo");
-    expect(r.missingRecommended).toEqual(["read_discounts", "write_discounts"]);
-    expect(missingRecommendedScopes("read_orders, read_all_orders,read_discounts,write_discounts")).toEqual([]);
-    expect(missingRecommendedScopes(null)).toEqual(["read_all_orders", "read_discounts", "write_discounts"]);
-    expect(missingRecommendedScopes("read_orders,read_all_orders,write_discounts")).toEqual([]);
+    expect(r.missingRecommended).toEqual(["read_discounts", "write_discounts", "read_products", "read_inventory"]);
+    expect(missingRecommendedScopes("read_orders, read_all_orders,read_discounts,write_discounts,read_products,read_inventory")).toEqual([]);
+    expect(missingRecommendedScopes(null)).toEqual(["read_all_orders", "read_discounts", "write_discounts", "read_products", "read_inventory"]);
+    expect(missingRecommendedScopes("read_orders,read_all_orders,write_discounts,write_products,read_inventory")).toEqual([]);
     expect(await loadShopifyConnection(prisma, brand.id, encKey)).toMatchObject({ clientId: "cid-salvo", scopes: "read_orders,read_all_orders" });
 
     const { brand: empty } = await seedBrand(prisma);

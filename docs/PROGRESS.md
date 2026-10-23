@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 3 — M3.1** do plano de melhorias (`docs/PLANO-MELHORIAS.md`): ler a fase e perguntar ao responsável o que depender de decisão antes de começar. Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 3 — M3.3 Retorno por creator** (lucro que ela deixa e clientes novos × recorrentes; usa o custo do M3.2): perguntar ao responsável o que depender de decisão antes. Pendente do responsável para o custo: adicionar `read_inventory` no app do Creator Club das 3 lojas (nova versão) e "Atualizar catálogo". Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -47,7 +47,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M2.1** Fila de ações por creator (D-ACTIONS)
 - [x] **M2.2** Avisos à creator pelo WhatsApp da marca, via n8n + Evolution (D-WHATSAPP)
 - [x] **M2.3** Prioridade nas candidatas (D-PRIORITY). **Fim da Fase 2.**
-- [ ] **Fase 3** — Números e retorno (ver o plano)
+- [x] **M3.1** Dashboard com comparação, loja inteira, gráfico, top creators e produtos, esconder valores e as 3 marcas (já entregue no M0.0.4 e em "Todas as marcas")
+- [x] **M3.2** Produtos e custo: receita, pedidos, unidades, custo da Shopify, margem e lucro do programa (D-COST)
+- [ ] **M3.3** Retorno por creator: lucro que ela deixa e clientes novos × recorrentes
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -269,6 +271,21 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-167 — 2026-10-23 — Produtos e custo (M3.2, D-COST); M3.1 já estava entregue
+- **Feito:** aba **Vendas → Produtos**: por produto, unidades, pedidos, receita (valor da linha já com desconto), custo
+  unitário (Shopify), custo total e margem; período (7, 30, 90 dias, este mês) e "com cupom de creator" × "loja
+  inteira". Cartão **Lucro do programa de creators**: receita − custo dos produtos − comissão − kits enviados (custo dos
+  produtos dos envios) − frete. O desconto do cupom não entra como custo. Custo vem da Shopify (primeira variante,
+  campo "Custo por item") quando o app tem `read_inventory`; sem a permissão, o catálogo segue sem custo e a tela
+  avisa. Linhas de pedido passam a guardar o produto da Shopify (as antigas casam pelo nome). Em Envios, ao marcar como
+  enviado, campo opcional "frete R$".
+- **Banco:** `Product.costCents`/`costSyncedAt`, `OrderLine.productShopifyId`, `Shipment.freightCents` (travas
+  `Product_cost_not_negative`, `Shipment_freight_not_negative`).
+- **Para ligar o custo (responsável):** nova versão do app do Creator Club em cada loja com `read_inventory`, e
+  "Atualizar catálogo" em Configurações → Shopify.
+- **Verificado:** testes (231), integração (241; novo: custo com e sem permissão, relatório, lucro, frete), typecheck,
+  build, migração sem divergência; capturas no PR.
 
 ### CP-166 — 2026-10-23 — Prioridade nas candidatas (M2.3, D-PRIORITY); fim da Fase 2
 - **Feito:** a lista de candidatas abre por **prioridade**, com selo Alta / Média / Baixa e os motivos em cada linha.
