@@ -11,7 +11,8 @@ export type LedgerType =
   | "REVERSAL"
   | "WITHDRAWAL"
   | "ADJUSTMENT"
-  | "OPENING_BALANCE";
+  | "OPENING_BALANCE"
+  | "PRIZE";
 
 export type LedgerEntry = {
   type: LedgerType;

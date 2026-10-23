@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 4 — M4.5** Campanhas e desafios (`docs/PLANO-MELHORIAS.md`): perguntar antes a decisão 10. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 4 — M4.6** Link do post no portal (perguntar antes); depois, na ordem combinada em 2026-10-23: S4 (planilhas da VermeFree), M4.7, U6, junho da VermeFree. Fase 5 só depois de resolver as pendências (pedido do responsável). Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -31,12 +31,12 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 ### M — Plano de melhorias (`docs/PLANO-MELHORIAS.md`; uma etapa por vez, cada uma com PR e capturas)
 - [x] **M0.0.1** Menu em grupos com abas (6 itens) e Configurações
 - [x] **M0.0.2** Creators no modelo da referência (situação e tipo em abas, alertas, busca, tabela com redes e vendas)
-- [ ] **M0.0.3** Vendas + Cupons e Pagamentos como abas
+- [x] **M0.0.3** Vendas + Cupons e Pagamentos como abas (entregue com o menu em grupos; conferido em 2026-10-23)
 - [x] **M0.0.4** Início = dashboard (adiantado a pedido; "Todas as marcas" fica para depois); "Todas as marcas" no lugar do painel Alliance
-- [ ] **M0.0.5** Portal com 4 telas
+- [x] **M0.0.5** Portal com 4 telas (Início, Vendas, Saque, Envios; conferido em 2026-10-23)
 - [x] **M0.1** Vendas da equipe (todas as vendas, busca, filtro de situação, CSV, motivo da atribuição)
 - [x] **M0.2** Ficha: link do cupom, últimos 30 dias, comissão em 4 partes, linha do tempo
-- [ ] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração
+- [x] **M0.3** Lista de creators: vendas, pedidos, última venda, alertas clicáveis, concentração (entregue no M0.0.2; conferido em 2026-10-23)
 - [x] **M0.4** Portal: aguardando pagamento, já usado, condições no Início, encerramento com data, barra do mínimo
 - [x] **M0.5** Busca de creator no painel inteiro
 - [x] **M1.1** Saques em duas etapas: em análise → Gestão aprova → Pagamento paga; aba Aprovados; selo da nota; "conferir de novo"; resumo "comissão a pagar" (D-WDAPPROVE)
@@ -57,6 +57,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.3** Tipos ficam os 3; perfil opcional (registro, nichos, YouTube, Kwai, alergias, mídia kit) e cidade/UF (D-PROFILEFIELDS)
 - [x] **M4.4a** Marcas: comissão e desconto padrão editáveis; tela de entrar com o logo da marca (D-BRANDLOGIN)
 - [x] **M4.4b** Último acesso e nova senha (link e e-mail) para equipe e creators (D-ACCESS)
+- [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
+- [ ] **M4.6** Link do post no portal
+- [ ] **M4.7** Desligar as planilhas, marca a marca (combinado com a equipe)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -278,6 +281,22 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-177 — 2026-10-23 — Campanhas e desafios (M4.5, D-CAMPAIGN)
+- **Decisões do responsável (decisão 10):** campanha criada no Creator Club (link do AllianceOS opcional); ranking de
+  vendas e/ou meta individual na mesma campanha; prêmio em dinheiro entra no saldo, já disponível, quando a Gestão
+  confirma; venda conta pela data do pagamento; inscrição no portal; placar com posição e primeiro nome (sem valores
+  das outras); empate: quem chegou antes ao total; confirmação a partir de 7 dias depois do fim, sem mudar depois.
+- **Feito:** Creators → Campanhas (equipe): lista com a fase, "Nova campanha" (nome, briefing, período, público por
+  tipo e tag, prêmios do 1º ao 5º, meta e prêmio da meta, link do AllianceOS), rascunho → "Publicar" (depois disso
+  período, público e prêmios travam), placar com prévia dos prêmios e "Confirmar ganhadoras" (lança "Prêmio de
+  campanha" no extrato). Portal: cartão no Início quando há campanha aberta e a página Campanhas (prêmios, briefing,
+  "Quero participar", posição, quanto falta para a de cima e para a meta, top 10 com primeiro nome, aviso do prêmio
+  ganho). Auditoria em tudo. Fila: M0.0.3, M0.0.5 e M0.3 marcados (já entregues por outras etapas).
+- **Banco:** `Campaign`, `CampaignEntry`, `CampaignPrize` (RLS; travas `Campaign_valid`, `CampaignPrize_valid`);
+  tipo de lançamento `PRIZE` (crédito com motivo e quem confirmou, `LedgerEntry_sign_by_type`).
+- **Verificado:** testes (247), integração (253; novo: fluxo completo, período em São Paulo, cancelada fora, empate,
+  confirmação após 7 dias e uma vez só, público, travas), typecheck, build, migração sem divergência.
 
 ### CP-176 — 2026-10-23 — Último acesso e nova senha pela equipe (M4.4b, D-ACCESS)
 - **Decisões do responsável:** último acesso e resetar senha (por e-mail e por link) para a equipe e para as creators;
