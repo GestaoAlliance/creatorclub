@@ -88,13 +88,13 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
         {o.loginUrl ? (
           <>
             <p>Ela já criou a senha no cadastro: entra no portal com o e-mail dela, sem convite.</p>
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, loginUrl: o.loginUrl, contract: o.contract })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, loginUrl: o.loginUrl })} />
           </>
         ) : o.link ? (
           <>
             {o.mail && <p>Convite enviado por e-mail para {o.mail}.</p>}
             {o.mailError && <p>O e-mail do convite não foi enviado ({o.mailError}). Mande pelo WhatsApp.</p>}
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: o.link, contract: o.contract })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: o.link })} />
             <p className={ui.hint}>Link do convite (aparece só agora; vale 7 dias, uma vez):</p>
             <code className="break-all font-mono text-xs">{o.link}</code>
             <button type="button" className={`${ui.ghostSm} self-start`} onClick={() => { void navigator.clipboard.writeText(o.link!); setCopied(true); }}>
@@ -104,7 +104,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
         ) : (
           <>
             <p>Convite não gerado: {o.inviteError}</p>
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, contract: o.contract })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null })} />
           </>
         )}
         <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>

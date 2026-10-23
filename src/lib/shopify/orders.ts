@@ -24,6 +24,8 @@ export type ShopifyOrderNode = {
   currentSubtotalPriceSet: Money;
   currentTotalPriceSet: Money;
   transactions: Array<{ kind: string; status: string; processedAt: string | null }>;
+  /** M3.3 (D-RETURN): só vem quando o app tem `read_customers`; guardamos só o id (nada de dado pessoal). */
+  customer?: { id: string } | null;
   lineItems: {
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
     nodes: Array<{ id: string; title: string; currentQuantity: number; discountedTotalSet: Money; product?: { id: string } | null }>;
@@ -36,13 +38,17 @@ export const ORDER_FIELDS = `
   currentTotalPriceSet { shopMoney { amount } }
   transactions(first: 100) { kind status processedAt }`;
 
+/** Campos do pedido; com `read_customers` no app, também o id da cliente (M3.3, D-RETURN). */
+export const orderFields = (withCustomer: boolean) => (withCustomer ? `${ORDER_FIELDS} customer { id }` : ORDER_FIELDS);
+
 export const LINE_ITEMS = `
   pageInfo { hasNextPage endCursor }
   nodes { id title currentQuantity discountedTotalSet { shopMoney { amount } } product { id } }`;
 
-export const ORDER_QUERY = `query Order($id: ID!, $after: String) {
-  order(id: $id) { ${ORDER_FIELDS}
+export const orderQuery = (withCustomer: boolean) => `query Order($id: ID!, $after: String) {
+  order(id: $id) { ${orderFields(withCustomer)}
     lineItems(first: 250, after: $after) { ${LINE_ITEMS} } } }`;
+export const ORDER_QUERY = orderQuery(false);
 
 /**
  * Data do pagamento (D-PAIDAT): a primeira transação `SALE` ou `CAPTURE` com sucesso. Sem ela, o pedido não está
@@ -72,6 +78,8 @@ export function mapShopifyOrder(node: ShopifyOrderNode, brandId: string) {
     // Ordem preservada: a atribuição (E5) usa o primeiro cupom CREATOR da lista.
     discountCodes: node.discountCodes,
     shopifyUpdatedAt: new Date(node.updatedAt),
+    // Sem a permissão o campo não vem: não apaga o que já está gravado.
+    ...(node.customer !== undefined ? { customerShopifyId: node.customer?.id ?? null } : {}),
   };
   const lines = node.lineItems.nodes.map((l) => ({
     shopifyId: l.id,
@@ -115,6 +123,8 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
       if (created.count === 0) {
         // Versão igual ou antiga: nada muda, mas devolve o pedido para a liquidação ser refeita se algo falhou antes.
         const existing = await tx.order.findUnique({ where: { brandId_shopifyId: key }, select: { id: true } });
+        // M3.3: pedido já gravado antes da permissão de clientes ganha o id da cliente (reimportação ou reconciliação).
+        if (existing && order.customerShopifyId) await tx.order.updateMany({ where: { id: existing.id, customerShopifyId: null }, data: { customerShopifyId: order.customerShopifyId } });
         return { outcome: "stale" as const, orderId: existing?.id ?? null, warnings };
       }
       outcome = "created";
@@ -132,11 +142,11 @@ export async function processOrder(prisma: PrismaClient, brandId: string, node: 
 }
 
 /** Busca um pedido completo (todas as páginas de itens). `null` se o Shopify não o encontra. */
-export async function fetchOrder(client: ShopifyClient, orderGid: string): Promise<ShopifyOrderNode | null> {
+export async function fetchOrder(client: ShopifyClient, orderGid: string, withCustomer = false): Promise<ShopifyOrderNode | null> {
   let after: string | null = null;
   let order: ShopifyOrderNode | null = null;
   do {
-    const data: { order: ShopifyOrderNode | null } = await client.graphql(ORDER_QUERY, { id: orderGid, after });
+    const data: { order: ShopifyOrderNode | null } = await client.graphql(orderQuery(withCustomer), { id: orderGid, after });
     if (!data.order) return null;
     if (!order) order = data.order;
     else order.lineItems.nodes.push(...data.order.lineItems.nodes);

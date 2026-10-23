@@ -1,4 +1,5 @@
-import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, UserRound } from "lucide-react";
+import type { CreatorReturn } from "@/lib/reports/creator-return";
+import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { Tabs } from "@/components/ui/tabs";
@@ -63,7 +64,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes }: { mes?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90 }: { mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -162,6 +163,20 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
               : `Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam a ${formatBRL(st.release.minCents)}`}
             {st.releasedThrough ? `; liberada até ${st.releasedThrough.slice(5)}/${st.releasedThrough.slice(0, 4)}` : "; nada liberado ainda"}. Venda conta no mês do pagamento.
           </p>
+        </Card>
+      )}
+      {ret && !ugcOnly && (
+        <Card title={`Retorno (últimos ${returnDays} dias)`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <Kpi label="Receita" value={formatBRL(ret.revenueCents)} hint={`${ret.orders} pedidos`} />
+            <Kpi label="Custos" value={formatBRL(ret.cogsCents + ret.commissionCents + ret.kitsCents + ret.freightCents)} hint={`produtos ${formatBRL(ret.cogsCents)} · comissão ${formatBRL(ret.commissionCents)} · kits e frete ${formatBRL(ret.kitsCents + ret.freightCents)}`} />
+            <Kpi label="Lucro que deixa" value={formatBRL(ret.profitCents)} tone={ret.profitCents < 0 ? "red" : undefined} hint={ret.unitsWithoutCost ? `${ret.unitsWithoutCost} un. sem custo na Shopify` : undefined} />
+            <Kpi
+              label="Clientes"
+              value={ret.customers.unknown < ret.orders ? `${ret.customers.new} novas` : "—"}
+              hint={ret.customers.unknown < ret.orders ? `${ret.customers.returning} recorrentes${ret.customers.unknown ? ` · ${ret.customers.unknown} sem dado` : ""}` : "precisa de read_customers no app"}
+            />
+          </div>
         </Card>
       )}
                 <div className="grid gap-6 lg:grid-cols-2 lg:items-start">

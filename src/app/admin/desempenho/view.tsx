@@ -98,11 +98,13 @@ export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search
       </form>
 
       <Card help="de-resumo">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <Kpi label={`Vendas de ${monthName(data.month)}`} value={brl(s.salesCents)} hint={<Change bps={s.changeBps} />} />
           <Kpi label="Pedidos" value={s.orders} />
           <Kpi label="Venderam no mês" value={`${s.sellers} de ${s.active}`} hint="influencers e prescritores" />
           <Kpi label="Mínimo atingido hoje" value={s.reachedMin} hint={s.idle ? `${s.idle} sem vender há 60 dias ou mais` : "ninguém parado há 60 dias"} tone={s.idle ? "amber" : undefined} />
+          <Kpi label="Lucro que deixaram" value={brl(s.profitCents)} hint="receita − custo − comissão − kits − frete" tone={s.profitCents < 0 ? "red" : undefined} />
+          <Kpi label="Clientes novas" value={s.customersKnown ? s.newCustomers : "—"} hint={s.customersKnown ? "primeira compra na loja" : "precisa de read_customers no app"} />
         </div>
       </Card>
 
@@ -120,7 +122,7 @@ export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search
           ) : (
             <ol className={ui.list}>
               {partners.map((r, i) => (
-                <li key={r.id} className="grid gap-3 py-4 md:grid-cols-[2.5rem_1fr_11rem_15rem] md:items-center">
+                <li key={r.id} className="grid gap-3 py-4 md:grid-cols-[2.5rem_1fr_11rem_10rem_15rem] md:items-center">
                   <span className={`text-lg font-semibold tabular-nums ${sp.ordem === "vendas" && i < 3 && r.salesCents > 0 ? "text-brand dark:text-brand-2" : "text-stone-400"}`}>{i + 1}º</span>
                   <span className="min-w-0">
                     <Link href={`/admin/creators/${r.id}`} className="block truncate font-medium hover:underline">{r.name}</Link>
@@ -134,6 +136,14 @@ export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search
                     <span className="font-semibold tabular-nums">{brl(r.salesCents)}</span>
                     <span className="text-xs text-stone-500">{r.orders} {r.orders === 1 ? "pedido" : "pedidos"}</span>
                     <Change bps={r.changeBps} />
+                  </span>
+                  <span className="flex flex-col text-sm">
+                    <span className={`font-medium tabular-nums ${r.ret && r.ret.profitCents < 0 ? "text-red-700 dark:text-red-400" : ""}`} title="lucro que ela deixa no mês">
+                      {r.ret ? brl(r.ret.profitCents) : "—"} <span className="text-xs font-normal text-stone-500">lucro</span>
+                    </span>
+                    {r.ret && r.ret.customers.unknown < r.ret.orders && (
+                      <span className="text-xs text-stone-500">{r.ret.customers.new} novas · {r.ret.customers.returning} recorrentes</span>
+                    )}
                   </span>
                   {r.release ? <MinBar r={r.release} /> : <span className="text-xs text-stone-500">sem mínimo</span>}
                 </li>

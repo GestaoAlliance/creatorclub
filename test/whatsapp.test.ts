@@ -28,3 +28,14 @@ describe("avisos pelo WhatsApp (M2.2, D-WHATSAPP)", () => {
     await expect(bad({ instance: "B", phone: "1", text: "t", notificationId: "n", kind: "k", brand: "b" })).rejects.toThrow(/recusou/);
   });
 });
+
+describe("boas-vindas depois de aprovar", () => {
+  it("cupom, desconto e acesso ao portal; nunca pede para assinar contrato (já está assinado)", async () => {
+    const { welcomeMessage } = await import("@/domain");
+    const msg = welcomeMessage({ name: "Nathaly Souza", brand: "Revita Derma", coupon: "NATHALY", discountBps: 500, inviteLink: null, loginUrl: "https://x.test/entrar" });
+    expect(msg).toContain("Oi, Nathaly! Sua inscrição no Creator Club da Revita Derma foi aprovada!");
+    expect(msg).toContain("*NATHALY*");
+    expect(msg).toContain("https://x.test/entrar");
+    expect(msg).not.toMatch(/assin|contrato/i);
+  });
+});

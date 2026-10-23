@@ -25,6 +25,15 @@ export type ProductRow = {
 
 const norm = (s: string) => s.trim().toLowerCase();
 
+type CostProduct = { id: string; shopifyId: string; title: string; costCents: number | null };
+
+/** Produto de cada linha do pedido: pelo id da Shopify; linhas antigas (sem id) pelo nome. */
+export function productResolver(products: readonly CostProduct[]) {
+  const byShopify = new Map(products.map((p) => [p.shopifyId, p]));
+  const byTitle = new Map(products.map((p) => [norm(p.title), p]));
+  return (l: { productShopifyId: string | null; title: string }) => (l.productShopifyId && byShopify.get(l.productShopifyId)) || byTitle.get(norm(l.title)) || null;
+}
+
 export async function productReport(prisma: PrismaClient, brandId: string, period: DashPeriod, scope: ProductScope = "creators") {
   const { timezone: tz } = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
   const gte = startOfLocalDay(period.from, tz);
@@ -57,12 +66,11 @@ export async function productReport(prisma: PrismaClient, brandId: string, perio
       : [],
   ]);
 
-  const byShopify = new Map(products.map((p) => [p.shopifyId, p]));
-  const byTitle = new Map(products.map((p) => [norm(p.title), p]));
+  const productOf = productResolver(products);
   const rows = new Map<string, ProductRow & { orderIds: Set<string> }>();
   let unitsWithoutCost = 0;
   for (const l of lines) {
-    const product = (l.productShopifyId && byShopify.get(l.productShopifyId)) || byTitle.get(norm(l.title)) || null;
+    const product = productOf(l);
     const key = product?.id ?? `t:${norm(l.title)}`;
     const row = rows.get(key) ?? {
       key,
