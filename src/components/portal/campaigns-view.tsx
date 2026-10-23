@@ -73,6 +73,7 @@ export function CampaignsView({ marca, campaigns }: { marca: string; campaigns: 
             <p className="whitespace-pre-line text-sm">{c.briefing}</p>
             {won > 0 && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">🎉 Você ganhou {formatBRL(won)}! O prêmio já está no seu saldo.</p>}
             {c.canJoin && <Join marca={marca} id={c.id} />}
+            {c.joined && c.phase === "RUNNING" && <a href={`/portal/${marca}/posts`} className={`${ui.link} text-sm`}>Postou para a campanha? Registre o link em Meus posts →</a>}
             {c.joined && c.me && (
               <div className={`${ui.inset} flex flex-col gap-3`}>
                 <p className="text-sm">

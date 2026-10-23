@@ -9,7 +9,7 @@ import { portalCoupons } from "@/lib/portal/coupons";
 import { portalSummary } from "@/lib/portal/home";
 import { portalCampaigns } from "@/lib/campaigns/campaigns";
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { Megaphone, Trophy } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +45,14 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
           </span>
         </Link>
       )}
+      {/* M4.6 (D-POSTS): atalho para registrar o post. */}
+      <Link href={`${base}/posts`} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
+        <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><Megaphone className="size-4" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">Postou? Registre o link</span>
+          <span className="text-sm text-stone-600 dark:text-stone-300">Veja quanto vendeu depois de cada post →</span>
+        </span>
+      </Link>
       {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
       <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin: `${proto}://${host}`, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
     </div>

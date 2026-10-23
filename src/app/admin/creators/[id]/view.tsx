@@ -20,6 +20,8 @@ import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
 import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
 import { AccessBox } from "@/components/staff/access-box";
+import { PostForm, PostList } from "@/components/posts";
+import type { PostWithSales } from "@/lib/posts/posts";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -65,7 +67,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [] }: { tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "" }: { posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -531,6 +533,24 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             </Card>
           )}
                 </div>
+              </div>
+            ),
+          },
+          // M4.6 (D-POSTS): posts dela, vendas depois de cada um; a Gestão registra em nome dela.
+          {
+            id: "conteudo",
+            label: "Conteúdo",
+            badge: posts.length,
+            content: (
+              <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+                <Card title="Posts">
+                  <PostList posts={posts} canRemove={p.canEdit} />
+                </Card>
+                {p.canEdit && (
+                  <Card title="Registrar post">
+                    <PostForm creatorId={p.id} today={today} campaigns={postCampaigns} />
+                  </Card>
+                )}
               </div>
             ),
           },

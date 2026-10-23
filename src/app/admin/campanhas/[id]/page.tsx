@@ -7,6 +7,8 @@ import { CAMPAIGN_PHASE_LABEL, CREATOR_CATEGORY_LABEL, formatBRL, type CreatorCa
 import { currentActor } from "@/lib/auth/current";
 import { CampaignError, campaignDetail } from "@/lib/campaigns/campaigns";
 import { brandTags } from "@/lib/creators/tags";
+import { campaignPosts } from "@/lib/posts/posts";
+import { PostList } from "@/components/posts";
 import { db } from "@/lib/db";
 import { CampaignForm, PublishButton, SettleButton } from "../forms";
 import { PHASE_TONE } from "../tone";
@@ -28,6 +30,7 @@ export default async function CampanhaPage({ params }: { params: Promise<{ id: s
     throw error;
   }
   const tags = c.canEdit ? await brandTags(db(), c.brandId) : [];
+  const posts = await campaignPosts(db(), c.brandId, c.id);
   const paid = new Map<string, number>();
   for (const p of c.prizes) paid.set(p.creatorId, (paid.get(p.creatorId) ?? 0) + p.amountCents);
   const audience = [...c.categories.map((k) => CREATOR_CATEGORY_LABEL[k as CreatorCategoryValue]), ...c.tags.map((t) => `tag ${t.name}`)];
@@ -74,7 +77,11 @@ export default async function CampanhaPage({ params }: { params: Promise<{ id: s
           )}
           {!c.settledAt && c.standings.length > 0 && <p className={ui.hint}>Prévia: muda até a confirmação (vendas pagas no período; empate: fica na frente quem chegou antes).</p>}
         </Card>
-        <Card title="Briefing e regras">
+        {/* M4.6 (D-POSTS): posts ligados à campanha. */}
+        <Card title={`Posts da campanha (${posts.length})`}>
+          <PostList posts={posts} showCreator canRemove={c.canEdit} />
+        </Card>
+        <Card title="Briefing e regras" className="lg:row-span-2">
           {c.canEdit && !c.settledAt ? (
             <CampaignForm
               tags={tags}
