@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **S4** Planilhas da VermeFree e modelo para planilhas novas (perguntar antes); depois, na ordem combinada em 2026-10-23: M4.7, U6, junho da VermeFree. Fase 5 só depois de resolver as pendências (pedido do responsável). Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **M4.7** Desligar as planilhas, marca a marca (combinar com a equipe; perguntar antes); depois U6 e junho da VermeFree. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -249,7 +249,7 @@ já existem antes de desenhar.
 - [x] **S1** Central de creators da Botanika lida pelo sistema, só leitura (D-SHEETREADONLY; CP-130, CP-131).
 - [x] **S2** Envios de pedidos lida pelo sistema, só leitura (CP-132, CP-137).
 - [x] **S3** Pagamentos influencers, só conferência (CP-136, CP-137).
-- [ ] **S4** Planilhas da VermeFree e modelo para planilhas novas.
+- [x] **S4** Planilhas da VermeFree (script pronto; envios com frete) — modelo para planilhas novas: não precisa (D-SHEETVF)
 
 ### Captação no sistema (decidido pelo responsável em 2026-10-10, D-SIGNUP; uma por vez, nesta ordem)
 - [x] **F1** Formulário de inscrição próprio (`/inscricao/[marca]`), mesmas perguntas do Google, link do hunter.
@@ -281,6 +281,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-179 — 2026-10-23 — Planilhas da VermeFree, só leitura (S4, D-SHEETVF)
+- **Decisões do responsável:** ler as 3 planilhas da VermeFree (Central, Envios e Pagamentos), como na Botanika;
+  "modelo para planilhas novas" não precisa (marcas novas, como a Revita, nascem no sistema).
+- **Feito:** `docs/sheets/leitura-vermefree.gs` (mesmo leitor da Botanika, marca `vermefree`; Envios já com o código;
+  Central e Pagamentos com espaço para o código, puladas até ter). O leitor de Envios passa a ler a coluna **FRETE**
+  (só a VermeFree tem): vira o frete do envio (custo do programa, D-COST), sem trocar o que a equipe pôs no sistema.
+  O script pula planilha sem código. Tela Shopify aponta o script certo de cada marca.
+- **Não feito (acesso):** a Central e a de Pagamentos da VermeFree não aparecem para a conta operacional; as colunas
+  delas serão conferidas na primeira leitura (diferença vira aviso em Shopify → Planilhas, sem criar nada).
+- **Verificado:** testes (250), integração (256; novo: frete da planilha), typecheck, build.
 
 ### CP-178 — 2026-10-23 — Posts das creators e vendas depois do post (M4.6, D-POSTS)
 - **Decisões do responsável:** a creator registra o link e o dia do post; "vendas depois do post" = vendas pagas em 3
