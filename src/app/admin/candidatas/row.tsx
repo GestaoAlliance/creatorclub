@@ -9,7 +9,7 @@ type Row = Awaited<ReturnType<typeof listApplications>>["rows"][number];
 
 const KIND_LABEL: Record<string, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
 const STATUS_LABEL: Record<string, string> = { NEW: "nova", APPROVED: "aprovada", REJECTED: "recusada" };
-const ORIGIN: Record<string, string> = { site_form: "Site", captacao_form: "Captação (Google)", hunter_form: "Hunter (Google)" };
+const ORIGIN: Record<string, string> = { site_form: "Site", captacao_form: "Captação (Google)", hunter_form: "Hunter (Google)", staff_form: "Cadastro da equipe" };
 const daysAgo = (d: Date) => Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
 const compact = (n: number | null, raw: string | null) =>
   n === null ? raw : n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "").replace(".", ",")} mi` : n >= 1_000 ? `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1).replace(/\.0$/, "").replace(".", ",")} mil` : String(n);

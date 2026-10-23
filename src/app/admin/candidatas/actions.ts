@@ -2,7 +2,10 @@
 
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { approveApplication, ApplicationError, rejectApplication, type Category } from "@/lib/onboarding/applications";
+import { approveApplication, ApplicationError, createStaffApplication, rejectApplication, rejectApplications, type Category } from "@/lib/onboarding/applications";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { staffContext } from "@/lib/staff/context";
 import { percentToBps, ReviewError } from "@/lib/coupons/review";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { TeamError } from "@/lib/team/invites";
@@ -87,4 +90,40 @@ export async function rejectAction(_prev: RejectState, form: FormData): Promise<
     if (error instanceof ApplicationError) return { error: error.message };
     throw error;
   }
+}
+
+/** M4.1 (D-MANUALAPP): recusar as marcadas de uma vez (mesmo motivo opcional para todas). */
+export async function rejectManyAction(_prev: RejectState, form: FormData): Promise<RejectState> {
+  try {
+    const ids = form.getAll("applicationId").map(String).filter(Boolean);
+    const r = await rejectApplications(db(), await currentActor(), ids, String(form.get("note") ?? ""));
+    revalidatePath("/admin/candidatas");
+    const many = r.rejected === 1 ? "1 candidata recusada" : `${r.rejected} candidatas recusadas`;
+    return { ok: r.skipped > 0 ? `${many}; ${r.skipped} já tinham sido decididas.` : `${many}.` };
+  } catch (error) {
+    if (error instanceof ApplicationError) return { error: error.message };
+    throw error;
+  }
+}
+
+export type CreateState = { error?: string } | undefined;
+
+/** M4.1 (D-MANUALAPP): "Nova candidata" pela equipe, na marca escolhida no topo; abre a lista de pendentes. */
+export async function createApplicationAction(_prev: CreateState, form: FormData): Promise<CreateState> {
+  const actor = await currentActor();
+  if (!actor) return { error: "Sem permissão." };
+  const brand = (await staffContext(actor)).brand;
+  if (!brand) return { error: "Escolha a marca no topo." };
+  const f = (k: string) => String(form.get(k) ?? "");
+  try {
+    await createStaffApplication(db(), actor, brand.id, {
+      fullName: f("fullName"), phone: f("phone"), email: f("email"), instagram: f("instagram"), tiktok: f("tiktok"),
+      followers: f("followers"), category: f("category") as Category, suggestedCoupon: f("suggestedCoupon"), note: f("note"),
+    });
+  } catch (error) {
+    if (error instanceof ApplicationError) return { error: error.message };
+    throw error;
+  }
+  revalidatePath("/admin/candidatas");
+  redirect("/admin/candidatas?origem=staff_form");
 }

@@ -3,12 +3,12 @@
 import { ChevronDown, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useActionState, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useActionState, useCallback, useEffect, useState, type ReactNode } from "react";
 import { Msg } from "@/components/ui/msg";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { badge, ui } from "@/components/ui/styles";
 import { instagramUrl, whatsappChatUrl } from "@/domain";
-import { rejectAction } from "./actions";
+import { rejectAction, rejectManyAction } from "./actions";
 
 /** O essencial de cada candidata para a tabela (o cartão completo vem pronto do servidor em `detail`). */
 export type CandidateRow = {
@@ -58,6 +58,56 @@ function QuickReject({ id, name, onCancel }: { id: string; name: string; onCance
       </div>
       <Msg state={state?.error ? { error: state.error } : undefined} />
     </form>
+  );
+}
+
+/** M4.1 (D-MANUALAPP): recusar as marcadas de uma vez, com um motivo opcional para todas (aprovar segue uma a uma). */
+function BulkReject({ ids, onDone, onClear }: { ids: string[]; onDone: () => void; onClear: () => void }) {
+  const [state, action, pending] = useActionState(rejectManyAction, undefined);
+  const [confirm, setConfirm] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    if (state?.ok) {
+      setConfirm(false);
+      onDone();
+      router.refresh();
+    }
+  }, [state, router, onDone]);
+  if (ids.length === 0) return state?.ok ? <Msg state={state} /> : null;
+  return (
+    <form action={action} className="sticky top-2 z-10 flex flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-stone-900/90">
+      {ids.map((id) => <input key={id} type="hidden" name="applicationId" value={id} />)}
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium">{ids.length === 1 ? "1 marcada" : `${ids.length} marcadas`}</p>
+        {confirm ? (
+          <>
+            <input name="note" maxLength={300} placeholder="Motivo (opcional, só a equipe vê)" className={`${ui.inputSm} min-w-0 basis-full sm:basis-0 sm:flex-1`} autoFocus />
+            <button className={ui.dangerSm} disabled={pending}>{pending ? "Recusando…" : `Confirmar recusa de ${ids.length}`}</button>
+            <button type="button" onClick={() => setConfirm(false)} className={ui.ghostSm}>Cancelar</button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={() => setConfirm(true)} className={ui.dangerSm}>Recusar marcadas</button>
+            <button type="button" onClick={onClear} className={ui.ghostSm}>Desmarcar</button>
+          </>
+        )}
+      </div>
+      <Msg state={state?.error ? state : undefined} />
+    </form>
+  );
+}
+
+function Pick({ c, picked, onPick }: { c: CandidateRow; picked: boolean; onPick: (id: string) => void }) {
+  if (!c.canDecide) return null;
+  return (
+    <input
+      type="checkbox"
+      checked={picked}
+      onChange={() => onPick(c.id)}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={`Marcar ${c.name}`}
+      className="size-4 accent-current"
+    />
   );
 }
 
@@ -126,6 +176,9 @@ function Who({ c }: { c: CandidateRow }) {
 export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pending: boolean }) {
   const [open, setOpen] = useState<Open>(null);
   const [chip, setChip] = useState<Chip>("");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const pick = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const clear = useCallback(() => setPicked(new Set()), []);
   const chips: { id: Chip; label: string; test: (c: CandidateRow) => boolean }[] = [
     { id: "old", label: "esperando há mais de 7 dias", test: (c) => pending && c.days > 7 },
     { id: "hunter", label: "trazidas por hunter", test: (c) => c.hunter !== null },
@@ -133,6 +186,9 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
   ];
   const active = chips.find((x) => x.id === chip);
   const shown = active ? rows.filter(active.test) : rows;
+  const pickable = pending ? shown.filter((c) => c.canDecide) : [];
+  const allPicked = pickable.length > 0 && pickable.every((c) => picked.has(c.id));
+  const pickAll = () => setPicked(allPicked ? new Set() : new Set(pickable.map((c) => c.id)));
   const toggle = (id: string, mode: "view" | "reject" = "view") => setOpen((o) => (o?.id === id && o.mode === mode ? null : { id, mode }));
   const approve = (id: string) => {
     setOpen({ id, mode: "view" });
@@ -159,6 +215,8 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
         })}
       </div>
 
+      {pending && <BulkReject ids={[...picked].filter((id) => rows.some((r) => r.id === id))} onDone={clear} onClear={clear} />}
+
       {shown.length === 0 ? (
         <p className={ui.muted}>Nenhuma candidata aqui.</p>
       ) : (
@@ -167,7 +225,10 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
           <ul data-tour="cand-lista" className="flex flex-col divide-y divide-stone-200/70 md:hidden dark:divide-white/10">
             {shown.map((c) => (
               <li key={c.id} onClick={() => toggle(c.id)} className="flex cursor-pointer flex-col gap-2 py-3">
-                <Who c={c} />
+                <div className="flex items-start gap-2">
+                  {pending && <span className="pt-3"><Pick c={c} picked={picked.has(c.id)} onPick={pick} /></span>}
+                  <Who c={c} />
+                </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-12 text-xs">
                   {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{handle(c.instagram)}</span>}
                   {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{handle(c.tiktok)}</span>}
@@ -189,6 +250,11 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
             <table data-tour="cand-lista" className="w-full min-w-[1000px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-stone-500">
+                  {pending && (
+                    <th className="w-8">
+                      {pickable.length > 0 && <input type="checkbox" checked={allPicked} onChange={pickAll} aria-label="Marcar todas" className="size-4 accent-current" />}
+                    </th>
+                  )}
                   <th>Prioridade</th>
                   <th>Candidata</th>
                   <th>Redes</th>
@@ -202,6 +268,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                 {shown.map((c) => (
                   <Fragment key={c.id}>
                     <tr onClick={() => toggle(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
+                      {pending && <td><Pick c={c} picked={picked.has(c.id)} onPick={pick} /></td>}
                       <td>
                         <PriorityBadge c={c} />
                         {c.priority.reasons && <span className="mt-1 block max-w-36 text-[11px] leading-tight text-stone-500">{c.priority.reasons}</span>}
@@ -223,7 +290,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                     </tr>
                     {open?.id === c.id && (
                       <tr>
-                        <td colSpan={7} className="px-3">{expanded(c)}</td>
+                        <td colSpan={pending ? 8 : 7} className="px-3">{expanded(c)}</td>
                       </tr>
                     )}
                   </Fragment>

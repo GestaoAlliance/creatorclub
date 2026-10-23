@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ApplicationFilters } from "@/domain";
-import { brandsWith } from "@/lib/auth/permissions";
+import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
@@ -26,7 +26,9 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
     sort: SORTS.find(([s]) => s === sp.ordem)?.[0] ?? "prioridade",
   };
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
-  const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
+  const brand = (await staffContext(actor)).brand;
+  const inBrand = scopedActor(actor, brand?.id);
   const data = await listApplications(db(), inBrand, status, filters);
-  return <CandidatasView status={status} sp={sp} filters={filters} data={data} />;
+  // M4.1 (D-MANUALAPP): "Nova candidata" para quem edita creators na marca do topo.
+  return <CandidatasView status={status} sp={sp} filters={filters} data={data} canCreate={Boolean(brand && can(actor.grants, "creators.edit", brand.id))} />;
 }

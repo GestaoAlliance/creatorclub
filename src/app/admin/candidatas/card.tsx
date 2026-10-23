@@ -17,7 +17,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
         <div>
           <p className="font-semibold">{a.fullName}</p>
           <p className={ui.hint}>
-            {a.source === "site_form" ? (a.hasLogin ? "Cadastro pelo site (já tem login)" : "Inscrição pelo site") : a.source === "captacao_form" ? "Captação (Google)" : "Hunter (Google)"} · respondeu em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
+            {a.source === "site_form" ? (a.hasLogin ? "Cadastro pelo site (já tem login)" : "Inscrição pelo site") : a.source === "captacao_form" ? "Captação (Google)" : a.source === "staff_form" ? "Cadastro da equipe" : "Hunter (Google)"} · {a.source === "staff_form" ? "cadastrada" : "respondeu"} em {day(a.submittedAt)}{a.decidedAt && ` · decidida em ${day(a.decidedAt)}`}
           </p>
         </div>
         <span className="flex flex-wrap justify-end gap-1.5">
