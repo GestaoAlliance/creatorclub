@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **Fase 2 — M2.3 Prioridade nas candidatas** (sinais: hunter, @, CPF/cadastro repetido, cupom, para a Ana começar pelas melhores). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** **Fase 3 — M3.1** do plano de melhorias (`docs/PLANO-MELHORIAS.md`): ler a fase e perguntar ao responsável o que depender de decisão antes de começar. Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -46,7 +46,8 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M1.5** Pagamento em lote: planilha dos aprovados e marcar vários como pagos (D-WDBATCH). **Fim da Fase 1.**
 - [x] **M2.1** Fila de ações por creator (D-ACTIONS)
 - [x] **M2.2** Avisos à creator pelo WhatsApp da marca, via n8n + Evolution (D-WHATSAPP)
-- [ ] **M2.3** Prioridade nas candidatas
+- [x] **M2.3** Prioridade nas candidatas (D-PRIORITY). **Fim da Fase 2.**
+- [ ] **Fase 3** — Números e retorno (ver o plano)
 - Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
@@ -268,6 +269,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-166 — 2026-10-23 — Prioridade nas candidatas (M2.3, D-PRIORITY); fim da Fase 2
+- **Feito:** a lista de candidatas abre por **prioridade**, com selo Alta / Média / Baixa e os motivos em cada linha.
+  Pontos: veio de hunter (3), prescritora (2), seguidores 10 mil+ (1) / 50 mil+ (2) / 100 mil+ (3), views nos stories
+  1 mil+ (1) / 5 mil+ (2), tem @ (1), cadastro completo (1), nicho combina com a marca (1: saúde e bem-estar na
+  Botanika e VermeFree; beleza e skincare na Revita), topa collab (1). Alta = 6+, Média = 3 a 5. Repetida vai para o
+  fim ("resolver por último"). Empate: quem espera há mais tempo. As outras ordens continuam no seletor. Só ordena: a
+  Ana decide uma por uma (D-SIGNUP).
+- **Verificado:** testes (231), integração (239; novo: ordem por prioridade com repetida no fim), typecheck, build;
+  capturas no PR.
 
 ### CP-165 — 2026-10-22 — Avisos à creator pelo WhatsApp da marca (M2.2, D-WHATSAPP)
 - **Decisão 1 do plano respondida:** pelo n8n, com o WhatsApp (Evolution) de cada marca; avisos no WhatsApp e no

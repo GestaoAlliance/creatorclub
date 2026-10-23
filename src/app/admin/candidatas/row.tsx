@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRIORITY_LABEL } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationCard } from "./card";
 import type { TemplateOption } from "./forms";
@@ -54,6 +55,7 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     hunter: a.hunter?.name ?? null,
     brands: a.brands,
     duplicate: a.duplicates.length > 0,
+    priority: { level: a.priority.level, label: PRIORITY_LABEL[a.priority.level], reasons: (a.priority.level === "REPETIDA" ? ["resolver por último"] : a.priority.reasons).join(" · ") },
     days: daysAgo(a.submittedAt),
     canDecide: status === "NEW" && a.canDecide,
     creatorId: status === "APPROVED" ? a.creatorId : null,

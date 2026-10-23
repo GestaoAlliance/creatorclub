@@ -162,7 +162,7 @@ export const HELP = {
   },
   "cand-filtros": {
     title: "Busca e filtros",
-    text: "Escolha a origem nas abas, procure pelo nome, @ ou e-mail e filtre por tipo, hunter ou marca. Mais antigas primeiro mostra quem espera há mais tempo.",
+    text: "Escolha a origem nas abas, procure pelo nome, @ ou e-mail e filtre por tipo, hunter ou marca. A lista abre por prioridade (Alta, Média, Baixa); repetidas no fim.",
   },
   "cand-lista": {
     title: "Lista de candidatas",
