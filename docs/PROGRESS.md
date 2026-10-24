@@ -5,24 +5,35 @@
 
 ## Onde estamos
 
-- **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
-  (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** aguardar a Ana confirmar os cupons da VermeFree em Cupons e a Juci aprovar o saldo de abertura (pagamentos antigos importados em CP-186; agosto entra no saldo, D-VFAUG); depois, faxina da fila. Instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree (responsável). Fase 5 só depois de resolver as pendências. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
-  pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
-  textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
-  responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
-  `docs/ROTEIRO-TESTE.md`. Pendente do responsável: revisar os 3 textos de contrato (de preferência com advogado). Pendente do responsável: divulgar o link novo `/inscricao` e os links dos hunters (`/i/codigo`)
-  (convidar os hunters em Equipe e criar o código de cada um em Hunters); início do contrato das UGC nas fichas; domínio
-  (P3) e conta no Resend (P2). Ana: 7 donas e 7 taxas a confirmar (E4.5). Pagamento: saques já pagos (E0.2, E6) e NFs
-  antigas (I7).
+- **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
+  da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
+- **Próxima tarefa:** **Fase 5, M5.1 Loja com o saldo**: antes de construir, perguntar ao responsável a decisão 11 do
+  plano (preço de creator, nota fiscal, frete, liberação e uso do saldo entre marcas; levar à Ana).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
-- **Aguardando pessoas:** E4.5 (conferência da Ana em `/admin/cupons` e e-mails reais nas fichas); E0.2
-  (Pagamento: Juci/Pâmela), E0.4 (Vitor).
-- **Bloqueios e riscos:** Vercel no plano Pro (reativado em 2026-10-11 depois de suspensão; prévias seguem desligadas, D-PREVIEW);
-  `read_all_orders` ainda não concedido ao app (carga histórica de pedidos com mais de 60 dias); `creator-hub` sem
-  backup (guardar um dump privado).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
+
+### O que depende de quem (conferido em produção em 2026-10-24)
+
+| Quem | O que | Onde |
+|---|---|---|
+| **Ana** (Gestão) | Botanika: 2 cupons sem tipo, 7 donas e 7 taxas a confirmar (E4.5) | Vendas → Cupons |
+| **Ana** | VermeFree: 37 cupons sem tipo, 31 donas e 45 taxas a confirmar (sem isso a VermeFree não calcula comissão, nem junho e agosto) | Vendas → Cupons (VermeFree) |
+| **Ana** | Revita Derma: 1 cupom sem tipo e 3 taxas a confirmar | Vendas → Cupons (Revita) |
+| **Ana** | Marcar "Conferi os números" na ficha de cada creator (libera o saldo de abertura, D-ANAREVIEW) | Ficha da creator |
+| **Juci** (Pagamento) | Aprovar o saldo de abertura (nenhum aprovado ainda; pagamentos antigos importados: Botanika 34, VermeFree 18) e dizer onde estão as NFs antigas (I7) | Pagamentos → Abertura |
+| **Responsável** | Instalar `docs/sheets/leitura-vermefree.gs` na conta Google da VermeFree | Apps Script |
+| **Responsável** | WhatsApp das marcas (M2.2, D-WHATSAPP): `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, instância da Evolution de cada marca em Marcas, WhatsApp de quem é da Gestão em Equipe (resumo semanal), ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n | Vercel, Marcas, Equipe, n8n |
+| **Responsável** | Domínio (P3) e Resend (P2): comprar o domínio, verificar no Resend, `RESEND_API_KEY` e `EMAIL_FROM` na Vercel, SMTP do Supabase Auth | Registro de domínio, Resend, Vercel, Supabase |
+| **Responsável** | Logo de cada marca (nenhuma tem; aparece na tela de entrar e no ícone do app) | Configurações → Marcas |
+| **Responsável** | Semana de teste (U1): convidar Juci (Pagamento) e Álvaro (Envio); 3 a 5 creators de teste no portal; divulgar `/inscricao` e os links das hunters (`/i/codigo`) | Equipe, Hunters |
+| **Responsável** | Revisar os textos de contrato e termo (Botanika, VermeFree e Revita; de preferência com advogado); início do contrato das UGC nas fichas | Contratos, Termo |
+| **Responsável** | Fazer um dump privado do `creator-hub` antigo (sem backup) | Supabase antigo |
+
+### Bloqueios e riscos
+- Vercel no plano Pro (reativado em 2026-10-11 depois de suspensão; prévias seguem desligadas, D-PREVIEW).
+- Revita Derma sem `read_all_orders` (loja nova, pedidos desde 21/10: não faz falta por enquanto).
+- `creator-hub` antigo sem backup (dump privado pendente, acima).
 
 ## Fila de tarefas (uma por vez, nesta ordem)
 
@@ -60,7 +71,13 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
 - [x] **M4.6** Link do post no portal: Meus posts, vendas em 3 dias, aba Conteúdo, tela geral, posts da campanha, sem post há 15 dias (D-POSTS)
 - [x] **M4.7** Desligar as planilhas, marca a marca: checklist e "Desligar leitura" por planilha (D-SHEETOFF); o dia de cada uma é com a equipe
-- Fases 1 a 5: ver o plano (itens com "decisão" esperam a lista de decisões do fim dele).
+- [ ] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
+  (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
+  paga e quem paga o frete.
+- [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12 (a equipe diz se as três marcas
+  usam o Bling; perguntado em 2026-10-24, sem resposta ainda).
+- [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (alguém confere se as
+  marcas estão num Business Manager verificado na Meta; o responsável não sabe, 2026-10-24).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -147,8 +164,8 @@ Pronto quando toda creator ativa da Botanika tiver tipo do cupom, dona e taxa co
   classificar CREATOR/PROMO, confirmar dona e taxa; tudo na auditoria. Simples (D-ADMINUI).
 - [x] **E4.4** Ficha da creator: contato (e-mail real), status, cupons e taxa; botão "Convidar" (E2.5).
 - [!] **E4.5** Aceite: todas as ativas confirmadas; data do primeiro cupom de creator calculada (D-HIST) e carga
-  histórica disparada (depende de `read_all_orders` para pedidos com mais de 60 dias).
-  *Bloqueada por:* deploy (limite da Vercel), importação no staging pelo responsável, conferência da Ana.
+  histórica disparada. Carga feita (pedidos desde 23/06, `read_all_orders` concedido). *Falta:* a Ana confirmar
+  2 cupons, 7 donas e 7 taxas da Botanika (conferido em 2026-10-24).
 
 ### E5 — Atribuição e extrato no banco (detalhada em 2026-10-09, CP-38)
 - [x] **E5.1** Atribuição gravada uma vez, com os códigos como evidência; pendente quando há dúvida (D-PENDING);
@@ -218,21 +235,21 @@ já existem antes de desenhar.
 - [x] **A1c** Dois níveis: painel da Alliance só com as marcas; dentro da marca, todas as telas (pedido do responsável).
 - [~] **A2** VermeFree: marca, loja Shopify conectada (o responsável cria o app na loja), carga histórica, creators e
   cupons das planilhas do Drive, contrato e termo próprios; inscrição com uma candidatura por marca e aceite da Alliance.
-  Feito: marca criada e loja `q0pfbm-az.myshopify.com` conectada pelo responsável (sem `read_all_orders`, recusado na
-  criação como na Botanika); varredura do Drive da VermeFree (relatório privado, fora do repositório); telas só da marca
+  Feito: marca criada e loja `q0pfbm-az.myshopify.com` conectada pelo responsável (`read_all_orders` concedido depois); varredura do Drive da VermeFree (relatório privado, fora do repositório); telas só da marca
   escolhida (CP-101); pedidos desde 01/07 (2.047); auditoria Botanika × VermeFree (planilha privada); regras, versões de
-  contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102). Falta: a Ana confirmar cupons, donas e taxas; junho
-  (importado em CP-185); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
-  revisão dos textos de contrato e termo da VermeFree (rascunho em `docs/contratos/vermefree/`). Catálogo, envios e
+  contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102); pedidos desde 01/06 (CP-185); pagamentos antigos
+  importados e agosto no saldo (CP-186, D-VFAUG); Central, Envios e Pagamentos no script de leitura. Falta: a Ana
+  confirmar cupons, donas e taxas; a Juci aprovar o saldo de abertura; o responsável instalar o script e revisar os
+  textos de contrato e termo da VermeFree (rascunho em `docs/contratos/vermefree/`). Catálogo, envios e
   inscrição por marca: feitos (CP-103 a CP-105).
 - [~] **A3** Revita Derma: o mesmo processo. Feito: marca criada com as regras da VermeFree (D-RDRULES), 3 versões de
-  contrato, Ana Gestão, 5 creators a confirmar (CP-106). Falta (responsável): site e domínio `xxx.myshopify.com`, app na
-  loja e conexão; depois, carga dos pedidos, catálogo e cupons.
+  contrato, Ana Gestão, 5 creators a confirmar (CP-106); loja conectada, pedidos desde 21/10 (61), catálogo (3
+  produtos), Fátima como Gestão, 22 creators. Falta: a Ana confirmar 1 cupom e 3 taxas; revisão dos textos.
 
 ### Uso real (decidido pelo responsável em 2026-10-10, D-USOREAL; uma por vez, nesta ordem)
 - [~] **U1** Acessos certos e semana de teste real com roteiro (`docs/ROTEIRO-TESTE.md`). Feito: Ana como Gestão.
-  Falta (responsável): convidar Juci (Pagamento), Álvaro (Envio) e uma hunter; 3 a 5 creators de teste no portal;
-  juntar as anotações no fim da semana.
+  Hunters já convidadas (9 na Botanika, 2 na Revita, 1 na VermeFree) e Fátima como Gestão na Revita. Falta
+  (responsável): convidar Juci (Pagamento) e Álvaro (Envio); 3 a 5 creators de teste no portal; juntar as anotações.
 - [x] **U2** Kit de boas-vindas do contrato (D-WELCOMEKIT): liberado ao assinar, escolhido no portal, cai na fila do Envio.
 - [x] **U3** Tela da hunter "Minhas indicações" (D-HUNTERVIEW): link, cliques e situação de quem trouxe.
 - [x] **U4** Tela "Desempenho" para a Gestão (D-PERFORMANCE): ranking do mês, mínimo, kit, variação e UGC à parte.
@@ -281,6 +298,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-187 — 2026-10-24 — Faxina da fila
+- **Pedido do responsável:** "pode, por favor" (faxina da fila antes da Fase 5).
+- **Feito (só documentação):** "Onde estamos" reescrito: próxima tarefa numa linha (Fase 5, M5.1, perguntando antes),
+  tabela "O que depende de quem" com os números conferidos em produção (cupons, donas e taxas a confirmar por marca;
+  nenhum saldo de abertura aprovado; nenhuma marca com logo ou WhatsApp), bloqueios atualizados (`read_all_orders`
+  concedido na Botanika e na VermeFree). Fila: E4.5, A2, A3 e U1 atualizados com o que já foi feito; M5.1 a M5.3
+  entram na fila M com a decisão que cada uma espera.
 
 ### CP-186 — 2026-10-24 — Pagamentos antigos da VermeFree e planilhas no script (A2, D-LEGACYPAY, D-VFAUG)
 - **Pedido do responsável:** compartilhou a pasta "creators e parcerias" (só leitura) com a conta operacional.
