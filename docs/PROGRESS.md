@@ -71,8 +71,9 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
 - [x] **M4.6** Link do post no portal: Meus posts, vendas em 3 dias, aba Conteúdo, tela geral, posts da campanha, sem post há 15 dias (D-POSTS)
 - [x] **M4.7** Desligar as planilhas, marca a marca: checklist e "Desligar leitura" por planilha (D-SHEETOFF); o dia de cada uma é com a equipe
-- [ ] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). *Antes:*
-  decisão 11 do plano com o responsável e a Ana.
+- [ ] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
+  (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
+  paga e quem paga o frete.
 - [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12.
 - [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (empresa verificada na Meta).
 
