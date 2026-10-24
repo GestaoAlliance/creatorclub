@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **junho da VermeFree** (reimportar desde 01/06 e conferir agosto com a Ana e a Juci; perguntar antes). Depois do deploy do U6: importar uma vez a aba "Prospecção Hunter" da Central da Botanika (só leitura) em nome da Ana. Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** aguardar a Ana confirmar os cupons da VermeFree em Cupons e a Juci aprovar o saldo de abertura (pagamentos antigos importados em CP-186; agosto entra no saldo, D-VFAUG); depois, faxina da fila. Instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree (responsável). Fase 5 só depois de resolver as pendências. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -222,7 +222,7 @@ já existem antes de desenhar.
   criação como na Botanika); varredura do Drive da VermeFree (relatório privado, fora do repositório); telas só da marca
   escolhida (CP-101); pedidos desde 01/07 (2.047); auditoria Botanika × VermeFree (planilha privada); regras, versões de
   contrato, Ana como Gestão e 65 creators "a confirmar" (CP-102). Falta: a Ana confirmar cupons, donas e taxas; junho
-  (importar de novo desde 01/06); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
+  (importado em CP-185); agosto da VermeFree nunca calculado na planilha (conferir pagamentos com Ana e Juci);
   revisão dos textos de contrato e termo da VermeFree (rascunho em `docs/contratos/vermefree/`). Catálogo, envios e
   inscrição por marca: feitos (CP-103 a CP-105).
 - [~] **A3** Revita Derma: o mesmo processo. Feito: marca criada com as regras da VermeFree (D-RDRULES), 3 versões de
@@ -281,6 +281,34 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-186 — 2026-10-24 — Pagamentos antigos da VermeFree e planilhas no script (A2, D-LEGACYPAY, D-VFAUG)
+- **Pedido do responsável:** compartilhou a pasta "creators e parcerias" (só leitura) com a conta operacional.
+- **Decisões do responsável:** junho–julho foi todo pago (inclusive quem não tinha Pix CNPJ; a JULIANA recebeu os
+  R$ 680,01 em duas vezes); a aba de agosto é cópia de junho–julho e **não foi paga**; setembro foi todo pago.
+- **Aplicado em produção (auditoria `legacy_payment.import`):** 18 pagamentos antigos da "Pagamentos influencers -
+  Verme Free" (9 de 23/06 a 31/07 e 9 de setembro/26), R$ 5.368,65, todos ligados à creator pelo cupom. Viram o valor
+  sugerido do saldo de abertura (Pagamentos → Abertura), que a Juci confere e aprova.
+- **Script:** `docs/sheets/leitura-vermefree.gs` com a Central (abas Creators, Prescritores e UGC) e a de Pagamentos
+  (só conferência); falta instalar na conta da VermeFree (responsável).
+
+### CP-185 — 2026-10-23 — Junho da VermeFree importado (A2)
+- **Decisões do responsável:** disparar a carga desde 01/06; agosto (nunca calculado na planilha) entra no saldo das
+  creators pelo cálculo do sistema, e o saldo de abertura desconta só o que a planilha de Pagamentos diz que já foi
+  pago (D-VFAUG); o responsável compartilha a Central e a de Pagamentos da VermeFree com a conta operacional.
+- **Aplicado em produção (auditoria `sync.backfill`, `claude-pedido-do-responsavel`):** carga histórica desde
+  01/06/2026 (a loja agora tem `read_all_orders`): 3.020 pedidos lidos, 369 gravados, sem erro; junho tem 347 pedidos
+  (primeiro em 01/06). Total da VermeFree: 3.020 pedidos. Nada virou comissão: 32 cupons sem tipo e 31 donas esperam a
+  Ana em Cupons.
+- **Falta:** a Ana confirmar os cupons da VermeFree; o responsável compartilhar a Central e a de Pagamentos da
+  VermeFree; depois, importar os pagamentos antigos (D-LEGACYPAY) e a Juci aprovar o saldo de abertura.
+
+### CP-184 — 2026-10-23 — Histórico da prospecção importado (U6, D-PROSPECT)
+- **Decisões do responsável:** em nome da Ana (login de Gestão); perfis sem situação entram como "1ª mensagem".
+- **Aplicado em produção (SQL atômico, auditoria `prospect.sheet_import`):** 169 perfis da aba "Prospecção Hunter" da
+  Central da Botanika (29/09 a 13/10; lida só para leitura), com dia, situação e observação: 127 em 1ª mensagem,
+  31 Forms enviado, 5 Follow up, 3 Inscrita (Forms? = Sim) e 3 Recusou. 9 já batem com candidatas pelo @ e viram
+  Inscrita (ligadas à candidata) na primeira vez que a tela abrir. Os @ ficam só no banco (D-PUBLIC).
 
 ### CP-183 — 2026-10-23 — Portal na tela de início do celular (tarefa avulsa, D-INSTALLAPP)
 - **Pedido do responsável:** mini tutorial no portal de como pôr o app na tela do celular, "estilo BigBoom".
