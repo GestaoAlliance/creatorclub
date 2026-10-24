@@ -7,7 +7,7 @@
 
 - **Fase atual:** Lançamento 1 (creators já ativas da Botanika) → E1, E2 e E3 concluídas; E4 com código pronto
   (aceite bloqueado); E5 com código pronto (aceite E5.5 espera a Ana); E7 em andamento (E6 espera o Pagamento).
-- **Próxima tarefa:** **saldo de abertura da VermeFree** quando o responsável compartilhar a Central e a de Pagamentos dela (importar os pagamentos antigos, D-LEGACYPAY; agosto entra no saldo, D-VFAUG); a Ana confirma os cupons da VermeFree em Cupons. Junho importado (CP-185). Fase 5 só depois de resolver as pendências. Pendente do responsável (S4): compartilhar a Central e a de Pagamentos da VermeFree (ou colar os códigos no script) e instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
+- **Próxima tarefa:** aguardar a Ana confirmar os cupons da VermeFree em Cupons e a Juci aprovar o saldo de abertura (pagamentos antigos importados em CP-186; agosto entra no saldo, D-VFAUG); depois, faxina da fila. Instalar `docs/sheets/leitura-vermefree.gs` na conta da VermeFree (responsável). Fase 5 só depois de resolver as pendências. Fase 5 só depois de resolver as pendências. Para usar o conector do Claude (M3.4b): cada pessoa da Gestão, do Pagamento ou super admin abre Configurações → Claude e segue os passos. Pendente do responsável para o resumo semanal: WhatsApp de quem é da Gestão e do super admin em Equipe, e a instância da Evolution da Botanika em Marcas (VermeFree e Revita depois). Pendente do responsável para ligar o M2.2: pôr `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, preencher a instância da Evolution de cada marca em Marcas e ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n depois do teste. Pendente: conectar a loja Shopify da Revita Derma e dar à Fátima o papel de Gestão na Revita, do plano de melhorias (`docs/PLANO-MELHORIAS.md`, fila "M" abaixo),
   pedido do responsável em 2026-10-22. Seguem paradas esperando terceiros: A2 (VermeFree), da fila "Alliance": Ana confirma cupons, donas e taxas da VermeFree (dia 1 de teste);
   textos de contrato e termo da VermeFree esperam revisão (quem o responsável indicar). A3 Revita: loja (responsável). U6 fica para depois das anotações da semana de teste. U1 em andamento com o
   responsável: convites da Juci (Pagamento), do Álvaro (Envio) e de uma hunter, e a semana de teste com
@@ -281,6 +281,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-186 — 2026-10-24 — Pagamentos antigos da VermeFree e planilhas no script (A2, D-LEGACYPAY, D-VFAUG)
+- **Pedido do responsável:** compartilhou a pasta "creators e parcerias" (só leitura) com a conta operacional.
+- **Decisões do responsável:** junho–julho foi todo pago (inclusive quem não tinha Pix CNPJ; a JULIANA recebeu os
+  R$ 680,01 em duas vezes); a aba de agosto é cópia de junho–julho e **não foi paga**; setembro foi todo pago.
+- **Aplicado em produção (auditoria `legacy_payment.import`):** 18 pagamentos antigos da "Pagamentos influencers -
+  Verme Free" (9 de 23/06 a 31/07 e 9 de setembro/26), R$ 5.368,65, todos ligados à creator pelo cupom. Viram o valor
+  sugerido do saldo de abertura (Pagamentos → Abertura), que a Juci confere e aprova.
+- **Script:** `docs/sheets/leitura-vermefree.gs` com a Central (abas Creators, Prescritores e UGC) e a de Pagamentos
+  (só conferência); falta instalar na conta da VermeFree (responsável).
 
 ### CP-185 — 2026-10-23 — Junho da VermeFree importado (A2)
 - **Decisões do responsável:** disparar a carga desde 01/06; agosto (nunca calculado na planilha) entra no saldo das

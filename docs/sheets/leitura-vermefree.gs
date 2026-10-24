@@ -12,11 +12,9 @@ var SEGREDO = "COLE_AQUI_O_SEGREDO";
 
 // planilha: como o sistema chama; id: o código no link da planilha; abas: só essas (vazio = todas).
 var PLANILHAS = [
-  // Central de creators da VermeFree: cole o código do link (docs.google.com/spreadsheets/d/CÓDIGO/edit) e as abas.
-  { planilha: "central", id: "COLE_AQUI_O_ID_DA_CENTRAL", abas: [] },
+  { planilha: "central", id: "1XArx5xXxbcEPxLe6BPOpr52uehuCh2kAPwe-4fQCIuQ", abas: ["CREATORS", "PRESCRITORES", "UGC"] }, // Central - Creators VermeFree
   { planilha: "envios", id: "1OiLAwClYkAvj9x1cS_WMzSxVtv18cEkfKwqkGlDlTFA", abas: [] }, // Envios - Vermefree
-  // Pagamentos de influencers da VermeFree (só conferência): cole o código do link.
-  { planilha: "pagamentos", id: "COLE_AQUI_O_ID_DOS_PAGAMENTOS", abas: [] },
+  { planilha: "pagamentos", id: "1_UhXolz9FHfE1SWTROLfcM5-_v6WqevviNUQCfI5SgI", abas: [] }, // Pagamentos influencers - Verme Free (só conferência)
 ];
 
 function instalar() {
