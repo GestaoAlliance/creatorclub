@@ -74,8 +74,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [ ] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
   (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
   paga e quem paga o frete.
-- [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12.
-- [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (empresa verificada na Meta).
+- [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12 (a equipe diz se as três marcas
+  usam o Bling; perguntado em 2026-10-24, sem resposta ainda).
+- [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (alguém confere se as
+  marcas estão num Business Manager verificado na Meta; o responsável não sabe, 2026-10-24).
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
