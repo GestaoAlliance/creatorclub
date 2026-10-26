@@ -168,34 +168,18 @@ export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard
       <Needs h={h} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{pct(k.sales.storeShare)} da loja · {k.sales.orders} pedidos</>} />
+        <Stat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos</>} />
         <Stat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas de creators</>} />
         <Stat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
         <Stat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>com cupom · ticket <M>{formatBRL(k.units.ticketCents)}</M></>} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card title="Vendas de creators por dia">
-          <div className="money-chart">
-            <SalesChart days={d.days} />
-          </div>
-        </Card>
-        <Card title="Loja inteira">
-          <p className="text-3xl font-semibold tabular-nums"><M>{formatBRL(d.store.salesCents)}</M></p>
-          <div className="flex items-center gap-2"><Change v={d.store.change} /><span className={ui.hint}>todas as vendas pagas, com e sem cupom</span></div>
-          <div className="h-2 overflow-hidden rounded-full bg-stone-300/50 dark:bg-white/10" aria-label={`Creators: ${pct(k.sales.storeShare)} da loja`}>
-            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, k.sales.storeShare * 100)}%` }} />
-          </div>
-          <p className={ui.hint}>{pct(k.sales.storeShare)} das vendas vieram de cupom de creator</p>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div><dt className={ui.hint}>Pedidos pagos</dt><dd className="font-semibold tabular-nums">{d.store.paidOrders}</dd></div>
-            <div><dt className={ui.hint}>Aguardando pagamento</dt><dd className="font-semibold tabular-nums">{d.store.pending}</dd></div>
-            <div><dt className={ui.hint}>Estornados</dt><dd className="font-semibold tabular-nums">{d.store.refunded}</dd></div>
-            <div><dt className={ui.hint}>Cancelados</dt><dd className="font-semibold tabular-nums">{d.store.cancelled}</dd></div>
-          </dl>
-          <Link href="/admin/vendas" className={`${ui.link} text-sm`}>Ver todas as vendas →</Link>
-        </Card>
-      </div>
+      {/* Pedido do responsável (2026-10-26): o Início da marca mostra só as vendas de creators (sem a loja inteira). */}
+      <Card title="Vendas de creators por dia">
+        <div className="money-chart">
+          <SalesChart days={d.days} />
+        </div>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <TopCreatorsCard d={d} />
