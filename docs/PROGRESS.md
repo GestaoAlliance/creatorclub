@@ -299,6 +299,22 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-188 — 2026-10-26 — Quem já tem cadastro pede o acesso; convites em massa (D-ACCESSREQ)
+- **Origem:** a Talita (Revita) tentou se cadastrar pelo site e o CPF e o e-mail deram "já tem cadastro": ela já estava
+  no sistema (importada), sem senha. O responsável pediu para resolver nas três marcas.
+- **Decisões do responsável:** não apagar cadastros; o cadastro avisa e pede o acesso à equipe; convites em massa na
+  lista de creators.
+- **Feito:** no cadastro (`/inscricao`), e-mail ou CPF de uma creator sem senha troca o erro por "Você já faz parte do
+  Creator Club!" com o botão "Pedir meu link de acesso" (mesma resposta, ache ou não a conta; no máximo um pedido por
+  hora). O pedido vira a tarefa "Pediu acesso" em Ações, para a Gestão de cada marca dela, com o botão "Gerar o convite"
+  (abre a ficha no cartão do convite); sai quando ela ganha o login ou quando um convite é gerado depois do pedido.
+  Quem já tem senha recebe "Você já tem acesso: entre (ou Esqueci a senha)". Em Creators, no filtro "sem acesso ao
+  portal", a Gestão marca as creators (ou "Marcar todas") e toca em "Gerar convites": até 50 links de uma vez, cada um
+  com "Mandar no WhatsApp" (mensagem pronta) e "Copiar mensagem"; quem está com e-mail provisório fica de fora.
+- **Banco:** `CreatorAccount.accessRequestedAt`.
+- **Verificado:** 260 unitários, 270 de integração, typecheck, build, migração sem divergência.
+- **Para a Talita agora:** ficha dela → "Convite para o portal" → gerar e mandar o link (ou o "Gerar convites" da lista).
+
 ### CP-187 — 2026-10-24 — Faxina da fila
 - **Pedido do responsável:** "pode, por favor" (faxina da fila antes da Fase 5).
 - **Feito (só documentação):** "Onde estamos" reescrito: próxima tarefa numa linha (Fase 5, M5.1, perguntando antes),

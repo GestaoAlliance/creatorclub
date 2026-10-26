@@ -207,37 +207,39 @@ model StaffInvite {
 
 /// Dados da pessoa creator, únicos para todas as marcas.
 model CreatorAccount {
-  id             String    @id @default(uuid())
-  userId         String?   @unique // preenchido quando o convite é aceito
-  name           String
-  email          String    @unique
-  phone          String?
-  cpf            String?
-  cnpj           String?
-  pixKey         String?
-  instagram      String? // sem o @
-  tiktok         String? // sem o @ (D-SIGNUPACCOUNT)
+  id                String    @id @default(uuid())
+  userId            String?   @unique // preenchido quando o convite é aceito
+  /// D-ACCESSREQ: quando ela tentou se cadastrar de novo pelo site (já tinha cadastro, sem senha) e pediu o link de acesso.
+  accessRequestedAt DateTime?
+  name              String
+  email             String    @unique
+  phone             String?
+  cpf               String?
+  cnpj              String?
+  pixKey            String?
+  instagram         String? // sem o @
+  tiktok            String? // sem o @ (D-SIGNUPACCOUNT)
   /// Endereço de entrega (D-SHIPADDR): a creator mantém no portal; cada envio guarda uma cópia.
-  addrZip        String?
-  addrStreet     String?
-  addrNumber     String?
-  addrComplement String?
-  addrDistrict   String?
-  addrCity       String?
-  addrState      String?
+  addrZip           String?
+  addrStreet        String?
+  addrNumber        String?
+  addrComplement    String?
+  addrDistrict      String?
+  addrCity          String?
+  addrState         String?
   /// M4.2 (D-TAGS): data de nascimento (opcional; cadastro do site, portal ou ficha). Só o dia, sem hora.
-  birthDate      DateTime? @db.Date
+  birthDate         DateTime? @db.Date
   /// M4.3 (D-PROFILEFIELDS): perfil opcional — registro profissional (CRN, CRM…), nichos, outras redes, alergias e
   /// restrições (para o kit) e link do mídia kit.
-  professionalId String?
-  niches         String[]  @default([])
-  youtube        String?
-  kwai           String?
-  allergies      String?
-  mediaKitUrl    String?
-  legacyId       String?   @unique
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  professionalId    String?
+  niches            String[]  @default([])
+  youtube           String?
+  kwai              String?
+  allergies         String?
+  mediaKitUrl       String?
+  legacyId          String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user         User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
   creators     Creator[]

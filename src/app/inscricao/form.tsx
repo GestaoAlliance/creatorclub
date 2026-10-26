@@ -6,7 +6,7 @@ import { useActionState, useEffect, useRef, useState, type ReactNode } from "rea
 import { NICHES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
-import { checkCouponAction, signupAction, type CouponCheck, type SignupState } from "./actions";
+import { checkCouponAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
 
 export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null };
 
@@ -162,6 +162,8 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
   const couponCode = signupCouponPreview(v.coupon ?? "");
   const couponBlocked = coupon !== null && coupon.code === couponCode && coupon.state !== "ok";
   const sec = (id: string) => SIGNUP_SECTIONS.find((s) => s.id === id)!;
+
+  if (state.existing === "request") return <AccessRequest values={state.values ?? {}} />;
 
   return (
     <form ref={formRef} action={action} className="flex flex-col gap-6">
@@ -352,5 +354,50 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
         </p>
       </div>
     </form>
+  );
+}
+
+/**
+ * D-ACCESSREQ: quem já está no Creator Club (importada ou aprovada) e nunca criou a senha não faz outro cadastro: pede
+ * o link de acesso, e a equipe vê o pedido em Ações e manda o convite.
+ */
+function AccessRequest({ values }: { values: Record<string, string> }) {
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const first = (values.fullName ?? "").trim().split(/\s+/)[0];
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 text-center dark:border-white/10 dark:bg-white/[0.04]">
+      {sent ? (
+        <>
+          <p className="text-lg font-semibold">Pedido enviado! 💜</p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">
+            A equipe vai te mandar o link para criar a sua senha pelo WhatsApp ou e-mail. Ele vale 7 dias e funciona uma vez.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-lg font-semibold">{first ? `${first}, você` : "Você"} já faz parte do Creator Club! 💜</p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">
+            Encontramos o seu cadastro: só falta criar a sua senha. Toque no botão e a equipe te manda o link de acesso.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await requestAccessAction(values);
+              setSent(true);
+            }}
+            className="h-12 rounded-xl bg-[var(--b)] text-[15px] font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-40"
+          >
+            {busy ? "Enviando…" : "Pedir meu link de acesso"}
+          </button>
+        </>
+      )}
+      <p className="text-sm text-stone-600 dark:text-stone-400">
+        Já criou a senha?{" "}
+        <Link href="/entrar" className="font-semibold text-[var(--b)] hover:underline">Entrar</Link>
+      </p>
+    </div>
   );
 }

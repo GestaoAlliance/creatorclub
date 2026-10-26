@@ -53,3 +53,16 @@ export function contractSentMessage(p: { name: string; brand: string; email: str
     "Que seja o início de uma parceria incrível! ✨",
   ].join("\n\n");
 }
+
+/**
+ * Convite do portal para quem já está no Creator Club e ainda não criou a senha (D-ACCESSREQ): mandado pela equipe
+ * no WhatsApp, pela ficha ou em massa na lista de creators.
+ */
+export function portalInviteMessage(p: { name: string; brand: string; link: string; until: Date }): string {
+  const until = p.until.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
+  return [
+    `Oi, ${firstName(p.name)}! Aqui é da ${p.brand}. 💜`,
+    "Seu acesso ao portal do Creator Club está pronto: lá você acompanha suas vendas, seu cupom, seu saldo e pede o saque.",
+    `Crie a sua senha por este link (vale até ${until} e funciona uma vez):\n${p.link}`,
+  ].join("\n\n");
+}

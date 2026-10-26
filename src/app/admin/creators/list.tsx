@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { HelpTip } from "@/components/ui/tour";
 import { badge, ui } from "@/components/ui/styles";
+import { bulkInviteAction, type BulkInviteState } from "./actions";
 import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, matchesCategory, whatsappChatUrl, type CategoryFilter, type CreatorCategoryValue } from "@/domain";
 
 type Row = {
@@ -66,12 +67,12 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
  * cupom, @, e-mail, WhatsApp ou CPF, e a tabela com redes, WhatsApp, cupom e vendas (ordenável). Tudo no navegador:
  * a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só para quem vê dados fiscais).
  */
-export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number }) {
+export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number; canInvite?: boolean }) {
   const { rows } = p;
   const router = useRouter();
   // A linha inteira abre a ficha (links e botões de dentro continuam funcionando sozinhos).
   const open = (id: string) => (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("a,button")) return;
+    if ((e.target as HTMLElement).closest("a,button,input,label")) return;
     router.push(`/admin/creators/${id}`);
   };
   const [q, setQ] = useState("");
@@ -122,6 +123,38 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
       return sort.desc ? -c : c;
     });
   }, [q, situation, category, alert, sort, rows, tag, uf]);
+
+  // D-ACCESSREQ: no filtro "sem acesso ao portal", a Gestão marca as creators e gera os convites de uma vez.
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [invites, setInvites] = useState<BulkInviteState>(undefined);
+  const [inviting, setInviting] = useState(false);
+  const selecting = Boolean(p.canInvite) && alert === "noPortal";
+  const invitable = shown.filter((r) => !r.hasLogin && !r.fakeEmail);
+  const toggle = (id: string) => setPicked((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+  const Pick = ({ r }: { r: Row }) =>
+    selecting ? (
+      <input
+        type="checkbox"
+        checked={picked.has(r.id)}
+        disabled={r.fakeEmail}
+        title={r.fakeEmail ? "Confirme o e-mail na ficha antes de convidar" : "Marcar para gerar o convite"}
+        onChange={() => toggle(r.id)}
+        aria-label={`Marcar ${r.name}`}
+        className="mt-1 size-4 shrink-0 accent-current"
+      />
+    ) : null;
+  async function generate() {
+    setInviting(true);
+    setInvites(await bulkInviteAction([...picked]));
+    setPicked(new Set());
+    setInviting(false);
+    router.refresh();
+  }
 
   const total = inSituation.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
   const top = [...inSituation].map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
@@ -199,6 +232,20 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
               })}
             </div>
           )}
+          {selecting && (
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-sky-500/10 p-3 text-sm">
+              <span>
+                <strong>{picked.size}</strong> marcada{picked.size === 1 ? "" : "s"} para receber o link de acesso ao portal.
+              </span>
+              <button type="button" onClick={() => setPicked(new Set(invitable.map((r) => r.id)))} className={ui.ghostSm}>Marcar todas ({invitable.length})</button>
+              {picked.size > 0 && <button type="button" onClick={() => setPicked(new Set())} className={ui.ghostSm}>Desmarcar</button>}
+              <button type="button" disabled={!picked.size || inviting} onClick={() => void generate()} className={ui.btnSm}>
+                {inviting ? "Gerando…" : "Gerar convites"}
+              </button>
+              {shown.some((r) => r.fakeEmail) && <span className={ui.hint}>Quem está com e-mail a confirmar precisa do e-mail real na ficha antes.</span>}
+            </div>
+          )}
+          {invites && <BulkInvites state={invites} onClose={() => setInvites(undefined)} />}
           {money && total > 0 && (
             <p className={ui.hint}>
               Concentração: a maior faz {share(1)}% das vendas · as 3 maiores, {share(3)}%. {shown.length} de {inSituation.length} creators.
@@ -217,7 +264,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
               return (
                 <li key={c.id} onClick={open(c.id)} className="flex cursor-pointer flex-col gap-1.5 py-3">
                   <div className="flex items-baseline justify-between gap-2">
-                    <Link href={`/admin/creators/${c.id}`} className="truncate font-medium">{c.name}</Link>
+                    <span className="flex min-w-0 items-start gap-2"><Pick r={c} /><Link href={`/admin/creators/${c.id}`} className="truncate font-medium">{c.name}</Link></span>
                     {c.stats && <span className="shrink-0 text-sm font-semibold tabular-nums">{formatBRL(c.stats.salesCents)}</span>}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -260,6 +307,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
                     <tr key={c.id} onClick={open(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
                       <td className="max-w-64">
                         <div className="flex items-start gap-2.5">
+                          <Pick r={c} />
                           <span className="grid size-10 shrink-0 place-content-center rounded-full bg-gradient-to-br from-brand to-brand/60 text-sm font-semibold text-white shadow-sm dark:from-brand-2 dark:to-brand-2/60">{c.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
                           <div className="min-w-0">
                             <Link href={`/admin/creators/${c.id}`} className="block truncate font-medium hover:underline">{c.name}</Link>
@@ -316,6 +364,46 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Links gerados em massa (D-ACCESSREQ): cada um aparece só agora, com a mensagem pronta para o WhatsApp. */
+function BulkInvites({ state, onClose }: { state: NonNullable<BulkInviteState>; onClose: () => void }) {
+  if (state.error) return <p role="alert" className={ui.error}>{state.error}</p>;
+  const results = state.results ?? [];
+  const ok = results.filter((r) => r.link);
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold">
+          {ok.length} convite{ok.length === 1 ? "" : "s"} gerado{ok.length === 1 ? "" : "s"}. Cada link vale 7 dias, funciona uma vez e não aparece de novo: mande agora.
+        </p>
+        <button type="button" onClick={onClose} className={ui.ghostSm}>Fechar</button>
+      </div>
+      <ul className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10">
+        {results.map((r) => (
+          <li key={r.creatorId} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+            <span className="min-w-0">
+              <span className="font-medium">{r.name}</span>
+              {r.error && <span className="block text-xs text-red-700 dark:text-red-400">{r.error}</span>}
+              {r.emailedTo && <span className="block text-xs text-stone-500">também foi por e-mail para {r.emailedTo}</span>}
+            </span>
+            {r.link && r.message && (
+              <span className="flex flex-wrap gap-2">
+                {r.whatsappUrl ? (
+                  <a href={r.whatsappUrl} target="_blank" rel="noopener noreferrer" className={`${ui.btnSm} !bg-emerald-600`}>
+                    <WhatsAppIcon className="size-3.5" /> Mandar no WhatsApp
+                  </a>
+                ) : (
+                  <span className={ui.hint}>sem WhatsApp no cadastro</span>
+                )}
+                <CopyButton value={r.message} label="Copiar mensagem" />
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

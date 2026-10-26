@@ -42,7 +42,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
           visualização vale só neste aparelho, por 1 hora.
         </p>
       )}
-      <CreatorList {...(tag ? { tag } : {})} rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} pendingApplications={pendingApplications} />
+      <CreatorList {...(tag ? { tag } : {})} rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} pendingApplications={pendingApplications} canInvite={can(actor.grants, "creators.edit", brand.id)} />
     </>
   );
 }
