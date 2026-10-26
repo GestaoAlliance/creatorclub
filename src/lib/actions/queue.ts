@@ -35,7 +35,9 @@ import { lastPostDays } from "@/lib/posts/posts";
  * - kit sem escolher: kit liberado há 7 dias ou mais;
  * - envio parado: em preparação há 3 dias ou mais (tarefa de quem envia);
  * - aniversário: de 3 dias antes até o dia (M4.2, D-TAGS), com a mensagem de parabéns;
- * - sem post: parceira ativa sem post registrado há 15 dias (M4.6, D-POSTS; conta desde o início dos registros).
+ * - sem post: parceira ativa sem post registrado há 15 dias (M4.6, D-POSTS; conta desde o início dos registros);
+ * - pediu acesso: já tinha cadastro sem senha e pediu o link pelo site (D-ACCESSREQ); sai quando ela ganha o login ou
+ *   a equipe gera um convite depois do pedido.
  * Resolvido o motivo, a tarefa some sozinha. "Feito" grava a ocorrência em `ActionDone` e ela sai da fila; uma
  * ocorrência nova (outro mês, outro fim de contrato, outro kit) volta.
  */
@@ -69,7 +71,12 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   const [creators, kits, ships, done] = await Promise.all([
     prisma.creator.findMany({
       where: { brandId, status: { not: "DEACTIVATED" } },
-      select: { ...IDLE_SELECT, categories: true, contractEnd: true, account: { select: { name: true, phone: true, birthDate: true } } },
+      select: {
+        ...IDLE_SELECT,
+        categories: true,
+        contractEnd: true,
+        account: { select: { name: true, phone: true, birthDate: true, userId: true, accessRequestedAt: true, invites: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } } } },
+      },
     }),
     prisma.kitGrant.findMany({ where: { brandId, status: "PENDING", createdAt: { lte: new Date(now.getTime() - KIT_PENDING_DAYS * DAY) } }, select: { id: true, creatorId: true, createdAt: true } }),
     prisma.shipment.findMany({
@@ -137,6 +144,15 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
     const from = [last ?? POSTS_SINCE, POSTS_SINCE, activated].sort().at(-1)!;
     const days = Math.floor((today - Date.parse(`${from}T00:00:00Z`)) / DAY);
     if (days >= NO_POST_DAYS) push(c.id, `NO_POST:${c.id}:${last ?? "nunca"}`, { kind: "NO_POST", days, never: last === null });
+  }
+
+  // Pediu o link de acesso pelo site (D-ACCESSREQ).
+  for (const c of creators) {
+    const at = c.account.accessRequestedAt;
+    if (!at || c.account.userId) continue;
+    const invited = c.account.invites[0]?.createdAt;
+    if (invited && invited >= at) continue;
+    push(c.id, `ACCESS:${c.id}:${at.toISOString()}`, { kind: "ACCESS", day: dayKey(at, tz) });
   }
 
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });

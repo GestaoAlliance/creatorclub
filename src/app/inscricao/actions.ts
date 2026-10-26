@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
-import { signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
+import { requestPortalAccess, signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export type SignupState = { errors?: Record<string, string>; values?: Record<string, string>; n: number };
+/** `existing: "request"`: já tem cadastro sem senha; o formulário vira o pedido do link de acesso (D-ACCESSREQ). */
+export type SignupState = { errors?: Record<string, string>; values?: Record<string, string>; existing?: "request"; n: number };
 
 /** Login do cadastro no Supabase Auth (D-SIGNUPACCOUNT): e-mail já confirmado, como no convite. */
 const supabaseSignupAuth: SignupAuth = {
@@ -49,7 +50,7 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
       },
       supabaseSignupAuth,
     );
-    if (!r.ok) return { errors: r.errors, values, n: prev.n + 1 };
+    if (!r.ok) return r.existing ? { existing: r.existing, values, n: prev.n + 1 } : { errors: r.errors, values, n: prev.n + 1 };
     email = r.email;
   } catch (error) {
     if (error instanceof ApplicationError) return { errors: { _form: error.message }, values, n: prev.n + 1 };
@@ -72,4 +73,14 @@ export async function checkCouponAction(marca: string, raw: string): Promise<Cou
   const brand = await db().brand.findUnique({ where: { slug: marca.toLowerCase() }, select: { id: true } });
   if (!brand) return { code, state: "invalid" };
   return { code, state: (await signupCouponTaken(db(), brand.id, code)) ? "taken" : "ok" };
+}
+
+/** D-ACCESSREQ: "Pedir meu link de acesso". Mesma resposta, ache ou não a conta (nada é revelado). */
+export async function requestAccessAction(values: Record<string, string>): Promise<{ ok: true }> {
+  try {
+    await requestPortalAccess(db(), values);
+  } catch (error) {
+    console.error("signup.access_request", error);
+  }
+  return { ok: true };
 }

@@ -24,7 +24,8 @@ export type SignupAuth = {
   deleteUser(userId: string): Promise<void>;
 };
 
-export type SignupOutcome = { ok: true; email: string | null } | { ok: false; errors: Record<string, string> };
+/** `existing: "request"`: e-mail ou CPF de uma creator já cadastrada que ainda não criou a senha (D-ACCESSREQ). */
+export type SignupOutcome = { ok: true; email: string | null } | { ok: false; errors: Record<string, string>; existing?: "request" };
 
 /** Cupom já usado na marca ou reservado por outra inscrição em análise. */
 export async function signupCouponTaken(prisma: PrismaClient, brandId: string, code: string): Promise<boolean> {
@@ -62,13 +63,17 @@ export async function submitSignup(
   }
 
   const [byEmail, staff, byCpf, couponTaken] = await Promise.all([
-    prisma.creatorAccount.findUnique({ where: { email: acc.email }, select: { id: true } }),
+    prisma.creatorAccount.findUnique({ where: { email: acc.email }, select: { id: true, userId: true } }),
     prisma.user.findUnique({ where: { email: acc.email }, select: { id: true } }),
-    prisma.creatorAccount.findFirst({ where: { cpf: acc.cpf }, select: { id: true } }),
+    prisma.creatorAccount.findFirst({ where: { cpf: acc.cpf }, select: { id: true, userId: true } }),
     signupCouponTaken(prisma, brand.id, acc.coupon),
   ]);
-  if (byEmail || staff) errors.email = "Este e-mail já tem cadastro. Entre com ele ou fale com a equipe.";
-  if (byCpf) errors.cpf = "Este CPF já tem cadastro. Entre com o seu e-mail ou fale com a equipe.";
+  // D-ACCESSREQ: creator que já está no sistema (importada ou aprovada) e nunca criou a senha: em vez do erro, o
+  // formulário oferece pedir o link de acesso à equipe. Quem já tem senha continua indo para "Entrar".
+  const found = [byEmail, byCpf].filter((a) => a !== null);
+  if (!staff && found.length > 0 && found.every((a) => a.userId === null)) return { ok: false, errors: {}, existing: "request" };
+  if (byEmail || staff) errors.email = "Você já tem acesso com este e-mail. Entre com ele (ou toque em \"Esqueci a senha\").";
+  if (byCpf) errors.cpf = "Este CPF já tem acesso ao portal. Entre com o seu e-mail (ou toque em \"Esqueci a senha\").";
   if (couponTaken) errors.coupon = "Este cupom já está em uso. Escolha outro.";
   if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -132,4 +137,31 @@ export async function submitSignup(
     throw error;
   }
   return { ok: true, email: acc.email };
+}
+
+/** Intervalo mínimo entre dois pedidos de acesso da mesma conta (evita repetir a tarefa da equipe). */
+const ACCESS_REQUEST_EVERY = 60 * 60 * 1000;
+
+/**
+ * Pedido do link de acesso (D-ACCESSREQ): a creator já cadastrada (sem senha) tentou se cadastrar de novo e tocou em
+ * "Pedir meu link de acesso". Marca a conta (pelo e-mail ou pelo CPF digitados) e a Gestão de cada marca dela vê a
+ * tarefa em Ações. Nada é revelado a quem pediu: a resposta é a mesma, ache ou não a conta.
+ */
+export async function requestPortalAccess(prisma: PrismaClient, values: Record<string, string | undefined>, now = new Date()): Promise<void> {
+  const checked = validateSignup(values);
+  if (!checked.ok) return;
+  const { email, cpf } = checked.account;
+  const accounts = await prisma.creatorAccount.findMany({
+    where: { userId: null, OR: [{ email }, ...(cpf ? [{ cpf }] : [])] },
+    select: { id: true, accessRequestedAt: true, creators: { select: { brandId: true } } },
+  });
+  for (const a of accounts) {
+    if (a.accessRequestedAt && now.getTime() - a.accessRequestedAt.getTime() < ACCESS_REQUEST_EVERY) continue;
+    await prisma.$transaction([
+      prisma.creatorAccount.update({ where: { id: a.id }, data: { accessRequestedAt: now } }),
+      prisma.auditLog.create({
+        data: { brandId: a.creators[0]?.brandId ?? null, actorType: "SYSTEM", actorId: "signup:access-request", action: "creator.access_request", entity: "CreatorAccount", entityId: a.id },
+      }),
+    ]);
+  }
 }

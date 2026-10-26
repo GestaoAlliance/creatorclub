@@ -467,6 +467,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
             )}
           </Card>
           {p.canEdit && !p.hasLogin && (
+            <div id="convite" className="scroll-mt-24">
             <Card title="Convite para o portal" icon={<Mail className="size-4" />}>
               {p.contact.fakeEmail ? (
                 <p className="text-sm text-amber-700 dark:text-amber-300">Salve o e-mail real antes de convidar.</p>
@@ -474,6 +475,7 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
                 <InviteButton creatorId={p.id} accountId={p.accountId} />
               )}
             </Card>
+            </div>
           )}
                 </div>
                 <div className="flex min-w-0 flex-col gap-6">

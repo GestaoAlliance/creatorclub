@@ -1,7 +1,10 @@
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
-import { brandsWith } from "@/lib/auth/permissions";
+import { portalInviteMessage, whatsappLink } from "@/domain";
+import { brandsWith, can } from "@/lib/auth/permissions";
+import type { EmailSender } from "@/lib/email/sender";
+import { emailCreatorInvite } from "./invite-email";
 import { normalizeEmail } from "@/lib/auth/rules";
 import { TeamError } from "./invites";
 import { hashInviteToken, INVITE_TTL_DAYS, newInviteToken } from "./tokens";
@@ -106,4 +109,47 @@ export async function acceptCreatorInvite(
     });
     return { accountId: invite.accountId };
   });
+}
+
+export const BULK_INVITE_MAX = 50;
+
+export type BulkInviteResult = { creatorId: string; name: string; link: string | null; message: string | null; whatsappUrl: string | null; emailedTo: string | null; error: string | null };
+
+/**
+ * Convites em massa (D-ACCESSREQ): na lista de creators, filtro "sem acesso ao portal", a Gestão marca as creators e
+ * gera os links de uma vez, cada um com a mensagem pronta para o WhatsApp (e o e-mail, quando houver remetente).
+ * Quem já tem login ou está com e-mail provisório fica de fora, com o motivo.
+ */
+export async function inviteCreatorsInBulk(
+  prisma: PrismaClient,
+  actor: Actor | null,
+  brandId: string,
+  creatorIds: string[],
+  deps: { origin: string; email: EmailSender | null },
+  now = new Date(),
+): Promise<BulkInviteResult[]> {
+  if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new TeamError("Sem permissão.");
+  const ids = [...new Set(creatorIds)];
+  if (ids.length === 0) throw new TeamError("Marque pelo menos uma creator.");
+  if (ids.length > BULK_INVITE_MAX) throw new TeamError(`No máximo ${BULK_INVITE_MAX} convites de uma vez.`);
+  const creators = await prisma.creator.findMany({
+    where: { id: { in: ids }, brandId },
+    select: { id: true, brand: { select: { name: true } }, account: { select: { id: true, name: true, email: true, phone: true, userId: true } } },
+    orderBy: { account: { name: "asc" } },
+  });
+  const out: BulkInviteResult[] = [];
+  for (const c of creators) {
+    const base = { creatorId: c.id, name: c.account.name, link: null, message: null, whatsappUrl: null, emailedTo: null };
+    try {
+      const { token, invite } = await createCreatorInvite(prisma, actor, c.account.id, now);
+      const link = `${deps.origin}/convite/${token}`;
+      const message = portalInviteMessage({ name: c.account.name, brand: c.brand.name, link, until: invite.expiresAt });
+      const mail = await emailCreatorInvite(prisma, deps.email, { inviteId: invite.id, actorId: actor.userId, link }, now);
+      out.push({ ...base, link, message, whatsappUrl: whatsappLink(c.account.phone, message), emailedTo: mail?.sent ? mail.to : null, error: null });
+    } catch (error) {
+      if (!(error instanceof TeamError)) throw error;
+      out.push({ ...base, error: error.message });
+    }
+  }
+  return out;
 }

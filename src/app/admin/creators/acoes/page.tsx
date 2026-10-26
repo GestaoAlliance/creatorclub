@@ -14,8 +14,8 @@ import { DoneButton } from "./done";
 
 export const dynamic = "force-dynamic";
 
-const KINDS: ActionKind[] = ["IDLE", "NEAR_MIN", "CONTRACT", "KIT_PENDING", "SHIP_STUCK", "BIRTHDAY", "NO_POST"];
-const TONE: Record<ActionKind, string> = { IDLE: badge.red, NEAR_MIN: badge.green, CONTRACT: badge.amber, KIT_PENDING: badge.sky, SHIP_STUCK: badge.neutral, BIRTHDAY: badge.green, NO_POST: badge.amber };
+const KINDS: ActionKind[] = ["ACCESS", "IDLE", "NEAR_MIN", "CONTRACT", "KIT_PENDING", "SHIP_STUCK", "BIRTHDAY", "NO_POST"];
+const TONE: Record<ActionKind, string> = { IDLE: badge.red, NEAR_MIN: badge.green, CONTRACT: badge.amber, KIT_PENDING: badge.sky, SHIP_STUCK: badge.neutral, BIRTHDAY: badge.green, NO_POST: badge.amber, ACCESS: badge.sky };
 const OWNER = { GESTAO: "Gestão", ENVIO: "Envio" } as const;
 
 // Fila de ações por creator (M2.1, D-ACTIONS): o que a equipe precisa fazer hoje, com a mensagem pronta no WhatsApp.
@@ -67,6 +67,8 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
                   <a href={t.whatsappUrl} target="_blank" rel="noopener noreferrer" className={`${ui.btnSm} !bg-emerald-600`}>
                     <WhatsAppIcon className="size-3.5" /> Mandar no WhatsApp
                   </a>
+                ) : t.kind === "ACCESS" ? (
+                  <Link href={`/admin/creators/${t.creatorId}#convite`} className={ui.btnSm}>Gerar o convite</Link>
                 ) : (
                   t.message && <CopyButton value={t.message} label="Copiar mensagem (sem WhatsApp)" />
                 )}

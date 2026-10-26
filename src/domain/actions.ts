@@ -3,7 +3,7 @@
  * mensagem pronta para mandar pelo WhatsApp. Regra pura (testada): quem decide o que entra é `src/lib/actions/queue.ts`.
  */
 
-export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST";
+export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS";
 
 /** Quem cuida de cada tipo (decisão 3 do plano): por enquanto a Gestão (Ana) da marca; envio parado é de quem envia. */
 export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
@@ -14,6 +14,7 @@ export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
   SHIP_STUCK: "ENVIO",
   BIRTHDAY: "GESTAO",
   NO_POST: "GESTAO",
+  ACCESS: "GESTAO",
 };
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -24,6 +25,7 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   SHIP_STUCK: "Envio parado",
   BIRTHDAY: "Aniversário",
   NO_POST: "Sem post",
+  ACCESS: "Pediu acesso",
 };
 
 /** Prazos do kit parado (pedido do responsável em 2026-10-22). */
@@ -41,7 +43,8 @@ export type ActionFacts =
   | { kind: "KIT_PENDING"; days: number }
   | { kind: "SHIP_STUCK"; days: number }
   | { kind: "BIRTHDAY"; day: string; days: number }
-  | { kind: "NO_POST"; days: number; never: boolean };
+  | { kind: "NO_POST"; days: number; never: boolean }
+  | { kind: "ACCESS"; day: string };
 
 /** O motivo curto que a equipe lê na fila. */
 export function actionDetail(f: ActionFacts): string {
@@ -58,6 +61,8 @@ export function actionDetail(f: ActionFacts): string {
       return `envio em preparação há ${f.days} dias`;
     case "NO_POST":
       return f.never ? `nenhum post registrado há ${f.days} dias` : `último post registrado há ${f.days} dias`;
+    case "ACCESS":
+      return `pediu o link de acesso ao portal em ${br(f.day)} (já tinha cadastro): gere o convite na ficha`;
     case "BIRTHDAY":
       return f.days === 0 ? "faz aniversário hoje" : f.days === 1 ? `faz aniversário amanhã (${br(f.day).slice(0, 5)})` : `faz aniversário em ${f.days} dias (${br(f.day).slice(0, 5)})`;
   }
@@ -78,6 +83,7 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
     case "KIT_PENDING":
       return `${oi} Seu kit está liberado há ${f.days} dias e ainda falta você escolher os produtos no portal (aba Envios). Escolhe lá pra gente já mandar!`;
     case "SHIP_STUCK":
+    case "ACCESS":
       return null;
     case "NO_POST":
       return `${oi} Faz ${f.days} dias que não vemos um post seu registrado no portal. Postou e esqueceu de registrar? É só colar o link em "Meus posts". Se precisar de ideia de conteúdo, me chama!`;
