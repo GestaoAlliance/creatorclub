@@ -302,6 +302,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-193 — 2026-10-26 — Início da marca só com vendas de creators
+- **Pedido do responsável:** tirar a loja inteira do Início das três marcas e deixar só as vendas de creators
+  (influencers, UGC etc.). Respondeu: só no Início de cada marca (o Início da Alliance, a lista de Vendas e "Produtos
+  e custo" continuam como estão).
+- **Feito:** sai o cartão "Loja inteira" e o "x% da loja" em "Vendas de creators"; o gráfico de vendas por dia ocupa a
+  largura toda.
+- **Verificado:** 256 unitários, typecheck.
+
 ### CP-192 — 2026-10-26 — Pedidos do portal: produtos por marca, endereço no pedido, sem pedido livre (D-KITOPTIONS)
 - **Pedido:** mensagens da Vanessa (26/10), aplicadas passo a passo. Este é o passo 1; a fila dos outros está em
   "Próxima tarefa".
