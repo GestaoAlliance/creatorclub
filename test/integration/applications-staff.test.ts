@@ -43,7 +43,7 @@ describe("M4.1: nova candidata pela equipe e recusa em massa (D-MANUALAPP, banco
     expect(row).toMatchObject({ fullName: "Joana Lima", source: "staff_form", categoryProposal: "PRESCRITOR", couponProposal: "JOANA", instagram: "@joana", note: "indicada no evento", canDecide: true });
     expect(await prisma.auditLog.count({ where: { entityId: id, action: "application.created", actorId: gestao.userId } })).toBe(1);
 
-    const r = await approveApplication(prisma, gestao, { applicationId: id, couponCode: letters(6), category: "PRESCRITOR", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com` }, clientFor);
+    const r = await approveApplication(prisma, gestao, { applicationId: id, contractSigned: true, couponCode: letters(6), category: "PRESCRITOR", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com` }, clientFor);
     expect(await prisma.creator.count({ where: { id: r.creatorId, brandId: brand.id } })).toBe(1);
   });
 

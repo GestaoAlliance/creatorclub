@@ -7,7 +7,6 @@ import { creatorReturns } from "@/lib/reports/creator-return";
 import { db } from "@/lib/db";
 import { creatorTermsStatus } from "@/lib/terms/terms";
 import { creatorContractSignature } from "@/lib/contracts/sign";
-import { creatorAutentique } from "@/lib/autentique/contracts";
 import { staffContext } from "@/lib/staff/context";
 import { OtherBrandNotice } from "@/components/staff/other-brand";
 import { headers } from "next/headers";
@@ -49,10 +48,9 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   }
 
   const RETURN_DAYS = 90;
-  const [terms, contract, autentique, numbers, timeline, own, ret, tags, posts, postCampaigns] = await Promise.all([
+  const [terms, contract, numbers, timeline, own, ret, tags, posts, postCampaigns] = await Promise.all([
     creatorTermsStatus(db(), p.id, p.brandId),
     creatorContractSignature(db(), p.id),
-    creatorAutentique(db(), p.id, p.brandId),
     // M0.2: números de 30 dias, aguardando pagamento e estornos (só quem vê dinheiro) e a linha do tempo.
     p.adjustments ? creatorNumbers(db(), p.id) : Promise.resolve(null),
     creatorTimeline(db(), actor, p.id),
@@ -70,5 +68,5 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   // Link rastreado que ela divulga (D-LINK), com o domínio desta requisição (o mesmo do portal).
   const h = await headers();
   const linkBase = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}/r/${own.slug}/`;
-  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} autentique={autentique} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} returnDays={RETURN_DAYS} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} today={dayKey(new Date())} />;
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} returnDays={RETURN_DAYS} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} today={dayKey(new Date())} />;
 }

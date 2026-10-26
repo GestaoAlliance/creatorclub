@@ -17,11 +17,12 @@ export type ApproveState =
   | {
       error?: string;
       ok?: {
-        coupon: string; discountBps: number; contract: boolean; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string;
+        coupon: string; discountBps: number; creatorId: string; link: string | null; inviteError?: string; mail?: string; mailError?: string;
         /** D-SIGNUPACCOUNT: ela criou a senha no cadastro; não há convite, ela entra com o e-mail. */
         loginUrl?: string;
-        /** D-AUTENTIQUE: contrato enviado pelo Autentique (o cupom e o convite vêm depois da assinatura). */
-        autentique?: { sent: true; email: string; sandbox: boolean } | { sent: false; error: string };
+        /** D-D4SIGN: aba Pedidos (passando pelo login) e produto sugerido da marca, para a mensagem de aprovação. */
+        ordersUrl?: string;
+        suggestion: string | null;
       };
     }
   | undefined;
@@ -39,18 +40,23 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
       discountBps,
       email: String(form.get("email") ?? ""),
       contractTemplateId: String(form.get("contractTemplateId") ?? "") || null,
+      contractSigned: form.get("contractSigned") === "on",
     });
     // Sem revalidatePath aqui: a linha sumiria da aba "Novas" junto com o convite e o botão de WhatsApp. A tela
     // atualiza quando a equipe clica em "Concluir" (router.refresh).
-    // D-AUTENTIQUE: pelo Autentique, o convite do portal só sai depois de assinado (pela ficha).
-    if (r.contract) return { ok: { coupon: r.couponCode, discountBps, contract: true, creatorId: r.creatorId, link: null, autentique: r.contract } };
+    const origin = (await headers()).get("origin") ?? "";
+    const { brand } = await db().creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { brand: { select: { slug: true, approvalSuggestion: true } } } });
+    const suggestion = brand.approvalSuggestion;
     // D-SIGNUPACCOUNT: quem se cadastrou pelo site já tem senha: sem convite, ela entra pelo login.
     const account = await db().creatorAccount.findUnique({ where: { id: r.accountId }, select: { userId: true } });
     if (account?.userId) {
-      const origin = (await headers()).get("origin") ?? "";
       // M4.4a (D-BRANDLOGIN): o link de entrar abre com a cara da marca.
-      const slug = (await db().creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { brand: { select: { slug: true } } } })).brand.slug;
-      return { ok: { coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link: null, loginUrl: `${origin}/entrar?marca=${slug}` } };
+      return {
+        ok: {
+          coupon: r.couponCode, discountBps, creatorId: r.creatorId, link: null, suggestion,
+          loginUrl: `${origin}/entrar?marca=${brand.slug}`, ordersUrl: `${origin}/entrar?next=/portal/${brand.slug}/envios`,
+        },
+      };
     }
     // O convite sai logo depois; se falhar (ex.: pessoa já tem login), a creator já está criada e o aviso aparece.
     let link: string | null = null;
@@ -59,7 +65,6 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     let mailError: string | undefined;
     try {
       const { token, invite } = await createCreatorInvite(db(), actor, r.accountId);
-      const origin = (await headers()).get("origin") ?? "";
       link = `${origin}/convite/${token}`;
       // D-EMAIL: com remetente configurado, o convite também vai por e-mail; sem ele, só o link e o WhatsApp.
       const sent = await emailCreatorInvite(db(), configuredSender(), { inviteId: invite.id, actorId: actor!.userId, link });
@@ -71,7 +76,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     }
     return {
       ok: {
-        coupon: r.couponCode, discountBps, contract: Boolean(form.get("contractTemplateId")), creatorId: r.creatorId, link,
+        coupon: r.couponCode, discountBps, creatorId: r.creatorId, link, suggestion,
         ...(inviteError ? { inviteError } : {}), ...(mail ? { mail } : {}), ...(mailError ? { mailError } : {}),
       },
     };

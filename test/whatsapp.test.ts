@@ -29,13 +29,27 @@ describe("avisos pelo WhatsApp (M2.2, D-WHATSAPP)", () => {
   });
 });
 
-describe("boas-vindas depois de aprovar", () => {
-  it("cupom, desconto e acesso ao portal; nunca pede para assinar contrato (já está assinado)", async () => {
-    const { welcomeMessage } = await import("@/domain");
-    const msg = welcomeMessage({ name: "Nathaly Souza", brand: "Revita Derma", coupon: "NATHALY", discountBps: 500, inviteLink: null, loginUrl: "https://x.test/entrar" });
-    expect(msg).toContain("Oi, Nathaly! Sua inscrição no Creator Club da Revita Derma foi aprovada!");
-    expect(msg).toContain("*NATHALY*");
-    expect(msg).toContain("https://x.test/entrar");
-    expect(msg).not.toMatch(/assin|contrato/i);
+describe("mensagem de aprovação (D-D4SIGN)", () => {
+  it("produto na aba Pedidos, sugestão da marca, cupom e login; nunca pede para assinar contrato", async () => {
+    const { approvalMessage } = await import("@/domain");
+    const msg = approvalMessage({ brand: "Botanika", coupon: "MAYLEONEL", discountBps: 500, suggestion: "Hair Botanika", ordersUrl: "https://x.test/entrar?next=/portal/botanika/envios", loginUrl: "https://x.test/entrar?marca=botanika" });
+    expect(msg).toContain("Prontinho, sua parceria foi aprovada!");
+    expect(msg).toContain("escolher 1 produto da Botanika");
+    expect(msg).toContain("aba Pedidos");
+    expect(msg).toContain("🔗 https://x.test/entrar?next=/portal/botanika/envios");
+    expect(msg).toContain("💡 Nossa sugestão: Hair Botanika ✨");
+    expect(msg).toContain("2️⃣ Seu cupom exclusivo: MAYLEONEL");
+    expect(msg).toContain("ganham 5% de desconto");
+    expect(msg).toContain("e-mail e a senha cadastrados.\n\n🔗 https://x.test/entrar?marca=botanika");
+    expect(msg).not.toMatch(/assin|contrato|suplemento/i);
+  });
+
+  it("sem sugestão, a linha some; sem senha, vai o convite", async () => {
+    const { approvalMessage } = await import("@/domain");
+    const msg = approvalMessage({ brand: "Revita Derma", coupon: "ANA", discountBps: 1250, suggestion: "  ", inviteLink: "https://x.test/convite/abc" });
+    expect(msg).not.toContain("sugestão");
+    expect(msg).toContain("12,5% de desconto");
+    expect(msg).toContain("Crie sua senha por este link");
+    expect(msg).toContain("https://x.test/convite/abc");
   });
 });

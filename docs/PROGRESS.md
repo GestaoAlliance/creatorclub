@@ -7,8 +7,8 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **Fase 5, M5.1 Loja com o saldo**: antes de construir, perguntar ao responsável a decisão 11 do
-  plano (preço de creator, nota fiscal, frete, liberação e uso do saldo entre marcas; levar à Ana).
+- **Próxima tarefa:** **D-D4SIGN parte 2**: 2º produto liberado sozinho ao vender R$ 1.000 nos primeiros 45 dias da
+  aprovação (todas as marcas). Depois, **Fase 5, M5.1 Loja com o saldo** (perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -298,6 +298,28 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-191 — 2026-10-26 — Contrato pelo D4Sign, sem Autentique; aprovação nova e aba Pedidos (D-D4SIGN)
+- **Pedido do responsável:** não usar mais o Autentique em nenhuma marca; o contrato vai pela gestora no WhatsApp
+  (D4Sign) antes do cadastro; ela aprova no Creator Club e manda a mensagem de aprovação.
+- **Decisões do responsável:** caixa obrigatória "Contrato assinado no D4Sign" na aprovação; contrato valendo da
+  aprovação, sem trava no portal; 1 produto de boas-vindas em todas as marcas; aba "Envios" do portal vira "Pedidos";
+  um produto sugerido por marca, escolhido em Marcas (sem escolha, a linha some); "Creator Teste" é só o nome da fase;
+  desconectar o Autentique e cancelar os pedidos de assinatura pendentes, guardando o histórico.
+- **Feito:** aprovação sempre cria o cupom na Shopify, marca o contrato assinado (início na aprovação, fim pelos meses
+  da versão), não trava o portal e libera 1 produto de boas-vindas (com aviso); exige a caixa e, se a marca tem
+  versões de contrato, a versão. Mensagem de aprovação nova com aba Pedidos, sugestão, cupom e acesso (login ou
+  convite). "Produto sugerido na mensagem de aprovação" em Marcas (`Brand.approvalSuggestion`). Aba "Pedidos" no portal
+  (rota `/envios` mantida; avisos e textos trocados). Código do Autentique tirado (conexão em Shopify, card e botões da
+  ficha, conferência a cada 5 min, convite depois da assinatura e testes); o histórico segue na linha do tempo.
+- **Dados em produção (2026-10-26, pedido do responsável):** Victoria Rodrigues (Botanika) com contrato assinado
+  manual (desde a entrada, 21/07); todas as 24 creators ativas com acesso marcadas com contrato assinado (início na
+  entrada, fim pelos meses da versão), trava do portal tirada e 1 produto de boas-vindas para as 18 que estavam travadas
+  sem kit; auditoria `creator.contract_manual`. Depois do deploy: desconectar o Autentique das marcas e cancelar os
+  pedidos de assinatura pendentes.
+- **Verificado:** 257 unitários, 261 de integração (aprovação D-D4SIGN nova em `applications.test.ts`), typecheck, build e migração
+  sem divergência.
+- **Próxima:** Parte 2 de D-D4SIGN (2º produto ao vender R$ 1.000 em 45 dias), depois Fase 5.
 
 ### CP-190 — 2026-10-26 — Pedir produtos no portal e CEP que busca o endereço (D-PRODUCTREQ, D-CEPAUTO)
 - **Pedido do responsável:** na aba Envios do portal, em todas as marcas, um botão para a creator solicitar envio; e o

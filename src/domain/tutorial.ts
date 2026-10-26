@@ -204,10 +204,7 @@ export const HELP = {
     title: "Taxa de comissão",
     text: "A porcentagem que ela ganha em cada venda e desde quando vale. Cada pedido usa a taxa do dia em que foi pago.",
   },
-  "fi-autentique": {
-    title: "Contrato pelo Autentique",
-    text: "Envie o contrato para assinatura e acompanhe. Quando ela assina, o cupom é criado e o kit de boas-vindas é liberado.",
-  },
+
   "fi-ajustes": {
     title: "Ajustes manuais",
     text: "Correções de saldo, sempre como um lançamento novo com o motivo. Nada é apagado do extrato.",
@@ -301,7 +298,7 @@ export const TOURS: Record<TourScreen, HelpId[]> = {
   "equipe-inicio": ["eq-indicacoes", "eq-candidatas", "eq-contratos", "eq-semvender", "eq-saques", "eq-envios", "eq-cupons", "eq-creators"],
   "equipe-candidatas": ["cand-abas", "cand-filtros", "cand-lista"],
   "equipe-creators": ["cr-filtros", "cr-lista"],
-  "equipe-ficha": ["fi-vercomo", "fi-saldo", "fi-conferencia", "fi-cupons", "fi-contrato", "fi-extrato", "fi-taxa", "fi-autentique", "fi-ajustes"],
+  "equipe-ficha": ["fi-vercomo", "fi-saldo", "fi-conferencia", "fi-cupons", "fi-contrato", "fi-extrato", "fi-taxa", "fi-ajustes"],
   "equipe-cupons": ["cp-resumo", "cp-abas", "cp-conferir"],
   "equipe-envios": ["en-aviso", "en-novo", "en-situacao", "en-cartao", "en-aprovar", "en-enviado"],
   "equipe-saques": ["sq-abas", "sq-resumo", "sq-cartao", "sq-pagar"],

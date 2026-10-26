@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ui } from "@/components/ui/styles";
 import { kitNoun } from "@/domain";
 
-/** Aviso no Início quando há kit para escolher (boas-vindas ou do mês): leva direto para Envios. */
+/** Aviso no Início quando há kit para escolher (boas-vindas ou do mês): leva direto para Pedidos. */
 export function KitBanner({ base, brandSlug, products, welcome }: { base: string; brandSlug: string; products: number; welcome: boolean }) {
   const what = `${products} ${kitNoun(brandSlug, products)}`;
   return (
@@ -11,7 +11,7 @@ export function KitBanner({ base, brandSlug, products, welcome }: { base: string
       <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><Gift className="size-4" /></span>
       <span className="min-w-0 flex-1">
         <span className="block font-semibold">{welcome ? `Seu kit de boas-vindas: ${what}` : `Você ganhou ${what}`}</span>
-        <span className={ui.hint}>Escolha os produtos em Envios e a equipe prepara o envio.</span>
+        <span className={ui.hint}>Escolha os produtos em Pedidos e a equipe prepara o envio.</span>
       </span>
       <span className={`${ui.btnSm} shrink-0`}>Escolher</span>
     </Link>

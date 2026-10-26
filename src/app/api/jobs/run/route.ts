@@ -9,11 +9,9 @@ import { runJobs } from "@/lib/jobs/queue";
 import { isAuthorizedBearer } from "@/lib/jobs/secret";
 import { enqueueDueProductSyncs } from "@/lib/shopify/products";
 import { enqueueDueReconciles } from "@/lib/shopify/reconcile";
-import { enqueueDueContractChecks } from "@/lib/autentique/contracts";
-import { inviteAfterSignature } from "@/lib/team/invite-after-signature";
 
 // Worker da fila: chamado a cada minuto pelo pg_cron do Supabase (D-CRON), com o segredo JOBS_SECRET.
-// Também agenda a reconciliação de cada loja a cada 15 min, o catálogo de produtos uma vez por dia, a conferência dos contratos no Autentique a cada 5 min, roda o fechamento do mês no dia 1 (D-CONTRACT) e os avisos.
+// Também agenda a reconciliação de cada loja a cada 15 min, o catálogo de produtos uma vez por dia, roda o fechamento do mês no dia 1 (D-CONTRACT) e os avisos.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
@@ -23,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   try {
     const prisma = db();
-    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueContractChecks(prisma));
+    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma));
     const released = await closeDueMonths(prisma);
     // U5b (D-NOTICES): avisos por data (uma rodada por marca e dia) e e-mail dos avisos recentes, se houver remetente.
     const notices = await runDueNotices(prisma);
@@ -33,10 +31,8 @@ export async function POST(request: Request): Promise<Response> {
     const whatsapped = await whatsappPendingNotices(prisma, whatsapp, siteOrigin());
     // M3.4 (D-WEEKLY): resumo semanal da gestão, segunda a partir das 9h.
     const weekly = await runWeeklySummaries(prisma, whatsapp, siteOrigin());
-    // D-INVITEAUTO: contrato assinado → convite do portal por e-mail e/ou WhatsApp, sem a Ana precisar gerar.
-    const invited = await inviteAfterSignature(prisma, { origin: siteOrigin(), email: configuredSender(), whatsapp });
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, invited, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

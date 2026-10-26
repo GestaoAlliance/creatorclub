@@ -41,15 +41,15 @@ export const notices = {
     title: kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products, brandSlug)}` : `Você ganhou ${items(products, brandSlug)}`,
     body:
       kind === "WELCOME"
-        ? "É o kit do início da sua parceria. Escolha os produtos em Envios e a equipe prepara o envio."
-        : `Pelas suas vendas de ${monthName(month)}. Escolha os produtos em Envios e a equipe prepara o envio.`,
+        ? "É o kit do início da sua parceria. Escolha os produtos em Pedidos e a equipe prepara o envio."
+        : `Pelas suas vendas de ${monthName(month)}. Escolha os produtos em Pedidos e a equipe prepara o envio.`,
     path: "/envios",
   }),
   shipped: (shipmentId: string, carrier: string, trackingCode: string): Notice => ({
     kind: "SHIPPED",
     dedupeKey: `shipped:${shipmentId}`,
     title: "Seus produtos foram enviados",
-    body: `Envio pela ${carrier}, código de rastreio ${trackingCode}. Quando chegar, toque em "Recebi" em Envios.`,
+    body: `Envio pela ${carrier}, código de rastreio ${trackingCode}. Quando chegar, toque em "Recebi" em Pedidos.`,
     path: "/envios",
   }),
   withdrawalPaid: (withdrawalId: string, amountCents: number): Notice => ({

@@ -45,7 +45,7 @@ function Steps({ s }: { s: Shipment }) {
   );
 }
 
-/** Aba Envios (E7.8): kit do mês a escolher (D-KIT), endereço e os produtos enviados, com rastreio e "Recebi". */
+/** Aba Pedidos (E7.8; antes "Envios"): kit do mês a escolher (D-KIT), endereço e os produtos enviados, com rastreio e "Recebi". */
 export function ShipmentsView({
   marca,
   address,

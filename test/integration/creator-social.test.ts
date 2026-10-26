@@ -61,11 +61,11 @@ describe("redes do formulário no cadastro da creator (D-SOCIALFILL)", () => {
     const answers = (email: string, tiktok: string) => ({ "Seu nome completo:": "Bia", "EMAIL:": email, "@ DO SEU INSTAGRAM:": "https://instagram.com/bia.insta/", "@ DO SEU TIKTOK:": tiktok });
 
     const ok = await receiveApplication(prisma, { brandSlug: brand.slug, source: "hunter_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers(`${randomUUID()}@x.com`, "@Bia_TT") });
-    const r = await approveApplication(prisma, gestao, { applicationId: ok.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, clientFor);
+    const r = await approveApplication(prisma, gestao, { applicationId: ok.id, contractSigned: true, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, clientFor);
     expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: r.accountId } }))).toMatchObject({ instagram: "bia.insta", tiktok: "Bia_TT" });
 
     const none = await receiveApplication(prisma, { brandSlug: brand.slug, source: "hunter_form", externalKey: randomUUID(), submittedAt: new Date(), answers: answers(`${randomUUID()}@x.com`, "não tenho") });
-    const r2 = await approveApplication(prisma, gestao, { applicationId: none.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, clientFor);
+    const r2 = await approveApplication(prisma, gestao, { applicationId: none.id, contractSigned: true, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500 }, clientFor);
     expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: r2.accountId } })).tiktok).toBeNull();
   });
 

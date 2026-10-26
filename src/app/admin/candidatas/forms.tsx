@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { contractSentMessage, welcomeMessage, whatsappLink } from "@/domain";
+import { approvalMessage, whatsappLink } from "@/domain";
 import { approveAction, rejectAction } from "./actions";
 
 const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
@@ -49,8 +49,8 @@ function Done({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Aprovar com um clique (F3): cria o cupom na Shopify, a creator e o convite do portal (por e-mail quando houver
- * remetente) e oferece o WhatsApp de boas-vindas pronto.
+ * Aprovar com um clique (F3): com o contrato assinado no D4Sign (D-D4SIGN), cria o cupom na Shopify, a creator com o
+ * contrato valendo e 1 produto de boas-vindas, o convite do portal (quando ela não tem senha) e a mensagem de aprovação.
  */
 function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
@@ -62,39 +62,21 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
   if (state?.ok) {
     const o = state.ok;
     const pct = (o.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    if (o.autentique) {
-      const a = o.autentique;
-      return (
-        <Done>
-          <p>
-            <strong>{p.name}</strong> foi aprovada. O cupom <strong className="font-mono">{o.coupon}</strong> ({pct}% de desconto) será criado na Shopify
-            assim que ela assinar o contrato.
-          </p>
-          {a.sent ? (
-            <>
-              <p>Contrato enviado pelo Autentique para <strong>{a.email}</strong>{a.sandbox ? " (modo teste: não vale como contrato)" : ""}. O sistema confere a assinatura a cada 5 minutos.</p>
-              <WhatsAppButton phone={p.phone} label="Abrir WhatsApp: aprovada, contrato no e-mail" text={contractSentMessage({ name: p.name, brand: p.brand, email: a.email, category })} />
-            </>
-          ) : (
-            <p className="text-red-700 dark:text-red-400">O contrato não foi enviado: {a.error} Reenvie pela ficha.</p>
-          )}
-          <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
-        </Done>
-      );
-    }
+    const msg = (extra: { loginUrl?: string; ordersUrl?: string | null; inviteLink?: string | null }) =>
+      approvalMessage({ brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, suggestion: o.suggestion, ...extra });
     return (
       <Done>
-        <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos).</p>
+        <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos). Contrato marcado como assinado e 1 produto liberado na aba Pedidos.</p>
         {o.loginUrl ? (
           <>
             <p>Ela já criou a senha no cadastro: entra no portal com o e-mail dela, sem convite.</p>
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null, loginUrl: o.loginUrl })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com a aprovação" text={msg({ loginUrl: o.loginUrl, ordersUrl: o.ordersUrl ?? null })} />
           </>
         ) : o.link ? (
           <>
             {o.mail && <p>Convite enviado por e-mail para {o.mail}.</p>}
             {o.mailError && <p>O e-mail do convite não foi enviado ({o.mailError}). Mande pelo WhatsApp.</p>}
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: o.link })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com a aprovação" text={msg({ inviteLink: o.link })} />
             <p className={ui.hint}>Link do convite (aparece só agora; vale 7 dias, uma vez):</p>
             <code className="break-all font-mono text-xs">{o.link}</code>
             <button type="button" className={`${ui.ghostSm} self-start`} onClick={() => { void navigator.clipboard.writeText(o.link!); setCopied(true); }}>
@@ -104,7 +86,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
         ) : (
           <>
             <p>Convite não gerado: {o.inviteError}</p>
-            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com as boas-vindas" text={welcomeMessage({ name: p.name, brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, inviteLink: null })} />
+            <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com a aprovação" text={msg({})} />
           </>
         )}
         <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
@@ -140,7 +122,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
         </label>
         {p.templates.length > 0 && (
           <label className={`${ui.label} col-span-full sm:col-span-2`}>
-            Contrato (ela assina no portal)
+            Contrato que ela assinou
             <select name="contractTemplateId" value={template} onChange={(e) => setTemplate(e.target.value)} className={ui.inputSm}>
               {p.templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -151,6 +133,11 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
           <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />
         </label>
       </div>
+      {/* D-D4SIGN: o contrato vai pelo D4Sign no WhatsApp antes do cadastro; a aprovação só sai com ele assinado. */}
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="contractSigned" required className="mt-0.5 size-4 accent-current" />
+        <span>Contrato assinado no D4Sign</span>
+      </label>
       <Msg state={state?.error ? { error: state.error } : undefined} />
       <button className={`${ui.btn} self-start`} disabled={pending}>{pending ? "Aprovando…" : p.hasLogin ? "Aprovar: criar cupom na Shopify" : "Aprovar: criar cupom na Shopify e convite"}</button>
     </form>

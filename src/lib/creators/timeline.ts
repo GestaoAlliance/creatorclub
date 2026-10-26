@@ -91,6 +91,7 @@ export async function creatorTimeline(prisma: PrismaClient, actor: Actor, creato
     add(i.createdAt, "invite", "Convite do portal gerado");
     add(i.acceptedAt, "invite", "Entrou no portal pela primeira vez");
   }
+  // Histórico: contratos enviados pelo Autentique antes do D4Sign (D-D4SIGN); nada novo entra aqui.
   for (const c of autentique) {
     add(c.sentAt, "contract", "Contrato enviado pelo Autentique", c.sandbox ? "modo teste" : null);
     add(c.signedAt, "contract", "Contrato assinado no Autentique");

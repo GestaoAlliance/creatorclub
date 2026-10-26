@@ -45,6 +45,8 @@ model Brand {
   /// U6 (D-PROSPECT): mensagens prontas da prospecção ({NOME} e {LINK}); null = texto padrão da marca.
   prospectFirstMessage      String?
   prospectProposalMessage   String?
+  /// D-D4SIGN: produto sugerido na mensagem de aprovação (escolhido em Marcas); null = mensagem sem a sugestão.
+  approvalSuggestion        String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
