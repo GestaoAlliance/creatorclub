@@ -5,7 +5,6 @@ import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
-import { ProductRequest } from "./product-request";
 import { HelpTip } from "@/components/ui/tour";
 import { ReceivedButton } from "./received-button";
 
@@ -53,7 +52,6 @@ export function ShipmentsView({
   kits,
   viewOnly,
   informedAddress = null,
-  request,
 }: {
   marca: string;
   address: Address | null;
@@ -61,8 +59,6 @@ export function ShipmentsView({
   shipments: Shipment[];
   kits: PendingKits;
   viewOnly: boolean;
-  /** D-PRODUCTREQ: pedir produtos (sem kit), ou o motivo de ainda não poder. */
-  request: { allowed: true; products: { id: string; title: string }[] } | { allowed: false; reason: string };
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -76,24 +72,11 @@ export function ShipmentsView({
           <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">Escolha os produtos do seu kit. A equipe aprova o pedido e depois faz o envio para o seu endereço.</p>
           <div className="mt-3 flex flex-col gap-4">
             {kits.kits.map((k) => (
-              <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} hasAddress={address !== null} viewOnly={viewOnly} />
+              <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
             ))}
           </div>
         </details>
       )}
-      {/* D-PRODUCTREQ: pedido livre de produtos (até 3), com aprovação da Gestão. */}
-      <details className="group flex flex-col gap-4">
-        <summary className="glass inline-flex w-fit cursor-pointer list-none items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold">
-          <Plus className="size-4 transition-transform group-open:rotate-45" /> Pedir produtos
-        </summary>
-        <div className="mt-3">
-          {request.allowed ? (
-            <ProductRequest marca={marca} products={request.products} hasAddress={address !== null} viewOnly={viewOnly} />
-          ) : (
-            <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm text-stone-600 dark:bg-white/5 dark:text-stone-300">{request.reason}</p>
-          )}
-        </div>
-      </details>
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
       <section data-tour="meus-envios" className="glass rounded-3xl p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -123,7 +106,7 @@ export function ShipmentsView({
                   {s.status !== "CANCELLED" && <Steps s={s} />}
                   {s.status === "AWAITING_APPROVAL" && <p className="text-xs text-stone-500">Pedido recebido: a equipe vai conferir e aprovar antes do envio.</p>}
                   {s.status === "CANCELLED" && s.rejectReason && (
-                    <p className="text-xs text-red-700 dark:text-red-400">Pedido não aprovado: {s.rejectReason} {s.note?.startsWith("Pedido da creator") ? <>Você pode fazer um novo pedido em &quot;Pedir produtos&quot;.</> : <>Você pode escolher de novo em &quot;Solicitar pedido&quot;.</>}</p>
+                    <p className="text-xs text-red-700 dark:text-red-400">Pedido não aprovado: {s.rejectReason} {!s.note?.startsWith("Pedido da creator") && <>Você pode escolher de novo em &quot;Solicitar pedido&quot;.</>}</p>
                   )}
                   {s.trackingCode && s.status !== "CANCELLED" && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/60 px-4 py-3 dark:bg-white/5">

@@ -86,7 +86,7 @@ describe("tags e aniversário (M4.2, D-TAGS, banco real)", () => {
     const { id } = await createStaffApplication(prisma, gestao, brand.id, {
       fullName: "Bia", phone: "11912345678", email: "", instagram: "", tiktok: "", followers: "", category: "INFLUENCER", suggestedCoupon: "", note: "", birthDate: "2000-02-29",
     });
-    const r = await approveApplication(prisma, gestao, { applicationId: id, contractSigned: true, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com` }, async () => client);
+    const r = await approveApplication(prisma, gestao, { applicationId: id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com` }, async () => client);
     const acc = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { account: { select: { birthDate: true } } } });
     expect(acc.account.birthDate?.toISOString().slice(0, 10)).toBe("2000-02-29");
   });

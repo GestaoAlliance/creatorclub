@@ -144,3 +144,18 @@ describe("kit mensal (D-KIT, banco real)", () => {
     await expectDbError(prisma.shipment.create({ data: { ...ship, status: "AWAITING_APPROVAL", rejectReason: "x" } }), /Shipment_approval/);
   });
 });
+
+describe("produtos que a creator pode escolher (D-KITOPTIONS, banco real)", () => {
+  it("marca com produtos marcados: só eles aparecem e só eles passam; sem marcados, todos os ativos", async () => {
+    const s = await setup(TIERS);
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    const kit = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-10", salesCents: 0, products: 1 } });
+    expect((await myPendingKits(prisma, s.ctx)).products.map((p) => p.title)).toEqual(["Creatina", "Whey"]);
+
+    await prisma.product.update({ where: { id: s.whey.id }, data: { kitOption: true } });
+    expect((await myPendingKits(prisma, s.ctx)).products.map((p) => p.title)).toEqual(["Whey"]);
+    await expect(chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.creatina.id, quantity: 1 }])).rejects.toThrow(/indisponível/);
+    const shipmentId = await chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.whey.id, quantity: 1 }]);
+    expect(await prisma.shipmentItem.findMany({ where: { shipmentId }, select: { title: true, quantity: true } })).toEqual([{ title: "Whey", quantity: 1 }]);
+  });
+});

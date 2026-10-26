@@ -299,8 +299,6 @@ export async function approveApplication(
   actor: Actor | null,
   input: {
     applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string; contractTemplateId?: string | null;
-    /** D-D4SIGN: a gestora confirma que o contrato foi assinado no D4Sign (pelo WhatsApp) antes do cadastro. */
-    contractSigned: boolean;
   },
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
@@ -310,7 +308,6 @@ export async function approveApplication(
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
   const { brand } = app;
-  if (!input.contractSigned) throw new ApplicationError("Confirme que o contrato foi assinado no D4Sign antes de aprovar.");
   const coupon = validateNewCouponCode(input.couponCode);
   if (!coupon.ok) throw new ApplicationError("Cupom inválido: letras e números, até 20.");
   if (!["INFLUENCER", "PRESCRITOR", "UGC"].includes(input.category)) throw new ApplicationError("Tipo inválido.");
@@ -398,7 +395,8 @@ export async function approveApplication(
           withdrawalsUnlockedById: actor.userId,
           reviewedAt: now,
           reviewedById: actor.userId,
-          // D-D4SIGN: assinado no D4Sign antes do cadastro; vale da aprovação pelos meses da versão. Sem contrato no portal.
+          // D-D4SIGN: aprovar já é o contrato assinado (no D4Sign, antes do cadastro); vale da aprovação pelos meses da
+          // versão. Sem contrato no portal.
           contractTemplateId: template?.id ?? null,
           contractSigned: true,
           contractStart: new Date(`${start}T00:00:00Z`),
@@ -432,7 +430,7 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, contractSignedD4Sign: true, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts: WELCOME_PRODUCTS, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts: WELCOME_PRODUCTS, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };

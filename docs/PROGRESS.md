@@ -7,8 +7,11 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **D-D4SIGN parte 2**: 2º produto liberado sozinho ao vender R$ 1.000 nos primeiros 45 dias da
-  aprovação (todas as marcas). Depois, **Fase 5, M5.1 Loja com o saldo** (perguntar antes a decisão 11 do plano).
+- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **2)** novo produto
+  liberado sozinho ao vender R$ 1.000 nos primeiros 45 dias da aprovação e depois a cada 30 dias (todas as marcas);
+  **3)** saque só a partir de R$ 300 em vendas acumuladas, nas 3 marcas; **4)** creator CPF ou CNPJ (o saque muda);
+  "deletar creator" (entender o objetivo: nada é apagado); login da Mafe para ver quem tem TikTok; "Tem TikTok Shop
+  ativo?" no formulário. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -298,6 +301,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-192 — 2026-10-26 — Pedidos do portal: produtos por marca, endereço no pedido, sem pedido livre (D-KITOPTIONS)
+- **Pedido:** mensagens da Vanessa (26/10), aplicadas passo a passo. Este é o passo 1; a fila dos outros está em
+  "Próxima tarefa".
+- **Decisões do responsável:** Revita só o Pepti Code, em todos os pedidos; Botanika só Hair Botanika, Tri Magnésio e
+  TetraVit; VermeFree o protocolo adulto; tirar o pedido livre; tirar a caixa do contrato na aprovação.
+- **Feito:** "Produtos que a creator pode escolher" em Marcas (`Product.kitOption`; nenhum marcado = todos); a escolha
+  do kit mostra "Entregar em" com o endereço (Alterar) ou, sem endereço, o informado no cadastro e os campos com CEP,
+  e o botão "Enviar pedido" salva o endereço junto; "Pedir produtos" (D-PRODUCTREQ) removido; aprovação sem a caixa.
+- **Falta (responsável ou eu, com o Supabase conectado):** marcar os produtos de cada marca em Marcas.
+- **Verificado:** 256 unitários, 261 de integração (novo teste D-KITOPTIONS em `kits.test.ts`), typecheck, build,
+  migração sem divergência.
 
 ### CP-191 — 2026-10-26 — Contrato pelo D4Sign, sem Autentique; aprovação nova e aba Pedidos (D-D4SIGN)
 - **Pedido do responsável:** não usar mais o Autentique em nenhuma marca; o contrato vai pela gestora no WhatsApp

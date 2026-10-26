@@ -1,20 +1,29 @@
 "use client";
 
-import { Gift, Minus, Plus } from "lucide-react";
+import { Gift, MapPin, Minus, Plus } from "lucide-react";
 import { useActionState, useState } from "react";
 import { chooseKitAction } from "@/app/portal/[marca]/envios/actions";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { kitNoun } from "@/domain";
+import { AddressFields } from "@/components/ui/address-fields";
+import { formatAddress, zipFromText, type Address } from "@/lib/shipments/address";
 
-/** Kit mensal (D-KIT) ou de boas-vindas (D-WELCOMEKIT, 1 produto desde D-WELCOMEKIT1): a creator escolhe os N produtos que ganhou. */
+const field = "w-full rounded-2xl border border-stone-300/70 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-brand dark:border-white/15 dark:bg-white/5";
+
+/**
+ * Kit mensal (D-KIT) ou de boas-vindas (D-WELCOMEKIT, 1 produto desde D-WELCOMEKIT1): a creator escolhe os N produtos que
+ * ganhou e confere o endereço de entrega antes de enviar o pedido (D-KITOPTIONS). Sem endereço nos campos, aparece o
+ * que ela informou no cadastro e os campos com a busca pelo CEP; o endereço é salvo junto com o pedido.
+ */
 export function KitPicker({
   marca,
   kit,
   monthLabel,
   welcome = false,
   products,
-  hasAddress,
+  address,
+  informed = null,
   viewOnly,
 }: {
   marca: string;
@@ -22,9 +31,11 @@ export function KitPicker({
   monthLabel: string;
   welcome?: boolean;
   products: { id: string; title: string }[];
-  hasAddress: boolean;
+  address: Address | null;
+  informed?: string | null;
   viewOnly: boolean;
 }) {
+  const [editing, setEditing] = useState(address === null);
   const [state, action, pending] = useActionState(chooseKitAction, undefined);
   const [qty, setQty] = useState<Record<string, number>>({});
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
@@ -42,10 +53,7 @@ export function KitPicker({
           {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} Escolha os produtos: a equipe aprova o pedido e prepara o envio para o seu endereço.
         </p>
       </div>
-      {!hasAddress ? (
-        <p className={ui.hint}>Cadastre o endereço completo logo abaixo para escolher o kit.</p>
-      ) : (
-        <form action={action} className="flex flex-col gap-4">
+      <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="marca" value={marca} />
           <input type="hidden" name="kitId" value={kit.id} />
           <ul className={ui.list}>
@@ -68,17 +76,37 @@ export function KitPicker({
               );
             })}
           </ul>
+          <div className="flex flex-col gap-3 rounded-2xl bg-white/50 p-4 dark:bg-white/5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-semibold"><MapPin className="size-4" /> Entregar em</p>
+              {address && !editing && !viewOnly && (
+                <button type="button" onClick={() => setEditing(true)} className="glass rounded-full px-4 py-1.5 text-xs font-semibold">Alterar</button>
+              )}
+            </div>
+            {address && !editing ? (
+              <div className="text-sm">{formatAddress(address).map((l) => <p key={l}>{l}</p>)}</div>
+            ) : (
+              <>
+                {!address && informed && (
+                  <p className="text-sm">
+                    <span className="block text-xs text-stone-500">Endereço que você informou no cadastro (confira e preencha os campos, a partir do CEP):</span>
+                    {informed}
+                  </p>
+                )}
+                {!viewOnly && <AddressFields initial={address ?? { zip: zipFromText(informed) ?? "" }} inputClass={field} />}
+              </>
+            )}
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className={ui.hint}>{left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
             {!viewOnly && (
               <button disabled={pending || left !== 0} className={ui.btn}>
-                {pending ? "Enviando…" : "Confirmar escolha"}
+                {pending ? "Enviando…" : "Enviar pedido"}
               </button>
             )}
           </div>
           <Msg state={state} />
         </form>
-      )}
     </section>
   );
 }
