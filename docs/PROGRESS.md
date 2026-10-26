@@ -299,6 +299,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-190 — 2026-10-26 — Pedir produtos no portal e CEP que busca o endereço (D-PRODUCTREQ, D-CEPAUTO)
+- **Pedido do responsável:** na aba Envios do portal, em todas as marcas, um botão para a creator solicitar envio; e o
+  CEP buscando o endereço em todo lugar que se cadastra endereço.
+- **Decisões do responsável:** pedir produtos quando quiser (não só o kit); até 3 por pedido e um pedido esperando por
+  vez; a Gestão da marca aprova antes de ir para o Envio; só creators ativas com contrato assinado.
+- **Feito:** "Pedir produtos" na aba Envios: escolhe até 3 produtos ativos da marca e diz para que vai usar (opcional);
+  vira "Aguardando aprovação" (o mesmo do kit): a Gestão aprova (vai para "Preparando", fila do Envio) ou recusa com
+  motivo (libera outro pedido). Pausada, encerrada ou sem contrato assinado vê o motivo. Endereço com busca pelo CEP
+  (ViaCEP: rua, bairro, cidade e UF; o cursor vai para o número) no portal (Envios), no contrato do portal (com
+  "Alterar endereço" quando já existe) e na "Nova candidata" da equipe (endereço opcional, guardado na candidatura).
+- **Verificado:** 261 unitários, 271 de integração (novo `product-request.test.ts`), typecheck, build.
+
 ### CP-189 — 2026-10-26 — Link de nova senha não chega gasto pelo WhatsApp (D-ACCESS)
 - **Origem:** o link de nova senha da Fátima abria "O link expirou ou já foi usado". O WhatsApp abre o link sozinho para
   montar a prévia; como a conferência do código era na abertura, o link de uso único chegava gasto.

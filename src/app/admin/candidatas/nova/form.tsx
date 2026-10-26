@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { AddressFields } from "@/components/ui/address-fields";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { createApplicationAction } from "../actions";
@@ -50,6 +51,11 @@ export function NewApplicationForm() {
         Sugestão de cupom
         <input name="suggestedCoupon" maxLength={40} className={`${ui.input} font-mono uppercase`} />
       </label>
+      {/* D-CEPAUTO: endereço de entrega opcional; o CEP busca rua, bairro, cidade e UF. */}
+      <div className={`${ui.label} sm:col-span-2`}>
+        Endereço de entrega (opcional)
+        <AddressFields compose="address" required={false} inputClass={ui.input} />
+      </div>
       <label className={`${ui.label} sm:col-span-2`}>
         Observação (só a equipe vê)
         <input name="note" maxLength={300} placeholder="ex.: indicada pela Fátima no evento" className={ui.input} />

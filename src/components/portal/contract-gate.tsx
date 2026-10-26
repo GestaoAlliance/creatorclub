@@ -6,6 +6,8 @@ import { signContractAction } from "@/app/portal/[marca]/contrato/actions";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { renderContract } from "@/domain";
+import { AddressFields } from "@/components/ui/address-fields";
+import { zipFromText } from "@/lib/shipments/address";
 import type { PendingContract } from "@/lib/contracts/sign";
 
 /**
@@ -17,6 +19,8 @@ export function ContractGate({ marca, brandName, contract }: { marca: string; br
   const [v, setV] = useState(contract.prefill);
   // Controlado para não desmarcar quando a assinatura volta com erro (ex.: CPF digitado errado).
   const [accepted, setAccepted] = useState(false);
+  // D-CEPAUTO: sem endereço (ou para trocar), os campos com busca pelo CEP montam a linha do contrato.
+  const [editAddress, setEditAddress] = useState(!contract.prefill.address.trim());
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setV({ ...v, [k]: e.target.value });
   const text = useMemo(() => {
     const cnpj = v.cnpj.replace(/\D/g, "") || null;
@@ -52,10 +56,23 @@ export function ContractGate({ marca, brandName, contract }: { marca: string; br
             CPF
             <input name="cpf" value={v.cpf} onChange={set("cpf")} inputMode="numeric" placeholder="000.000.000-00" required className={ui.input} />
           </label>
-          <label className={`${ui.label} sm:col-span-2`}>
+          <div className={`${ui.label} sm:col-span-2`}>
             Endereço completo
-            <textarea name="address" value={v.address} onChange={set("address")} rows={2} required placeholder="Rua, número, bairro, cidade, estado e CEP" className={ui.input} />
-          </label>
+            {editAddress ? (
+              <AddressFields
+                compose="address"
+                initial={{ zip: zipFromText(contract.prefill.address) ?? "" }}
+                inputClass={ui.input}
+                onChange={(_, line) => setV((cur) => (cur.address === line ? cur : { ...cur, address: line }))}
+              />
+            ) : (
+              <span className="flex flex-wrap items-center justify-between gap-2">
+                <input type="hidden" name="address" value={v.address} />
+                <span className="text-sm text-stone-800 dark:text-stone-200">{v.address}</span>
+                <button type="button" onClick={() => setEditAddress(true)} className={ui.ghostSm}>Alterar endereço</button>
+              </span>
+            )}
+          </div>
           <label className={ui.label}>
             Telefone (WhatsApp)
             <input name="phone" value={v.phone} onChange={set("phone")} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" required className={ui.input} />

@@ -465,6 +465,8 @@ export type StaffApplicationInput = {
   note: string;
   /** M4.2 (D-TAGS): opcional. */
   birthDate?: string;
+  /** D-CEPAUTO: endereço numa linha (montado pela busca do CEP); opcional. */
+  address?: string;
 };
 
 const KIND_ANSWER: Record<Category, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
@@ -498,6 +500,7 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
     suggestedCoupon: clean(input.suggestedCoupon, 40),
     note: clean(input.note, 300),
     birthDate: birth.day ? new Date(`${birth.day}T00:00:00Z`) : null,
+    address: clean(input.address ?? "", 300),
   };
   const raw = {
     "Seu nome completo": fields.fullName,
@@ -508,6 +511,7 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
     "@ do seu TikTok": fields.tiktok,
     "Quantidade de seguidores": fields.followers,
     "Sugestão de nome de cupom": fields.suggestedCoupon,
+    "Endereço": fields.address,
     ...(birth.day ? { "Data de nascimento": birthdayLabel(birth.day, true) } : {}),
   };
   return prisma.$transaction(async (tx) => {
