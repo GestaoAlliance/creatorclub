@@ -299,6 +299,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-189 — 2026-10-26 — Link de nova senha não chega gasto pelo WhatsApp (D-ACCESS)
+- **Origem:** o link de nova senha da Fátima abria "O link expirou ou já foi usado". O WhatsApp abre o link sozinho para
+  montar a prévia; como a conferência do código era na abertura, o link de uso único chegava gasto.
+- **Feito:** `/auth/confirm` virou uma tela com o botão "Criar minha nova senha"; o código só é conferido no toque.
+  Links já gerados continuam no mesmo endereço.
+- **Aplicado em produção (auditoria `role.grant` e `role.revoke`, a pedido do responsável):** fatimabtavaresc@gmail.com
+  passa a Gestão (e continua Hunter) da Revita; creators.revitaderma@gmail.com deixa de ser Gestão e vira a conta de
+  creator de teste (falta a Fátima cadastrar e aprovar a candidata com o cupom REVITATESTE; depois, ligar o login).
+- **Verificado:** 260 unitários, `access.test.ts`, typecheck, build.
+
 ### CP-188 — 2026-10-26 — Quem já tem cadastro pede o acesso; convites em massa (D-ACCESSREQ)
 - **Origem:** a Talita (Revita) tentou se cadastrar pelo site e o CPF e o e-mail deram "já tem cadastro": ela já estava
   no sistema (importada), sem senha. O responsável pediu para resolver nas três marcas.
