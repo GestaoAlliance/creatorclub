@@ -81,7 +81,7 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
     case "NEAR_MIN":
       return `${oi} Você está quase lá: faltam só ${brl(f.missingCents)} em vendas para liberar sua comissão deste mês. Bora divulgar o cupom nesses últimos dias?`;
     case "KIT_PENDING":
-      return `${oi} Seu kit está liberado há ${f.days} dias e ainda falta você escolher os produtos no portal (aba Envios). Escolhe lá pra gente já mandar!`;
+      return `${oi} Seu kit está liberado há ${f.days} dias e ainda falta você escolher os produtos no portal (aba Pedidos). Escolhe lá pra gente já mandar!`;
     case "SHIP_STUCK":
     case "ACCESS":
       return null;

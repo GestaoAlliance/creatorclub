@@ -31,6 +31,8 @@ export type BrandInput = {
   /** M4.4a: comissão e desconto padrão das aprovações novas, em % (ex.: "15" ou "12,5"). */
   defaultRate?: string;
   defaultDiscount?: string;
+  /** D-D4SIGN: produto sugerido na mensagem de aprovação; vazio = sem a linha da sugestão. */
+  approvalSuggestion?: string;
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -60,6 +62,7 @@ function clean(input: BrandInput) {
     ...(input.nfServiceDescription !== undefined && { nfServiceDescription }),
     ...(input.nfInstructions !== undefined && { nfInstructions }),
     ...(input.whatsappInstance !== undefined && { whatsappInstance }),
+    ...(input.approvalSuggestion !== undefined && { approvalSuggestion: input.approvalSuggestion.trim().replace(/\s+/g, " ").slice(0, 120) || null }),
   };
   // M4.4a (D-BRANDLOGIN): padrões das aprovações novas (quem já é creator mantém a dela).
   const pct = (raw: string | undefined, label: string, max: number) => {
@@ -110,7 +113,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, defaultCommissionBps: true, defaultDiscountBps: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -138,6 +141,8 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfServiceDescription: true,
       nfInstructions: true,
       whatsappInstance: true,
+      approvalSuggestion: true,
+      products: { where: { active: true }, orderBy: { title: "asc" }, select: { title: true } },
       storeUrl: true,
       defaultCommissionBps: true,
       defaultDiscountBps: true,

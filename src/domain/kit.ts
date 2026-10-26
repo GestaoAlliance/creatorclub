@@ -51,6 +51,9 @@ export function kitNoun(brandSlug: string | null | undefined, n: number): string
 }
 
 /** D-PRODUCTREQ: produtos que a creator pede por conta própria, no máximo por pedido (pedido do responsável). */
+/** D-D4SIGN: kit de boas-vindas da aprovação, igual em todas as marcas. */
+export const WELCOME_PRODUCTS = 1;
+
 export const PRODUCT_REQUEST_MAX = 3;
 
 /** Pedido livre de produtos: de 1 a 3 unidades no total, sem produto repetido nem quantidade quebrada. */

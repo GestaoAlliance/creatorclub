@@ -36,7 +36,12 @@ async function setup() {
     answers: { "Seu nome completo:": "Maria da Silva", "EMAIL:": email, "Sou:": "Influencer", "CPF: ": "529.982.247-25", "ENDEREÇO PARA ENTREGA DOS SUPLEMENTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)": "Rua A, 10\nCentro, São Paulo - SP" },
   });
   const code = letters(6);
-  const r = await approveApplication(prisma, sa, { applicationId: app.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500, contractTemplateId: template.id }, shop);
+  const r = await approveApplication(prisma, sa, { applicationId: app.id, contractSigned: true, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500, contractTemplateId: template.id }, shop);
+  // D-D4SIGN: a aprovação já sai com o contrato assinado; aqui volta ao jeito antigo (assinar no portal), que segue
+  // valendo para quem foi aprovada antes da mudança.
+  await prisma.creator.update({ where: { id: r.creatorId }, data: { contractSigned: null, contractStart: null, contractEnd: null, contractRequiredAt: new Date() } });
+  await prisma.notification.deleteMany({ where: { creatorId: r.creatorId } });
+  await prisma.kitGrant.deleteMany({ where: { creatorId: r.creatorId } });
   const userId = randomUUID();
   await prisma.user.create({ data: { id: userId, email: `${userId}@x.com`, name: "Creator" } });
   await prisma.creatorAccount.update({ where: { id: r.accountId }, data: { userId } });

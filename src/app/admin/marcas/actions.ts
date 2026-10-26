@@ -22,6 +22,7 @@ const input = (form: FormData) => ({
   whatsappInstance: String(form.get("whatsappInstance") ?? ""),
   defaultRate: String(form.get("defaultRate") ?? ""),
   defaultDiscount: String(form.get("defaultDiscount") ?? ""),
+  ...(form.has("approvalSuggestion") ? { approvalSuggestion: String(form.get("approvalSuggestion") ?? "") } : {}),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

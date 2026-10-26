@@ -5,7 +5,6 @@ import { backfillHandlers } from "@/lib/shopify/backfill";
 import { ORDER_SYNC_JOB, orderSyncHandler } from "@/lib/shopify/jobs";
 import { PRODUCTS_JOB, productsSyncHandler } from "@/lib/shopify/products";
 import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
-import { AUTENTIQUE_JOB, autentiqueCheckHandler } from "@/lib/autentique/contracts";
 import type { JobHandlers } from "./queue";
 
 /** Tipos de tarefa conhecidos pelo worker. Cada etapa da E3 registra o seu aqui. */
@@ -15,7 +14,6 @@ export function jobHandlers(): JobHandlers {
     [ORDER_SYNC_JOB]: orderSyncHandler(prisma),
     [RECONCILE_JOB]: reconcileHandler(prisma),
     [PRODUCTS_JOB]: productsSyncHandler(prisma),
-    [AUTENTIQUE_JOB]: autentiqueCheckHandler(prisma),
     ...backfillHandlers(prisma),
     [RECHECK_JOB]: async (job) => {
       if (!job.brandId) throw new Error("Tarefa sem marca.");

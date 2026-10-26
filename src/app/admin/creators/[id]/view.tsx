@@ -16,9 +16,8 @@ import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement"
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
-import type { CreatorAutentique } from "@/lib/autentique/contracts";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, AutentiqueButtons, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
+import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
 import { AccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
@@ -67,7 +66,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, autentique, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "" }: { posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; autentique: CreatorAutentique; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "" }: { posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -344,41 +343,6 @@ export function CreatorProfileView({ p, st, terms, contract, autentique, request
           </Card>
                 </div>
                 <div className="flex min-w-0 flex-col gap-6">
-          {(autentique.connected || autentique.requests.length > 0) && (
-            <Card title="Contrato pelo Autentique" icon={<FileSignature className="size-4" />} help="fi-autentique">
-              {autentique.requests.length === 0 && <p className={ui.muted}>Nenhum contrato enviado ainda.</p>}
-              <ul className={ui.list}>
-                {autentique.requests.map((r) => (
-                  <li key={r.id} className="flex flex-col gap-1 py-2.5 text-sm first:pt-0 last:pb-0">
-                    <p className="flex flex-wrap items-center gap-2">
-                      <span className={r.status === "SIGNED" ? badge.green : r.status === "REJECTED" ? badge.red : r.status === "SENT" ? badge.amber : badge.neutral}>
-                        {{ SENT: "esperando a assinatura", SIGNED: "assinado", REJECTED: "recusado", CANCELLED: "cancelado" }[r.status]}
-                      </span>
-                      {r.sandbox && <span className={badge.neutral}>modo teste</span>}
-                      <span className="text-stone-500">enviado para {r.signerEmail} em {date(r.sentAt)}</span>
-                    </p>
-                    {r.signedAt && <p className={ui.ok}>Assinou em {date(r.signedAt)}.</p>}
-                    {r.rejectedAt && <p className={ui.error}>Recusou em {date(r.rejectedAt)}{r.rejectReason ? `: ${r.rejectReason}` : "."}</p>}
-                    {r.pendingCouponCode && (
-                      <p className="text-stone-600 dark:text-stone-300">
-                        Cupom <span className="font-mono">{r.pendingCouponCode}</span>: {r.couponCreatedAt ? `criado na Shopify em ${date(r.couponCreatedAt)}.` : "será criado na Shopify depois da assinatura."}
-                      </p>
-                    )}
-                    {r.lastError && <p className={ui.error}>Último erro: {r.lastError}</p>}
-                    {r.status === "SENT" && r.lastCheckedAt && <p className={ui.hint}>Conferido pela última vez em {date(r.lastCheckedAt)}.</p>}
-                  </li>
-                ))}
-              </ul>
-              {p.canEdit && (
-                <AutentiqueButtons
-                  creatorId={p.id}
-                  canSend={autentique.connected && !autentique.requests.some((r) => r.status === "SENT" || r.status === "SIGNED")}
-                  canCheck={autentique.requests.some((r) => r.status === "SENT" || (r.status === "SIGNED" && r.pendingCouponCode !== null && r.couponCreatedAt === null))}
-                />
-              )}
-              {!p.contract.templateId && <p className={ui.hint}>Escolha a versão do contrato em "Contrato e checklist" antes de enviar.</p>}
-            </Card>
-          )}
           {(contract.required || contract.signature) && (
             <Card title="Contrato no portal" icon={<FileSignature className="size-4" />}>
               {contract.signature ? (

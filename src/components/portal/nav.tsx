@@ -65,7 +65,7 @@ export const PORTAL_ITEMS: NavItem[] = [
   { href: "", label: "Início", icon: "home" },
   { href: "/vendas", label: "Vendas", icon: "sales" },
   { href: "/saque", label: "Saque", icon: "wallet" },
-  { href: "/envios", label: "Envios", icon: "package" },
+  { href: "/envios", label: "Pedidos", icon: "package" },
   // D-INSTALLAPP: some quando o portal já está aberto pelo ícone (como app).
   { href: "/app", label: "Instalar", icon: "phone" },
 ];

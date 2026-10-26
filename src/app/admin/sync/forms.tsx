@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Msg as Status } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { autentiqueConnectAction, backfillAction, connectAction, productSyncAction, syncNowAction } from "./actions";
+import { backfillAction, connectAction, productSyncAction, syncNowAction } from "./actions";
 
 const input = ui.input;
 const button = `${ui.btn} self-start`;
@@ -62,25 +62,6 @@ export function BackfillForm({ brandId }: { brandId: string }) {
       </label>
       <button className={button} disabled={pending}>Importar histórico</button>
       <Status state={state} />
-    </form>
-  );
-}
-
-/** D-AUTENTIQUE: chave da API do Autentique da marca (Configurações → API, no painel do Autentique). */
-export function AutentiqueForm({ brandId, connected, sandbox }: { brandId: string; connected: boolean; sandbox: boolean }) {
-  const [state, action, pending] = useActionState(autentiqueConnectAction, undefined);
-  return (
-    <form action={action} className="flex flex-col gap-3" autoComplete="off">
-      <input type="hidden" name="brandId" value={brandId} />
-      <label className={ui.label}>Chave da API do Autentique
-        <input className={input} name="token" type="password" required />
-      </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="sandbox" defaultChecked={sandbox} className="size-4 accent-[var(--brand)]" />
-        Modo teste (o Autentique manda o contrato, mas ele não vale e não gasta documentos do plano)
-      </label>
-      <Status state={state} />
-      <button className={button} disabled={pending}>{pending ? "Conferindo…" : connected ? "Trocar a chave" : "Conectar Autentique"}</button>
     </form>
   );
 }
