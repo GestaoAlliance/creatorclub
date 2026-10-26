@@ -308,7 +308,9 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   e custo" continuam como estão).
 - **Feito:** sai o cartão "Loja inteira" e o "x% da loja" em "Vendas de creators"; o gráfico de vendas por dia ocupa a
   largura toda.
-- **Verificado:** 256 unitários, typecheck.
+- **Junto (pedido do responsável):** kits de boas-vindas ainda não escolhidos com mais de 1 produto (regra antiga, ex.: a
+  conta de teste da Fátima na Revita) passam a 1, por migração com auditoria (`20261026230000_welcome_kit_pending_one`).
+- **Verificado:** 256 unitários, typecheck, migração conferida localmente.
 
 ### CP-192 — 2026-10-26 — Pedidos do portal: produtos por marca, endereço no pedido, sem pedido livre (D-KITOPTIONS)
 - **Pedido:** mensagens da Vanessa (26/10), aplicadas passo a passo. Este é o passo 1; a fila dos outros está em
