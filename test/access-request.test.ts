@@ -16,15 +16,3 @@ describe("pedido de acesso de quem já tem cadastro (D-ACCESSREQ)", () => {
     expect(t).toContain("02/11");
   });
 });
-
-import { validateProductRequest } from "@/domain";
-
-describe("pedido livre de produtos (D-PRODUCTREQ)", () => {
-  it("de 1 a 3 no total, sem repetir", () => {
-    expect(validateProductRequest([{ productId: "a", quantity: 2 }, { productId: "b", quantity: 0 }, { productId: "c", quantity: 1 }])).toEqual([{ productId: "a", quantity: 2 }, { productId: "c", quantity: 1 }]);
-    expect(() => validateProductRequest([{ productId: "a", quantity: 4 }])).toThrow(/no máximo 3 suplementos/);
-    expect(() => validateProductRequest([{ productId: "a", quantity: 4 }], "revita-derma")).toThrow(/no máximo 3 produtos/);
-    expect(() => validateProductRequest([])).toThrow(/pelo menos 1/);
-    expect(() => validateProductRequest([{ productId: "a", quantity: 1 }, { productId: "a", quantity: 1 }])).toThrow(/repetido/);
-  });
-});

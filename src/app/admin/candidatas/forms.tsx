@@ -49,7 +49,7 @@ function Done({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Aprovar com um clique (F3): com o contrato assinado no D4Sign (D-D4SIGN), cria o cupom na Shopify, a creator com o
+ * Aprovar com um clique (F3): aprovar já é o contrato assinado no D4Sign (D-D4SIGN); cria o cupom na Shopify, a creator com o
  * contrato valendo e 1 produto de boas-vindas, o convite do portal (quando ela não tem senha) e a mensagem de aprovação.
  */
 function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
@@ -133,11 +133,6 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
           <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />
         </label>
       </div>
-      {/* D-D4SIGN: o contrato vai pelo D4Sign no WhatsApp antes do cadastro; a aprovação só sai com ele assinado. */}
-      <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" name="contractSigned" required className="mt-0.5 size-4 accent-current" />
-        <span>Contrato assinado no D4Sign</span>
-      </label>
       <Msg state={state?.error ? { error: state.error } : undefined} />
       <button className={`${ui.btn} self-start`} disabled={pending}>{pending ? "Aprovando…" : p.hasLogin ? "Aprovar: criar cupom na Shopify" : "Aprovar: criar cupom na Shopify e convite"}</button>
     </form>

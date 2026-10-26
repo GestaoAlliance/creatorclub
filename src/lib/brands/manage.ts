@@ -33,6 +33,8 @@ export type BrandInput = {
   defaultDiscount?: string;
   /** D-D4SIGN: produto sugerido na mensagem de aprovação; vazio = sem a linha da sugestão. */
   approvalSuggestion?: string;
+  /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
+  kitOptions?: string[];
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -120,6 +122,12 @@ export async function updateBrand(prisma: PrismaClient, actor: Actor | null, bra
   await prisma.$transaction(async (tx) => {
     await tx.brand.update({ where: { id: brandId }, data });
     await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.update", entity: "Brand", entityId: brandId, before, after: data } });
+    if (input.kitOptions) {
+      const ids = input.kitOptions;
+      await tx.product.updateMany({ where: { brandId, id: { in: ids } }, data: { kitOption: true } });
+      await tx.product.updateMany({ where: { brandId, id: { notIn: ids }, kitOption: true }, data: { kitOption: false } });
+      await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.kit_options", entity: "Brand", entityId: brandId, after: { productIds: ids } } });
+    }
   });
 }
 
@@ -142,7 +150,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfInstructions: true,
       whatsappInstance: true,
       approvalSuggestion: true,
-      products: { where: { active: true }, orderBy: { title: "asc" }, select: { title: true } },
+      products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
       storeUrl: true,
       defaultCommissionBps: true,
       defaultDiscountBps: true,

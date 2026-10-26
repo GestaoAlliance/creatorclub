@@ -91,7 +91,7 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
 
     // Aprovada: a creator nasce na mesma conta, com o e-mail do login, e o portal libera.
     const shop = { clientFor: async () => ({ shop: "x", graphql: async () => ({ discountCodeBasicCreate: { codeDiscountNode: { id: "gid://shopify/DiscountCodeNode/1" }, userErrors: [] } }) }) as never };
-    const r = await approveApplication(prisma, gestao, { applicationId: account.applications[0]!.id, contractSigned: true, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: "outro@x.com" }, shop.clientFor, now);
+    const r = await approveApplication(prisma, gestao, { applicationId: account.applications[0]!.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500, email: "outro@x.com" }, shop.clientFor, now);
     expect(r.accountId).toBe(account.id);
     expect((await loadActor(prisma, userId!))!.creatorIds).toEqual({ [brand.id]: r.creatorId });
     expect(await signupCouponTaken(prisma, brand.id, code)).toBe(true);

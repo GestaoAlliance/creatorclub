@@ -754,6 +754,8 @@ model Product {
   /// M3.2 (D-COST): custo unitário (primeira variante) lido da Shopify com `read_inventory`; null = sem custo cadastrado.
   costCents    Int?
   costSyncedAt DateTime?
+  /// D-KITOPTIONS: produto que a creator pode escolher no portal (aba Pedidos). Marca sem nenhum marcado: todos os ativos.
+  kitOption    Boolean   @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

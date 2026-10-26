@@ -23,6 +23,7 @@ const input = (form: FormData) => ({
   defaultRate: String(form.get("defaultRate") ?? ""),
   defaultDiscount: String(form.get("defaultDiscount") ?? ""),
   ...(form.has("approvalSuggestion") ? { approvalSuggestion: String(form.get("approvalSuggestion") ?? "") } : {}),
+  ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

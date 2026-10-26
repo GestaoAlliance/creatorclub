@@ -24,7 +24,8 @@ type Values = {
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
-export function BrandForm({ initial, create = false, products = [] }: { initial: Values; create?: boolean; products?: readonly string[] }) {
+export function BrandForm({ initial, create = false, products = [] }: { initial: Values; create?: boolean; products?: readonly { id: string; title: string; kitOption: boolean }[] }) {
+  const titles = products.map((p) => p.title);
   const [state, action, pending] = useActionState(create ? createBrandAction : updateBrandAction, undefined);
   const [color, setColor] = useState(initial.primaryColor);
   return (
@@ -85,12 +86,28 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
               Produto sugerido na mensagem de aprovação
               <select name="approvalSuggestion" defaultValue={initial.approvalSuggestion ?? ""} className={ui.input}>
                 <option value="">Sem sugestão (a linha não aparece)</option>
-                {initial.approvalSuggestion && !products.includes(initial.approvalSuggestion) && <option value={initial.approvalSuggestion}>{initial.approvalSuggestion}</option>}
-                {products.map((t) => <option key={t} value={t}>{t}</option>)}
+                {initial.approvalSuggestion && !titles.includes(initial.approvalSuggestion) && <option value={initial.approvalSuggestion}>{initial.approvalSuggestion}</option>}
+                {titles.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
           )}
         </div>
+        {/* D-KITOPTIONS: o que aparece para a creator escolher na aba Pedidos. */}
+        {!create && products.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <input type="hidden" name="kitOptionsSent" value="1" />
+            <p className="text-sm font-medium">Produtos que a creator pode escolher (aba Pedidos)</p>
+            <p className={ui.hint}>Nenhum marcado: ela vê todos os produtos ativos da loja.</p>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {products.map((p) => (
+                <label key={p.id} className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" name="kitOption" value={p.id} defaultChecked={p.kitOption} className="mt-0.5 size-4 shrink-0 accent-current" />
+                  <span>{p.title}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </fieldset>
       {/* M1.3 (D-NFDATA): o que a creator vê na tela de saque para emitir a nota. Vazio = serviço padrão. */}
       <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">

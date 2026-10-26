@@ -5,7 +5,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { AddressError } from "@/lib/shipments/address";
-import { chooseKit, requestProducts } from "@/lib/shipments/kits";
+import { chooseKit } from "@/lib/shipments/kits";
 import { confirmReceived, ShipmentError, updateMyAddress } from "@/lib/shipments/shipments";
 
 export type EnviosState = { error?: string; ok?: string } | undefined;
@@ -65,24 +65,13 @@ export async function chooseKitAction(_prev: EnviosState, form: FormData): Promi
     marca,
     async (userId) => {
       const ctx = await currentPortalContext(marca);
+      // D-KITOPTIONS: o endereço aparece no pedido para ela conferir; se mudou (ou ainda não estava nos campos), salva antes.
+      if (form.has("zip")) {
+        const f = (k: string) => String(form.get(k) ?? "");
+        await updateMyAddress(db(), ctx, userId, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") });
+      }
       await chooseKit(db(), ctx, userId, String(form.get("kitId") ?? ""), items);
     },
     "Pedido enviado! A equipe confere, aprova e prepara o envio.",
-  );
-}
-
-/** D-PRODUCTREQ: a creator pede até 3 produtos; a Gestão aprova antes do envio. */
-export async function requestProductsAction(_prev: EnviosState, form: FormData): Promise<EnviosState> {
-  const marca = String(form.get("marca") ?? "");
-  const items = [...form.entries()]
-    .filter(([k]) => k.startsWith("qty:"))
-    .map(([k, v]) => ({ productId: k.slice(4), quantity: Number(v) }));
-  return run(
-    marca,
-    async (userId) => {
-      const ctx = await currentPortalContext(marca);
-      await requestProducts(db(), ctx, userId, items, String(form.get("reason") ?? ""));
-    },
-    "Pedido enviado! A equipe confere e aprova antes do envio.",
   );
 }

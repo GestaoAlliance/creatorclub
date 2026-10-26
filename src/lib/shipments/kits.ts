@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { kitNoun, PRODUCT_REQUEST_MAX, validateKitChoice, validateProductRequest } from "@/domain";
+import { kitNoun, validateKitChoice } from "@/domain";
 import type { PortalContext } from "@/lib/portal/context";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -9,7 +9,7 @@ import { ShipmentError } from "./shipments";
 /**
  * Kit mensal (D-KIT) e kit de boas-vindas do contrato (D-WELCOMEKIT, ao assinar), escolhidos do mesmo jeito.
  * Kit mensal: O fechamento do mês concede o kit (`KitGrant` PENDING) pela faixa de vendas do contrato; a
- * creator escolhe os produtos no portal (aba Envios) e o envio nasce "Preparando" com o endereço da ficha. Sem prazo:
+ * creator escolhe os produtos no portal (aba Pedidos) e o envio nasce "Preparando" com o endereço da ficha. Sem prazo:
  * o kit espera até ela escolher. A escolha só acontece a partir de PENDING (à prova de dois cliques).
  * D-KITAPPROVAL: a escolha vira um pedido "Aguardando aprovação"; a Gestão aprova (vai para o Envio, "Preparando") ou
  * recusa com motivo (o envio fica cancelado e o kit volta para ela escolher de novo).
@@ -23,16 +23,24 @@ export function monthLabel(month: string): string {
   return `${MONTHS[m - 1]} de ${y}`;
 }
 
-/** Kits que a creator ainda precisa escolher, e os produtos ativos da marca para a escolha. */
+/**
+ * D-KITOPTIONS (pedido da Vanessa em 2026-10-26): produtos que a creator pode escolher, marcados por marca em Marcas
+ * (ex.: Revita só o Pepti Code). Marca sem nenhum marcado: todos os ativos.
+ */
+export async function kitProducts(prisma: PrismaClient, brandId: string) {
+  const all = await prisma.product.findMany({ where: { brandId, active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } });
+  const marked = all.filter((p) => p.kitOption);
+  return (marked.length ? marked : all).map(({ id, title }) => ({ id, title }));
+}
+
+/** Kits que a creator ainda precisa escolher, e os produtos que ela pode escolher. */
 export async function myPendingKits(prisma: PrismaClient, ctx: PortalContext) {
   const kits = await prisma.kitGrant.findMany({
     where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" },
     orderBy: [{ kind: "desc" }, { month: "asc" }], // boas-vindas primeiro
     select: { id: true, kind: true, month: true, products: true, salesCents: true },
   });
-  const products = kits.length
-    ? await prisma.product.findMany({ where: { brandId: ctx.brand.id, active: true }, orderBy: { title: "asc" }, select: { id: true, title: true } })
-    : [];
+  const products = kits.length ? await kitProducts(prisma, ctx.brand.id) : [];
   return { kits, products };
 }
 
@@ -57,9 +65,9 @@ export async function chooseKit(
   if (creator.status === "DEACTIVATED") throw new ShipmentError("Creator desligada não recebe envio.");
   const address = addressOf(creator.account);
   if (!address) throw new ShipmentError("Cadastre o endereço de entrega antes de escolher o kit.");
-  const products = await prisma.product.findMany({ where: { id: { in: chosen.map((i) => i.productId) }, brandId: kit.brandId, active: true } });
-  if (products.length !== chosen.length) throw new ShipmentError("Produto indisponível. Atualize a página.");
-  const title = new Map(products.map((p) => [p.id, p.title]));
+  const allowed = await kitProducts(prisma, kit.brandId);
+  const title = new Map(allowed.map((p) => [p.id, p.title]));
+  if (chosen.some((i) => !title.has(i.productId))) throw new ShipmentError("Produto indisponível. Atualize a página.");
   const now = new Date();
 
   return prisma.$transaction(async (tx) => {
@@ -116,65 +124,5 @@ export async function rejectShipment(prisma: PrismaClient, actor: Actor | null, 
     if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
     await tx.kitGrant.updateMany({ where: { shipmentId }, data: { status: "PENDING", shipmentId: null, chosenAt: null } });
     await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.rejected", entity: "Shipment", entityId: shipmentId, after: { reason: why } } });
-  });
-}
-
-export const PRODUCT_REQUEST_NOTE = "Pedido da creator";
-
-/**
- * D-PRODUCTREQ (pedido do responsável em 2026-10-26): a creator pede produtos quando quiser, sem kit liberado (ex.:
- * para gravar conteúdo). Até 3 por pedido e um pedido esperando aprovação por vez; só creator ativa com contrato
- * assinado. Vira o mesmo "Aguardando aprovação" do kit: a Gestão aprova (vai para o Envio) ou recusa com motivo.
- */
-export async function productRequestState(prisma: PrismaClient, ctx: PortalContext): Promise<{ allowed: true } | { allowed: false; reason: string }> {
-  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { status: true, contractSigned: true } });
-  if (creator.status !== "ACTIVE") return { allowed: false, reason: "Só creators ativas pedem produtos. Fale com a equipe." };
-  if (creator.contractSigned !== true) return { allowed: false, reason: "Os pedidos abrem depois do contrato assinado. Se você já assinou, fale com a equipe." };
-  const open = await prisma.shipment.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "AWAITING_APPROVAL", kit: null }, select: { id: true } });
-  if (open) return { allowed: false, reason: "Você já tem um pedido esperando a aprovação da equipe. Quando ele for decidido, dá para pedir de novo." };
-  return { allowed: true };
-}
-
-export async function requestProducts(
-  prisma: PrismaClient,
-  ctx: PortalContext,
-  actorUserId: string,
-  items: { productId: string; quantity: number }[],
-  reason: string,
-  now = new Date(),
-): Promise<string> {
-  if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é pedido em nome da creator.");
-  const state = await productRequestState(prisma, ctx);
-  if (!state.allowed) throw new ShipmentError(state.reason);
-  let chosen: { productId: string; quantity: number }[];
-  try {
-    chosen = validateProductRequest(items, ctx.brand.slug);
-  } catch (e) {
-    throw new ShipmentError((e as Error).message);
-  }
-  const account = (await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, include: { account: true } })).account;
-  const address = addressOf(account);
-  if (!address) throw new ShipmentError("Cadastre o endereço de entrega antes de pedir.");
-  const products = await prisma.product.findMany({ where: { id: { in: chosen.map((i) => i.productId) }, brandId: ctx.brand.id, active: true } });
-  if (products.length !== chosen.length) throw new ShipmentError("Produto indisponível. Atualize a página.");
-  const title = new Map(products.map((p) => [p.id, p.title]));
-  const why = reason.trim().replace(/\s+/g, " ").slice(0, 200);
-  return prisma.$transaction(async (tx) => {
-    const shipment = await tx.shipment.create({
-      data: {
-        brandId: ctx.brand.id,
-        creatorId: ctx.creatorId,
-        status: "AWAITING_APPROVAL",
-        note: why ? `${PRODUCT_REQUEST_NOTE}: ${why}` : PRODUCT_REQUEST_NOTE,
-        address,
-        createdById: actorUserId,
-        createdAt: now,
-        items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
-      },
-    });
-    await tx.auditLog.create({
-      data: { brandId: ctx.brand.id, actorType: "USER", actorId: actorUserId, action: "shipment.request", entity: "Shipment", entityId: shipment.id, after: { items: chosen.length, max: PRODUCT_REQUEST_MAX } },
-    });
-    return shipment.id;
   });
 }
