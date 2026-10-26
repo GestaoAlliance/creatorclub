@@ -49,3 +49,17 @@ export function kitNoun(brandSlug: string | null | undefined, n: number): string
   if (brandSlug && SUPPLEMENT_BRANDS.has(brandSlug)) return n === 1 ? "suplemento" : "suplementos";
   return n === 1 ? "produto" : "produtos";
 }
+
+/** D-PRODUCTREQ: produtos que a creator pede por conta própria, no máximo por pedido (pedido do responsável). */
+export const PRODUCT_REQUEST_MAX = 3;
+
+/** Pedido livre de produtos: de 1 a 3 unidades no total, sem produto repetido nem quantidade quebrada. */
+export function validateProductRequest(items: readonly { productId: string; quantity: number }[], brandSlug = "botanika"): { productId: string; quantity: number }[] {
+  const chosen = items.filter((i) => i.quantity !== 0);
+  if (chosen.some((i) => !Number.isSafeInteger(i.quantity) || i.quantity < 0)) throw new RangeError("Quantidade inválida.");
+  if (new Set(chosen.map((i) => i.productId)).size !== chosen.length) throw new RangeError("Produto repetido.");
+  const total = chosen.reduce((s, i) => s + i.quantity, 0);
+  if (total === 0) throw new RangeError("Escolha pelo menos 1 produto.");
+  if (total > PRODUCT_REQUEST_MAX) throw new RangeError(`Escolha no máximo ${PRODUCT_REQUEST_MAX} ${kitNoun(brandSlug, PRODUCT_REQUEST_MAX)} por pedido.`);
+  return chosen;
+}

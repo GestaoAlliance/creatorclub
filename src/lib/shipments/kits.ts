@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { kitNoun, validateKitChoice } from "@/domain";
+import { kitNoun, PRODUCT_REQUEST_MAX, validateKitChoice, validateProductRequest } from "@/domain";
 import type { PortalContext } from "@/lib/portal/context";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -116,5 +116,65 @@ export async function rejectShipment(prisma: PrismaClient, actor: Actor | null, 
     if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
     await tx.kitGrant.updateMany({ where: { shipmentId }, data: { status: "PENDING", shipmentId: null, chosenAt: null } });
     await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.rejected", entity: "Shipment", entityId: shipmentId, after: { reason: why } } });
+  });
+}
+
+export const PRODUCT_REQUEST_NOTE = "Pedido da creator";
+
+/**
+ * D-PRODUCTREQ (pedido do responsável em 2026-10-26): a creator pede produtos quando quiser, sem kit liberado (ex.:
+ * para gravar conteúdo). Até 3 por pedido e um pedido esperando aprovação por vez; só creator ativa com contrato
+ * assinado. Vira o mesmo "Aguardando aprovação" do kit: a Gestão aprova (vai para o Envio) ou recusa com motivo.
+ */
+export async function productRequestState(prisma: PrismaClient, ctx: PortalContext): Promise<{ allowed: true } | { allowed: false; reason: string }> {
+  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { status: true, contractSigned: true } });
+  if (creator.status !== "ACTIVE") return { allowed: false, reason: "Só creators ativas pedem produtos. Fale com a equipe." };
+  if (creator.contractSigned !== true) return { allowed: false, reason: "Os pedidos abrem depois do contrato assinado. Se você já assinou, fale com a equipe." };
+  const open = await prisma.shipment.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "AWAITING_APPROVAL", kit: null }, select: { id: true } });
+  if (open) return { allowed: false, reason: "Você já tem um pedido esperando a aprovação da equipe. Quando ele for decidido, dá para pedir de novo." };
+  return { allowed: true };
+}
+
+export async function requestProducts(
+  prisma: PrismaClient,
+  ctx: PortalContext,
+  actorUserId: string,
+  items: { productId: string; quantity: number }[],
+  reason: string,
+  now = new Date(),
+): Promise<string> {
+  if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é pedido em nome da creator.");
+  const state = await productRequestState(prisma, ctx);
+  if (!state.allowed) throw new ShipmentError(state.reason);
+  let chosen: { productId: string; quantity: number }[];
+  try {
+    chosen = validateProductRequest(items, ctx.brand.slug);
+  } catch (e) {
+    throw new ShipmentError((e as Error).message);
+  }
+  const account = (await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, include: { account: true } })).account;
+  const address = addressOf(account);
+  if (!address) throw new ShipmentError("Cadastre o endereço de entrega antes de pedir.");
+  const products = await prisma.product.findMany({ where: { id: { in: chosen.map((i) => i.productId) }, brandId: ctx.brand.id, active: true } });
+  if (products.length !== chosen.length) throw new ShipmentError("Produto indisponível. Atualize a página.");
+  const title = new Map(products.map((p) => [p.id, p.title]));
+  const why = reason.trim().replace(/\s+/g, " ").slice(0, 200);
+  return prisma.$transaction(async (tx) => {
+    const shipment = await tx.shipment.create({
+      data: {
+        brandId: ctx.brand.id,
+        creatorId: ctx.creatorId,
+        status: "AWAITING_APPROVAL",
+        note: why ? `${PRODUCT_REQUEST_NOTE}: ${why}` : PRODUCT_REQUEST_NOTE,
+        address,
+        createdById: actorUserId,
+        createdAt: now,
+        items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
+      },
+    });
+    await tx.auditLog.create({
+      data: { brandId: ctx.brand.id, actorType: "USER", actorId: actorUserId, action: "shipment.request", entity: "Shipment", entityId: shipment.id, after: { items: chosen.length, max: PRODUCT_REQUEST_MAX } },
+    });
+    return shipment.id;
   });
 }

@@ -4,7 +4,8 @@ import { MapPin } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { saveAddressAction } from "@/app/portal/[marca]/envios/actions";
 import { HelpTip } from "@/components/ui/tour";
-import { formatAddress, UFS, zipFromText, type Address } from "@/lib/shipments/address";
+import { AddressFields } from "@/components/ui/address-fields";
+import { formatAddress, zipFromText, type Address } from "@/lib/shipments/address";
 
 const field = "w-full rounded-2xl border border-stone-300/70 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-brand dark:border-white/15 dark:bg-white/5";
 
@@ -49,37 +50,10 @@ export function AddressCard({ marca, address, viewOnly, informed = null }: { mar
       ) : (
         <form action={action} className="grid grid-cols-6 gap-3">
           <input type="hidden" name="marca" value={marca} />
-          <label className="col-span-3 flex flex-col gap-1 text-xs text-stone-500 md:col-span-2">
-            CEP
-            <input name="zip" defaultValue={address?.zip ?? zipFromText(informed) ?? ""} inputMode="numeric" autoComplete="postal-code" required className={field} />
-          </label>
-          <label className="col-span-3 flex flex-col gap-1 text-xs text-stone-500 md:col-span-1">
-            UF
-            <select name="state" defaultValue={address?.state ?? ""} required className={field}>
-              <option value="" disabled>—</option>
-              {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-            </select>
-          </label>
-          <label className="col-span-6 flex flex-col gap-1 text-xs text-stone-500 md:col-span-3">
-            Cidade
-            <input name="city" defaultValue={address?.city ?? ""} autoComplete="address-level2" required className={field} />
-          </label>
-          <label className="col-span-6 flex flex-col gap-1 text-xs text-stone-500 md:col-span-4">
-            Rua
-            <input name="street" defaultValue={address?.street ?? ""} autoComplete="address-line1" required className={field} />
-          </label>
-          <label className="col-span-2 flex flex-col gap-1 text-xs text-stone-500 md:col-span-2">
-            Número
-            <input name="number" defaultValue={address?.number ?? ""} required className={field} />
-          </label>
-          <label className="col-span-4 flex flex-col gap-1 text-xs text-stone-500 md:col-span-3">
-            Complemento
-            <input name="complement" defaultValue={address?.complement ?? ""} autoComplete="address-line2" className={field} />
-          </label>
-          <label className="col-span-6 flex flex-col gap-1 text-xs text-stone-500 md:col-span-3">
-            Bairro
-            <input name="district" defaultValue={address?.district ?? ""} required className={field} />
-          </label>
+          {/* D-CEPAUTO: o CEP busca rua, bairro, cidade e UF. */}
+          <div className="col-span-6">
+            <AddressFields initial={address ?? { zip: zipFromText(informed) ?? "" }} inputClass={field} />
+          </div>
           {state?.error && <p role="alert" className="col-span-6 text-sm text-red-700 dark:text-red-400">{state.error}</p>}
           <div className="col-span-6 flex gap-3">
             <button disabled={pending} className="rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
