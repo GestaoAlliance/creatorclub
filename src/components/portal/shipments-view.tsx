@@ -69,7 +69,7 @@ export function ShipmentsView({
             <Plus className="size-4 transition-transform group-open:rotate-45" /> Solicitar pedido
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{kits.kits.length === 1 ? "1 kit liberado" : `${kits.kits.length} kits liberados`}</span>
           </summary>
-          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">Escolha os produtos do seu kit. A equipe aprova o pedido e depois faz o envio para o seu endereço.</p>
+          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">Faça o pedido do seu kit. A equipe aprova e depois faz o envio para o seu endereço.</p>
           <div className="mt-3 flex flex-col gap-4">
             {kits.kits.map((k) => (
               <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
