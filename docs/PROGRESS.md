@@ -302,6 +302,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-195 — 2026-10-27 — Kit com um produto só já vem escolhido
+- **Pedido do responsável:** na Revita (só o Sérum) e na VermeFree (só o protocolo adulto) a creator não precisa clicar
+  no "+": o produto já vem escolhido; na Botanika (3 opções) segue escolhendo com o "+".
+- **Feito:** com uma opção só, o kit mostra o produto com a quantidade e "Confira o endereço e envie o pedido".
+- **Verificado:** 256 unitários, typecheck, captura.
+
 ### CP-194 — 2026-10-27 — Produtos que a creator pode escolher, marcados nas 3 marcas (D-KITOPTIONS)
 - **Pedido do responsável:** a Fátima (Revita) ainda via os 3 produtos. Revita só o Sérum Pepti Code; Botanika Hair
   Botanika, Tri Magnésio e TetraVit; VermeFree o protocolo adulto.

@@ -37,7 +37,9 @@ export function KitPicker({
 }) {
   const [editing, setEditing] = useState(address === null);
   const [state, action, pending] = useActionState(chooseKitAction, undefined);
-  const [qty, setQty] = useState<Record<string, number>>({});
+  // Pedido do responsável (2026-10-27): com uma opção só (Revita, VermeFree), o produto já vem escolhido.
+  const single = products.length === 1 ? products[0]! : null;
+  const [qty, setQty] = useState<Record<string, number>>(() => (single ? { [single.id]: kit.products } : {}));
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
   const left = kit.products - total;
   const set = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + d) }));
@@ -50,7 +52,7 @@ export function KitPicker({
           <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
         </h2>
         <p className={ui.muted}>
-          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} Escolha os produtos: a equipe aprova o pedido e prepara o envio para o seu endereço.
+          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} {single ? "Confira o endereço e envie o pedido" : "Escolha os produtos"}: a equipe aprova o pedido e prepara o envio para o seu endereço.
         </p>
       </div>
       <form action={action} className="flex flex-col gap-4">
@@ -63,6 +65,9 @@ export function KitPicker({
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
                   <span className={`text-sm ${n ? "font-medium" : ""}`}>{p.title}</span>
                   <input type="hidden" name={`qty:${p.id}`} value={n} />
+                  {single ? (
+                    <span className="shrink-0 text-sm font-semibold tabular-nums">{n}×</span>
+                  ) : (
                   <span className="flex shrink-0 items-center gap-2">
                     <button type="button" aria-label={`Tirar ${p.title}`} disabled={viewOnly || n === 0} onClick={() => set(p.id, -1)} className={ui.ghostSm}>
                       <Minus className="size-3.5" />
@@ -72,6 +77,7 @@ export function KitPicker({
                       <Plus className="size-3.5" />
                     </button>
                   </span>
+                  )}
                 </li>
               );
             })}
@@ -98,7 +104,7 @@ export function KitPicker({
             )}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className={ui.hint}>{left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
+            <p className={ui.hint}>{single ? "Confira o endereço e envie o pedido." : left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
             {!viewOnly && (
               <button disabled={pending || left !== 0} className={ui.btn}>
                 {pending ? "Enviando…" : "Enviar pedido"}
