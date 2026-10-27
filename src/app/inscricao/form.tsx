@@ -198,7 +198,21 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
       <Block title={sec("redes").title} hint={sec("redes").hint}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={q("instagram").label} error={errors.instagram}>{handle("instagram")}</Field>
-          <Field label={q("tiktok").label} optional error={errors.tiktok}>{handle("tiktok")}</Field>
+          <div className="flex flex-col gap-4">
+            <Field label={q("tiktok").label} optional error={errors.tiktok}>{handle("tiktok")}</Field>
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className="mb-1 text-sm font-medium text-stone-900 dark:text-stone-100">{q("tiktokShop").label} <span className="font-normal text-stone-500">(opcional)</span></legend>
+              <div className="flex gap-2">
+                {["Sim", "Não"].map((o) => (
+                  <label key={o} className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm transition ${v.tiktokShop === o ? "border-[var(--b)] bg-[color-mix(in_srgb,var(--b)_10%,transparent)] font-medium" : "border-stone-300 dark:border-white/15"}`}>
+                    <input type="radio" name="tiktokShop" value={o} checked={v.tiktokShop === o} onChange={() => set("tiktokShop", o)} className="sr-only" />
+                    {o}
+                  </label>
+                ))}
+              </div>
+              {errors.tiktokShop && <p className="text-xs text-red-700 dark:text-red-400">{errors.tiktokShop}</p>}
+            </fieldset>
+          </div>
           <Field label="YouTube" optional error={errors.youtube}>{handle("youtube")}</Field>
           <Field label="Kwai" optional error={errors.kwai}>{handle("kwai")}</Field>
         </div>

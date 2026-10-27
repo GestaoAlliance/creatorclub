@@ -176,6 +176,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     categories: creator.categories,
     instagram: a.instagram,
     tiktok: a.tiktok,
+    tiktokShop: a.tiktokShop,
     /** M4.2 (D-TAGS): data de nascimento ("AAAA-MM-DD") e tags da creator. */
     birthDate: a.birthDate ? a.birthDate.toISOString().slice(0, 10) : null,
     tags: tags.map((l) => l.tag).sort((x, y) => x.name.localeCompare(y.name, "pt-BR")),

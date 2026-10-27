@@ -106,7 +106,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 )}
                 {p.tiktok && (
                   <a href={`https://www.tiktok.com/@${p.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <TikTokIcon className="size-4" /> {p.tiktok.replace(/^@/, "")}
+                    <TikTokIcon className="size-4" /> {p.tiktok.replace(/^@/, "")}{p.tiktokShop && " · TikTok Shop"}
                   </a>
                 )}
                 {p.profile.youtube && (

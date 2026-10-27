@@ -221,6 +221,8 @@ model CreatorAccount {
   pixKey            String?
   instagram         String? // sem o @
   tiktok            String? // sem o @ (D-SIGNUPACCOUNT)
+  /// Pedido da Vanessa (2026-10-27): respondeu no cadastro se tem TikTok Shop ativo (null = não respondeu).
+  tiktokShop        Boolean?
   /// Endereço de entrega (D-SHIPADDR): a creator mantém no portal; cada envio guarda uma cópia.
   addrZip           String?
   addrStreet        String?
