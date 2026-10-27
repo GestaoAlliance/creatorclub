@@ -299,6 +299,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-207 — 2026-10-27 — Telefone do cadastro sem o +55 (D-PHONE)
+- **Pedido do responsável:** creators digitavam o +55 junto com o DDD e o número ficava errado (a máscara cortava em 11
+  dígitos e gravava "(55) 31921-1323").
+- **Feito:** `src/domain/phone.ts` (tira o 55 do país, formata e valida); campo do cadastro do site usa a regra, com o
+  aviso "Só DDD e número, sem o +55"; o servidor grava o número já arrumado.
+- **Cadastros antigos:** os que entraram cortados perderam os 2 últimos dígitos; não dá para recuperar sozinho.
+- **Verificado:** testes (unitários e de integração), typecheck, build e captura do campo.
+
 ### CP-206 — 2026-10-27 — Domínio creatorclub.app.br e e-mail por marca (D-DOMAIN, D-EMAILFROM)
 - **Feito fora do código:** DNS do domínio na Cloudflare (site e `www` para a Vercel, registros do Resend; `mail` sem
   proxy e SPF corrigido para as caixas do Turbo Cloud); domínio verificado na Vercel (certificado emitido) e no Resend.

@@ -1,6 +1,7 @@
 import { birthdayLabel, parseBirthDate } from "./birthday";
 import { cleanProfile, profileAnswers, type ProfileFields } from "./profile";
 import { dayKey } from "./time";
+import { validBrPhone } from "./phone";
 
 /**
  * Formulário de inscrição do próprio sistema (D-SIGNUP): um formulário por marca (D-SIGNUPBRAND), com as mesmas perguntas
@@ -188,7 +189,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       continue;
     }
     if (q.kind === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) errors[q.key] = "E-mail inválido.";
-    else if (q.kind === "tel" && v.replace(/\D/g, "").length < 10) errors[q.key] = "Informe o telefone com DDD.";
+    else if (q.kind === "tel" && !validBrPhone(v)) errors[q.key] = "Informe só o DDD e o número, sem o +55 (ex.: (31) 99211-3232).";
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
     else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
@@ -203,7 +204,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       }
       continue;
     }
-    const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : v;
+    const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : q.kind === "tel" ? validBrPhone(v)! : v;
     clean[q.key] = out;
     answers[q.title] = q.key === "instagram" || q.key === "tiktok" ? `@${out}` : out;
   }

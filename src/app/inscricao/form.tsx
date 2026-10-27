@@ -3,7 +3,7 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { NICHES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
+import { formatBrPhone, NICHES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
@@ -20,13 +20,7 @@ const digits = (v: string, max: number) => v.replace(/\D/g, "").slice(0, max);
 const MASK: Record<string, (v: string) => string> = {
   cpf: (v) => digits(v, 11).replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2"),
   cnpj: (v) => digits(v, 14).replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d{1,2})$/, "$1-$2"),
-  phone: (v) => {
-    const d = digits(v, 11);
-    if (d.length <= 2) return d.length ? `(${d}` : "";
-    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  },
+  phone: formatBrPhone, // tira o +55 do país (D-PHONE)
   addrZip: (v) => {
     const d = digits(v, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
@@ -37,7 +31,7 @@ const PLACEHOLDER: Record<string, string> = {
   cpf: "000.000.000-00",
   cnpj: "00.000.000/0000-00",
   email: "seu@email.com",
-  phone: "(00) 00000-0000",
+  phone: "(31) 99999-9999",
   instagram: "usuario",
   tiktok: "usuario",
   youtube: "seucanal",
@@ -191,7 +185,7 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
       <Block title={sec("contato").title}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={q("email").label} hint={q("email").hint} error={errors.email}>{text("email", { type: "email", required: true, autoComplete: "email" })}</Field>
-          <Field label={q("phone").label} error={errors.phone}>{text("phone", { type: "tel", required: true, inputMode: "numeric", autoComplete: "tel" })}</Field>
+          <Field label={q("phone").label} hint="Só DDD e número, sem o +55." error={errors.phone}>{text("phone", { type: "tel", required: true, inputMode: "numeric", autoComplete: "tel" })}</Field>
         </div>
       </Block>
 

@@ -10,6 +10,11 @@ const full: Record<string, string> = {
 const ADDRESS = "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
 
 describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
+  it("telefone com +55 do país grava só DDD e número (D-PHONE)", () => {
+    const r = validateSignup({ ...full, phone: "+55 31 92113-2390" });
+    expect(r.ok && r.account.phone).toBe("(31) 92113-2390");
+  });
+
   it("cadastro completo vira as respostas no formato do Google e os dados da conta", () => {
     const r = validateSignup(full);
     expect(r.ok).toBe(true);
@@ -34,7 +39,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.errors).toEqual({
-      fullName: "Preencha este campo.", email: "E-mail inválido.", phone: "Informe o telefone com DDD.", cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.",
+      fullName: "Preencha este campo.", email: "E-mail inválido.", phone: "Informe só o DDD e o número, sem o +55 (ex.: (31) 99211-3232).", cpf: "CPF inválido.", cnpj: "CNPJ precisa ter 14 números.",
       instagram: "Informe o seu @.", addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.",
     });
     // Opcionais: CNPJ, nascimento (M4.2), TikTok e complemento.
