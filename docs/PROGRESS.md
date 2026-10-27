@@ -300,6 +300,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-201 — 2026-10-27 — Arquivar creator (D-ARCHIVECREATOR, passo 4b da Vanessa)
+- **Feito:** `Creator.archivedAt/archivedById` (trava `Creator_archived`); `archiveCreator`/`unarchiveCreator` (Shopify
+  primeiro: encerra ou reabre o cupom; depois o banco, com auditoria); botão na ficha; lista "Ver arquivadas"; busca
+  sem arquivadas; situação não muda enquanto arquivada.
+- **Verificado:** 258 unitários, 263 de integração (novo `archive-creator.test.ts`), typecheck, migração sem
+  divergência, captura.
+
 ### CP-200 — 2026-10-27 — Mensagens sem "Creator Teste" e sem emoji que quebra
 - **Pedido do responsável:** a mensagem de aprovação saía com "Creator Teste" e com emojis quebrados; conferir as
   mensagens das outras marcas.

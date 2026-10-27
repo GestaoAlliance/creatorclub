@@ -17,7 +17,7 @@ import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, TagsEditor, ProfileForm } from "./forms";
+import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TagsEditor, ProfileForm } from "./forms";
 import { AccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
@@ -445,7 +445,8 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 <div className="flex min-w-0 flex-col gap-6">
           {p.canEdit && (
             <Card title="Situação">
-              <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />
+              {!p.archivedAt && <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />}
+              <ArchiveForm creatorId={p.id} archived={p.archivedAt !== null} />
             </Card>
           )}
           {!ugcOnly && (

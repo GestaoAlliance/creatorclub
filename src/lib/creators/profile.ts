@@ -31,11 +31,12 @@ function audit(prisma: PrismaClient, actor: Actor, brandId: string, action: stri
   return prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId: actor.userId, action, entity, entityId, before, after } });
 }
 
-export async function listCreators(prisma: PrismaClient, actor: Actor | null, brandId: string) {
+export async function listCreators(prisma: PrismaClient, actor: Actor | null, brandId: string, archived = false) {
   if (!actor || !can(actor.grants, "creators.view", brandId)) throw new ProfileError("Sem permissão.");
   const [creators, brand] = await Promise.all([
     prisma.creator.findMany({
-      where: { brandId },
+      // D-ARCHIVECREATOR: arquivadas só na lista própria ("Ver arquivadas").
+      where: { brandId, archivedAt: archived ? { not: null } : null },
       orderBy: { account: { name: "asc" } },
       include: {
         account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true, birthDate: true, addrCity: true, addrState: true, niches: true } },
@@ -158,6 +159,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     brandId: creator.brandId,
     accountId: a.id,
     status: creator.status as CreatorStatusValue,
+    archivedAt: creator.archivedAt,
     canEdit: can(actor.grants, "creators.edit", creator.brandId),
     canAdjust: can(actor.grants, "ledger.adjust", creator.brandId),
     canViewAs: can(actor.grants, "portal.viewAs", creator.brandId),
@@ -283,6 +285,7 @@ export async function setCreatorStatus(prisma: PrismaClient, actor: Actor | null
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
   if (!(status in STATUS_LABEL)) throw new ProfileError("Situação inválida.");
+  if (creator.archivedAt) throw new ProfileError("Creator arquivada: desarquive antes de mudar a situação.");
   if (creator.status === status) return;
   const now = new Date();
   await prisma.$transaction([

@@ -12,24 +12,30 @@ import { CreatorList } from "./list";
 
 export const dynamic = "force-dynamic";
 
-export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string }> }) {
+export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string; arquivadas?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/creators");
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "creators.view", brand.id)) redirect("/conta");
-  const { portal, contrato, semvenda, categoria, pendencia, tag } = await searchParams;
-  const [creators, pendingApplications] = await Promise.all([
-    listCreators(db(), scopedActor(actor, brand.id), brand.id),
+  const { portal, contrato, semvenda, categoria, pendencia, tag, arquivadas } = await searchParams;
+  const archived = arquivadas === "1";
+  const [creators, pendingApplications, archivedCount] = await Promise.all([
+    listCreators(db(), scopedActor(actor, brand.id), brand.id, archived),
     db().creatorApplication.count({ where: { brandId: brand.id, status: "NEW" } }),
+    db().creator.count({ where: { brandId: brand.id, archivedAt: { not: null } } }),
   ]);
   const active = creators.filter((c) => c.status === "ACTIVE").length;
 
   return (
     <>
-      <PageHeader title="Creators">
-        {creators.length} creators na {brand.name} · {active} ativas. Toque no nome para abrir a ficha.
+      <PageHeader title={archived ? "Creators arquivadas" : "Creators"}>
+        {archived ? (
+          <>{creators.length} arquivadas na {brand.name}. Abra a ficha para desarquivar. <Link href="/admin/creators" className={ui.link}>Voltar para as creators</Link></>
+        ) : (
+          <>{creators.length} creators na {brand.name} · {active} ativas. Toque no nome para abrir a ficha.{archivedCount > 0 && <> <Link href="/admin/creators?arquivadas=1" className={ui.link}>Ver arquivadas ({archivedCount})</Link></>}</>
+        )}
       </PageHeader>
       {can(actor.grants, "creators.edit", brand.id) && (
         <Link href="/admin/creators/revisar" className={`${ui.link} self-start text-sm`}>

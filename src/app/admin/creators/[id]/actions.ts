@@ -20,6 +20,7 @@ import { addUgcVideo, removeUgcVideo, setUgcVideoGoal, UgcError } from "@/lib/cr
 import { formatBRL } from "@/domain";
 import { addCreatorNote, NoteError } from "@/lib/creators/timeline";
 import { addCreatorTag, removeCreatorTag, TagError } from "@/lib/creators/tags";
+import { archiveCreator, ArchiveError, unarchiveCreator } from "@/lib/creators/archive";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -29,7 +30,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError) {
       return { error: error.message };
     }
     throw error;
@@ -219,4 +220,11 @@ export async function profileAction(_p: State, form: FormData): Promise<State> {
   return run(id, async () => updateProfile(db(), await currentActor(), id, {
     professionalId: f("professionalId"), niches: form.getAll("niches").map(String), youtube: f("youtube"), kwai: f("kwai"), allergies: f("allergies"), mediaKitUrl: f("mediaKitUrl"),
   }), "Perfil salvo.");
+}
+
+/** D-ARCHIVECREATOR: arquivar (some das telas, cupom encerrado na Shopify) ou desarquivar. */
+export async function archiveAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  const undo = form.get("undo") === "1";
+  return run(id, async () => (undo ? unarchiveCreator(db(), await currentActor(), id) : archiveCreator(db(), await currentActor(), id)), undo ? "Desarquivada: voltou como Pausada, com o cupom valendo." : "Arquivada.");
 }
