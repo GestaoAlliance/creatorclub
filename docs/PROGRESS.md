@@ -7,7 +7,7 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **3)** saque só a partir de R$ 300 em vendas acumuladas, nas 3 marcas; **4)** creator CPF ou CNPJ (o saque muda);
+- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **4)** creator CPF ou CNPJ (o saque muda);
   "deletar creator" (entender o objetivo: nada é apagado); login da Mafe para ver quem tem TikTok; "Tem TikTok Shop
   ativo?" no formulário. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -299,6 +299,14 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-198 — 2026-10-27 — Saque a partir de R$ 300 em vendas (D-MIN300, passo 3 da Vanessa)
+- **Decisões do responsável:** todas (influencer e prescritor), nas 3 marcas; liberação continua no dia 1; vale já no
+  fechamento de 1º de novembro.
+- **Feito:** migração `20261027180000_release_min_300` põe R$ 300 em todas as versões de contrato com comissão e nos
+  padrões das marcas (com auditoria); padrão do banco também R$ 300.
+- **Atenção:** os textos de contrato publicados ainda falam em R$ 500 / R$ 1.000; revisar junto com o kit (CP-197).
+- **Verificado:** 258 unitários, 261 de integração, migração sem divergência.
 
 ### CP-197 — 2026-10-27 — Produto pela meta de R$ 1.000 (D-GOALKIT, passo 2 da Vanessa)
 - **Decisões do responsável:** substitui o kit mensal por faixa; janelas fixas (45 dias, depois 30 em 30); liberado na
