@@ -6,7 +6,7 @@ import { hashInviteToken, INVITE_TTL_DAYS, newInviteToken } from "./tokens";
 
 export class TeamError extends Error {}
 
-const STAFF_ROLES: StaffRole[] = ["SUPER_ADMIN", "GESTAO", "ENVIO", "PAGAMENTO", "HUNTER"];
+const STAFF_ROLES: StaffRole[] = ["SUPER_ADMIN", "GESTAO", "ENVIO", "PAGAMENTO", "HUNTER", "TIKTOK"];
 
 function requireStaffManager(actor: Actor | null): Actor {
   // Gestão da equipe é global: só SUPER_ADMIN (brandsWith = "ALL").

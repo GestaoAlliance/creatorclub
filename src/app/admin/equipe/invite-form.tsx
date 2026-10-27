@@ -35,6 +35,7 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
             <option value="ENVIO" disabled={noBrands}>Envio</option>
             <option value="PAGAMENTO" disabled={noBrands}>Pagamento</option>
             <option value="HUNTER" disabled={noBrands}>Hunter</option>
+            <option value="TIKTOK" disabled={noBrands}>TikTok (só a lista do TikTok)</option>
           </select>
         </label>
         {role !== "SUPER_ADMIN" && (

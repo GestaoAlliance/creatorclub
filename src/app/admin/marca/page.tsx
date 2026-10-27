@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { dashPeriod, staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
 import { staffHome } from "@/lib/staff/home";
+import { onlyTikTok } from "@/lib/staff/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function BrandHomePage({ searchParams }: { searchParams: Pr
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marca");
   if (actor.grants.length === 0) redirect("/conta");
+  if (onlyTikTok(actor.grants)) redirect("/admin/tiktok");
   const { brand } = await staffContext(actor);
   const h = await staffHome(db(), scopedActor(actor, brand?.id));
   if (!brand || !can(actor.grants, "money.view", brand.id)) return <StaffHomeView h={h} />;

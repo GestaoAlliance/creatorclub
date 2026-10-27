@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { allianceDashboard } from "@/lib/staff/alliance-dashboard";
 import { staffContext } from "@/lib/staff/context";
 import { dashPeriod } from "@/lib/staff/dashboard";
-import { hasAlliancePanel } from "@/lib/staff/nav";
+import { hasAlliancePanel, onlyTikTok } from "@/lib/staff/nav";
 import { allianceOverview } from "@/lib/staff/overview";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ export default async function StaffHomePage({ searchParams }: { searchParams: Pr
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin");
   if (actor.grants.length === 0) redirect("/conta");
+  if (onlyTikTok(actor.grants)) redirect("/admin/tiktok");
   const ctx = await staffContext(actor);
   if (!hasAlliancePanel(actor.grants, ctx.brands.length)) redirect("/admin/marca");
   const money = ctx.brands.filter((b) => can(actor.grants, "money.view", b.id));

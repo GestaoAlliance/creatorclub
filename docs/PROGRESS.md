@@ -7,8 +7,8 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **4)**
-  login da Mafe (só leitura) com a lista de quem tem TikTok. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
+- **Próxima tarefa:** pedidos da Vanessa concluídos (falta só o convite da Mafe).
+  Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -298,6 +298,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-203 — 2026-10-27 — Acesso "TikTok" para a Mafe (D-TIKTOKLIST, passo 4d da Vanessa)
+- **Feito:** papel TIKTOK (permissão `tiktok.view`, também na Gestão), convite e papel em Equipe, aba `/admin/tiktok`
+  com a lista e filtros; quem só tem esse papel entra direto na lista e o menu mostra só ela.
+- **Falta (responsável):** o e-mail da Mafe para o convite (Configurações → Equipe → papel "TikTok", nas 3 marcas).
+- **Verificado:** 259 unitários, 264 de integração (novo `tiktok-list.test.ts`), typecheck, migração sem divergência,
+  captura.
 
 ### CP-202 — 2026-10-27 — "Tem TikTok Shop ativo?" no cadastro do site (passo 4c da Vanessa)
 - **Decisão do responsável:** só no cadastro do site (3 marcas).

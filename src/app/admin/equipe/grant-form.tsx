@@ -18,6 +18,7 @@ export function GrantForm({ userId, brands }: { userId: string; brands: { id: st
           <option value="ENVIO">Envio</option>
           <option value="PAGAMENTO">Pagamento</option>
           <option value="HUNTER">Hunter</option>
+          <option value="TIKTOK">TikTok (só a lista do TikTok)</option>
         </select>
         <select name="brandId" aria-label="Marca" className={ui.inputSm}>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
