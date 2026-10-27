@@ -52,3 +52,23 @@ export function kitNoun(brandSlug: string | null | undefined, n: number): string
 
 /** D-D4SIGN: kit de boas-vindas da aprovação, igual em todas as marcas. */
 export const WELCOME_PRODUCTS = 1;
+
+/**
+ * Foto dos produtos que a creator pode escolher (pedido do responsável em 2026-10-27; fotos mandadas por ele, em
+ * `public/produtos/`). Achada pelo nome do produto na marca; kit e combo ficam sem foto. Sem foto: só o nome.
+ */
+const PRODUCT_PHOTOS: Record<string, readonly [RegExp, string][]> = {
+  "revita-derma": [[/^s[ée]rum pepti ?code/i, "revita-pepti-code"]],
+  botanika: [
+    [/hair botanika/i, "botanika-hair"],
+    [/tri ?\[?mg\]?|tri magn/i, "botanika-tri-magnesio"],
+    [/tetra ?vit/i, "botanika-tetravit"],
+  ],
+  vermefree: [[/protocolo.*adulto/i, "vermefree-protocolo-adulto"]],
+};
+
+export function productPhoto(brandSlug: string, title: string): string | null {
+  if (/^kit|combo/i.test(title.trim())) return null;
+  const hit = PRODUCT_PHOTOS[brandSlug]?.find(([re]) => re.test(title));
+  return hit ? `/produtos/${hit[1]}.webp` : null;
+}

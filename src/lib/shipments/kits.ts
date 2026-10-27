@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { kitNoun, validateKitChoice } from "@/domain";
+import { kitNoun, productPhoto, validateKitChoice } from "@/domain";
 import type { PortalContext } from "@/lib/portal/context";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -28,9 +28,13 @@ export function monthLabel(month: string): string {
  * (ex.: Revita só o Pepti Code). Marca sem nenhum marcado: todos os ativos.
  */
 export async function kitProducts(prisma: PrismaClient, brandId: string) {
-  const all = await prisma.product.findMany({ where: { brandId, active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } });
+  const all = await prisma.product.findMany({
+    where: { brandId, active: true },
+    orderBy: { title: "asc" },
+    select: { id: true, title: true, kitOption: true, brand: { select: { slug: true } } },
+  });
   const marked = all.filter((p) => p.kitOption);
-  return (marked.length ? marked : all).map(({ id, title }) => ({ id, title }));
+  return (marked.length ? marked : all).map(({ id, title, brand }) => ({ id, title, photo: productPhoto(brand.slug, title) }));
 }
 
 /** Kits que a creator ainda precisa escolher, e os produtos que ela pode escolher. */

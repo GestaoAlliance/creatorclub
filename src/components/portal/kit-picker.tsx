@@ -30,7 +30,7 @@ export function KitPicker({
   kit: { id: string; products: number };
   monthLabel: string;
   welcome?: boolean;
-  products: { id: string; title: string }[];
+  products: { id: string; title: string; photo?: string | null }[];
   address: Address | null;
   informed?: string | null;
   viewOnly: boolean;
@@ -63,7 +63,13 @@ export function KitPicker({
               const n = qty[p.id] ?? 0;
               return (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className={`text-sm ${n ? "font-medium" : ""}`}>{p.title}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    {p.photo && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.photo} alt="" width={64} height={64} className="size-16 shrink-0 rounded-2xl bg-white object-contain" />
+                    )}
+                    <span className={`text-sm ${n ? "font-medium" : ""}`}>{p.title}</span>
+                  </span>
                   <input type="hidden" name={`qty:${p.id}`} value={n} />
                   {single ? (
                     <span className="shrink-0 text-sm font-semibold tabular-nums">{n}×</span>

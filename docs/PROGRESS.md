@@ -302,6 +302,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-196 — 2026-10-27 — Foto do produto no pedido da creator
+- **Pedido do responsável:** foto de cada produto no pedido (aba Pedidos), com as fotos que ele mandou.
+- **Feito:** 5 fotos em `public/produtos/` (Sérum Pepti Code, Hair Botanika, Tri Magnésio, TetraVit, Protocolo Adulto),
+  ajustadas para 480×480; `productPhoto` acha a foto pelo nome do produto na marca (kit e combo sem foto).
+- **Verificado:** 257 unitários (novo `product-photo.test.ts`), typecheck, captura.
+
 ### CP-195 — 2026-10-27 — Kit com um produto só já vem escolhido
 - **Pedido do responsável:** na Revita (só o Sérum) e na VermeFree (só o protocolo adulto) a creator não precisa clicar
   no "+": o produto já vem escolhido; na Botanika (3 opções) segue escolhendo com o "+".
