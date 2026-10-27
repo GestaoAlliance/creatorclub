@@ -15,7 +15,7 @@ import { notices,
 
 /**
  * Fechamento mensal (D-CONTRACT). No dia 1, para cada creator, o mês que fechou entra nas vendas acumuladas desde a
- * última liberação; atingindo o mínimo do contrato (R$ 500 influencer/UGC, R$ 1.000 prescritor), grava uma
+ * última liberação; atingindo o mínimo do contrato (R$ 300 desde D-MIN300), grava uma
  * `CommissionRelease` e a comissão desses meses fica disponível para o saque (NF do dia 1 ao 10).
  * Vendas = subtotal atual dos pedidos elegíveis atribuídos (pagos ou parcialmente reembolsados, não cancelados, não
  * teste), pelo mês do pagamento (D-MONTH). Roda pelo worker (`/api/jobs/run`); `MonthClosing` impede refazer.

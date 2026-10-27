@@ -30,7 +30,8 @@ export function letters(n = 10): string {
 /** Monta uma marca com uma creator, um cupom CREATOR e um pedido. Dados isolados por chamada. */
 export async function seedBrand(prisma: PrismaClient) {
   const s = suffix();
-  const brand = await prisma.brand.create({ data: { slug: `marca-${s}`, name: `Marca ${s}` } });
+  // Mínimos de antes de D-MIN300 (R$ 500 e R$ 1.000): os testes da liberação precisam de dois valores diferentes.
+  const brand = await prisma.brand.create({ data: { slug: `marca-${s}`, name: `Marca ${s}`, releaseMinCents: 50_000, releaseMinPrescriberCents: 100_000 } });
   const account = await prisma.creatorAccount.create({
     data: { name: `Creator ${s}`, email: `creator-${s}@example.com` },
   });

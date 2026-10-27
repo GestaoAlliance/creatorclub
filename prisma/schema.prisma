@@ -37,8 +37,8 @@ model Brand {
   withdrawalWindowEndDay    Int       @default(10)
   commissionHoldDays        Int       @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
   /// D-CONTRACT: vendas acumuladas mínimas para liberar a comissão no fechamento do mês.
-  releaseMinCents           Int       @default(50000)
-  releaseMinPrescriberCents Int       @default(100000)
+  releaseMinCents           Int       @default(30000) // D-MIN300: R$ 300 em todas as marcas
+  releaseMinPrescriberCents Int       @default(30000)
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão

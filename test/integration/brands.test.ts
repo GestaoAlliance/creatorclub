@@ -20,7 +20,7 @@ describe("marcas e papéis por marca (A1b, banco real)", () => {
     expect(slugFrom("VermeFree Saúde")).toBe("vermefree-saude");
     const name = `Verme ${letters(5)}`;
     const b = await createBrand(prisma, sa, { name, primaryColor: "#0f766e", legalName: " Verme LTDA ", cnpj: "11.222.333/0001-81" });
-    expect(b).toMatchObject({ slug: slugFrom(name), primaryColor: "#0F766E", legalName: "Verme LTDA", nfTakerDocument: "11222333000181", releaseMinCents: 50_000 });
+    expect(b).toMatchObject({ slug: slugFrom(name), primaryColor: "#0F766E", legalName: "Verme LTDA", nfTakerDocument: "11222333000181", releaseMinCents: 30_000, releaseMinPrescriberCents: 30_000 });
     await expect(createBrand(prisma, sa, { name, primaryColor: "#000000", legalName: "", cnpj: "" })).rejects.toThrow(/Já existe/);
     await expect(createBrand(prisma, sa, { name: "X Y", primaryColor: "verde", legalName: "", cnpj: "" })).rejects.toThrow(/#RRGGBB/);
     await expect(createBrand(prisma, sa, { name: "X Z", primaryColor: "#000000", legalName: "", cnpj: "123" })).rejects.toThrow(/14 números/);
