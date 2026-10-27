@@ -45,6 +45,8 @@ export async function payoutSummary(prisma: PrismaClient, actor: Actor, brandIds
     }),
   ]);
 
+  // M5.1: compras com o saldo esperando a Gestão também reservam o saldo.
+  const purchases = await prisma.shipment.findMany({ where: { ...where, status: "AWAITING_APPROVAL", balanceCents: { not: null } }, select: { creatorId: true, balanceCents: true } });
   let availableCents = 0;
   let heldCents = 0;
   for (const brand of brands) {
@@ -60,7 +62,7 @@ export async function payoutSummary(prisma: PrismaClient, actor: Actor, brandIds
     for (const id of ids) {
       const b = computeBalance(
         byCreator.get(id) ?? [],
-        open.filter((w) => w.creatorId === id),
+        [...open.filter((w) => w.creatorId === id), ...purchases.filter((p) => p.creatorId === id).map((p) => ({ amountCents: p.balanceCents! }))],
         now,
         { releasedThrough: released.get(id) ?? null },
       );

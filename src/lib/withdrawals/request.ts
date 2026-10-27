@@ -111,9 +111,14 @@ async function createRequest(
           },
         },
       });
-      const [balance, released] = await Promise.all([creatorBalance(tx, creator, creator.brand.timezone, now), releasedThroughFor(tx, [creator.id])]);
+      const [balance, released, openWithdrawal] = await Promise.all([
+        creatorBalance(tx, creator, creator.brand.timezone, now),
+        releasedThroughFor(tx, [creator.id]),
+        // A reserva do saldo também conta compras esperando a Gestão (M5.1); saque em aberto é só saque.
+        tx.withdrawal.findFirst({ where: { creatorId: creator.id, status: { in: ["REQUESTED", "APPROVED"] } }, select: { id: true } }),
+      ]);
       const errors = checkWithdrawalRequest(
-        { amountCents: input.amountCents, availableCents: balance.availableCents, hasOpenWithdrawal: balance.reservedCents > 0, now },
+        { amountCents: input.amountCents, availableCents: balance.availableCents, hasOpenWithdrawal: openWithdrawal !== null, now },
         {
           minCents: creator.brand.withdrawalMinCents,
           windowStartDay: creator.brand.withdrawalWindowStartDay,

@@ -33,6 +33,8 @@ export type BrandInput = {
   defaultDiscount?: string;
   /** D-D4SIGN: produto sugerido na mensagem de aprovação; vazio = sem a linha da sugestão. */
   approvalSuggestion?: string;
+  /** M5.1 (D-SHOPBALANCE): desconto da creator na loja com o saldo, em % ("0" a "90"). */
+  shopDiscount?: string;
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
 };
@@ -77,7 +79,14 @@ function clean(input: BrandInput) {
   };
   const defaultCommissionBps = pct(input.defaultRate, "Comissão padrão", 5000);
   const defaultDiscountBps = pct(input.defaultDiscount, "Desconto padrão", 5000);
+  let shopDiscountBps: number | undefined;
+  if (input.shopDiscount !== undefined) {
+    const t = input.shopDiscount.trim().replace(",", ".").replace("%", "") || "0";
+    if (!/^\d{1,2}(\.\d{1,2})?$/.test(t) || Number(t) > 90) throw new BrandError("Desconto da loja: de 0% a 90% (ex.: 0, 30 ou 12,5).");
+    shopDiscountBps = Math.round(Number(t) * 100);
+  }
   const defaults = {
+    ...(shopDiscountBps !== undefined && { shopDiscountBps }),
     ...(defaultCommissionBps !== undefined && { defaultCommissionBps }),
     ...(defaultDiscountBps !== undefined && { defaultDiscountBps }),
   };
@@ -115,7 +124,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, defaultCommissionBps: true, defaultDiscountBps: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -150,6 +159,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfInstructions: true,
       whatsappInstance: true,
       approvalSuggestion: true,
+      shopDiscountBps: true,
       products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
       storeUrl: true,
       defaultCommissionBps: true,

@@ -98,7 +98,7 @@ export async function chooseKit(
 
 /** Pedido esperando aprovação, conferido para quem decide (Gestão da marca, `creators.edit`). */
 async function awaiting(prisma: PrismaClient, actor: Actor | null, shipmentId: string) {
-  const s = await prisma.shipment.findUnique({ where: { id: shipmentId }, select: { brandId: true, creatorId: true, status: true } });
+  const s = await prisma.shipment.findUnique({ where: { id: shipmentId }, select: { brandId: true, creatorId: true, status: true, balanceCents: true } });
   if (!s) throw new ShipmentError("Pedido não encontrado.");
   if (!actor || !can(actor.grants, "creators.edit", s.brandId)) throw new ShipmentError("Só a Gestão aprova pedidos.");
   if (s.status !== "AWAITING_APPROVAL") throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
@@ -111,6 +111,22 @@ export async function approveShipment(prisma: PrismaClient, actor: Actor | null,
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.shipment.updateMany({ where: { id: shipmentId, status: "AWAITING_APPROVAL" }, data: { status: "PREPARING", approvedAt: now, approvedById: actor!.userId } });
     if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
+    // M5.1 (D-SHOPBALANCE): compra com o saldo aprovada sai do extrato (a reserva some junto, na mesma transação).
+    if (s.balanceCents) {
+      const items = await tx.shipmentItem.findMany({ where: { shipmentId }, select: { title: true, quantity: true } });
+      await tx.ledgerEntry.create({
+        data: {
+          brandId: s.brandId,
+          creatorId: s.creatorId,
+          type: "PURCHASE",
+          amountCents: -s.balanceCents,
+          availableAt: now,
+          idempotencyKey: `purchase:${shipmentId}`,
+          note: `Compra com o saldo: ${items.map((i) => `${i.quantity}× ${i.title}`).join(", ")}`.slice(0, 500),
+          createdById: actor!.userId,
+        },
+      });
+    }
     await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.approved", entity: "Shipment", entityId: shipmentId, after: {} } });
   });
 }

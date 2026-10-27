@@ -12,7 +12,8 @@ export type LedgerType =
   | "WITHDRAWAL"
   | "ADJUSTMENT"
   | "OPENING_BALANCE"
-  | "PRIZE";
+  | "PRIZE"
+  | "PURCHASE";
 
 export type LedgerEntry = {
   type: LedgerType;
@@ -44,7 +45,7 @@ export type Balance = {
   totalCents: Cents;
   /** Créditos ainda em retenção. */
   heldCents: Cents;
-  /** Reservado por saques solicitados e ainda não pagos. */
+  /** Reservado por saques solicitados e ainda não pagos e por compras com o saldo esperando a Gestão (M5.1). */
   reservedCents: Cents;
   /** O que pode ser pedido em saque agora (pode ser negativo). */
   availableCents: Cents;

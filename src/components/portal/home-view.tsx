@@ -21,7 +21,7 @@ export function HomeView({ s, base, coupons, ugc = false }: { s: PortalSummary; 
   if (ugc) return <UgcHome s={s} base={base} monthName={monthName} coupons={coupons} />;
 
   const cards = [
-    { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} em saque` : "já liberado para você", Icon: Wallet, accent: true, help: "saldo" as HelpId },
+    { label: "Disponível para saque", value: formatBRL(s.balance.availableCents), note: s.balance.reservedCents > 0 ? `${formatBRL(s.balance.reservedCents)} reservado (saque ou compra)` : "já liberado para você", Icon: Wallet, accent: true, help: "saldo" as HelpId },
     { label: "A liberar", value: formatBRL(s.balance.heldCents), note: s.balance.heldCents > 0 ? releaseNote(s.release) : "nada em espera", Icon: Clock, help: "a-liberar" as HelpId },
     { label: "Aguardando pagamento", value: formatBRL(s.pending.salesCents), note: s.pending.orders ? `${s.pending.orders} ${s.pending.orders === 1 ? "pedido" : "pedidos"} com seu cupom` : "nenhum pedido esperando", Icon: Hourglass, help: "aguardando" as HelpId },
     { label: `Vendas de ${monthName}`, value: formatBRL(s.salesCents), note: `${s.salesCount} ${s.salesCount === 1 ? "pedido" : "pedidos"}`, Icon: ShoppingBag, help: "vendas-mes" as HelpId },

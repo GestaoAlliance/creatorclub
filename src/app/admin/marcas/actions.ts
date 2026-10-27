@@ -23,6 +23,7 @@ const input = (form: FormData) => ({
   defaultRate: String(form.get("defaultRate") ?? ""),
   defaultDiscount: String(form.get("defaultDiscount") ?? ""),
   ...(form.has("approvalSuggestion") ? { approvalSuggestion: String(form.get("approvalSuggestion") ?? "") } : {}),
+  ...(form.has("shopDiscount") ? { shopDiscount: String(form.get("shopDiscount") ?? "") } : {}),
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
 });
 

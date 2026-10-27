@@ -2,7 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { computeBalance, entryMonth, isHeldByRelease, isMonthKey, monthKey, type Balance, type LedgerType } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
-import { releaseProgress, releasedThroughFor, type ReleaseProgress } from "./release";
+import { openReservations, releaseProgress, releasedThroughFor, type ReleaseProgress } from "./release";
 
 /**
  * Saldo e extrato da creator numa marca (E5.4). O saldo é a soma de todos os lançamentos (nunca cortado em zero,
@@ -20,6 +20,7 @@ export const LEDGER_LABEL: Record<LedgerType, string> = {
   WITHDRAWAL: "Saque",
   ADJUSTMENT: "Ajuste",
   PRIZE: "Prêmio de campanha",
+  PURCHASE: "Compra com o saldo",
   OPENING_BALANCE: "Saldo de abertura",
 };
 
@@ -64,7 +65,7 @@ export async function readLedger(
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: { order: { select: { name: true, paidAt: true } } },
     }),
-    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: { in: ["REQUESTED", "APPROVED"] } }, select: { amountCents: true } }),
+    openReservations(prisma, { creatorId: creator.id, brandId: creator.brandId }),
     releasedThroughFor(prisma, [creator.id]),
   ]);
   const release = { releasedThrough: released.get(creator.id) ?? null };

@@ -45,6 +45,8 @@ model Brand {
   /// U6 (D-PROSPECT): mensagens prontas da prospecção ({NOME} e {LINK}); null = texto padrão da marca.
   prospectFirstMessage      String?
   prospectProposalMessage   String?
+  /// M5.1 (D-SHOPBALANCE): desconto da creator sobre o preço da loja na compra com o saldo (0 = preço da loja).
+  shopDiscountBps           Int       @default(0)
   /// D-D4SIGN: produto sugerido na mensagem de aprovação (escolhido em Marcas); null = mensagem sem a sugestão.
   approvalSuggestion        String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
@@ -518,6 +520,7 @@ enum LedgerType {
   ADJUSTMENT
   OPENING_BALANCE
   PRIZE // M4.5 (D-CAMPAIGN): prêmio de campanha, disponível na hora
+  PURCHASE // M5.1 (D-SHOPBALANCE): compra de produtos com o saldo, lançada quando a Gestão aprova
 }
 
 /// Cada centavo que entra ou sai do saldo. Só recebe inserções (trigger na migração).
@@ -762,6 +765,8 @@ model Product {
   /// M3.2 (D-COST): custo unitário (primeira variante) lido da Shopify com `read_inventory`; null = sem custo cadastrado.
   costCents    Int?
   costSyncedAt DateTime?
+  /// M5.1 (D-SHOPBALANCE): preço de venda da primeira variante na Shopify (catálogo diário); null = sem preço ainda.
+  priceCents   Int?
   /// D-KITOPTIONS: produto que a creator pode escolher no portal (aba Pedidos). Marca sem nenhum marcado: todos os ativos.
   kitOption    Boolean   @default(false)
   createdAt    DateTime  @default(now())
@@ -795,6 +800,8 @@ model Shipment {
   trackingCode  String?
   /// M3.2 (D-COST): frete pago pelo envio (digitado ao marcar como enviado); null = não informado.
   freightCents  Int?
+  /// M5.1 (D-SHOPBALANCE): compra com o saldo — valor reservado enquanto espera a Gestão e lançado no extrato ao aprovar.
+  balanceCents  Int?
   createdById   String
   shippedAt     DateTime?
   shippedById   String?
