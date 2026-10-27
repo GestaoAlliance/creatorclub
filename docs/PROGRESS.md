@@ -7,9 +7,7 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **2)** novo produto
-  liberado sozinho ao vender R$ 1.000 nos primeiros 45 dias da aprovação e depois a cada 30 dias (todas as marcas);
-  **3)** saque só a partir de R$ 300 em vendas acumuladas, nas 3 marcas; **4)** creator CPF ou CNPJ (o saque muda);
+- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **3)** saque só a partir de R$ 300 em vendas acumuladas, nas 3 marcas; **4)** creator CPF ou CNPJ (o saque muda);
   "deletar creator" (entender o objetivo: nada é apagado); login da Mafe para ver quem tem TikTok; "Tem TikTok Shop
   ativo?" no formulário. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -301,6 +299,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-197 — 2026-10-27 — Produto pela meta de R$ 1.000 (D-GOALKIT, passo 2 da Vanessa)
+- **Decisões do responsável:** substitui o kit mensal por faixa; janelas fixas (45 dias, depois 30 em 30); liberado na
+  hora; quem já é creator conta a partir de hoje.
+- **Feito:** `Creator.goalStartAt` (aprovação; migração põe 2026-10-27 em quem já existe); `KitGrant` tipo `GOAL` com o
+  número da janela (`window`, índice único novo, trava `KitGrant_kind`); `grantGoalKits` no worker libera 1 produto e
+  avisa ("Meta batida!"); o fechamento do mês não dá mais kit por faixa; portal mostra "Meta batida: você ganhou 1
+  produto!".
+- **Atenção:** os textos de contrato publicados ainda falam do kit mensal por faixa; revisar quando der.
+- **Verificado:** 258 unitários (novo `goal-kit.test.ts`), 261 de integração (`kits.test.ts` refeito para a meta),
+  typecheck, migração sem divergência.
 
 ### CP-196 — 2026-10-27 — Foto do produto no pedido da creator
 - **Pedido do responsável:** foto de cada produto no pedido (aba Pedidos), com as fotos que ele mandou.

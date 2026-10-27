@@ -402,6 +402,8 @@ export async function approveApplication(
           contractStart: new Date(`${start}T00:00:00Z`),
           contractEnd: template ? new Date(`${addMonthsToDay(start, template.months)}T00:00:00Z`) : null,
           contractRequiredAt: null,
+          // D-GOALKIT: as janelas da meta de vendas (45 dias, depois 30) começam na aprovação.
+          goalStartAt: new Date(`${start}T00:00:00Z`),
         },
       });
       const c = await tx.coupon.create({

@@ -34,15 +34,18 @@ export const notices = {
     body: `As vendas até ${monthName(month)} chegaram ao mínimo do contrato e a comissão ficou disponível. Peça o saque do dia 1 ao dia 10, com a nota fiscal do valor total.`,
     path: "/saque",
   }),
-  /** Kit do mês (D-KIT) ou de boas-vindas (D-WELCOMEKIT). */
-  kitAvailable: (kind: "MONTHLY" | "WELCOME", month: string, products: number, brandSlug = "botanika"): Notice => ({
+  /** Kit do mês (D-KIT), de boas-vindas (D-WELCOMEKIT) ou da meta de vendas (D-GOALKIT; `month` = dia em que a janela começou). */
+  kitAvailable: (kind: "MONTHLY" | "WELCOME" | "GOAL", month: string, products: number, brandSlug = "botanika"): Notice => ({
     kind: "KIT_AVAILABLE",
     dedupeKey: `kit:${kind}:${month}`,
-    title: kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products, brandSlug)}` : `Você ganhou ${items(products, brandSlug)}`,
+    title:
+      kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products, brandSlug)}` : kind === "GOAL" ? `Meta batida! Você ganhou ${items(products, brandSlug)}` : `Você ganhou ${items(products, brandSlug)}`,
     body:
       kind === "WELCOME"
         ? "É o kit do início da sua parceria. Escolha os produtos em Pedidos e a equipe prepara o envio."
-        : `Pelas suas vendas de ${monthName(month)}. Escolha os produtos em Pedidos e a equipe prepara o envio.`,
+        : kind === "GOAL"
+          ? "Você chegou a R$ 1.000 em vendas com o seu cupom. Escolha em Pedidos e a equipe prepara o envio."
+          : `Pelas suas vendas de ${monthName(month)}. Escolha os produtos em Pedidos e a equipe prepara o envio.`,
     path: "/envios",
   }),
   shipped: (shipmentId: string, carrier: string, trackingCode: string): Notice => ({

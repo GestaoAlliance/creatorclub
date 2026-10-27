@@ -21,6 +21,7 @@ export function KitPicker({
   kit,
   monthLabel,
   welcome = false,
+  goal = false,
   products,
   address,
   informed = null,
@@ -30,6 +31,8 @@ export function KitPicker({
   kit: { id: string; products: number };
   monthLabel: string;
   welcome?: boolean;
+  /** D-GOALKIT: produto da meta de R$ 1.000. */
+  goal?: boolean;
   products: { id: string; title: string; photo?: string | null }[];
   address: Address | null;
   informed?: string | null;
@@ -49,10 +52,10 @@ export function KitPicker({
     <section className={`${ui.card} ring-1 ring-brand/30`}>
       <div className="flex flex-col gap-1">
         <h2 className={ui.h2}>
-          <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
+          <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : goal ? `Meta batida: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
         </h2>
         <p className={ui.muted}>
-          {welcome ? "É o kit do início da sua parceria." : `Pelas suas vendas de ${monthLabel}.`} {single ? "Confira o endereço e envie o pedido" : "Escolha os produtos"}: a equipe aprova o pedido e prepara o envio para o seu endereço.
+          {welcome ? "É o kit do início da sua parceria." : goal ? "Você chegou a R$ 1.000 em vendas com o seu cupom." : `Pelas suas vendas de ${monthLabel}.`} {single ? "Confira o endereço e envie o pedido" : "Escolha os produtos"}: a equipe aprova o pedido e prepara o envio para o seu endereço.
         </p>
       </div>
       <form action={action} className="flex flex-col gap-4">

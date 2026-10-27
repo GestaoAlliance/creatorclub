@@ -104,7 +104,7 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     const r = await approveApplication(prisma, gestao, { ...base, contractTemplateId: template.id }, shop.clientFor, now);
     expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId } })).toMatchObject({
       contractSigned: true, contractRequiredAt: null, contractTemplateId: template.id,
-      contractStart: new Date("2026-10-26T00:00:00Z"), contractEnd: new Date("2027-04-26T00:00:00Z"),
+      contractStart: new Date("2026-10-26T00:00:00Z"), contractEnd: new Date("2027-04-26T00:00:00Z"), goalStartAt: new Date("2026-10-26T00:00:00Z"),
     });
     expect(await prisma.kitGrant.findMany({ where: { creatorId: r.creatorId }, select: { kind: true, products: true, month: true } })).toEqual([{ kind: "WELCOME", products: 1, month: "2026-10" }]);
     expect(await prisma.notification.count({ where: { creatorId: r.creatorId, kind: "KIT_AVAILABLE" } })).toBe(1);
