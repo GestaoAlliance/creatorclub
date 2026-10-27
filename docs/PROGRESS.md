@@ -299,6 +299,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-205 — 2026-10-28 — Autentique desconectado e pedidos de assinatura cancelados (D-D4SIGN)
+- **Pendente desde o CP-191:** com o Supabase do Claude sem permissão, vai por migração (`20261028150000_autentique_off`):
+  conta do Autentique de cada marca desconectada (chave descartada) e pedidos de assinatura que esperavam marcados
+  como cancelados, com auditoria; o histórico fica.
+- **M5.2 (estoque):** parado até o Álvaro dizer se as marcas usam o Bling.
+- **Verificado:** migração sem divergência e rodada num banco local.
+
 ### CP-204 — 2026-10-27 — Loja com o saldo (M5.1, D-SHOPBALANCE-2)
 - **Decisões do responsável:** preço da loja com desconto (o % ainda não definido: fica 0% e editável em Marcas); frete
   da marca; todos os produtos ativos; Gestão aprova; sem nota.
