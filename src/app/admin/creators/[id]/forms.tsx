@@ -103,10 +103,10 @@ export function ChecklistForm({ creatorId, c, templates, noPayout = false }: { c
         <input type="hidden" name="receivesAsIndividual" value={c.receivesAsIndividual ? "pf" : "pj"} />
       ) : (
         <label className={ui.label}>
-          Recebe como
+          Tipo de recebimento
           <select name="receivesAsIndividual" defaultValue={c.receivesAsIndividual ? "pf" : "pj"} className={ui.input}>
-            <option value="pj">Empresa (CNPJ, com nota fiscal)</option>
-            <option value="pf">Pessoa física (CPF, com recibo no portal)</option>
+            <option value="pj">Creator CNPJ (saque com nota fiscal)</option>
+            <option value="pf">Creator CPF (saque com recibo no portal)</option>
           </select>
         </label>
       )}

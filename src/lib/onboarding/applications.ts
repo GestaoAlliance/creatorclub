@@ -299,6 +299,8 @@ export async function approveApplication(
   actor: Actor | null,
   input: {
     applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string; contractTemplateId?: string | null;
+    /** Creator CPF (saque com recibo) ou CNPJ (com nota). Sem escolha: CNPJ se ela informou um válido, senão CPF. */
+    receivesAsIndividual?: boolean;
   },
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
@@ -402,6 +404,8 @@ export async function approveApplication(
           contractStart: new Date(`${start}T00:00:00Z`),
           contractEnd: template ? new Date(`${addMonthsToDay(start, template.months)}T00:00:00Z`) : null,
           contractRequiredAt: null,
+          // Pedido da Vanessa (2026-10-27): creator CPF saca com recibo; creator CNPJ, com nota fiscal.
+          receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14,
           // D-GOALKIT: as janelas da meta de vendas (45 dias, depois 30) começam na aprovação.
           goalStartAt: new Date(`${start}T00:00:00Z`),
         },
@@ -432,7 +436,7 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts: WELCOME_PRODUCTS, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts: WELCOME_PRODUCTS, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };

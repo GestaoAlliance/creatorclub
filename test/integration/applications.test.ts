@@ -79,6 +79,7 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     });
     expect(creator).toMatchObject({ status: "ACTIVE", categories: ["INFLUENCER"], source: "hunter_form", account: { email, cpf: "52998224725", pixKey: "maria@pix.com" } });
     expect(creator.withdrawalsUnlockedAt).not.toBeNull();
+    expect(creator.receivesAsIndividual).toBe(true); // sem CNPJ no formulário: creator CPF
     expect(creator.reviewedAt).not.toBeNull();
     expect(creator.couponAssignments[0]).toMatchObject({ coupon: { code, kind: "CREATOR", discountBps: 500, shopifyId: "gid://shopify/DiscountCodeNode/9" } });
     // F3: o cupom foi criado na Shopify (falsa), combinável e com o desconto escolhido.
@@ -101,9 +102,9 @@ describe("candidatas do formulário Hunter (banco real)", () => {
     const base = { applicationId: a.id, couponCode: letters(6), category: "INFLUENCER" as const, rateBps: 1500, discountBps: 500 };
     await expect(approveApplication(prisma, gestao, base, shop.clientFor)).rejects.toThrow(/versão do contrato/);
     const now = new Date("2026-10-26T15:00:00Z");
-    const r = await approveApplication(prisma, gestao, { ...base, contractTemplateId: template.id }, shop.clientFor, now);
+    const r = await approveApplication(prisma, gestao, { ...base, contractTemplateId: template.id, receivesAsIndividual: false }, shop.clientFor, now);
     expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId } })).toMatchObject({
-      contractSigned: true, contractRequiredAt: null, contractTemplateId: template.id,
+      contractSigned: true, contractRequiredAt: null, contractTemplateId: template.id, receivesAsIndividual: false,
       contractStart: new Date("2026-10-26T00:00:00Z"), contractEnd: new Date("2027-04-26T00:00:00Z"), goalStartAt: new Date("2026-10-26T00:00:00Z"),
     });
     expect(await prisma.kitGrant.findMany({ where: { creatorId: r.creatorId }, select: { kind: true, products: true, month: true } })).toEqual([{ kind: "WELCOME", products: 1, month: "2026-10" }]);
