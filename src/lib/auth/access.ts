@@ -27,7 +27,7 @@ async function target(prisma: PrismaClient, actor: Actor | null, userId: string)
   if (!actor) throw new AccessError("Sem permissão.");
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, disabledAt: true, roleGrants: { select: { id: true } }, creatorAccount: { select: { creators: { select: { brandId: true, brand: { select: { name: true } } } } } } },
+    select: { id: true, email: true, name: true, disabledAt: true, roleGrants: { select: { id: true } }, creatorAccount: { select: { creators: { select: { brandId: true, brand: { select: { name: true, slug: true } } } } } } },
   });
   if (!user || user.disabledAt) throw new AccessError("Pessoa não encontrada.");
   if (user.id === actor.userId) throw new AccessError("Para trocar a sua própria senha, use \"Esqueci a senha\" na tela de entrar.");
@@ -38,7 +38,7 @@ async function target(prisma: PrismaClient, actor: Actor | null, userId: string)
   const allowed = staff ? superAdmin : creators.some((c) => can(actor.grants, "creators.edit", c.brandId));
   if (!allowed) throw new AccessError("Sem permissão.");
   const brand = creators.find((c) => can(actor.grants, "creators.edit", c.brandId)) ?? creators[0];
-  return { user, brandId: brand?.brandId ?? null, brandName: brand?.brand.name ?? "Alliance" };
+  return { user, brandId: brand?.brandId ?? null, brandName: brand?.brand.name ?? "Alliance", brand: brand?.brand ?? null };
 }
 
 /** Link de nova senha (uso único, 1 hora) para a equipe mandar pelo WhatsApp. */
@@ -56,7 +56,7 @@ export async function emailPasswordReset(prisma: PrismaClient, actor: Actor | nu
   const token = await makeToken(t.user.email);
   const link = `${origin}/auth/confirm?token_hash=${encodeURIComponent(token)}&type=recovery&next=/entrar/nova-senha`;
   try {
-    await sender({ ...passwordResetEmail({ name: t.user.name, brandName: t.brandName, link }), to: t.user.email });
+    await sender({ ...passwordResetEmail({ name: t.user.name, brandName: t.brandName, link }), to: t.user.email, brand: t.brand });
   } catch (error) {
     if (error instanceof EmailError) throw new AccessError(`Não foi possível mandar o e-mail: ${error.message}`);
     throw error;

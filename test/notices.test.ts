@@ -30,5 +30,6 @@ describe("avisos por data e e-mail (U5b)", () => {
     expect(e.html).not.toContain("<b>");
     expect(siteOrigin({ VERCEL_PROJECT_PRODUCTION_URL: "creatorclub-six.vercel.app" })).toBe("https://creatorclub-six.vercel.app");
     expect(siteOrigin({})).toBeNull();
+    expect(siteOrigin({ APP_URL: "https://creatorclub.app.br/", VERCEL_PROJECT_PRODUCTION_URL: "creatorclub-six.vercel.app" })).toBe("https://creatorclub.app.br");
   });
 });

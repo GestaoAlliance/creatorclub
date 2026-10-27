@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { configuredSender, EmailError, resendSender } from "@/lib/email/sender";
+import { configuredSender, EmailError, fromAddress, resendSender } from "@/lib/email/sender";
 
 const msg = { to: "maria@example.com", subject: "Assunto", html: "<p>oi</p>", text: "oi", idempotencyKey: "invite-1" };
 
@@ -16,12 +16,12 @@ function fakeFetch(status: number, body: unknown, calls: { url: string; init: Re
 describe("remetente Resend (D-EMAIL)", () => {
   it("envia com a chave, o remetente, a chave de idempotência e o corpo certo", async () => {
     const f = fakeFetch(200, { id: "email-123" });
-    expect(await resendSender("re_test", "Creator Club <nao-responda@exemplo.com>", f.fn)(msg)).toEqual({ id: "email-123" });
+    expect(await resendSender("re_test", "exemplo.com", f.fn)(msg)).toEqual({ id: "email-123" });
     expect(f[0]!.url).toBe("https://api.resend.com/emails");
     const headers = f[0]!.init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer re_test");
     expect(headers["Idempotency-Key"]).toBe("invite-1");
-    expect(JSON.parse(String(f[0]!.init.body))).toEqual({ from: "Creator Club <nao-responda@exemplo.com>", to: ["maria@example.com"], subject: "Assunto", html: "<p>oi</p>", text: "oi" });
+    expect(JSON.parse(String(f[0]!.init.body))).toEqual({ from: "Creator Club <botanika@exemplo.com>", to: ["maria@example.com"], subject: "Assunto", html: "<p>oi</p>", text: "oi" });
   });
 
   it("recusa do provedor e falha de rede viram EmailError com o motivo", async () => {
@@ -32,7 +32,19 @@ describe("remetente Resend (D-EMAIL)", () => {
   it("sem chave ou sem remetente no ambiente, não há envio", () => {
     expect(configuredSender({})).toBeNull();
     expect(configuredSender({ RESEND_API_KEY: "re_x" })).toBeNull();
-    expect(configuredSender({ RESEND_API_KEY: " ", EMAIL_FROM: "a@b.c" })).toBeNull();
-    expect(configuredSender({ RESEND_API_KEY: "re_x", EMAIL_FROM: "a@b.c" })).toBeTypeOf("function");
+    expect(configuredSender({ RESEND_API_KEY: " ", EMAIL_DOMAIN: "b.c" })).toBeNull();
+    expect(configuredSender({ RESEND_API_KEY: "re_x", EMAIL_DOMAIN: "b.c" })).toBeTypeOf("function");
+  });
+
+  it("cada marca manda da própria caixa; sem marca (ou marca sem caixa) sai da padrão (D-EMAILFROM)", async () => {
+    const d = "creatorclub.app.br";
+    expect(fromAddress(d, { slug: "botanika", name: "Botanika" })).toBe("Botanika Creator Club <botanika@creatorclub.app.br>");
+    expect(fromAddress(d, { slug: "vermefree", name: "VermeFree" })).toBe("VermeFree Creator Club <vermefree@creatorclub.app.br>");
+    expect(fromAddress(d, { slug: "revita-derma", name: "Revita Derma" })).toBe("Revita Derma Creator Club <revita@creatorclub.app.br>");
+    expect(fromAddress(d, null)).toBe("Creator Club <botanika@creatorclub.app.br>");
+    expect(fromAddress(d, { slug: "outra", name: "Outra" })).toBe("Creator Club <botanika@creatorclub.app.br>");
+    const f = fakeFetch(200, { id: "e" });
+    await resendSender("k", d, f.fn)({ ...msg, brand: { slug: "revita-derma", name: "Revita Derma" } });
+    expect(JSON.parse(String(f[0]!.init.body)).from).toBe("Revita Derma Creator Club <revita@creatorclub.app.br>");
   });
 });

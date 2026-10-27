@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
@@ -17,7 +18,7 @@ export async function bulkInviteAction(creatorIds: string[]): Promise<BulkInvite
   const { brand } = await staffContext(actor);
   if (!brand) return { error: "Escolha a marca no topo." };
   const h = await headers();
-  const origin = h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
+  const origin = publicOrigin(h);
   try {
     return { results: await inviteCreatorsInBulk(db(), actor, brand.id, creatorIds, { origin, email: configuredSender() }) };
   } catch (error) {

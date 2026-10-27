@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { creatorInviteEmail, staffInviteEmail } from "@/domain";
-import { EmailError, type EmailSender } from "@/lib/email/sender";
+import { EmailError, type EmailBrand, type EmailSender } from "@/lib/email/sender";
 
 /**
  * Convite por e-mail (D-EMAIL): logo depois de criar o convite, o sistema manda o link para o e-mail da pessoa. O link
@@ -21,12 +21,12 @@ export const STAFF_ROLE_LABEL: Record<string, string> = {
 async function deliver(
   prisma: PrismaClient,
   sender: EmailSender,
-  target: { table: "creatorInvite" | "staffInvite"; entity: string; inviteId: string; brandId: string | null; actorId: string; to: string },
+  target: { table: "creatorInvite" | "staffInvite"; entity: string; inviteId: string; brandId: string | null; actorId: string; to: string; brand: EmailBrand | null },
   content: ReturnType<typeof creatorInviteEmail>,
   now: Date,
 ): Promise<EmailOutcome> {
   try {
-    const { id } = await sender({ ...content, to: target.to, idempotencyKey: `invite-${target.inviteId}` });
+    const { id } = await sender({ ...content, to: target.to, brand: target.brand, idempotencyKey: `invite-${target.inviteId}` });
     await prisma.$transaction([
       target.table === "creatorInvite"
         ? prisma.creatorInvite.update({ where: { id: target.inviteId }, data: { emailedAt: now } })
@@ -50,14 +50,16 @@ export async function emailCreatorInvite(prisma: PrismaClient, sender: EmailSend
   if (!sender) return null;
   const invite = await prisma.creatorInvite.findUniqueOrThrow({
     where: { id: input.inviteId },
-    select: { expiresAt: true, account: { select: { name: true, email: true, creators: { select: { brandId: true, brand: { select: { name: true } } }, orderBy: { brand: { name: "asc" } } } } } },
+    select: { expiresAt: true, account: { select: { name: true, email: true, creators: { select: { brandId: true, brand: { select: { name: true, slug: true } } }, orderBy: { brand: { name: "asc" } } } } } },
   });
   const first = invite.account.creators[0];
   const brandName = invite.account.creators.map((c) => c.brand.name).join(" e ") || "Creator Club";
+  // Uma marca: sai da caixa dela; mais de uma: remetente padrão (D-EMAILFROM).
+  const brand = invite.account.creators.length === 1 ? first!.brand : null;
   return deliver(
     prisma,
     sender,
-    { table: "creatorInvite", entity: "CreatorInvite", inviteId: input.inviteId, brandId: first?.brandId ?? null, actorId: input.actorId, to: invite.account.email },
+    { table: "creatorInvite", entity: "CreatorInvite", inviteId: input.inviteId, brandId: first?.brandId ?? null, actorId: input.actorId, to: invite.account.email, brand },
     creatorInviteEmail({ name: invite.account.name, brandName, link: input.link, expiresAt: invite.expiresAt }),
     now,
   );
@@ -68,13 +70,13 @@ export async function emailStaffInvite(prisma: PrismaClient, sender: EmailSender
   if (!sender) return null;
   const invite = await prisma.staffInvite.findUniqueOrThrow({
     where: { id: input.inviteId },
-    select: { email: true, name: true, role: true, brandId: true, expiresAt: true, brand: { select: { name: true } } },
+    select: { email: true, name: true, role: true, brandId: true, expiresAt: true, brand: { select: { name: true, slug: true } } },
   });
   if (!invite.email) return null; // convite aberto (D-OPENINVITE): só pelo WhatsApp
   return deliver(
     prisma,
     sender,
-    { table: "staffInvite", entity: "StaffInvite", inviteId: input.inviteId, brandId: invite.brandId, actorId: input.actorId, to: invite.email },
+    { table: "staffInvite", entity: "StaffInvite", inviteId: input.inviteId, brandId: invite.brandId, actorId: input.actorId, to: invite.email, brand: invite.brand },
     staffInviteEmail({ name: invite.name, roleLabel: STAFF_ROLE_LABEL[invite.role] ?? invite.role, brandName: invite.brand?.name ?? null, link: input.link, expiresAt: invite.expiresAt }),
     now,
   );

@@ -10,6 +10,7 @@ import { percentToBps, ReviewError } from "@/lib/coupons/review";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { TeamError } from "@/lib/team/invites";
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
 
@@ -44,7 +45,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     });
     // Sem revalidatePath aqui: a linha sumiria da aba "Novas" junto com o convite e o botão de WhatsApp. A tela
     // atualiza quando a equipe clica em "Concluir" (router.refresh).
-    const origin = (await headers()).get("origin") ?? "";
+    const origin = publicOrigin(await headers());
     const { brand } = await db().creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { brand: { select: { slug: true, approvalSuggestion: true } } } });
     const suggestion = brand.approvalSuggestion;
     // D-SIGNUPACCOUNT: quem se cadastrou pelo site já tem senha: sem convite, ela entra pelo login.

@@ -10,7 +10,7 @@
  *
  * Daqui em diante cada resposta nova aparece em "Candidatas" no painel em segundos.
  */
-var URL_DO_PAINEL = "https://creatorclub-six.vercel.app/api/forms/botanika/captacao";
+var URL_DO_PAINEL = "https://creatorclub.app.br/api/forms/botanika/captacao";
 var SEGREDO = "COLE_AQUI_O_SEGREDO";
 
 function instalar() {

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
@@ -19,5 +20,5 @@ export default async function HuntersPage() {
   const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
   const brands = await hunterPanel(db(), inBrand);
   const h = await headers();
-  return <HuntersView brands={brands} origin={`${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`} />;
+  return <HuntersView brands={brands} origin={publicOrigin(h)} />;
 }

@@ -10,6 +10,7 @@ import { creatorContractSignature } from "@/lib/contracts/sign";
 import { staffContext } from "@/lib/staff/context";
 import { OtherBrandNotice } from "@/components/staff/other-brand";
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { creatorNumbers, creatorTimeline } from "@/lib/creators/timeline";
 import { brandTags } from "@/lib/creators/tags";
 import { creatorPosts, postCampaignOptions } from "@/lib/posts/posts";
@@ -67,6 +68,6 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   ]);
   // Link rastreado que ela divulga (D-LINK), com o domínio desta requisição (o mesmo do portal).
   const h = await headers();
-  const linkBase = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}/r/${own.slug}/`;
+  const linkBase = `${publicOrigin(h)}/r/${own.slug}/`;
   return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} returnDays={RETURN_DAYS} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} today={dayKey(new Date())} />;
 }

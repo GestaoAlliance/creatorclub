@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { redirect } from "next/navigation";
 import { CopyButton } from "@/components/portal/copy-button";
 import { Card, PageHeader } from "@/components/ui/page";
@@ -17,7 +18,7 @@ export default async function ClaudePage() {
   if (!actor) redirect("/entrar?next=/admin/claude");
   if (actor.grants.length === 0) redirect("/conta");
   const h = await headers();
-  const url = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}/api/mcp`;
+  const url = `${publicOrigin(h)}/api/mcp`;
   const active = await db().mcpToken.findMany({
     where: { userId: actor.userId, kind: "REFRESH", revokedAt: null, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -14,5 +15,5 @@ export default async function IndicacoesPage() {
   if (!actor.grants.some((g) => g.role === "HUNTER")) redirect("/admin");
   const links = await myHunterPanel(db(), actor);
   const h = await headers();
-  return <IndicacoesView links={links} origin={`${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`} />;
+  return <IndicacoesView links={links} origin={publicOrigin(h)} />;
 }
