@@ -299,6 +299,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-206 — 2026-10-27 — Domínio creatorclub.app.br e e-mail por marca (D-DOMAIN, D-EMAILFROM)
+- **Feito fora do código:** DNS do domínio na Cloudflare (site e `www` para a Vercel, registros do Resend; `mail` sem
+  proxy e SPF corrigido para as caixas do Turbo Cloud); domínio verificado na Vercel (certificado emitido) e no Resend.
+- **Código:** `src/lib/site.ts` — todo link usa `APP_URL` (convites, cupons, indicações, hunters, prospecção, nova senha,
+  conector do Claude, e-mails dos avisos, registro dos webhooks da Shopify); o proxy manda as telas abertas pelo
+  endereço antigo para o domínio novo (integrações em `/api`, `/oauth`, `/.well-known` e `/r/` ficam). Remetente por
+  marca no Resend (`EMAIL_DOMAIN` no lugar de `EMAIL_FROM`). Scripts dos formulários em `docs/forms/` com o domínio novo
+  (os já instalados seguem funcionando no endereço antigo).
+- **Falta (responsável):** criar as caixas `botanika@`, `vermefree@` e `revita@` no Turbo Cloud; no Supabase Auth,
+  URL do site e de retorno com o domínio novo e o SMTP do Resend.
+- **Verificado:** testes (unitários e de integração), typecheck e build.
+
 ### CP-205 — 2026-10-28 — Autentique desconectado e pedidos de assinatura cancelados (D-D4SIGN)
 - **Pendente desde o CP-191:** com o Supabase do Claude sem permissão, vai por migração (`20261028150000_autentique_off`):
   conta do Autentique de cada marca desconectada (chave descartada) e pedidos de assinatura que esperavam marcados

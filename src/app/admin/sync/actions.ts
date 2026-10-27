@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { configuredOrigin } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -15,7 +16,7 @@ export async function connectAction(_prev: FormState, form: FormData): Promise<F
   try {
     const h = await headers();
     const prodHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-    const appUrl = prodHost ? `https://${prodHost}` : (h.get("origin") ?? "");
+    const appUrl = configuredOrigin() ?? (prodHost ? `https://${prodHost}` : (h.get("origin") ?? ""));
     const actor = await currentActor();
     const brandId = String(form.get("brandId") ?? "");
     const r = await connectShopifyStore(db(), actor, {

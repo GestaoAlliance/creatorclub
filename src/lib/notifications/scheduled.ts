@@ -3,6 +3,7 @@ import { accumulatedSales, dayKey, isUgcOnly, monthKey, noticeEmail, notices, re
 import { creatorBalance, releasedThroughFor, salesByMonth } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import type { EmailSender } from "@/lib/email/sender";
+import { configuredOrigin } from "@/lib/site";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
 import { notify } from "./notify";
 
@@ -131,6 +132,7 @@ export async function emailPendingNotices(
       await sender({
         ...noticeEmail({ name, brandName: n.brand.name, title: n.title, body: n.body, link: `${origin}${n.href ?? `/portal/${n.brand.slug}`}` }),
         to: email,
+        brand: n.brand,
         idempotencyKey: `notice-${n.id}`,
       });
     } catch {
@@ -142,8 +144,10 @@ export async function emailPendingNotices(
   return sent;
 }
 
-/** Endereço público do site para os links do e-mail (Vercel fornece o de produção). */
+/** Endereço público do site para os links do e-mail: `APP_URL` (D-DOMAIN) ou o de produção que a Vercel fornece. */
 export function siteOrigin(env: Record<string, string | undefined> = process.env): string | null {
+  const configured = configuredOrigin(env);
+  if (configured) return configured;
   const host = env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   return host ? `https://${host.replace(/^https?:\/\//, "")}` : null;
 }

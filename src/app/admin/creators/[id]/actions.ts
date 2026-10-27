@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -98,7 +99,7 @@ export async function inviteAction(_p: State, form: FormData): Promise<State> {
   return run(id, async () => {
     const actor = await currentActor();
     const { token, invite } = await createCreatorInvite(db(), actor, String(form.get("accountId")));
-    const origin = (await headers()).get("origin") ?? "";
+    const origin = publicOrigin(await headers());
     const link = `${origin}/convite/${token}`;
     // D-EMAIL: com remetente configurado, o convite também vai por e-mail; sem ele, só o link na tela.
     const mail = await emailCreatorInvite(db(), configuredSender(), { inviteId: invite.id, actorId: actor!.userId, link });

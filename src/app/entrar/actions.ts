@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { normalizeEmail, passwordProblem, safeNextPath } from "@/lib/auth/rules";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -28,7 +29,7 @@ export async function signOut(): Promise<void> {
 export async function requestPasswordReset(_prev: FormState, form: FormData): Promise<FormState> {
   const email = normalizeEmail(form.get("email"));
   if (!email) return { error: "Informe um e-mail válido." };
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = publicOrigin(await headers());
   const supabase = await supabaseServer();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/entrar/nova-senha`,

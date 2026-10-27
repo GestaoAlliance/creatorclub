@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { HomeView } from "@/components/portal/home-view";
 import { KitBanner } from "@/components/portal/kit-banner";
 import { BirthdayAsk } from "@/components/portal/birthday-ask";
@@ -28,10 +29,8 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
   ]);
   // M4.5 (D-CAMPAIGN): campanha aberta (em breve ou acontecendo) aparece no Início.
   const open = (await portalCampaigns(db(), ctx)).filter((c) => c.phase === "SOON" || c.phase === "RUNNING");
-  // O link usa o endereço por onde o portal foi aberto (funciona no domínio novo sem mudar nada).
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  // D-DOMAIN: o link sai sempre com o domínio do site (APP_URL).
+  const origin = publicOrigin(await headers());
   return (
     <div className="flex flex-col gap-6">
       {kit && <KitBanner base={base} brandSlug={ctx.brand.slug} products={kit.products} welcome={kit.kind === "WELCOME"} />}
@@ -58,7 +57,7 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
         </span>
       </Link>
       {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
-      <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin: `${proto}://${host}`, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
+      <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
     </div>
   );
 }

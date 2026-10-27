@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { AccessError, emailPasswordReset, passwordResetLink } from "@/lib/auth/access";
 import { currentActor } from "@/lib/auth/current";
 import { supabaseRecoveryToken } from "@/lib/auth/recovery";
@@ -9,10 +10,7 @@ import { configuredSender } from "@/lib/email/sender";
 
 export type ResetState = { error?: string; ok?: string; link?: string } | undefined;
 
-const originOf = async () => {
-  const h = await headers();
-  return h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}`;
-};
+const originOf = async () => publicOrigin(await headers());
 
 /** M4.4b (D-ACCESS): nova senha — link para o WhatsApp ou e-mail. */
 export async function resetPasswordAction(_prev: ResetState, form: FormData): Promise<ResetState> {

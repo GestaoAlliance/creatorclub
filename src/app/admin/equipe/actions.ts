@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -20,7 +21,7 @@ export async function inviteAction(_prev: InviteState, form: FormData): Promise<
       brandId: form.get("brandId"),
       extraBrandIds: form.getAll("extraBrandIds"),
     });
-    const origin = (await headers()).get("origin") ?? "";
+    const origin = publicOrigin(await headers());
     const link = `${origin}/convite/${token}`;
     // D-EMAIL: com remetente configurado, o convite também vai por e-mail.
     const mail = await emailStaffInvite(db(), configuredSender(), { inviteId: invite.id, actorId: actor!.userId, link });

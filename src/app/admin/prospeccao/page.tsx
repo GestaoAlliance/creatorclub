@@ -1,5 +1,6 @@
 import { AtSign } from "lucide-react";
 import { headers } from "next/headers";
+import { publicOrigin } from "@/lib/site";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
@@ -29,7 +30,7 @@ export default async function ProspeccaoPage({ searchParams }: { searchParams: P
   const status = PROSPECT_STATUSES.find((s) => s === sp.situacao);
   const data = await listProspects(db(), actor, brand.id, { ...(status ? { status } : {}), ...(sp.quem ? { owner: sp.quem } : {}), followUp: sp.followup === "1", ...(sp.q ? { q: sp.q } : {}) });
   const h = await headers();
-  const msgs = await myProspectMessages(db(), actor, brand.id, `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`);
+  const msgs = await myProspectMessages(db(), actor, brand.id, publicOrigin(h));
   const seeApps = can(actor.grants, "creators.view", brand.id);
   const qs = (patch: Partial<Search>) => {
     const p = new URLSearchParams(Object.entries({ ...sp, ...patch }).filter(([, v]) => v) as [string, string][]);
