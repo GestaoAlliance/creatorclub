@@ -63,7 +63,7 @@ const BOTANIKA: ProspectMessages = {
   first:
     "Oi, (Nome)! Tudo bem?\nSou a {EU}, da {MARCA}.\n\nSeu perfil tem exatamente a energia e o cuidado que a marca busca transmitir. Estamos com vontade de começar uma parceria com você. 💜\n\nPosso te enviar como funciona?",
   proposal:
-    "Somos uma marca de suplementos naturais premium. 💜\n\nVou te explicar como funciona:\n\n•  Você recebe 3 suplementos para dar início à parceria;\n•  Cupom EXCLUSIVO com {DESCONTO} de desconto para a sua audiência;\n•  {COMISSAO} de comissão nas vendas realizadas com seu cupom.\n\nSe fizer sentido para você, peço que responda o forms para darmos continuidade a parceria:\n{LINK}\n\nSerá um prazer ter você no nosso time. ✨",
+    "Somos uma marca de suplementos naturais premium. 💜\n\nVou te explicar como funciona:\n\n•  Você recebe 1 suplemento para dar início à parceria;\n•  Ao atingir R$ 1.000 em vendas nos primeiros 45 dias, você recebe mais um;\n•  Cupom EXCLUSIVO com {DESCONTO} de desconto para a sua audiência;\n•  {COMISSAO} de comissão nas vendas realizadas com seu cupom.\n\nSe fizer sentido para você, peço que responda o forms para darmos continuidade a parceria:\n{LINK}\n\nSerá um prazer ter você no nosso time. ✨",
 };
 
 /** Padrão das outras marcas: sem falar de produto (cada marca escreve o dela). */

@@ -16,7 +16,8 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
 /**
  * Mensagem de aprovação (D-D4SIGN, texto da Vanessa em 2026-10-26, o mesmo para todas as marcas): o contrato já foi
  * assinado no D4Sign antes do cadastro. Fala do produto de boas-vindas (aba Pedidos, com a sugestão da marca quando há),
- * do cupom e do acesso ao portal: com o e-mail e a senha do cadastro (`loginUrl`) ou criando a senha pelo convite.
+ * do cupom e do acesso ao portal. Sem emoji de tecla numérica nem coração novo (🩷), que aparecem quebrados em alguns
+ * celulares (pedido do responsável, 2026-10-27): com o e-mail e a senha do cadastro (`loginUrl`) ou criando a senha pelo convite.
  */
 export function approvalMessage(p: {
   brand: string;
@@ -32,20 +33,20 @@ export function approvalMessage(p: {
   const pct = (p.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const suggestion = p.suggestion?.trim();
   const access = p.inviteLink
-    ? `3️⃣ Acesse seu portal: Acompanhe suas vendas, saldo, extrato e solicite seus saques. Crie sua senha por este link (vale 7 dias e funciona uma vez):\n\n🔗 ${p.inviteLink}`
+    ? `*3. Acesse seu portal:* Acompanhe suas vendas, saldo, extrato e solicite seus saques. Crie sua senha por este link (vale 7 dias e funciona uma vez):\n\n🔗 ${p.inviteLink}`
     : p.loginUrl
-      ? `3️⃣ Acesse seu portal: Acompanhe suas vendas, saldo, extrato e solicite seus saques usando o e-mail e a senha cadastrados.\n\n🔗 ${p.loginUrl}`
-      : "3️⃣ Acesse seu portal: Acompanhe suas vendas, saldo, extrato e solicite seus saques. Já já te mando o link de acesso.";
+      ? `*3. Acesse seu portal:* Acompanhe suas vendas, saldo, extrato e solicite seus saques usando o e-mail e a senha cadastrados.\n\n🔗 ${p.loginUrl}`
+      : "*3. Acesse seu portal:* Acompanhe suas vendas, saldo, extrato e solicite seus saques. Já já te mando o link de acesso.";
   return [
-    "Prontinho, sua parceria foi aprovada! 🩷✨",
-    `Como Creator Teste, você tem direito a escolher 1 produto da ${p.brand} para experimentar!`,
-    "1️⃣ Escolha seu produto: Acesse a aba Pedidos na plataforma e faça sua solicitação.",
+    "Prontinho, sua parceria foi aprovada! 💖✨",
+    `Para começar, você tem direito a escolher 1 produto da ${p.brand} para experimentar!`,
+    "*1. Escolha seu produto:* Acesse a aba Pedidos na plataforma e faça sua solicitação.",
     ...(p.ordersUrl ? [`🔗 ${p.ordersUrl}`] : []),
     ...(suggestion ? [`💡 Nossa sugestão: ${suggestion} ✨`] : []),
-    `2️⃣ Seu cupom exclusivo: ${p.coupon}`,
+    `*2. Seu cupom exclusivo:* ${p.coupon}`,
     `Seus seguidores ganham ${pct}% de desconto usando seu cupom, e cada venda fica registrada para você!`,
     access,
-    "Qualquer dúvida, é só me chamar por aqui! 🩷",
+    "Qualquer dúvida, é só me chamar por aqui! 💖",
   ].join("\n\n");
 }
 

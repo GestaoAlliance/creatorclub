@@ -300,6 +300,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-200 — 2026-10-27 — Mensagens sem "Creator Teste" e sem emoji que quebra
+- **Pedido do responsável:** a mensagem de aprovação saía com "Creator Teste" e com emojis quebrados; conferir as
+  mensagens das outras marcas.
+- **Feito:** aprovação: "Para começar, você tem direito a escolher 1 produto…"; números em negrito (*1.*, *2.*, *3.*) no
+  lugar dos emojis de tecla; 🩷 virou 💖. Prospecção (padrão da Botanika): "1 suplemento" no início e "mais um ao
+  atingir R$ 1.000 em 45 dias" (era "3 suplementos"). Resumo semanal: 🚨 no lugar de ⚠️.
+- **Verificado:** 258 unitários (teste novo: sem "teste", sem tecla, sem 🩷), typecheck.
+
 ### CP-199 — 2026-10-27 — Creator CPF ou CNPJ na aprovação (passo 4a da Vanessa)
 - **Decisões do responsável:** escolher na aprovação (sugerido pelo formulário); nomes "Creator CPF" e "Creator CNPJ".
 - **Feito:** "Tipo de recebimento" na aprovação (CNPJ se ela informou CNPJ, senão CPF; some para UGC); mesma escolha

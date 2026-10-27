@@ -48,7 +48,7 @@ export function weeklySummaryText(d: WeeklyData): string {
     a.contracts && `${plural(a.contracts, "contrato vencendo", "contratos vencendo")} ou vencido${a.contracts === 1 ? "" : "s"}`,
     a.kits && `${plural(a.kits, "kit parado", "kits parados")}`,
   ].filter(Boolean) as string[];
-  if (alerts.length) lines.push(["⚠️ *Alertas*", ...alerts.map((x) => `• ${x}`)].join("\n"));
+  if (alerts.length) lines.push(["🚨 *Alertas*", ...alerts.map((x) => `• ${x}`)].join("\n"));
   if (d.link) lines.push(`Painel: ${d.link}`);
   return lines.join("\n\n");
 }

@@ -34,11 +34,12 @@ describe("mensagem de aprovação (D-D4SIGN)", () => {
     const { approvalMessage } = await import("@/domain");
     const msg = approvalMessage({ brand: "Botanika", coupon: "MAYLEONEL", discountBps: 500, suggestion: "Hair Botanika", ordersUrl: "https://x.test/entrar?next=/portal/botanika/envios", loginUrl: "https://x.test/entrar?marca=botanika" });
     expect(msg).toContain("Prontinho, sua parceria foi aprovada!");
+    expect(msg).not.toMatch(/teste|\u20e3|🩷/i); // pedido do responsável: sem "Creator Teste" e sem emoji que quebra
     expect(msg).toContain("escolher 1 produto da Botanika");
     expect(msg).toContain("aba Pedidos");
     expect(msg).toContain("🔗 https://x.test/entrar?next=/portal/botanika/envios");
     expect(msg).toContain("💡 Nossa sugestão: Hair Botanika ✨");
-    expect(msg).toContain("2️⃣ Seu cupom exclusivo: MAYLEONEL");
+    expect(msg).toContain("*2. Seu cupom exclusivo:* MAYLEONEL");
     expect(msg).toContain("ganham 5% de desconto");
     expect(msg).toContain("e-mail e a senha cadastrados.\n\n🔗 https://x.test/entrar?marca=botanika");
     expect(msg).not.toMatch(/assin|contrato|suplemento/i);
