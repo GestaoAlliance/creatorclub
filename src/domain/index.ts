@@ -37,3 +37,4 @@ export * from "./posts";
 export * from "./prospect";
 export * from "./install";
 export * from "./shop";
+export * from "./phone";
