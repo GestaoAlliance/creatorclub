@@ -302,6 +302,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-194 — 2026-10-27 — Produtos que a creator pode escolher, marcados nas 3 marcas (D-KITOPTIONS)
+- **Pedido do responsável:** a Fátima (Revita) ainda via os 3 produtos. Revita só o Sérum Pepti Code; Botanika Hair
+  Botanika, Tri Magnésio e TetraVit; VermeFree o protocolo adulto.
+- **Feito:** migração `20261027120000_kit_options_brands` marca esses produtos pelo nome (kits e combos de fora), com
+  auditoria `product.kit_option`. Marca sem produto encontrado segue mostrando todos. A equipe confere em Marcas.
+- **Por quê por migração:** o Supabase do Claude estava sem permissão; a migração roda no deploy de produção.
+- **Verificado:** migração conferida num banco local (marca "Hair Botanika 60 cápsulas" e "Tri Magnésio", deixa
+  "Kit 3 Hair Botanika" de fora).
+
 ### CP-193 — 2026-10-26 — Início da marca só com vendas de creators
 - **Pedido do responsável:** tirar a loja inteira do Início das três marcas e deixar só as vendas de creators
   (influencers, UGC etc.). Respondeu: só no Início de cada marca (o Início da Alliance, a lista de Vendas e "Produtos
