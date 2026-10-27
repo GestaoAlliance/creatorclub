@@ -2,7 +2,7 @@
 
 import { Tag as TagIcon, X } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
-import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction } from "./actions";
+import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction, archiveAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { NICHES } from "@/domain";
@@ -422,6 +422,39 @@ export function ProfileForm({ creatorId, p }: { creatorId: string; p: { professi
       <label className={ui.label}>Alergias ou restrições (aparece em Envios)<input className={input} name="allergies" defaultValue={p.allergies ?? ""} maxLength={300} placeholder="ex.: lactose, glúten" /></label>
       <Msg state={state} />
       <button className={btn} disabled={pending}>Salvar perfil</button>
+    </form>
+  );
+}
+
+/** D-ARCHIVECREATOR: arquivar pede confirmação (o cupom é encerrado na Shopify). */
+export function ArchiveForm({ creatorId, archived }: { creatorId: string; archived: boolean }) {
+  const [state, action, pending] = useActionState(archiveAction, undefined);
+  const [confirm, setConfirm] = useState(false);
+  if (archived)
+    return (
+      <form action={action} className="flex flex-col gap-2">
+        <input type="hidden" name="creatorId" value={creatorId} />
+        <input type="hidden" name="undo" value="1" />
+        <p className={ui.hint}>Arquivada: não aparece nas listas nem na busca, e o cupom está encerrado na Shopify. Desarquivar volta como Pausada, com o cupom valendo.</p>
+        <button className={`${btn} self-start`} disabled={pending}>{pending ? "Desarquivando…" : "Desarquivar"}</button>
+        <Msg state={state} />
+      </form>
+    );
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      {!confirm ? (
+        <button type="button" className={`${ui.ghostSm} self-start`} onClick={() => setConfirm(true)}>Arquivar creator</button>
+      ) : (
+        <>
+          <p className={ui.hint}>Ela some das listas e da busca, fica Desligada e o cupom para de funcionar na loja. Vendas, extrato e saques ficam guardados.</p>
+          <div className="flex gap-2">
+            <button className={ui.dangerSm} disabled={pending}>{pending ? "Arquivando…" : "Sim, arquivar"}</button>
+            <button type="button" className={ui.ghostSm} onClick={() => setConfirm(false)}>Cancelar</button>
+          </div>
+        </>
+      )}
+      <Msg state={state} />
     </form>
   );
 }

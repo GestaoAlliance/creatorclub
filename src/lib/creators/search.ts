@@ -32,6 +32,7 @@ export async function searchCreators(prisma: PrismaClient, actor: Actor | null, 
   const text = { contains: q, mode: "insensitive" as const };
   const digits = q.replace(/\D/g, "");
 
+  // D-ARCHIVECREATOR: arquivada não aparece na busca (abre pela lista de arquivadas).
   const or: Prisma.CreatorWhereInput[] = [
     { account: { name: text } },
     { account: { email: text } },
@@ -44,7 +45,7 @@ export async function searchCreators(prisma: PrismaClient, actor: Actor | null, 
     or.push({ AND: [inBrands(fiscal), { account: { cpf: { contains: digits } } }] });
 
   const rows = await prisma.creator.findMany({
-    where: { ...inBrands(view), brand: { archivedAt: null }, OR: or },
+    where: { ...inBrands(view), archivedAt: null, brand: { archivedAt: null }, OR: or },
     take: 40,
     select: {
       id: true,
