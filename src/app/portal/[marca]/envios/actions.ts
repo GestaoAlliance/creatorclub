@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { AddressError } from "@/lib/shipments/address";
 import { chooseKit } from "@/lib/shipments/kits";
+import { buyWithBalance } from "@/lib/shipments/shop";
 import { confirmReceived, ShipmentError, updateMyAddress } from "@/lib/shipments/shipments";
 
 export type EnviosState = { error?: string; ok?: string } | undefined;
@@ -73,5 +74,25 @@ export async function chooseKitAction(_prev: EnviosState, form: FormData): Promi
       await chooseKit(db(), ctx, userId, String(form.get("kitId") ?? ""), items);
     },
     "Pedido enviado! A equipe confere, aprova e prepara o envio.",
+  );
+}
+
+/** M5.1 (D-SHOPBALANCE): compra com o saldo; o endereço confere/salva junto, como no kit. */
+export async function buyAction(_prev: EnviosState, form: FormData): Promise<EnviosState> {
+  const marca = String(form.get("marca") ?? "");
+  const items = [...form.entries()]
+    .filter(([k]) => k.startsWith("qty:"))
+    .map(([k, v]) => ({ productId: k.slice(4), quantity: Number(v) || 0 }));
+  return run(
+    marca,
+    async (userId) => {
+      const ctx = await currentPortalContext(marca);
+      if (form.has("zip")) {
+        const f = (k: string) => String(form.get(k) ?? "");
+        await updateMyAddress(db(), ctx, userId, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") });
+      }
+      await buyWithBalance(db(), ctx, userId, items);
+    },
+    "Pedido enviado! A equipe aprova e o valor sai do seu saldo.",
   );
 }

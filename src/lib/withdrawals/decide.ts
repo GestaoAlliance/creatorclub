@@ -3,7 +3,7 @@ import { checkNf, computeBalance, notices, parseNfseText } from "@/domain";
 import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
-import { ledgerEntriesWithMonth, releasedThroughFor } from "@/lib/commission/release";
+import { ledgerEntriesWithMonth, openReservations, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { pdfText } from "./nf";
 
@@ -184,7 +184,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
   const [entries, open, released] = ids.length
     ? await Promise.all([
         Promise.all([...brandTz].map(([brandId, tz]) => ledgerEntriesWithMonth(prisma, ids.filter((id) => rows.some((r) => r.creatorId === id && r.brandId === brandId)), tz))).then((x) => x.flat()),
-        prisma.withdrawal.findMany({ where: { creatorId: { in: ids }, status: { in: ["REQUESTED", "APPROVED"] } }, select: { creatorId: true, amountCents: true } }),
+        openReservations(prisma, { creatorId: { in: ids } }),
         releasedThroughFor(prisma, ids),
       ])
     : [[], [], new Map<string, string | null>()];

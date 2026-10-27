@@ -5,6 +5,8 @@ import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
+import { ShopPicker } from "./shop-picker";
+import type { ShopState } from "@/lib/shipments/shop";
 import { HelpTip } from "@/components/ui/tour";
 import { ReceivedButton } from "./received-button";
 
@@ -52,6 +54,7 @@ export function ShipmentsView({
   kits,
   viewOnly,
   informedAddress = null,
+  shop,
 }: {
   marca: string;
   address: Address | null;
@@ -59,6 +62,8 @@ export function ShipmentsView({
   shipments: Shipment[];
   kits: PendingKits;
   viewOnly: boolean;
+  /** M5.1 (D-SHOPBALANCE): loja com o saldo. */
+  shop: ShopState;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -77,6 +82,15 @@ export function ShipmentsView({
           </div>
         </details>
       )}
+      {/* M5.1 (D-SHOPBALANCE): comprar produtos com o saldo. */}
+      <details className="group flex flex-col gap-4">
+        <summary className="glass inline-flex w-fit cursor-pointer list-none items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold">
+          <Plus className="size-4 transition-transform group-open:rotate-45" /> Comprar com o saldo
+        </summary>
+        <div className="mt-3">
+          <ShopPicker marca={marca} shop={shop} address={address} informed={informedAddress} viewOnly={viewOnly} />
+        </div>
+      </details>
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
       <section data-tour="meus-envios" className="glass rounded-3xl p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -106,7 +120,7 @@ export function ShipmentsView({
                   {s.status !== "CANCELLED" && <Steps s={s} />}
                   {s.status === "AWAITING_APPROVAL" && <p className="text-xs text-stone-500">Pedido recebido: a equipe vai conferir e aprovar antes do envio.</p>}
                   {s.status === "CANCELLED" && s.rejectReason && (
-                    <p className="text-xs text-red-700 dark:text-red-400">Pedido não aprovado: {s.rejectReason} {!s.note?.startsWith("Pedido da creator") && <>Você pode escolher de novo em &quot;Solicitar pedido&quot;.</>}</p>
+                    <p className="text-xs text-red-700 dark:text-red-400">Pedido não aprovado: {s.rejectReason} {s.note?.startsWith("Compra com o saldo") ? <>O valor voltou para o seu saldo.</> : !s.note?.startsWith("Pedido da creator") && <>Você pode escolher de novo em &quot;Solicitar pedido&quot;.</>}</p>
                   )}
                   {s.trackingCode && s.status !== "CANCELLED" && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/60 px-4 py-3 dark:bg-white/5">

@@ -7,8 +7,8 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** pedidos da Vanessa concluídos (falta só o convite da Mafe).
-  Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
+- **Próxima tarefa:** **M5.2** Estoque dos kits (antes: decisão 12, se as marcas usam o Bling).
+  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, domínio/e-mails no Turbo Cloud.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -71,7 +71,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M4.5** Campanhas e desafios: briefing, inscrição, placar, ranking e meta, prêmio no saldo (D-CAMPAIGN)
 - [x] **M4.6** Link do post no portal: Meus posts, vendas em 3 dias, aba Conteúdo, tela geral, posts da campanha, sem post há 15 dias (D-POSTS)
 - [x] **M4.7** Desligar as planilhas, marca a marca: checklist e "Desligar leitura" por planilha (D-SHEETOFF); o dia de cada uma é com a equipe
-- [ ] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
+- [x] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
   (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
   paga e quem paga o frete.
 - [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12 (a equipe diz se as três marcas
@@ -298,6 +298,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-204 — 2026-10-27 — Loja com o saldo (M5.1, D-SHOPBALANCE-2)
+- **Decisões do responsável:** preço da loja com desconto (o % ainda não definido: fica 0% e editável em Marcas); frete
+  da marca; todos os produtos ativos; Gestão aprova; sem nota.
+- **Feito:** preço do produto no catálogo diário (`Product.priceCents`); `Brand.shopDiscountBps`; `Shipment.balanceCents`
+  (reserva); lançamento `PURCHASE` ao aprovar (trava `LedgerEntry_sign_by_type` atualizada); reserva somada ao saque
+  (`openReservations`); "Comprar com o saldo" no portal (com foto, preço riscado quando há desconto, total, sobra e
+  endereço); o saque aberto continua sendo só saque. Travas `Brand_shopDiscount`, `Product_price`, `Shipment_balance`.
+- **Atenção:** os preços aparecem depois da próxima atualização do catálogo (diária, ou "Atualizar catálogo" em Shopify).
+- **Verificado:** 261 unitários (novo `shop.test.ts`), 266 de integração (novo `shop.test.ts`), typecheck, migração sem
+  divergência, captura.
 
 ### CP-203 — 2026-10-27 — Acesso "TikTok" para a Mafe (D-TIKTOKLIST, passo 4d da Vanessa)
 - **Feito:** papel TIKTOK (permissão `tiktok.view`, também na Gestão), convite e papel em Equipe, aba `/admin/tiktok`

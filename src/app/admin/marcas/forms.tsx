@@ -21,6 +21,7 @@ type Values = {
   defaultRate: string;
   defaultDiscount: string;
   approvalSuggestion?: string;
+  shopDiscount?: string;
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -80,6 +81,13 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
             Desconto do cupom padrão (%)
             <input name="defaultDiscount" defaultValue={initial.defaultDiscount} inputMode="decimal" required className={ui.input} />
           </label>
+          {/* M5.1 (D-SHOPBALANCE): desconto na loja com o saldo (0 = preço da loja). */}
+          {!create && (
+            <label className={ui.label}>
+              Desconto da creator na loja com o saldo (%)
+              <input name="shopDiscount" defaultValue={initial.shopDiscount ?? "0"} inputMode="decimal" className={ui.input} />
+            </label>
+          )}
           {/* D-D4SIGN: "💡 Nossa sugestão" da mensagem de aprovação. */}
           {!create && (
             <label className={`${ui.label} sm:col-span-2`}>

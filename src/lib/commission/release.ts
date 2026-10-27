@@ -73,11 +73,23 @@ export async function ledgerEntriesWithMonth(
   }));
 }
 
+/**
+ * O que está reservado no saldo: saques pedidos e ainda não pagos, e compras com o saldo esperando a Gestão (M5.1,
+ * D-SHOPBALANCE; a compra aprovada vira lançamento PURCHASE no extrato).
+ */
+export async function openReservations(prisma: Db, where: { creatorId: { in: string[] } } | { creatorId: string; brandId: string }): Promise<{ creatorId: string; amountCents: number }[]> {
+  const [withdrawals, purchases] = await Promise.all([
+    prisma.withdrawal.findMany({ where: { ...where, status: { in: ["REQUESTED", "APPROVED"] } }, select: { creatorId: true, amountCents: true } }),
+    prisma.shipment.findMany({ where: { ...where, status: "AWAITING_APPROVAL", balanceCents: { not: null } }, select: { creatorId: true, balanceCents: true } }),
+  ]);
+  return [...withdrawals, ...purchases.map((p) => ({ creatorId: p.creatorId, amountCents: p.balanceCents! }))];
+}
+
 /** Saldo de uma creator com a liberação mensal (usado dentro da transação do pedido de saque). */
 export async function creatorBalance(prisma: Db, creator: { id: string; brandId: string }, timeZone: string, now: Date): Promise<Balance> {
   const [entries, open, released] = await Promise.all([
     ledgerEntriesWithMonth(prisma, [creator.id], timeZone),
-    prisma.withdrawal.findMany({ where: { creatorId: creator.id, brandId: creator.brandId, status: { in: ["REQUESTED", "APPROVED"] } }, select: { amountCents: true } }),
+    openReservations(prisma, { creatorId: creator.id, brandId: creator.brandId }),
     releasedThroughFor(prisma, [creator.id]),
   ]);
   return computeBalance(entries, open, now, { releasedThrough: released.get(creator.id) ?? null });
