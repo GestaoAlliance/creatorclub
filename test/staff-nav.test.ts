@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { activeTab, allianceNav, hasAlliancePanel, inAllBrands, staffNav } from "@/lib/staff/nav";
 
-const labels = (role: "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER", brandId: string | null = "b") =>
+const labels = (role: "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER" | "TIKTOK", brandId: string | null = "b") =>
   staffNav([{ role, brandId }]).map((i) => i.label);
 
 describe("menu da equipe por papel", () => {
@@ -12,9 +12,10 @@ describe("menu da equipe por papel", () => {
     expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
     expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos", "Configurações"]);
     expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações", "Prospecção"]);
+    expect(labels("TIKTOK")).toEqual(["TikTok"]); // D-TIKTOKLIST: a Mafe vê só a lista
     const tabs = (role: "SUPER_ADMIN" | "GESTAO" | "PAGAMENTO", label: string) =>
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
-    expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas", "Conteúdo"]);
+    expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas", "Conteúdo", "TikTok"]);
     expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar", "Claude"]);
     // M3.4b: quem não é super admin vê em Configurações só a aba Claude (ligar o próprio Claude).
     expect(tabs("GESTAO", "Configurações")).toEqual(["Claude"]);

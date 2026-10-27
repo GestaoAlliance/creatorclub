@@ -164,6 +164,7 @@ enum StaffRole {
   ENVIO
   PAGAMENTO
   HUNTER
+  TIKTOK // D-TIKTOKLIST: só a lista do TikTok
 }
 
 /// Papel de alguém da equipe numa marca. brandId nulo = todas as marcas (só SUPER_ADMIN).

@@ -9,12 +9,13 @@ describe("matriz de permissões (D-ROLES)", () => {
     SUPER_ADMIN: [
       "creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "withdrawals.manage", "shipping.view", "shipping.manage",
       "personal.address", "personal.fiscal", "ledger.adjust", "prospects.own", "integrations.manage", "staff.manage",
-      "portal.viewAs",
+      "portal.viewAs", "tiktok.view",
     ],
-    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own"],
+    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view"],
     ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
     PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
     HUNTER: ["prospects.own"],
+    TIKTOK: ["tiktok.view"],
   };
 
   it("cada papel tem exatamente as permissões decididas", () => {
@@ -27,6 +28,7 @@ describe("matriz de permissões (D-ROLES)", () => {
     expect(ROLE_PERMISSIONS.ENVIO).not.toContain("money.view");
     expect(ROLE_PERMISSIONS.ENVIO).not.toContain("personal.fiscal");
     expect(ROLE_PERMISSIONS.HUNTER).not.toContain("creators.view");
+    expect(ROLE_PERMISSIONS.TIKTOK).toEqual(["tiktok.view"]); // D-TIKTOKLIST: sem vendas, saldo, CPF ou pagamentos
   });
 
   it("só super admin ajusta saldo, conecta loja e gerencia equipe (D-ADJUST)", () => {

@@ -4,7 +4,7 @@
  * Tabela decidida em 2026-10-09 (D-ROLES em docs/DECISIONS.md).
  */
 
-export type StaffRole = "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER";
+export type StaffRole = "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER" | "TIKTOK";
 
 export type Permission =
   | "creators.view" // lista e ficha das creators da marca
@@ -21,7 +21,8 @@ export type Permission =
   | "prospects.own" // prospecções do próprio hunter
   | "integrations.manage" // conectar loja Shopify
   | "staff.manage" // convidar e remover pessoas da equipe
-  | "portal.viewAs"; // ver o portal de uma creator, só leitura (D-VIEWAS)
+  | "portal.viewAs" // ver o portal de uma creator, só leitura (D-VIEWAS)
+  | "tiktok.view"; // D-TIKTOKLIST: lista de quem tem TikTok (só leitura)
 
 const ALL: readonly Permission[] = [
   "creators.view",
@@ -39,16 +40,19 @@ const ALL: readonly Permission[] = [
   "integrations.manage",
   "staff.manage",
   "portal.viewAs",
+  "tiktok.view",
 ];
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
   // U6 (D-PROSPECT): a Gestão também prospecta (e vê as prospecções de todas pela creators.edit).
-  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own"],
+  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view"],
   ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
   PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],
+  // D-TIKTOKLIST: só a lista do TikTok (ex.: a Mafe), sem vendas, saldo, CPF ou pagamentos.
+  TIKTOK: ["tiktok.view"],
 };
 
 /** Papel da pessoa: global (brandId null, só SUPER_ADMIN) ou numa marca. */

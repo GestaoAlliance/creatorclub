@@ -18,6 +18,8 @@ const GROUPS: Group[] = [
       { href: "/creators/acoes", label: "Ações", needs: "creators.edit" },
       { href: "/campanhas", label: "Campanhas", needs: "creators.view" },
       { href: "/conteudo", label: "Conteúdo", needs: "creators.view" },
+      // D-TIKTOKLIST: quem tem TikTok (a Mafe vê só esta aba).
+      { href: "/tiktok", label: "TikTok", needs: "tiktok.view" },
     ],
   },
   // Hunters trazem as creators (influencers, UGC, prescritores): grupo próprio (pedido do responsável).
@@ -76,11 +78,13 @@ export function staffNav(grants: readonly Grant[]): NavItem[] {
   const groups = GROUPS.flatMap((g): NavItem[] => {
     const tabs = g.tabs.filter((t) => allowedTab(grants, t)).map(({ href, label }) => ({ href, label }));
     // U6: a hunter (sem a aba Hunters) vê o item com o nome da única aba dela, "Prospecção".
-    const label = g.icon === "hunter" && tabs.length === 1 ? tabs[0]!.label : g.label;
+    const label = (g.icon === "hunter" || g.icon === "creators") && tabs.length === 1 ? tabs[0]!.label : g.label;
     return tabs.length ? [{ href: tabs[0]!.href, label, icon: g.icon, tabs }] : [];
   });
   // U3: a própria hunter vê as indicações dela (super admin acompanha pela aba Hunters).
   const hunter: NavItem[] = grants.some((g) => g.role === "HUNTER") ? [{ href: "/indicacoes", label: "Minhas indicações", icon: "hunter" }] : [];
+  // D-TIKTOKLIST: só com a lista do TikTok, o Início seria só um desvio para ela.
+  if (onlyTikTok(grants)) return groups;
   return [{ href: "/marca", label: "Início", icon: "home" }, ...hunter, ...groups];
 }
 
@@ -111,3 +115,6 @@ export const ALL_BRANDS_PARAM = "todas";
 export function inAllBrands(path: string, todas: string | null): boolean {
   return ALLIANCE_PATHS.includes(path) || (path === "/admin/marcas" && todas === "1");
 }
+
+/** D-TIKTOKLIST: quem só tem o acesso do TikTok (ex.: a Mafe) entra direto na lista. */
+export const onlyTikTok = (grants: readonly Grant[]) => grants.length > 0 && grants.every((g) => g.role === "TIKTOK");

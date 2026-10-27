@@ -19,6 +19,7 @@ const ROLE_LABEL: Record<string, string> = {
   ENVIO: "Envio",
   PAGAMENTO: "Pagamento",
   HUNTER: "Hunter",
+  TIKTOK: "TikTok",
 };
 
 export default async function EquipePage() {
