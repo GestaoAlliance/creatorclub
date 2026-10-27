@@ -25,3 +25,18 @@ describe("perfil opcional (M4.3, D-PROFILEFIELDS)", () => {
     expect(profileAnswers({ professionalId: null, niches: [], youtube: "c", kwai: null, allergies: null, mediaKitUrl: null })).toEqual({ "Canal do YouTube:": "@c" });
   });
 });
+
+describe("TikTok Shop no cadastro (pedido da Vanessa)", () => {
+  it("Sim/Não opcional; vira sim, não ou vazio na conta e entra nas respostas", async () => {
+    const { validateSignup } = await import("@/domain");
+    const base = {
+      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(11) 91234-5678", instagram: "maria", coupon: "MARIA",
+      addrZip: "01310-100", addrStreet: "Av. Paulista", addrNumber: "1000", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
+    };
+    const yes = validateSignup({ ...base, tiktok: "maria.tt", tiktokShop: "Sim" });
+    expect(yes).toMatchObject({ ok: true, account: { tiktokShop: true }, answers: { "Tem TikTok Shop ativo?": "Sim" } });
+    expect(validateSignup({ ...base, tiktokShop: "Não" })).toMatchObject({ ok: true, account: { tiktokShop: false } });
+    expect(validateSignup(base)).toMatchObject({ ok: true, account: { tiktokShop: null } });
+    expect(validateSignup({ ...base, tiktokShop: "talvez" })).toMatchObject({ ok: false, errors: { tiktokShop: expect.any(String) } });
+  });
+});

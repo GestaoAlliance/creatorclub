@@ -31,7 +31,7 @@ function cpf(): string {
 }
 
 const values = (email: string, coupon = `C${randomUUID().slice(0, 8)}`): Record<string, string> => ({
-  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", coupon,
+  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon,
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: "", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
 });
 
@@ -72,7 +72,7 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     expect(users.size).toBe(1);
     const [userId] = [...users.keys()];
     const account = await prisma.creatorAccount.findUniqueOrThrow({ where: { email: email.toLowerCase() }, include: { applications: true } });
-    expect(account).toMatchObject({ userId, name: "Maria Exemplo", instagram: "maria.exemplo", tiktok: "maria.tt", addrZip: "01310100", addrStreet: "Avenida Paulista", addrState: "SP", pixKey: null });
+    expect(account).toMatchObject({ userId, name: "Maria Exemplo", instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: true, addrZip: "01310100", addrStreet: "Avenida Paulista", addrState: "SP", pixKey: null });
     expect(account.applications).toHaveLength(1);
     expect(account.applications[0]).toMatchObject({ brandId: brand.id, status: "NEW", source: "site_form", suggestedCoupon: code, tiktok: "@maria.tt", hunterCode: "maria", consentAt: now, brandsWanted: brand.name });
     expect(account.applications[0]!.hunterLinkId).not.toBeNull();

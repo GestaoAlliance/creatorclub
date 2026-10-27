@@ -45,6 +45,8 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "phone", title: "Seu whatsapp com DDD:", label: "Telefone (WhatsApp)", kind: "tel", required: true },
   { key: "instagram", title: "@ do seu Instagram:", label: "Instagram", kind: "text", required: true },
   { key: "tiktok", title: "@ do seu TikTok:", label: "TikTok", kind: "text", required: false },
+  // Pedido da Vanessa (2026-10-27): logo abaixo do TikTok; "Sim" ou "Não".
+  { key: "tiktokShop", title: "Tem TikTok Shop ativo?", label: "Tem TikTok Shop ativo?", kind: "text", required: false },
   { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto. De 3 a 20 letras." },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
 ];
@@ -53,7 +55,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: string; keys: readonly string[] }[] = [
   { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj", "birthDate"] },
   { id: "contato", title: "Contato", keys: ["email", "phone"] },
-  { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok"] },
+  { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok", "tiktokShop"] },
   { id: "cupom", title: "Seu cupom", hint: "O código que seus seguidores usam na compra. É por ele que contamos as suas vendas.", keys: ["coupon"] },
   { id: "endereco", title: "Endereço de entrega", hint: "Para onde enviamos os seus produtos.", keys: ["address"] },
 ];
@@ -156,6 +158,8 @@ export type SignupAccount = {
   cnpj: string | null;
   instagram: string;
   tiktok: string | null;
+  /** Tem TikTok Shop ativo (null = não respondeu). */
+  tiktokShop: boolean | null;
   /** "AAAA-MM-DD" ou null (M4.2). */
   birthDate: string | null;
   /** M4.3 (D-PROFILEFIELDS): perfil opcional. */
@@ -189,6 +193,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
     else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
+    else if (q.key === "tiktokShop" && v !== "Sim" && v !== "Não") errors[q.key] = "Responda Sim ou Não.";
     if (q.key === "birthDate") {
       const b = parseBirthDate(v, today);
       if (!b.ok || !b.day) errors[q.key] = "Data de nascimento inválida.";
@@ -219,6 +224,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       cnpj: clean.cnpj ? clean.cnpj.replace(/\D/g, "") : null,
       instagram: clean.instagram!,
       tiktok: clean.tiktok || null,
+      tiktokShop: clean.tiktokShop ? clean.tiktokShop === "Sim" : null,
       birthDate: clean.birthDate || null,
       profile: profile.value,
       coupon: clean.coupon!,

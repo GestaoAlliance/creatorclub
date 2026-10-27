@@ -8,8 +8,7 @@
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **4)**
-  "deletar creator" (entender o objetivo: nada é apagado); login da Mafe para ver quem tem TikTok; "Tem TikTok Shop
-  ativo?" no formulário. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
+  login da Mafe (só leitura) com a lista de quem tem TikTok. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -299,6 +298,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-202 — 2026-10-27 — "Tem TikTok Shop ativo?" no cadastro do site (passo 4c da Vanessa)
+- **Decisão do responsável:** só no cadastro do site (3 marcas).
+- **Feito:** pergunta Sim/Não (opcional) logo abaixo do TikTok; vai para `CreatorAccount.tiktokShop` e para as
+  respostas da candidata; a ficha mostra "· TikTok Shop" junto do @.
+- **Verificado:** 259 unitários, 263 de integração, typecheck, migração sem divergência, captura.
 
 ### CP-201 — 2026-10-27 — Arquivar creator (D-ARCHIVECREATOR, passo 4b da Vanessa)
 - **Feito:** `Creator.archivedAt/archivedById` (trava `Creator_archived`); `archiveCreator`/`unarchiveCreator` (Shopify
