@@ -35,7 +35,7 @@ describe("prospecção (U6, D-PROSPECT)", () => {
   it("mensagens prontas: padrão por marca, troca de quem manda, link, desconto e comissão", () => {
     const b = prospectMessages({ slug: "botanika", prospectFirstMessage: null, prospectProposalMessage: null });
     expect(b.custom).toBe(false);
-    expect(b.proposal).toContain("3 suplementos");
+    expect(b.proposal).toContain("1 suplemento para dar início");
     const other = prospectMessages({ slug: "revita-derma", prospectFirstMessage: null, prospectProposalMessage: null });
     expect(other.proposal).not.toMatch(/suplement/i);
     const text = fillProspectMessage(`${b.first}\n${b.proposal}`, { me: "Ana Gestão", brand: "Botanika", link: "https://cc/i/ana", discountBps: 500, commissionBps: 1500 });
