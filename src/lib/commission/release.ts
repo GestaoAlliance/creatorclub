@@ -4,10 +4,8 @@ import { notices,
   accumulatedSales,
   computeBalance,
   entryMonth,
-  kitProductsFor,
   monthClosesAt,
   monthKey,
-  parseKitTiers,
   planReleases,
   previousMonthKey,
   releaseMinFor,
@@ -21,7 +19,7 @@ import { notices,
  * `CommissionRelease` e a comissão desses meses fica disponível para o saque (NF do dia 1 ao 10).
  * Vendas = subtotal atual dos pedidos elegíveis atribuídos (pagos ou parcialmente reembolsados, não cancelados, não
  * teste), pelo mês do pagamento (D-MONTH). Roda pelo worker (`/api/jobs/run`); `MonthClosing` impede refazer.
- * No mesmo fechamento, a creator ativa cujo contrato tem faixas de kit ganha o kit do mês (D-KIT, `KitGrant`).
+ * O kit mensal por faixa (D-KIT) saiu em 2026-10-27: o produto vem pela meta de vendas (D-GOALKIT, `grantGoalKits`).
  */
 
 type Db = PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
@@ -149,7 +147,7 @@ async function closeBrandMonth(
       if (await tx.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } })) return 0;
       const creators = await tx.creator.findMany({
         where: { brandId: brand.id },
-        select: { id: true, status: true, categories: true, contractTemplate: { select: { releaseMinCents: true, kitTiers: true } } },
+        select: { id: true, categories: true, contractTemplate: { select: { releaseMinCents: true } } },
       });
       const ids = creators.map((c) => c.id);
       const [sales, released] = await Promise.all([salesByMonth(tx, ids, brand.timezone), releasedThroughFor(tx, ids)]);
@@ -161,23 +159,9 @@ async function closeBrandMonth(
         );
       });
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });
-      // D-KIT: kit do mês pela faixa de vendas do contrato; a creator escolhe os produtos no portal.
-      // D-KITANA: só para quem já está rodando (já recebeu algum envio, como o kit de boas-vindas).
-      const running = new Set(
-        (await tx.shipment.findMany({ where: { brandId: brand.id, creatorId: { in: ids }, createdAt: { lt: now } }, distinct: ["creatorId"], select: { creatorId: true } })).map((s) => s.creatorId),
-      );
-      const kits = creators.flatMap((c) => {
-        if (c.status !== "ACTIVE" || !c.contractTemplate || !running.has(c.id)) return [];
-        const salesCents = sales.get(c.id)!.get(month) ?? 0;
-        const products = kitProductsFor(parseKitTiers(c.contractTemplate.kitTiers), salesCents);
-        return products > 0 ? [{ brandId: brand.id, creatorId: c.id, month, salesCents, products, createdAt: now }] : [];
-      });
-      if (kits.length) await tx.kitGrant.createMany({ data: kits, skipDuplicates: true });
-      // U5 (D-NOTICES): avisa quem teve comissão liberada e quem ganhou kit neste fechamento.
-      await notify(tx, [
-        ...[...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month) })),
-        ...kits.map((k) => ({ brandId: brand.id, creatorId: k.creatorId, notice: notices.kitAvailable("MONTHLY", month, k.products, brand.slug) })),
-      ]);
+      // D-GOALKIT (2026-10-27): o kit mensal por faixa saiu; o produto vem pela meta de R$ 1.000 (`grantGoalKits`).
+      // U5 (D-NOTICES): avisa quem teve comissão liberada neste fechamento.
+      await notify(tx, [...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month) })));
       const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
       await tx.auditLog.create({
         data: {
@@ -186,7 +170,7 @@ async function closeBrandMonth(
           action: "month.close",
           entity: "MonthClosing",
           entityId: closing.id,
-          after: { month, releases: rows.length, creators: [...new Set(rows.map((r) => r.creatorId))].length, kits: kits.length },
+          after: { month, releases: rows.length, creators: [...new Set(rows.map((r) => r.creatorId))].length },
         },
       });
       return rows.length;

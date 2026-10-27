@@ -72,7 +72,7 @@ export function ShipmentsView({
           <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">Faça o pedido do seu kit. A equipe aprova e depois faz o envio para o seu endereço.</p>
           <div className="mt-3 flex flex-col gap-4">
             {kits.kits.map((k) => (
-              <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
+              <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} goal={k.kind === "GOAL"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
             ))}
           </div>
         </details>

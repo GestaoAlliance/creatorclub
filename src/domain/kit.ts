@@ -1,3 +1,5 @@
+import { addDaysKey } from "./time";
+
 /**
  * Kit mensal do contrato (D-KIT). Cada modelo de contrato tem faixas de vendas do mês que dão N suplementos.
  * Vale a faixa mais alta que a venda do mês alcança (`fromCents` ≤ vendas e, se a faixa tiver teto, vendas ≤ `toCents`).
@@ -71,4 +73,33 @@ export function productPhoto(brandSlug: string, title: string): string | null {
   if (/^kit|combo/i.test(title.trim())) return null;
   const hit = PRODUCT_PHOTOS[brandSlug]?.find(([re]) => re.test(title));
   return hit ? `/produtos/${hit[1]}.webp` : null;
+}
+
+/**
+ * D-GOALKIT (regra da Vanessa, decidida pelo responsável em 2026-10-27; substitui o kit mensal por faixa, D-KIT):
+ * a creator ganha 1 produto quando soma R$ 1.000 em vendas nos primeiros 45 dias e, depois, em cada janela fixa de 30
+ * dias (46–75, 76–105…). Liberado na hora em que a meta é batida. Os dias contam do início da creator (aprovação; quem
+ * já era ativa conta a partir de 2026-10-27), no fuso da marca.
+ */
+export const GOAL_SALES_CENTS = 100_000;
+export const GOAL_FIRST_DAYS = 45;
+export const GOAL_NEXT_DAYS = 30;
+export const GOAL_PRODUCTS = 1;
+
+export type GoalWindow = { index: number; from: string; to: string };
+
+/** Janela `index` (0 = primeiros 45 dias) a partir do dia de início: de `from` até antes de `to` (dias AAAA-MM-DD). */
+export function goalWindow(start: string, index: number): GoalWindow {
+  const from = index === 0 ? start : addDaysKey(start, GOAL_FIRST_DAYS + GOAL_NEXT_DAYS * (index - 1));
+  return { index, from, to: addDaysKey(from, index === 0 ? GOAL_FIRST_DAYS : GOAL_NEXT_DAYS) };
+}
+
+/** Janelas já começadas até `today` (a atual por último). */
+export function goalWindowsUntil(start: string, today: string): GoalWindow[] {
+  const out: GoalWindow[] = [];
+  for (let i = 0; ; i++) {
+    const w = goalWindow(start, i);
+    if (w.from > today) return out;
+    out.push(w);
+  }
 }

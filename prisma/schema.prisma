@@ -308,6 +308,8 @@ model Creator {
   contractStart           DateTime?         @db.Date
   contractEnd             DateTime?         @db.Date
   contractSigned          Boolean?
+  /// D-GOALKIT: dia em que começam as janelas da meta de vendas (aprovação; quem já era ativa: 2026-10-27).
+  goalStartAt             DateTime?         @db.Date
   couponRegistered        Boolean?
   followsOnInstagram      Boolean?
   inGroup                 Boolean?
@@ -1021,9 +1023,12 @@ model KitGrant {
   id         String    @id @default(uuid())
   brandId    String
   creatorId  String
-  /// MONTHLY = kit do mês pelas vendas (D-KIT); WELCOME = kit de boas-vindas do contrato, ao assinar (D-WELCOMEKIT).
+  /// MONTHLY = kit do mês pelas vendas (D-KIT, até 2026-10); WELCOME = kit de boas-vindas (D-WELCOMEKIT);
+  /// GOAL = meta de R$ 1.000 numa janela de 45/30 dias (D-GOALKIT).
   kind       String    @default("MONTHLY")
-  month      String // AAAA-MM das vendas (boas-vindas: mês da assinatura)
+  month      String // AAAA-MM das vendas (boas-vindas: mês da aprovação; meta: mês em que a janela começa)
+  /// D-GOALKIT: número da janela da meta (0 = primeiros 45 dias); 0 nos outros tipos.
+  window     Int       @default(0)
   salesCents Int
   products   Int
   status     KitStatus @default(PENDING)
@@ -1035,7 +1040,7 @@ model KitGrant {
   creator  Creator   @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   shipment Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
 
-  @@unique([creatorId, kind, month])
+  @@unique([creatorId, kind, month, window])
   @@index([brandId, status])
 }
 

@@ -80,7 +80,7 @@ export async function chooseKit(
         brandId: kit.brandId,
         creatorId: ctx.creatorId,
         status: "AWAITING_APPROVAL",
-        note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`,
+        note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : kit.kind === "GOAL" ? "Meta de vendas (R$ 1.000)" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`,
         address,
         createdById: actorUserId,
         items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
