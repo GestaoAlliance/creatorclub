@@ -52,7 +52,7 @@ function Done({ children }: { children: React.ReactNode }) {
  * Aprovar com um clique (F3): aprovar já é o contrato assinado no D4Sign (D-D4SIGN); cria o cupom na Shopify, a creator com o
  * contrato valendo e 1 produto de boas-vindas, o convite do portal (quando ela não tem senha) e a mensagem de aprovação.
  */
-function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; onDone: () => void }) {
+function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; hasCnpj: boolean; onDone: () => void }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
   const { onDone } = p;
   useEffect(() => { if (state?.ok) onDone(); }, [state, onDone]);
@@ -128,6 +128,15 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
             </select>
           </label>
         )}
+        {category !== "UGC" && (
+          <label className={`${ui.label} col-span-full sm:col-span-2`}>
+            Tipo de recebimento
+            <select name="payout" defaultValue={p.hasCnpj ? "cnpj" : "cpf"} className={ui.inputSm}>
+              <option value="cnpj">Creator CNPJ (saque com nota fiscal)</option>
+              <option value="cpf">Creator CPF (saque com recibo)</option>
+            </select>
+          </label>
+        )}
         <label className={`${ui.label} col-span-full ${p.templates.length > 0 ? "sm:col-span-2" : ""}`}>
           {p.hasLogin ? "E-mail (do login dela)" : "E-mail do convite"}
           <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />
@@ -166,7 +175,7 @@ function RejectForm(p: Person & { onDone: () => void }) {
 }
 
 /** Aprovar e recusar juntos: decidido um, o outro some (a linha só sai da lista no "Concluir"). */
-export function DecisionForms(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number }) {
+export function DecisionForms(p: Person & { hasLogin: boolean; email: string | null; coupon: string; category: keyof typeof CATEGORY; templates: readonly TemplateOption[]; ratePct: number; discountPct: number; hasCnpj: boolean }) {
   const [done, setDone] = useState<"approved" | "rejected" | null>(null);
   const approved = useCallback(() => setDone("approved"), []);
   const rejected = useCallback(() => setDone("rejected"), []);

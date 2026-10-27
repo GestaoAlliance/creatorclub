@@ -7,7 +7,7 @@
 
 - **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
   da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **4)** creator CPF ou CNPJ (o saque muda);
+- **Próxima tarefa:** pedidos da Vanessa (26/10), passo a passo, perguntando antes de cada um: **4)**
   "deletar creator" (entender o objetivo: nada é apagado); login da Mafe para ver quem tem TikTok; "Tem TikTok Shop
   ativo?" no formulário. Depois, Fase 5 (M5.1, perguntar antes a decisão 11 do plano).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -299,6 +299,12 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-199 — 2026-10-27 — Creator CPF ou CNPJ na aprovação (passo 4a da Vanessa)
+- **Decisões do responsável:** escolher na aprovação (sugerido pelo formulário); nomes "Creator CPF" e "Creator CNPJ".
+- **Feito:** "Tipo de recebimento" na aprovação (CNPJ se ela informou CNPJ, senão CPF; some para UGC); mesma escolha
+  na ficha com os nomes novos; o saque já trata cada um (CPF com recibo, CNPJ com nota).
+- **Verificado:** 258 unitários, 261 de integração, typecheck, captura.
 
 ### CP-198 — 2026-10-27 — Saque a partir de R$ 300 em vendas (D-MIN300, passo 3 da Vanessa)
 - **Decisões do responsável:** todas (influencer e prescritor), nas 3 marcas; liberação continua no dia 1; vale já no
