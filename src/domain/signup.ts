@@ -92,6 +92,8 @@ export type PartnershipNumbers = {
   minPrescritorCents: number | null;
   months: number | null;
   ugcMonths: number | null;
+  /** D-MIN100: o mínimo conta a comissão (Botanika) em vez das vendas. */
+  commissionBasis?: boolean;
 };
 
 const pctText = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
@@ -101,7 +103,7 @@ const brl = (cents: number) => `R$ ${(cents / 100).toLocaleString("pt-BR", { max
 export function partnershipTerms(n: PartnershipNumbers): { title: string; text: string }[] {
   const min =
     n.minInfluencerCents != null
-      ? `quando as suas vendas somam pelo menos ${brl(n.minInfluencerCents)}${n.minPrescritorCents != null && n.minPrescritorCents !== n.minInfluencerCents ? ` (prescritor: ${brl(n.minPrescritorCents)})` : ""}`
+      ? `quando ${n.commissionBasis ? "a sua comissão soma" : "as suas vendas somam"} pelo menos ${brl(n.minInfluencerCents)}${n.minPrescritorCents != null && n.minPrescritorCents !== n.minInfluencerCents ? ` (prescritor: ${brl(n.minPrescritorCents)})` : ""}`
       : "quando as suas vendas chegam ao mínimo do contrato";
   const months = n.months != null ? `Contrato de ${n.months} meses${n.ugcMonths != null && n.ugcMonths !== n.months ? ` (UGC: ${n.ugcMonths} meses)` : ""}` : "Contrato";
   return [

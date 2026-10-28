@@ -65,6 +65,25 @@ describe("fechamento mensal (D-CONTRACT, banco real)", () => {
     expect(await prisma.auditLog.count({ where: { brandId: a.brand.id, action: "month.close" } })).toBe(4);
   });
 
+  it("D-MIN100: marca que conta a comissão (Botanika) libera com R$ 100 de comissão acumulada; estorno desconta", async () => {
+    const a = await seedBrand(prisma);
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { releaseBasis: "COMMISSION", releaseMinCents: 10_000, releaseMinPrescriberCents: 10_000 } });
+    await sale(a, "2026-09-10T12:00:00Z", 60_000); // R$ 90 de comissão: R$ 600 em vendas passaria no mínimo de vendas, mas não no de comissão
+    expect(await close(a.brand.id, T("2026-10-01T08:00:00Z"))).toBe(0);
+    let p = await releaseProgress(prisma, a.creator.id, T("2026-10-05T12:00:00Z"));
+    expect(p).toMatchObject({ basis: "COMMISSION", minCents: 10_000, accumulatedCents: 9_000 });
+    const o = await sale(a, "2026-10-10T12:00:00Z", 20_000); // + R$ 30 = R$ 120
+    await prisma.ledgerEntry.create({
+      data: { brandId: a.brand.id, creatorId: a.creator.id, orderId: o.id, type: "REVERSAL", amountCents: -1_500, availableAt: T("2026-10-12T12:00:00Z"), idempotencyKey: `rev-${randomUUID()}` },
+    }); // estorno de R$ 15 → R$ 105
+    p = await releaseProgress(prisma, a.creator.id, T("2026-10-20T12:00:00Z"));
+    expect(p.accumulatedCents).toBe(10_500);
+    expect(await close(a.brand.id, T("2026-11-01T08:00:00Z"))).toBe(1);
+    expect(await prisma.commissionRelease.findMany({ where: { creatorId: a.creator.id }, select: { month: true, salesCents: true, minCents: true, basis: true } })).toEqual([
+      { month: "2026-10", salesCents: 10_500, minCents: 10_000, basis: "COMMISSION" },
+    ]);
+  });
+
   it("prescritor precisa de R$ 1.000", async () => {
     const a = await seedBrand(prisma);
     await prisma.creator.update({ where: { id: a.creator.id }, data: { categories: ["PRESCRITOR"] } });

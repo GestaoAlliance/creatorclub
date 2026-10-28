@@ -17,7 +17,7 @@ export const WITHDRAWAL_BLOCK_TEXT: Record<WithdrawalBlock, string> = {
   LOCKED: "Seu saldo está em conferência pela equipe. O saque é liberado assim que a conferência terminar.",
   VIEW_ONLY: "Visualização da equipe: nada é pedido em nome da creator.",
   OUTSIDE_WINDOW: "Os pedidos de saque abrem do dia {start} ao dia {end} de cada mês, com a nota fiscal do valor total liberado.",
-  NOTHING_AVAILABLE: "Você ainda não tem comissão liberada. A comissão é liberada no fechamento do mês (dia 1) quando suas vendas acumuladas chegam a {min}.",
+  NOTHING_AVAILABLE: "Você ainda não tem comissão liberada. A comissão é liberada no fechamento do mês (dia 1) quando a sua {what} chega a {min}.",
   OPEN_REQUEST: "Você já tem um pedido de saque em andamento. Assim que ele for concluído, pode pedir outro.",
 };
 

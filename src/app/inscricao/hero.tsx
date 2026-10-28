@@ -30,7 +30,7 @@ export async function partnershipNumbers(slug: string): Promise<PartnershipNumbe
   const brand = await db()
     .brand.findUnique({
       where: { slug },
-      select: { defaultDiscountBps: true, defaultCommissionBps: true, contractTemplates: { orderBy: { createdAt: "desc" }, select: { documentKind: true, releaseMinCents: true, months: true } } },
+      select: { defaultDiscountBps: true, defaultCommissionBps: true, releaseBasis: true, contractTemplates: { orderBy: { createdAt: "desc" }, select: { documentKind: true, releaseMinCents: true, months: true } } },
     })
     .catch(() => null);
   const latest = (kind: string) => brand?.contractTemplates.find((t) => t.documentKind === kind);
@@ -41,6 +41,7 @@ export async function partnershipNumbers(slug: string): Promise<PartnershipNumbe
     minPrescritorCents: latest("PRESCRITOR")?.releaseMinCents ?? null,
     months: latest("INFLUENCER")?.months ?? null,
     ugcMonths: latest("UGC")?.months ?? null,
+    commissionBasis: brand?.releaseBasis === "COMMISSION",
   };
 }
 

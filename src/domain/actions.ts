@@ -39,7 +39,7 @@ const br = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(
 export type ActionFacts =
   | { kind: "IDLE"; days: number }
   | { kind: "CONTRACT"; endDay: string; expired: boolean }
-  | { kind: "NEAR_MIN"; missingCents: number }
+  | { kind: "NEAR_MIN"; missingCents: number; commission?: boolean } // D-MIN100: falta comissão (Botanika), não vendas
   | { kind: "KIT_PENDING"; days: number }
   | { kind: "SHIP_STUCK"; days: number }
   | { kind: "BIRTHDAY"; day: string; days: number }
@@ -79,7 +79,7 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
         ? `${oi} Seu contrato com a gente venceu em ${br(f.endDay)}. Quer renovar a parceria? Me conta que eu te explico os próximos passos.`
         : `${oi} Seu contrato com a gente vence em ${br(f.endDay)}. Quer renovar a parceria? Me conta que eu te explico os próximos passos.`;
     case "NEAR_MIN":
-      return `${oi} Você está quase lá: faltam só ${brl(f.missingCents)} em vendas para liberar sua comissão deste mês. Bora divulgar o cupom nesses últimos dias?`;
+      return `${oi} Você está quase lá: faltam só ${brl(f.missingCents)} ${f.commission ? "de comissão" : "em vendas"} para liberar sua comissão deste mês. Bora divulgar o cupom nesses últimos dias?`;
     case "KIT_PENDING":
       return `${oi} Seu kit está liberado há ${f.days} dias e ainda falta você escolher os produtos no portal (aba Pedidos). Escolhe lá pra gente já mandar!`;
     case "SHIP_STUCK":

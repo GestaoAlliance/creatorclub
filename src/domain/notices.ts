@@ -31,7 +31,7 @@ export const notices = {
     kind: "COMMISSION_RELEASED",
     dedupeKey: `release:${month}`,
     title: "Sua comissão foi liberada",
-    body: `As vendas até ${monthName(month)} chegaram ao mínimo do contrato e a comissão ficou disponível. Peça o saque do dia 1 ao dia 10, com a nota fiscal do valor total.`,
+    body: `O acumulado até ${monthName(month)} chegou ao mínimo do contrato e a comissão ficou disponível. Peça o saque do dia 1 ao dia 10, com a nota fiscal do valor total.`,
     path: "/saque",
   }),
   /** Kit do mês (D-KIT), de boas-vindas (D-WELCOMEKIT) ou da meta de vendas (D-GOALKIT; `month` = dia em que a janela começou). */
@@ -86,11 +86,11 @@ export const notices = {
     path: "/saque",
   }),
   /** Passou de 70% do mínimo do contrato (uma vez por mês). */
-  nearMinimum: (month: string, missingCents: number): Notice => ({
+  nearMinimum: (month: string, missingCents: number, commission = false): Notice => ({
     kind: "NEAR_MINIMUM",
     dedupeKey: `near-min:${month}`,
     title: "Você está perto de liberar sua comissão",
-    body: `Faltam ${brl(missingCents)} em vendas para chegar ao mínimo do contrato. Quando chegar, a comissão é liberada no fechamento do mês.`,
+    body: `Faltam ${brl(missingCents)} ${commission ? "de comissão" : "em vendas"} para chegar ao mínimo do contrato. Quando chegar, a comissão é liberada no fechamento do mês.`,
     path: "/vendas",
   }),
   /** 30 dias antes do fim do contrato. `end` em "AAAA-MM-DD". */

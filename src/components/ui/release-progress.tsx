@@ -3,11 +3,16 @@ import type { ReleaseProgress } from "@/lib/commission/release";
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 
-/** Frase curta do próximo fechamento (D-CONTRACT): libera no dia 1 se as vendas acumuladas chegarem ao mínimo. */
+/** D-MIN100: o que conta para o mínimo — "vendas acumuladas" ou "comissão acumulada" (Botanika). */
+export function releaseWhat(r: Pick<ReleaseProgress, "basis">): string {
+  return r.basis === "COMMISSION" ? "comissão acumulada" : "vendas acumuladas";
+}
+
+/** Frase curta do próximo fechamento (D-CONTRACT): libera no dia 1 se o acumulado chegar ao mínimo. */
 export function releaseNote(r: ReleaseProgress): string {
   if (r.minCents === null) return "contrato sem comissão";
   const missing = r.minCents - r.accumulatedCents;
-  return missing <= 0 ? `libera em ${day(r.nextClosingAt)}` : `faltam ${formatBRL(missing)} em vendas para liberar`;
+  return missing <= 0 ? `libera em ${day(r.nextClosingAt)}` : `faltam ${formatBRL(missing)} ${r.basis === "COMMISSION" ? "de comissão" : "em vendas"} para liberar`;
 }
 
 /** Barra "vendas acumuladas X de mínimo" para o fechamento do mês. */
@@ -19,7 +24,7 @@ export function ReleaseProgressBar({ r }: { r: ReleaseProgress }) {
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-stone-600 dark:text-stone-400">
         <span>
-          Vendas acumuladas <strong className="tabular-nums text-stone-900 dark:text-stone-100">{formatBRL(r.accumulatedCents)}</strong> de{" "}
+          {r.basis === "COMMISSION" ? "Comissão acumulada" : "Vendas acumuladas"} <strong className="tabular-nums text-stone-900 dark:text-stone-100">{formatBRL(r.accumulatedCents)}</strong> de{" "}
           {formatBRL(r.minCents)}
         </span>
         <span>{reached ? `mínimo atingido · libera em ${day(r.nextClosingAt)}` : `fechamento em ${day(r.nextClosingAt)}`}</span>

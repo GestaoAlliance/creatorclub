@@ -299,6 +299,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-209 — 2026-10-28 — Botanika libera com R$ 100 de comissão (D-MIN100)
+- **Origem:** reunião de 2026-10-27 (Vanessa, Guilherme, Admin Botanika, Álvaro) e as regras da Botanika no grupo;
+  respostas do responsável: só Botanika por enquanto (preparado por marca), mínimo de R$ 100 de comissão (também
+  prescritor), janela de saque mantida (1–10, pagamento até o 15).
+- **Feito:** `ReleaseBasis` (SALES/COMMISSION) na marca e na liberação; migração `20261028180000_release_basis_commission`
+  (Botanika COMMISSION com R$ 100 na marca e nos modelos de contrato, com auditoria); fechamento, progresso, aviso
+  "perto do mínimo", fila de ações e Desempenho contam a comissão na Botanika; textos do portal, da ficha e do cadastro
+  dizem "comissão acumulada" quando é o caso.
+- **Próximo da reunião (na ordem):** tabela mensal de produtos da Botanika (R$ 500 nos 3 primeiros meses; depois
+  1.000/4.000/6.000/10.000 → 1/2/3/4, na hora, por faixa); Opção 2 do envio inicial (2 produtos + 3 vídeos, na
+  aprovação); e-mail ao financeiro a cada NF; acesso só de leitura (Admin Botanika e Guilherme); aviso de 45 dias sem
+  vendas; cadastro PJ (regime tributário, endereço = CNPJ, MEI exceção); remessa SICOOB (Pix, CNAB 240); Alelo (PF).
+- **Verificado:** testes (unitários e de integração), typecheck, build e migração sem divergência.
+
 ### CP-208 — 2026-10-28 — Trocar função na equipe e dados do destinatário no Envio (D-ROLECHANGE, D-SHIPRECIPIENT)
 - **Pedido do responsável:** trocar a função de quem já está cadastrado (sem somar outra) e o Envio ver CPF e o que
   precisa para mandar o pedido, em todas as marcas (a Analise, do Envio da Revita, não conseguia conferir o CPF).

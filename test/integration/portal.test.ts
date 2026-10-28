@@ -93,7 +93,7 @@ describe("Início do portal (banco real)", () => {
     expect(s.month).toBe("2026-10");
     // Setembro liberado; outubro (1.500 + 1.500 − 500) a liberar no fechamento (D-CONTRACT).
     expect(s.balance).toEqual({ totalCents: 5_500, heldCents: 2_500, reservedCents: 0, availableCents: 3_000 });
-    expect(s.release).toEqual({ releasedThrough: "2026-09", minCents: 50_000, accumulatedCents: 20_000, nextClosingAt: T("2026-11-01T03:00:00Z") });
+    expect(s.release).toEqual({ releasedThrough: "2026-09", basis: "SALES", minCents: 50_000, accumulatedCents: 20_000, nextClosingAt: T("2026-11-01T03:00:00Z") });
     expect([s.salesCount, s.salesCents]).toEqual([2, 20_000]);
     expect(s.commissionCents).toBe(2_500);
     expect(s.recent.map((l) => l.amountCents)).toEqual([-500, 1_500, 1_500, 3_000]);
