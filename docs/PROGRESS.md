@@ -7,8 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **M5.2** Estoque dos kits pelo **Olist** (resposta de 2026-10-28: as marcas vão usar o Olist;
-  antes de começar, perguntar acesso à API do Olist e como o estoque é contado).
+- **Próxima tarefa:** perguntar ao responsável (M5.2 Olist e Alelo PF estão bloqueados: as marcas ainda vão contratar
+  os dois; opções: M5.3 Instagram, P3 links antigos `/r/`).
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -77,8 +77,12 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
   (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
   paga e quem paga o frete.
-- [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12 (a equipe diz se as três marcas
-  usam o Bling; perguntado em 2026-10-24, sem resposta ainda).
+- [!] **M5.2** Estoque dos kits pelo **Olist**, nas 3 marcas, **só leitura** (mostrar o estoque e não liberar kit de
+  produto sem estoque; a baixa segue no Olist). Respostas de 2026-10-28. *Bloqueado:* as marcas ainda vão contratar
+  o Olist; quando tiver, gerar o token da API.
+- [!] **Alelo (PF)**: saque de pessoa física no cartão Alelo (contrato PF: "Modelo contrato Botanika ALELO", Drive);
+  PF deixa de informar chave Pix (D-ALELOPF). *Bloqueado:* a Botanika ainda vai contratar a Alelo; depois, o modelo
+  do arquivo de pedido de crédito do portal da Alelo. Até lá, PF segue no Pix (remessa SICOOB).
 - [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (alguém confere se as
   marcas estão num Business Manager verificado na Meta; o responsável não sabe, 2026-10-24).
 
@@ -301,6 +305,11 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-218 — 2026-10-28 — Olist e Alelo: decididos e bloqueados (só documentação)
+- **Feito:** respostas do responsável registradas: estoque pelo Olist só leitura nas 3 marcas (M5.2) e Alelo para PF
+  sem chave Pix (D-ALELOPF). Os dois esperam contrato das marcas.
+- **Próxima:** perguntar ao responsável a próxima tarefa.
 
 ### CP-217 — 2026-10-28 — Retorno SICOOB: pagos, agendados e recusados (D-RETORNO)
 - **Feito:** `parseRetorno` em `src/domain/cnab240.ts` (códigos G059 do guia, "Seu Número" = saque, data e valor
