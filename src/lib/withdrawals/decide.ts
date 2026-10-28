@@ -174,6 +174,8 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       nfCheck: true,
       method: true,
       remittance: { select: { nsa: true, payDay: true } },
+      bankResult: true,
+      bankNote: true,
       creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
     },
   });
@@ -220,6 +222,9 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       individual: r.method === "RECEIPT_PIX",
       // D-REMESSA: enviado ao banco na remessa nº X (com a data de pagamento).
       remittance: r.remittance ? { nsa: r.remittance.nsa, payDay: r.remittance.payDay.toISOString().slice(0, 10) } : null,
+      // D-RETORNO: o que o retorno do banco disse (agendado, pendente, recusado).
+      bankResult: r.status === "APPROVED" ? r.bankResult : null,
+      bankNote: r.status === "APPROVED" ? r.bankNote : null,
       availableBeforeCents,
       // O que esta pessoa pode fazer neste saque (a tela só mostra os botões certos; a regra vale de novo no servidor).
       canApprove: r.status === "REQUESTED" && can(actor.grants, "withdrawals.approve", r.brandId),

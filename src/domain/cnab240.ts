@@ -187,3 +187,95 @@ export function buildRemessa(input: { company: CnabCompany; payments: readonly C
   lines.push(line([SICOOB_BANK, "9999", "9", blank(9), num(1, 6), num(lines.length + 1, 6), num(0, 6), blank(205)]));
   return `${lines.join("\r\n")}\r\n`;
 }
+
+/**
+ * Retorno SICOOB (G059): o banco devolve o mesmo arquivo com o resultado em cada segmento A (posições 231–240, até
+ * 5 códigos de 2 letras). "Seu Número" (74–93) traz o saque; "Data Real"/"Valor Real" (155–177), a efetivação.
+ */
+export type RetornoResult = "PAID" | "SCHEDULED" | "PENDING" | "REJECTED";
+
+export const RETORNO_CODES: Record<string, string> = {
+  "00": "Crédito efetivado",
+  BD: "Agendado no banco",
+  PD: "Pendente de assinatura",
+  BF: "Rejeitado por pendência de assinatura",
+  AJ: "Registro rejeitado (estrutura do arquivo)",
+  AN: "Tipo de conta do favorecido inválido",
+  AP: "Data de lançamento inválida",
+  PA: "Pix não efetivado",
+  PC: "Conta do recebedor inválida, encerrada ou bloqueada",
+  PE: "Tipo de transação não aceito na conta do recebedor",
+  PG: "CPF/CNPJ do recebedor incorreto",
+  PH: "Ordem rejeitada pelo banco do recebedor",
+  PI: "ISPB pagador/recebedor inválido",
+  PJ: "Chave Pix não cadastrada",
+  PK: "QR Code inválido ou vencido",
+  ZJ: "Limite de pagamentos parciais excedido",
+  "01": "Saldo insuficiente na conta da empresa",
+  "02": "Débito cancelado pelo pagador",
+};
+
+export type RetornoItem = {
+  /** "Seu Número": id do saque sem traços, 20 primeiros caracteres. */
+  ref: string;
+  name: string;
+  amountCents: number;
+  codes: string[];
+  result: RetornoResult;
+  /** Data real da efetivação (AAAA-MM-DD), quando o banco informa. */
+  paidDay: string | null;
+  paidCents: number | null;
+};
+
+export type Retorno = { nsa: number | null; items: RetornoItem[]; problems: string[] };
+
+export const remessaRef = (withdrawalId: string) => withdrawalId.replace(/-/g, "").slice(0, 20);
+
+function resultOf(codes: string[]): RetornoResult {
+  if (codes.includes("00")) return "PAID";
+  if (codes.length && codes.every((c) => c === "BD")) return "SCHEDULED";
+  if (codes.length && codes.every((c) => c === "PD" || c === "BD")) return "PENDING";
+  return "REJECTED";
+}
+
+const yyyymmdd = (d: string) => (/^\d{8}$/.test(d) && d !== "00000000" ? `${d.slice(4, 8)}-${d.slice(2, 4)}-${d.slice(0, 2)}` : null);
+
+/** Lê o arquivo de retorno; não lança: o que não der para ler vai em `problems`. */
+export function parseRetorno(content: string): Retorno {
+  const lines = content.split(/\r?\n/).map((l) => l.replace(/\r$/, "")).filter((l) => l.trim() !== "");
+  const problems: string[] = [];
+  const items: RetornoItem[] = [];
+  let nsa: number | null = null;
+  const at = (l: string, from: number, to: number) => l.slice(from - 1, to);
+  lines.forEach((l, i) => {
+    if (l.length !== 240) {
+      problems.push(`Linha ${i + 1} com ${l.length} posições (deveria ter 240).`);
+      return;
+    }
+    if (at(l, 1, 3) !== SICOOB_BANK) {
+      problems.push(`Linha ${i + 1} não é do SICOOB.`);
+      return;
+    }
+    const type = at(l, 8, 8);
+    if (type === "0") {
+      if (at(l, 143, 143) !== "2") problems.push("O arquivo não é de retorno (é a remessa enviada).");
+      const n = at(l, 158, 163);
+      nsa = /^\d{6}$/.test(n) ? Number(n) : null;
+    } else if (type === "3" && at(l, 14, 14) === "A") {
+      const codes = (at(l, 231, 240).match(/.{2}/g) ?? []).map((c) => c.trim()).filter(Boolean);
+      const paid = at(l, 163, 177);
+      items.push({
+        ref: at(l, 74, 93).trim().toLowerCase(),
+        name: at(l, 44, 73).trim(),
+        amountCents: Number(at(l, 120, 134)) || 0,
+        codes,
+        result: resultOf(codes),
+        paidDay: yyyymmdd(at(l, 155, 162)),
+        paidCents: /^\d{15}$/.test(paid) && Number(paid) > 0 ? Number(paid) : null,
+      });
+    }
+  });
+  if (lines.length && nsa === null) problems.push("Header do arquivo não encontrado.");
+  if (!items.length && !problems.length) problems.push("Nenhum pagamento no arquivo.");
+  return { nsa, items, problems };
+}

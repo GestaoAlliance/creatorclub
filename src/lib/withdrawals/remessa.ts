@@ -80,7 +80,7 @@ export async function generateRemessa(prisma: PrismaClient, actor: Actor | null,
     const remittance = await tx.paymentRemittance.create({
       data: { brandId, nsa, payDay: new Date(`${payDay}T00:00:00Z`), count: payments.length, totalCents, sha256: createHash("sha256").update(content).digest("hex"), createdById: actor.userId, createdAt: now },
     });
-    await tx.withdrawal.updateMany({ where: { id: { in: payments.map((p) => p.id) }, remittanceId: null, status: "APPROVED" }, data: { remittanceId: remittance.id } });
+    await tx.withdrawal.updateMany({ where: { id: { in: payments.map((p) => p.id) }, remittanceId: null, status: "APPROVED" }, data: { remittanceId: remittance.id, bankResult: null, bankNote: null, bankAt: null } });
     await tx.brand.update({ where: { id: brandId }, data: { remittanceSeq: nsa } });
     await tx.auditLog.create({
       data: { brandId, actorType: "USER", actorId: actor.userId, action: "remittance.generated", entity: "PaymentRemittance", entityId: remittance.id, after: { nsa, payDay, count: payments.length, totalCents } },

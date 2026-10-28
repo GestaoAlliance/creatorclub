@@ -620,6 +620,10 @@ model Withdrawal {
   note           String?
   /// D-REMESSA: remessa SICOOB em que o saque foi enviado ao banco (null = ainda não enviado).
   remittanceId   String?
+  /// D-RETORNO: o que o retorno do SICOOB disse da última remessa (null = nada lido ainda; pago vira status PAID).
+  bankResult     BankResult?
+  bankNote       String?
+  bankAt         DateTime?
 
   brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator       Creator            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
@@ -631,6 +635,13 @@ model Withdrawal {
   @@unique([id, brandId])
   @@index([brandId, status])
   @@index([creatorId])
+}
+
+/// D-RETORNO: resultado do saque no retorno do banco (agendado, pendente de assinatura ou recusado).
+enum BankResult {
+  SCHEDULED
+  PENDING
+  REJECTED
 }
 
 /// D-REMESSA: arquivo de remessa CNAB 240 (Pix) gerado para o SICOOB. Só recebe inserções.

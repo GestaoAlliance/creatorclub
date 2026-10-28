@@ -5,11 +5,12 @@
 
 ## Onde estamos
 
-- **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-216). O sistema está no ar com
+- **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **M5.2** Estoque dos kits (antes: decisão 12, se as marcas usam o Bling).
+- **Próxima tarefa:** **M5.2** Estoque dos kits pelo **Olist** (resposta de 2026-10-28: as marcas vão usar o Olist;
+  antes de começar, perguntar acesso à API do Olist e como o estoque é contado).
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
-  Marcas e teste da remessa na homologação, convite do login Leitura (Admin Botanika e Guilherme).
+  Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -300,6 +301,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-217 — 2026-10-28 — Retorno SICOOB: pagos, agendados e recusados (D-RETORNO)
+- **Feito:** `parseRetorno` em `src/domain/cnab240.ts` (códigos G059 do guia, "Seu Número" = saque, data e valor
+  reais); `src/lib/withdrawals/retorno.ts` (`retornoPreview`, `applyRetorno`); bloco "Retorno do banco" em Saques →
+  Aprovados: o Pagamento escolhe o arquivo, confere a prévia e confirma. "00" = pago (mesmo passo do botão);
+  "BD" = agendado; "PD" = pendente de assinatura; recusa = sai da remessa, motivo no cartão do saque, aviso
+  `WITHDRAWAL_BANK_REJECTED` no portal; nova remessa limpa o resultado. Trava `Withdrawal_bank_result`
+  (migração `20261031090000_remittance_return`).
+- **Testes:** unitários do leitor; integração (agendado → pago, subir de novo não repete, recusado avisa uma vez e
+  volta na próxima remessa, trava).
+- **Falta:** conferir com um retorno real do SICOOB (o leiaute foi montado pelo guia).
 
 ### CP-216 — 2026-10-28 — Remessa SICOOB de Pix, CNAB 240 (D-REMESSA)
 - **Feito:** `src/domain/cnab240.ts` (leiaute do guia SICOOB, conferências e linhas de 240 posições);

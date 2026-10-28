@@ -4,6 +4,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
 import { approveWithdrawal, payWithdrawal } from "@/lib/withdrawals/decide";
 import { generateRemessa, remessaPreview, removeFromRemessa } from "@/lib/withdrawals/remessa";
+import { applyRetorno, retornoPreview } from "@/lib/withdrawals/retorno";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
 import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -82,5 +83,59 @@ describe("remessa SICOOB (D-REMESSA, banco real)", () => {
       prisma.paymentRemittance.create({ data: { brandId: s.brand.id, nsa: 0, payDay: T("2026-10-06T00:00:00Z"), count: 1, totalCents: 1, sha256: "x", createdById: "x" } }),
       /PaymentRemittance_values/,
     );
+  });
+});
+
+/** O banco devolve a remessa com o código em cada segmento A (D-RETORNO). */
+function bankReturn(content: string, code: string) {
+  const set = (l: string, from: number, v: string) => l.slice(0, from - 1) + v + l.slice(from - 1 + v.length);
+  return content
+    .split("\r\n")
+    .map((l) => (l[7] === "0" ? set(l, 143, "2") : l[7] === "3" && l[13] === "A" ? set(l, 231, code.padEnd(10)) : l))
+    .join("\r\n");
+}
+
+describe("retorno SICOOB (D-RETORNO, banco real)", () => {
+  it("agendado, depois pago com prévia e confirmação; subir de novo não repete", async () => {
+    const s = await world();
+    const now = T("2026-10-06T13:00:00Z");
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now);
+    await expect(retornoPreview(prisma, s.gestao, s.brand.id, bankReturn(r.content, "BD"))).rejects.toThrow(/permissão/);
+    await expect(retornoPreview(prisma, s.pagamento, s.brand.id, r.content)).rejects.toThrow(/ler o arquivo/);
+
+    const bd = await retornoPreview(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "BD"));
+    expect(bd.rows).toEqual([expect.objectContaining({ withdrawalId: s.withdrawalId, result: "SCHEDULED", state: "ok", amountCents: 80_000 })]);
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "BD"), now)).toMatchObject({ nsa: 1, scheduled: 1 });
+    expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ status: "APPROVED", bankResult: "SCHEDULED" });
+    expect((await retornoPreview(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "BD"))).rows[0]!.state).toBe("done");
+
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "00"), now)).toMatchObject({ paid: 1 });
+    expect((await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).status).toBe("PAID");
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "00"), now)).toMatchObject({ paid: 0, skipped: 1 });
+    expect(await prisma.ledgerEntry.count({ where: { withdrawalId: s.withdrawalId, type: "WITHDRAWAL" } })).toBe(1);
+  });
+
+  it("recusado sai da remessa, guarda o motivo, avisa a creator e entra na próxima", async () => {
+    const s = await world();
+    const now = T("2026-10-06T13:00:00Z");
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now);
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "PJ"), now)).toMatchObject({ rejected: 1 });
+    expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ status: "APPROVED", remittanceId: null, bankResult: "REJECTED", bankNote: "Chave Pix não cadastrada" });
+    expect(await prisma.notification.count({ where: { creatorId: s.creator.id, kind: "WITHDRAWAL_BANK_REJECTED" } })).toBe(1);
+    expect((await retornoPreview(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "PJ"))).rows[0]!.state).toBe("done");
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "PJ"), now)).toMatchObject({ rejected: 0 });
+    expect(await prisma.notification.count({ where: { creatorId: s.creator.id, kind: "WITHDRAWAL_BANK_REJECTED" } })).toBe(1);
+
+    expect((await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-21", now)).nsa).toBe(2);
+    expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ bankResult: null, bankNote: null });
+    // Retorno de remessa de outra marca não serve.
+    const other = await seedBrand(prisma);
+    await expect(retornoPreview(prisma, s.pagamento, other.brand.id, bankReturn(r.content, "00"))).rejects.toThrow(/permissão/);
+  });
+
+  it("trava: recusa do banco sempre com motivo", async () => {
+    const s = await world();
+    await expectDbError(prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: "REJECTED", bankAt: new Date(), bankNote: " " } }), /Withdrawal_bank_result/);
+    await expectDbError(prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: "SCHEDULED" } }), /Withdrawal_bank_result/);
   });
 });

@@ -13,7 +13,7 @@ import { ui } from "@/components/ui/styles";
 import { dayKey, formatBRL } from "@/domain";
 import { can } from "@/lib/auth/permissions";
 import { remessaPreview } from "@/lib/withdrawals/remessa";
-import { BatchBar, RemessaBar } from "./forms";
+import { BatchBar, RemessaBar, RetornoForm } from "./forms";
 import { SaquesTable } from "./table";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +70,7 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
       </nav>
       {/* D-REMESSA: arquivo do SICOOB para quem paga (marca escolhida no topo). */}
       {tab === "APPROVED" && remessa && brandId && <RemessaBar brandId={brandId} count={remessa.count} cents={remessa.totalCents} today={today} problems={remessa.problems} />}
+      {tab === "APPROVED" && remessa && brandId && <RetornoForm brandId={brandId} />}
       {tab === "APPROVED" && rows.some((r) => r.canPay) && <BatchBar count={rows.filter((r) => r.canPay).length} />}
       <SaquesTable rows={rows} />
     </>
