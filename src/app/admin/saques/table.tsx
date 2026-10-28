@@ -5,7 +5,7 @@ import { formatBRL } from "@/domain";
 import { WITHDRAWAL_STATUS_LABEL } from "@/lib/portal/withdrawals";
 import type { withdrawalQueue } from "@/lib/withdrawals/decide";
 import { CopyButton } from "@/components/portal/copy-button";
-import { ApproveForm, BatchCheck, PayForm, RecheckForm, RejectForm } from "./forms";
+import { ApproveForm, BatchCheck, PayForm, RecheckForm, RejectForm, RemoveRemessaForm } from "./forms";
 
 type Row = Awaited<ReturnType<typeof withdrawalQueue>>[number];
 
@@ -88,12 +88,16 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
             {r.status === "REJECTED" && r.note && <p className="text-sm text-stone-600 dark:text-stone-400">Motivo: {r.note}</p>}
             {r.status === "REQUESTED" && !r.canApprove && <p className={ui.hint}>Esperando a aprovação da Gestão.</p>}
             {r.status === "APPROVED" && !r.canPay && <p className={ui.hint}>Aprovado: esperando o Pix do Pagamento.</p>}
+            {r.status === "APPROVED" && r.remittance && (
+              <p className="text-sm text-sky-800 dark:text-sky-300">Enviado ao banco na remessa nº {r.remittance.nsa} (pagamento em {r.remittance.payDay.split("-").reverse().join("/")}).</p>
+            )}
             {acts && (
               <div data-tour="sq-pagar" className="relative flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
                 {i === 0 && <HelpTip id="sq-pagar" className="absolute -top-3.5 right-0 bg-white dark:bg-stone-900" />}
                 {r.canApprove && <ApproveForm withdrawalId={r.id} label={formatBRL(r.amountCents)} />}
                 {r.canPay && <BatchCheck withdrawalId={r.id} cents={r.amountCents} name={r.name} />}
                 {r.canPay && <PayForm withdrawalId={r.id} label={formatBRL(r.amountCents)} />}
+                {r.canPay && r.remittance && <RemoveRemessaForm withdrawalId={r.id} />}
                 <RejectForm withdrawalId={r.id} />
               </div>
             )}

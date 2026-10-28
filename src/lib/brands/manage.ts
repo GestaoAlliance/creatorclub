@@ -37,6 +37,12 @@ export type BrandInput = {
   shopDiscount?: string;
   /** D-NFMAIL: e-mail do financeiro (vazio = não envia). */
   financeEmail?: string;
+  /** D-REMESSA: conta da marca no SICOOB (convênio CNAB 240, agência e conta com dígitos). */
+  bankConvenio?: string;
+  bankAgency?: string;
+  bankAgencyDv?: string;
+  bankAccount?: string;
+  bankAccountDv?: string;
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
 };
@@ -70,6 +76,7 @@ function clean(input: BrandInput) {
     ...(input.whatsappInstance !== undefined && { whatsappInstance }),
     ...(input.approvalSuggestion !== undefined && { approvalSuggestion: input.approvalSuggestion.trim().replace(/\s+/g, " ").slice(0, 120) || null }),
     ...(input.financeEmail !== undefined && { financeEmail: financeEmailOf(input.financeEmail) }),
+    ...bankOf(input),
   };
   // M4.4a (D-BRANDLOGIN): padrões das aprovações novas (quem já é creator mantém a dela).
   const pct = (raw: string | undefined, label: string, max: number) => {
@@ -94,6 +101,25 @@ function clean(input: BrandInput) {
     ...(defaultDiscountBps !== undefined && { defaultDiscountBps }),
   };
   return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf, ...defaults };
+}
+
+/** D-REMESSA: dados da conta no SICOOB; campo que não veio fica como está; vazio = null. */
+function bankOf(input: { bankConvenio?: string; bankAgency?: string; bankAgencyDv?: string; bankAccount?: string; bankAccountDv?: string }) {
+  const f = (v: string | undefined, re: RegExp, label: string) => {
+    if (v === undefined) return undefined;
+    const t = v.trim().toUpperCase();
+    if (!t) return null;
+    if (!re.test(t)) throw new BrandError(`${label} inválido.`);
+    return t;
+  };
+  const out = {
+    bankConvenio: f(input.bankConvenio, /^[0-9A-Z.\-]{1,20}$/, "Código do convênio"),
+    bankAgency: f(input.bankAgency?.replace(/\D/g, ""), /^\d{1,5}$/, "Número da agência"),
+    bankAgencyDv: f(input.bankAgencyDv, /^[0-9X]$/, "Dígito da agência"),
+    bankAccount: f(input.bankAccount?.replace(/\D/g, ""), /^\d{1,12}$/, "Número da conta"),
+    bankAccountDv: f(input.bankAccountDv, /^\d$/, "Dígito da conta"),
+  };
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined)) as Partial<Record<keyof typeof out, string | null>>;
 }
 
 /** D-NFMAIL: e-mail do financeiro, minúsculo; vazio = null. */
@@ -135,7 +161,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, financeEmail: true, defaultCommissionBps: true, defaultDiscountBps: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, financeEmail: true, bankConvenio: true, bankAgency: true, bankAgencyDv: true, bankAccount: true, bankAccountDv: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -172,6 +198,11 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       approvalSuggestion: true,
       shopDiscountBps: true,
       financeEmail: true,
+      bankConvenio: true,
+      bankAgency: true,
+      bankAgencyDv: true,
+      bankAccount: true,
+      bankAccountDv: true,
       products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
       storeUrl: true,
       defaultCommissionBps: true,

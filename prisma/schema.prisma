@@ -21,26 +21,26 @@ datasource db {
 // ───────────────────────────── Marca e integrações ─────────────────────────────
 
 model Brand {
-  id                        String       @id @default(uuid())
-  slug                      String       @unique
+  id                        String              @id @default(uuid())
+  slug                      String              @unique
   name                      String
-  enabled                   Boolean      @default(false)
-  timezone                  String       @default("America/Sao_Paulo")
-  currency                  String       @default("BRL")
+  enabled                   Boolean             @default(false)
+  timezone                  String              @default("America/Sao_Paulo")
+  currency                  String              @default("BRL")
   storeUrl                  String?
-  primaryColor              String       @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
+  primaryColor              String              @default("#18181B") // D-BRANDCOLOR; só #RRGGBB (Brand_colors_hex)
   secondaryColor            String?
-  defaultCommissionBps      Int          @default(1500) // DECISÃO-ABERTA: D-RATE
-  defaultDiscountBps        Int          @default(500)
-  withdrawalMinCents        Int          @default(1) // D-CONTRACT: sem mínimo por pedido (o mínimo é de vendas no mês)
-  withdrawalWindowStartDay  Int          @default(1) // D-CONTRACT: NF do dia 1 ao 10, pagamento até o dia 15
-  withdrawalWindowEndDay    Int          @default(10)
-  commissionHoldDays        Int          @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
+  defaultCommissionBps      Int                 @default(1500) // DECISÃO-ABERTA: D-RATE
+  defaultDiscountBps        Int                 @default(500)
+  withdrawalMinCents        Int                 @default(1) // D-CONTRACT: sem mínimo por pedido (o mínimo é de vendas no mês)
+  withdrawalWindowStartDay  Int                 @default(1) // D-CONTRACT: NF do dia 1 ao 10, pagamento até o dia 15
+  withdrawalWindowEndDay    Int                 @default(10)
+  commissionHoldDays        Int                 @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
   /// D-CONTRACT: mínimo acumulado para liberar a comissão no fechamento do mês (vendas ou comissão, por `releaseBasis`).
-  releaseMinCents           Int          @default(30000) // D-MIN300: R$ 300 em vendas; Botanika R$ 100 de comissão (D-MIN100)
-  releaseMinPrescriberCents Int          @default(30000)
+  releaseMinCents           Int                 @default(30000) // D-MIN300: R$ 300 em vendas; Botanika R$ 100 de comissão (D-MIN100)
+  releaseMinPrescriberCents Int                 @default(30000)
   /// D-MIN100: o mínimo conta as vendas (padrão) ou a comissão acumulada (Botanika).
-  releaseBasis              ReleaseBasis @default(SALES)
+  releaseBasis              ReleaseBasis        @default(SALES)
   /// D-TIERKIT: a partir deste mês (AAAA-MM) os produtos vêm pela tabela mensal de vendas (Botanika, 2026-11);
   /// null = meta de R$ 1.000 em janelas de 45/30 dias (D-GOALKIT).
   monthlyKitFrom            String?
@@ -48,6 +48,15 @@ model Brand {
   financeEmail              String?
   /// D-IDLE45: dias sem venda para avisar a creator (portal e WhatsApp/e-mail); null = sem aviso (Botanika: 45).
   idleNoticeDays            Int?
+  /// D-REMESSA: conta da marca no SICOOB para a remessa CNAB 240 de Pix (preenchida em Marcas; nada no código).
+  bankConvenio              String?
+  bankAgency                String?
+  bankAgencyDv              String?
+  bankAccount               String?
+  bankAccountDv             String?
+  /// Último número sequencial de remessa (NSA) gerado pela marca.
+  remittanceSeq             Int                 @default(0)
+  remittances               PaymentRemittance[]
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
@@ -55,17 +64,17 @@ model Brand {
   prospectFirstMessage      String?
   prospectProposalMessage   String?
   /// M5.1 (D-SHOPBALANCE): desconto da creator sobre o preço da loja na compra com o saldo (0 = preço da loja).
-  shopDiscountBps           Int          @default(0)
+  shopDiscountBps           Int                 @default(0)
   /// D-D4SIGN: produto sugerido na mensagem de aprovação (escolhido em Marcas); null = mensagem sem a sugestão.
   approvalSuggestion        String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
-  legacyId                  String?      @unique
+  legacyId                  String?             @unique
   /// D-ARCHIVE: marca arquivada some de todas as telas (nada é apagado).
   archivedAt                DateTime?
-  createdAt                 DateTime     @default(now())
-  updatedAt                 DateTime     @updatedAt
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
   integrations       BrandIntegration[]
   roleGrants         RoleGrant[]
@@ -609,16 +618,37 @@ model Withdrawal {
   approvedAt     DateTime?
   approvedById   String?
   note           String?
+  /// D-REMESSA: remessa SICOOB em que o saque foi enviado ao banco (null = ainda não enviado).
+  remittanceId   String?
 
   brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator       Creator            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   nfFile        File?              @relation(fields: [nfFileId], references: [id], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
   receipt       WithdrawalReceipt?
+  remittance    PaymentRemittance? @relation(fields: [remittanceId], references: [id], onDelete: Restrict)
 
   @@unique([id, brandId])
   @@index([brandId, status])
   @@index([creatorId])
+}
+
+/// D-REMESSA: arquivo de remessa CNAB 240 (Pix) gerado para o SICOOB. Só recebe inserções.
+model PaymentRemittance {
+  id          String   @id @default(uuid())
+  brandId     String
+  nsa         Int
+  payDay      DateTime @db.Date
+  count       Int
+  totalCents  Int
+  sha256      String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand       Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  withdrawals Withdrawal[]
+
+  @@unique([brandId, nsa])
 }
 
 /// D-PFRECEIPT: recibo da creator pessoa física, aceito no portal no lugar da nota. Só recebe inserções.

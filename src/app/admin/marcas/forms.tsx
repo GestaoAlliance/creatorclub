@@ -23,6 +23,7 @@ type Values = {
   approvalSuggestion?: string;
   shopDiscount?: string;
   financeEmail?: string;
+  bank?: { convenio: string; agency: string; agencyDv: string; account: string; accountDv: string };
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -95,6 +96,18 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
               E-mail do financeiro (recebe cada NF enviada)
               <input name="financeEmail" type="email" defaultValue={initial.financeEmail ?? ""} placeholder="financeiro@marca.com.br" className={ui.input} />
             </label>
+          )}
+          {/* D-REMESSA: conta no SICOOB para o arquivo de remessa de Pix (Saques → Aprovados). */}
+          {!create && (
+            <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-5 dark:border-white/10">
+              <legend className="px-1 text-sm font-medium">Conta no SICOOB (remessa de Pix)</legend>
+              <label className={`${ui.label} col-span-2`}>Convênio CNAB 240<input name="bankConvenio" defaultValue={initial.bank?.convenio ?? ""} placeholder="do Internet Banking" className={ui.input} /></label>
+              <label className={ui.label}>Agência<input name="bankAgency" defaultValue={initial.bank?.agency ?? ""} inputMode="numeric" className={ui.input} /></label>
+              <label className={ui.label}>Dígito ag.<input name="bankAgencyDv" defaultValue={initial.bank?.agencyDv ?? ""} maxLength={1} className={ui.input} /></label>
+              <span className="hidden sm:block" />
+              <label className={`${ui.label} col-span-2`}>Conta corrente<input name="bankAccount" defaultValue={initial.bank?.account ?? ""} inputMode="numeric" className={ui.input} /></label>
+              <label className={ui.label}>Dígito<input name="bankAccountDv" defaultValue={initial.bank?.accountDv ?? ""} maxLength={1} inputMode="numeric" className={ui.input} /></label>
+            </fieldset>
           )}
           {/* D-D4SIGN: "💡 Nossa sugestão" da mensagem de aprovação. */}
           {!create && (
