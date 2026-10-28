@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { addMonthsToDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { addMonthsToDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, WELCOME_VIDEO_PRODUCTS, WELCOME_VIDEOS, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -301,6 +301,8 @@ export async function approveApplication(
     applicationId: string; couponCode: string; category: Category; rateBps: number; discountBps: number; email?: string; contractTemplateId?: string | null;
     /** Creator CPF (saque com recibo) ou CNPJ (com nota). Sem escolha: CNPJ se ela informou um válido, senão CPF. */
     receivesAsIndividual?: boolean;
+    /** D-WELCOMEVIDEO: envio inicial com 2 produtos + 3 vídeos (Opção 2); sem marcar, 1 produto. */
+    welcomeWithVideos?: boolean;
   },
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
@@ -324,6 +326,7 @@ export async function approveApplication(
   const own = app.accountId ? await prisma.creatorAccount.findUnique({ where: { id: app.accountId }, select: { email: true } }) : null;
   const email = normalizeEmail(own?.email ?? input.email ?? app.email ?? "");
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApplicationError("Informe um e-mail válido para o convite.");
+  const welcomeProducts = input.welcomeWithVideos ? WELCOME_VIDEO_PRODUCTS : WELCOME_PRODUCTS;
   const cpfDigits = app.cpf?.replace(/\D/g, "") ?? "";
   const cnpjDigits = app.cnpj?.replace(/\D/g, "") ?? "";
 
@@ -408,6 +411,7 @@ export async function approveApplication(
           receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14,
           // D-GOALKIT: as janelas da meta de vendas (45 dias, depois 30) começam na aprovação.
           goalStartAt: new Date(`${start}T00:00:00Z`),
+          welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0,
         },
       });
       const c = await tx.coupon.create({
@@ -416,10 +420,10 @@ export async function approveApplication(
       await tx.couponAssignment.create({
         data: { brandId: app.brandId, couponId: c.id, creatorId: creator.id, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
       });
-      // D-D4SIGN: 1 produto de boas-vindas em todas as marcas, para ela escolher na aba Pedidos.
+      // D-D4SIGN: 1 produto de boas-vindas em todas as marcas, para ela escolher na aba Pedidos; D-WELCOMEVIDEO: 2 na Opção 2.
       const month = start.slice(0, 7);
-      await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: WELCOME_PRODUCTS } });
-      await notify(tx, [{ brandId: app.brandId, creatorId: creator.id, notice: notices.kitAvailable("WELCOME", month, WELCOME_PRODUCTS, brand.slug) }]);
+      await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: welcomeProducts } });
+      await notify(tx, [{ brandId: app.brandId, creatorId: creator.id, notice: notices.kitAvailable("WELCOME", month, welcomeProducts, brand.slug) }]);
       await tx.commissionPolicy.create({
         data: { brandId: app.brandId, creatorId: creator.id, rateBps: input.rateBps, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
       });
@@ -436,7 +440,7 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts: WELCOME_PRODUCTS, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts, welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };

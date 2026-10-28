@@ -323,6 +323,8 @@ model Creator {
   archivedById            String?
   /// D-GOALKIT: dia em que começam as janelas da meta de vendas (aprovação; quem já era ativa: 2026-10-27).
   goalStartAt             DateTime?         @db.Date
+  /// D-WELCOMEVIDEO: envio inicial "2 produtos + 3 vídeos" combinado na aprovação (vídeos que ela deve à marca); 0 = 1 produto.
+  welcomeVideos           Int               @default(0)
   couponRegistered        Boolean?
   followsOnInstagram      Boolean?
   inGroup                 Boolean?

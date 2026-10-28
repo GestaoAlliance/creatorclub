@@ -54,6 +54,9 @@ export function kitNoun(brandSlug: string | null | undefined, n: number): string
 
 /** D-D4SIGN: kit de boas-vindas da aprovação, igual em todas as marcas. */
 export const WELCOME_PRODUCTS = 1;
+/** D-WELCOMEVIDEO (Opção 2 das regras da Botanika): 2 produtos de boas-vindas em troca de 3 vídeos para a marca. */
+export const WELCOME_VIDEO_PRODUCTS = 2;
+export const WELCOME_VIDEOS = 3;
 
 /**
  * Foto dos produtos que a creator pode escolher (pedido do responsável em 2026-10-27; fotos mandadas por ele, em

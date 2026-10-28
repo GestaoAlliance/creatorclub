@@ -299,6 +299,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-211 — 2026-10-28 — Envio inicial: Opção 2 (2 produtos + 3 vídeos) na aprovação (D-WELCOMEVIDEO)
+- **Feito:** campo "Envio inicial" na aprovação de Candidatas; Opção 2 libera 2 produtos de boas-vindas e guarda os 3
+  vídeos combinados (`Creator.welcomeVideos`, migração `20261028230000_welcome_videos`); mensagem de aprovação e ficha
+  mostram o combinado.
+- **Próximo da reunião:** e-mail ao financeiro a cada NF (endereço editável em Marcas: a ata diz
+  financeiro@botanicabrasil.com, o responsável não tem certeza se é com "c" ou "k"); acesso só de leitura; aviso de
+  45 dias sem vendas; cadastro PJ; remessa SICOOB (manual recebido: `Guia_de_importacao_de_arquivos_CNAB_240_Piloto_SICOOB.pdf`); Alelo.
+- **Verificado:** testes (unitários e de integração), typecheck, build e migração sem divergência.
+
 ### CP-210 — 2026-10-28 — Botanika: produtos pela tabela mensal (D-TIERKIT)
 - **Respostas do responsável:** começa nas vendas de novembro; 3 primeiros meses contam da entrada de cada creator;
   libera na hora, por faixa; nos 3 primeiros meses vale a maior das duas tabelas.

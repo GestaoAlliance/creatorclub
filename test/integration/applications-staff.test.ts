@@ -43,8 +43,11 @@ describe("M4.1: nova candidata pela equipe e recusa em massa (D-MANUALAPP, banco
     expect(row).toMatchObject({ fullName: "Joana Lima", source: "staff_form", categoryProposal: "PRESCRITOR", couponProposal: "JOANA", instagram: "@joana", note: "indicada no evento", canDecide: true });
     expect(await prisma.auditLog.count({ where: { entityId: id, action: "application.created", actorId: gestao.userId } })).toBe(1);
 
-    const r = await approveApplication(prisma, gestao, { applicationId: id, couponCode: letters(6), category: "PRESCRITOR", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com` }, clientFor);
+    const r = await approveApplication(prisma, gestao, { applicationId: id, couponCode: letters(6), category: "PRESCRITOR", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com`, welcomeWithVideos: true }, clientFor);
     expect(await prisma.creator.count({ where: { id: r.creatorId, brandId: brand.id } })).toBe(1);
+    // D-WELCOMEVIDEO: Opção 2 libera 2 produtos de boas-vindas e guarda os 3 vídeos combinados.
+    expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { welcomeVideos: true } })).toEqual({ welcomeVideos: 3 });
+    expect(await prisma.kitGrant.findMany({ where: { creatorId: r.creatorId }, select: { kind: true, products: true } })).toEqual([{ kind: "WELCOME", products: 2 }]);
   });
 
   it("recusa em massa: só as novas da marca de quem recusa; mesmo motivo; auditoria por candidata", async () => {

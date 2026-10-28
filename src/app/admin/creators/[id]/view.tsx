@@ -337,6 +337,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 {p.contractTemplates.find((t) => t.id === p.contract.templateId)?.name ?? "Modelo padrão da marca"} ·{" "}
                 {p.contract.start ? `${dmy(p.contract.start)} a ${dmy(p.contract.end)}` : "sem datas de contrato"}
                 {!ugcOnly && (p.contract.receivesAsIndividual ? " · Creator CPF (saque com recibo)" : " · Creator CNPJ (saque com nota)")}
+                {p.contract.welcomeVideos > 0 && ` · Envio inicial: 2 produtos + ${p.contract.welcomeVideos} vídeos combinados`}
               </p>
             )}
             {p.notes && <p className={ui.hint}>Obs.: {p.notes}</p>}
