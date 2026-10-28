@@ -5,6 +5,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateRemessa, RemessaError, removeFromRemessa } from "@/lib/withdrawals/remessa";
+import { applyRetorno, retornoPreview, type RetornoRow } from "@/lib/withdrawals/retorno";
 import { approveWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -78,6 +79,37 @@ export async function removeRemessaAction(_prev: ActionState, form: FormData): P
     return { ok: "Saque fora da remessa: entra na próxima." };
   } catch (error) {
     if (error instanceof RemessaError) return { error: error.message };
+    throw error;
+  }
+}
+
+export type RetornoState =
+  | { error?: string; problems?: string[]; ok?: string; preview?: { nsa: number; content: string; rows: RetornoRow[] } }
+  | undefined;
+
+/** D-RETORNO: primeiro a prévia (arquivo escolhido); depois "Confirmar" aplica o mesmo conteúdo. */
+export async function retornoAction(_prev: RetornoState, form: FormData): Promise<RetornoState> {
+  const brandId = String(form.get("brandId") ?? "");
+  try {
+    const actor = await currentActor();
+    if (form.get("mode") === "apply") {
+      const r = await applyRetorno(db(), actor, brandId, String(form.get("content") ?? ""));
+      revalidatePath("/admin/saques");
+      const parts = [
+        r.paid && `${r.paid} ${r.paid === 1 ? "pago" : "pagos"}`,
+        r.scheduled && `${r.scheduled} ${r.scheduled === 1 ? "agendado" : "agendados"}`,
+        r.pending && `${r.pending} pendente${r.pending === 1 ? "" : "s"} de assinatura`,
+        r.rejected && `${r.rejected} ${r.rejected === 1 ? "recusado (saiu da remessa)" : "recusados (saíram da remessa)"}`,
+      ].filter(Boolean);
+      return { ok: `Retorno da remessa nº ${r.nsa}: ${parts.length ? parts.join(", ") : "nada a mudar"}.` };
+    }
+    const file = form.get("file");
+    if (!(file instanceof File) || file.size === 0) return { error: "Escolha o arquivo de retorno baixado do Internet Banking." };
+    const content = Buffer.from(await file.arrayBuffer()).toString("latin1");
+    const p = await retornoPreview(db(), actor, brandId, content);
+    return { preview: { nsa: p.nsa, content, rows: p.rows } };
+  } catch (error) {
+    if (error instanceof RemessaError) return { error: error.message, problems: error.problems.map((p) => p.problem) };
     throw error;
   }
 }

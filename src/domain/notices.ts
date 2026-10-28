@@ -17,7 +17,8 @@ export type NoticeKind =
   | "WITHDRAWAL_WINDOW"
   | "NEAR_MINIMUM"
   | "CONTRACT_ENDING"
-  | "IDLE";
+  | "IDLE"
+  | "WITHDRAWAL_BANK_REJECTED";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -88,6 +89,14 @@ export const notices = {
     dedupeKey: `withdrawal:${withdrawalId}:rejected`,
     title: "Seu pedido de saque precisa de ajuste",
     body: `O pedido de ${brl(amountCents)} não foi aprovado. Motivo: ${reason.trim().replace(/[.!?]?$/, ".")} O valor continua no seu saldo; corrija e peça de novo dentro da janela.`,
+    path: "/saque",
+  }),
+  /** D-RETORNO: o banco recusou o Pix do saque aprovado; ele vai na próxima remessa. Uma vez por remessa. */
+  withdrawalBankRejected: (withdrawalId: string, nsa: number, amountCents: number, reason: string): Notice => ({
+    kind: "WITHDRAWAL_BANK_REJECTED",
+    dedupeKey: `withdrawal:${withdrawalId}:bank:${nsa}`,
+    title: "O banco não conseguiu fazer seu Pix",
+    body: `O Pix de ${brl(amountCents)} voltou do banco: ${reason.trim().replace(/[.!?]?$/, ".")} Confira sua chave Pix e o CPF/CNPJ com a equipe; o pagamento vai na próxima remessa.`,
     path: "/saque",
   }),
   /** Janela de saque (D-CONTRACT): aberta no dia 1 e lembrete perto do fim, para quem tem saldo e não pediu. */

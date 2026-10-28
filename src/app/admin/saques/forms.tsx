@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { approveAction, payAction, payBatchAction, recheckAction, rejectAction, remessaAction, removeRemessaAction } from "./actions";
+import { approveAction, payAction, payBatchAction, recheckAction, rejectAction, remessaAction, removeRemessaAction, retornoAction } from "./actions";
 
 export function ApproveForm({ withdrawalId, label }: { withdrawalId: string; label: string }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
@@ -157,7 +157,7 @@ export function RemessaBar({ brandId, count, cents, today, problems }: { brandId
         <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-400">{state.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
       )}
       <Msg state={state?.error || state?.ok ? { ...(state.error ? { error: state.error } : {}), ...(state.ok ? { ok: state.ok } : {}) } : undefined} />
-      <p className={ui.hint}>Os saques do arquivo ficam marcados como "enviados ao banco". Depois que o banco processar, marque como pagos aqui.</p>
+      <p className={ui.hint}>Os saques do arquivo ficam marcados como "enviados ao banco". Depois que o banco processar, suba o retorno abaixo (ou marque como pagos aqui).</p>
     </form>
   );
 }
@@ -171,5 +171,57 @@ export function RemoveRemessaForm({ withdrawalId }: { withdrawalId: string }) {
       <button className={`${ui.ghostSm} self-start`} disabled={pending}>Banco recusou: tirar da remessa</button>
       <Msg state={state} />
     </form>
+  );
+}
+
+const RESULT_LABEL = { PAID: "Pago", SCHEDULED: "Agendado", PENDING: "Pendente de assinatura", REJECTED: "Recusado" } as const;
+const STATE_LABEL = { ok: "", done: "Já está assim", notfound: "Não é saque desta remessa", amount: "Valor diferente do saque: confira" } as const;
+
+/** D-RETORNO: sobe o retorno do SICOOB, mostra a prévia e o Pagamento confirma. */
+export function RetornoForm({ brandId }: { brandId: string }) {
+  const [state, action, pending] = useActionState(retornoAction, undefined);
+  const preview = state?.preview;
+  const toApply = preview?.rows.filter((r) => r.state === "ok").length ?? 0;
+  return (
+    <div className={`${ui.card} flex flex-col gap-3`}>
+      <div>
+        <p className="font-semibold">Retorno do banco</p>
+        <p className={ui.hint}>Baixe o arquivo de retorno no Internet Banking do SICOOB e escolha aqui. Você confere antes de confirmar.</p>
+      </div>
+      <form action={action} className="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="brandId" value={brandId} />
+        <input type="hidden" name="mode" value="preview" />
+        <input type="file" name="file" accept=".txt,.ret,.rem,text/plain" required className={ui.inputSm} />
+        <button className={ui.ghostSm} disabled={pending}>{pending ? "Lendo…" : "Conferir retorno"}</button>
+      </form>
+      {preview && (
+        <form action={action} className="flex flex-col gap-2">
+          <input type="hidden" name="brandId" value={brandId} />
+          <input type="hidden" name="mode" value="apply" />
+          <input type="hidden" name="content" value={preview.content} />
+          <p className="text-sm font-medium">Remessa nº {preview.nsa}</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {preview.rows.map((r) => (
+              <li key={r.ref} className="flex flex-wrap justify-between gap-2">
+                <span>{r.name} · {brl(r.amountCents)}</span>
+                <span className={r.result === "PAID" ? "text-emerald-700 dark:text-emerald-400" : r.result === "REJECTED" ? "text-red-700 dark:text-red-400" : "text-sky-800 dark:text-sky-300"}>
+                  {RESULT_LABEL[r.result]}
+                  {r.result === "REJECTED" || r.result === "PENDING" ? `: ${r.reason}` : ""}
+                  {r.state !== "ok" && <span className={ui.hint}> ({STATE_LABEL[r.state]})</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <button className={`${ui.btnSm} self-start`} disabled={pending || toApply === 0}>
+            {pending ? "Aplicando…" : toApply === 0 ? "Nada a mudar" : `Confirmar ${toApply} ${toApply === 1 ? "saque" : "saques"}`}
+          </button>
+          <p className={ui.hint}>Pago: sai do saldo e a creator é avisada. Recusado: sai da remessa, vai na próxima e a creator é avisada para conferir a chave Pix.</p>
+        </form>
+      )}
+      {state?.problems && state.problems.length > 0 && (
+        <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-400">{state.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      )}
+      <Msg state={state?.error || state?.ok ? { ...(state.error ? { error: state.error } : {}), ...(state.ok ? { ok: state.ok } : {}) } : undefined} />
+    </div>
   );
 }

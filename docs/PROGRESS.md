@@ -5,12 +5,14 @@
 
 ## Onde estamos
 
-- **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
-  da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **M5.2** Estoque dos kits (antes: decisão 12, se as marcas usam o Bling).
-  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, domínio/e-mails no Turbo Cloud.
+- **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
+  as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
+- **Próxima tarefa:** perguntar ao responsável (M5.2 Olist e Alelo PF esperam contrato; P3 fechado; opção aberta:
+  M5.3 Instagram, que depende do Business Manager da Meta).
+  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
+  Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
-  claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
+  claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ### O que depende de quem (conferido em produção em 2026-10-24)
@@ -24,7 +26,8 @@
 | **Juci** (Pagamento) | Aprovar o saldo de abertura (nenhum aprovado ainda; pagamentos antigos importados: Botanika 34, VermeFree 18) e dizer onde estão as NFs antigas (I7) | Pagamentos → Abertura |
 | **Responsável** | Instalar `docs/sheets/leitura-vermefree.gs` na conta Google da VermeFree | Apps Script |
 | **Responsável** | WhatsApp das marcas (M2.2, D-WHATSAPP): `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, instância da Evolution de cada marca em Marcas, WhatsApp de quem é da Gestão em Equipe (resumo semanal), ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n | Vercel, Marcas, Equipe, n8n |
-| **Responsável** | Domínio (P3) e Resend (P2): comprar o domínio, verificar no Resend, `RESEND_API_KEY` e `EMAIL_FROM` na Vercel, SMTP do Supabase Auth | Registro de domínio, Resend, Vercel, Supabase |
+| **Responsável** | Conta SICOOB da Botanika (convênio CNAB 240, agência, conta) e teste da remessa na homologação (D-REMESSA) | Marcas, Internet Banking SICOOB |
+| **Responsável** | Login "Leitura" de Admin Botanika e Guilherme (D-VIEWER) e convites de Álvaro (Envio) e Juci (Pagamento), só Botanika | Equipe |
 | **Responsável** | Logo de cada marca (nenhuma tem; aparece na tela de entrar e no ícone do app) | Configurações → Marcas |
 | **Responsável** | Semana de teste (U1): convidar Juci (Pagamento) e Álvaro (Envio); 3 a 5 creators de teste no portal; divulgar `/inscricao` e os links das hunters (`/i/codigo`) | Equipe, Hunters |
 | **Responsável** | Revisar os textos de contrato e termo (Botanika, VermeFree e Revita; de preferência com advogado); início do contrato das UGC nas fichas | Contratos, Termo |
@@ -74,8 +77,12 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
   (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
   paga e quem paga o frete.
-- [ ] **M5.2** Estoque dos kits: controle no sistema ou Bling. *Antes:* decisão 12 (a equipe diz se as três marcas
-  usam o Bling; perguntado em 2026-10-24, sem resposta ainda).
+- [!] **M5.2** Estoque dos kits pelo **Olist**, nas 3 marcas, **só leitura** (mostrar o estoque e não liberar kit de
+  produto sem estoque; a baixa segue no Olist). Respostas de 2026-10-28. *Bloqueado:* as marcas ainda vão contratar
+  o Olist; quando tiver, gerar o token da API.
+- [!] **Alelo (PF)**: saque de pessoa física no cartão Alelo (contrato PF: "Modelo contrato Botanika ALELO", Drive);
+  PF deixa de informar chave Pix (D-ALELOPF). *Bloqueado:* a Botanika ainda vai contratar a Alelo; depois, o modelo
+  do arquivo de pedido de crédito do portal da Alelo. Até lá, PF segue no Pix (remessa SICOOB).
 - [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (alguém confere se as
   marcas estão num Business Manager verificado na Meta; o responsável não sabe, 2026-10-24).
 
@@ -218,12 +225,12 @@ já existem antes de desenhar.
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
 - [x] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions (CP-82), ligada em 2026-10-10
   (CP-84): primeira cópia do banco novo (74 tabelas com dados) e cópia única do app antigo, as duas com sucesso.
-- [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
-  Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
-  (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
-  configurar o SMTP do Supabase Auth com o Resend ("esqueci a senha"); testar com um e-mail da equipe.
-- [ ] **P3** Domínio do projeto (o responsável compra) e os links `/r/...` antigos: o domínio do app antigo precisa
-  redirecionar para o v2, senão os links nas bios quebram no corte.
+- [x] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL): ligado em 2026-10-28 (CP-206):
+  Resend verificado, `RESEND_API_KEY` e `EMAIL_DOMAIN` na Vercel, um remetente por marca (D-EMAILFROM), SMTP do Supabase
+  Auth com o Resend ("esqueci a senha"), caixas botanika@, vermefree@ e revita@ no Turbo Cloud.
+- [x] **P3** Domínio do projeto: `creatorclub.app.br` no ar desde 2026-10-28 (CP-206, D-DOMAIN; DNS na Cloudflare).
+  Links `/r/...` do app antigo: ninguém usa mais (resposta de 2026-10-28); nada a redirecionar. O v2 atende
+  `/r/[marca]/[código]` no domínio novo e no endereço antigo da Vercel.
 - [x] **P4** Termo de aceite da creator no primeiro acesso ao portal (D-TERMS): portal bloqueado até aceitar; nome
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
@@ -298,6 +305,25 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-219 — 2026-10-28 — P3 fechado (só documentação)
+- **Feito:** os links `/r/` do app antigo não são mais usados (resposta do responsável); P3 marcado como feito.
+
+### CP-218 — 2026-10-28 — Olist e Alelo: decididos e bloqueados (só documentação)
+- **Feito:** respostas do responsável registradas: estoque pelo Olist só leitura nas 3 marcas (M5.2) e Alelo para PF
+  sem chave Pix (D-ALELOPF). Os dois esperam contrato das marcas.
+- **Próxima:** perguntar ao responsável a próxima tarefa.
+
+### CP-217 — 2026-10-28 — Retorno SICOOB: pagos, agendados e recusados (D-RETORNO)
+- **Feito:** `parseRetorno` em `src/domain/cnab240.ts` (códigos G059 do guia, "Seu Número" = saque, data e valor
+  reais); `src/lib/withdrawals/retorno.ts` (`retornoPreview`, `applyRetorno`); bloco "Retorno do banco" em Saques →
+  Aprovados: o Pagamento escolhe o arquivo, confere a prévia e confirma. "00" = pago (mesmo passo do botão);
+  "BD" = agendado; "PD" = pendente de assinatura; recusa = sai da remessa, motivo no cartão do saque, aviso
+  `WITHDRAWAL_BANK_REJECTED` no portal; nova remessa limpa o resultado. Trava `Withdrawal_bank_result`
+  (migração `20261031090000_remittance_return`).
+- **Testes:** unitários do leitor; integração (agendado → pago, subir de novo não repete, recusado avisa uma vez e
+  volta na próxima remessa, trava).
+- **Falta:** conferir com um retorno real do SICOOB (o leiaute foi montado pelo guia).
 
 ### CP-216 — 2026-10-28 — Remessa SICOOB de Pix, CNAB 240 (D-REMESSA)
 - **Feito:** `src/domain/cnab240.ts` (leiaute do guia SICOOB, conferências e linhas de 240 posições);

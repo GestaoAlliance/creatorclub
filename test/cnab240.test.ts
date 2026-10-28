@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alfa, buildRemessa, checkRemessa, pixKeyOf, type CnabCompany, type CnabPayment } from "@/domain";
+import { alfa, buildRemessa, checkRemessa, parseRetorno, pixKeyOf, remessaRef, RETORNO_CODES, type CnabCompany, type CnabPayment } from "@/domain";
 
 const company: CnabCompany = { cnpj: "65.100.830/0001-36", name: "Botânica Brasil Ltda", convenio: "123456", agency: "3069", agencyDv: "0", account: "12345", accountDv: "6" };
 const pay = (o: Partial<CnabPayment> = {}): CnabPayment => ({ id: "a1b2c3d4-0000-0000-0000-000000000001", name: "Maria José", doc: "11222333000181", pixKey: "maria@exemplo.com", amountCents: 12_345, ...o });
@@ -60,5 +60,49 @@ describe("remessa SICOOB CNAB 240 Pix (D-REMESSA)", () => {
     for (const s of ["convênio", "Conta da marca", "passado", "positivo", "Chave Pix", "CPF/CNPJ", "repetido"]) expect(text).toContain(s);
     expect(() => buildRemessa({ company, payments: [], payDay: "2026-11-20", nsa: 1, now: NOW, today: "2026-10-28" })).toThrow(/Nenhum saque/);
     expect(alfa("Ação & Cia", 10)).toBe("ACAO CIA  ");
+  });
+});
+
+describe("retorno SICOOB (G059)", () => {
+  const ids = ["a1b2c3d4-0000-0000-0000-000000000001", "a1b2c3d4-0000-0000-0000-000000000002", "a1b2c3d4-0000-0000-0000-000000000003", "a1b2c3d4-0000-0000-0000-000000000004"];
+  const set = (l: string, from: number, v: string) => l.slice(0, from - 1) + v + l.slice(from - 1 + v.length);
+  function retorno(codes: string[]) {
+    const file = buildRemessa({ company, payments: ids.map((id, i) => pay({ id, amountCents: 100 * (i + 1) })), payDay: "2026-11-20", nsa: 9, now: NOW, today: "2026-10-28" });
+    let a = 0;
+    return file
+      .split("\r\n")
+      .map((l) => {
+        if (l.slice(7, 8) === "0") return set(l, 143, "2");
+        if (l.slice(7, 8) === "3" && l[13] === "A") {
+          const c = codes[a++]!;
+          let x = set(l, 231, c.padEnd(10));
+          if (c.startsWith("00")) x = set(set(x, 155, "20112026"), 163, String(100 * a).padStart(15, "0"));
+          return x;
+        }
+        return l;
+      })
+      .join("\r\n");
+  }
+
+  it("lê cada saque com o resultado", () => {
+    const r = parseRetorno(retorno(["00", "BD", "PJ", "PDBD"]));
+    expect(r.problems).toEqual([]);
+    expect(r.nsa).toBe(9);
+    expect(r.items.map((i) => [i.ref, i.result])).toEqual([
+      [remessaRef(ids[0]!), "PAID"],
+      [remessaRef(ids[1]!), "SCHEDULED"],
+      [remessaRef(ids[2]!), "REJECTED"],
+      [remessaRef(ids[3]!), "PENDING"],
+    ]);
+    expect(r.items[0]).toMatchObject({ amountCents: 100, paidDay: "2026-11-20", paidCents: 100, name: "MARIA JOSE" });
+    expect(r.items[2]).toMatchObject({ codes: ["PJ"], paidDay: null, paidCents: null });
+    expect(RETORNO_CODES.PJ).toBe("Chave Pix não cadastrada");
+  });
+
+  it("recusa a remessa enviada e linha torta", () => {
+    const sent = buildRemessa({ company, payments: [pay()], payDay: "2026-11-20", nsa: 9, now: NOW, today: "2026-10-28" });
+    expect(parseRetorno(sent).problems).toContain("O arquivo não é de retorno (é a remessa enviada).");
+    expect(parseRetorno("756abc").problems[0]).toMatch(/com 6 posições/);
+    expect(parseRetorno("").problems).toEqual(["Nenhum pagamento no arquivo."]);
   });
 });

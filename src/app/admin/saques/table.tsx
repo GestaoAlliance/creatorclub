@@ -89,7 +89,13 @@ export function SaquesTable({ rows }: { rows: Row[] }) {
             {r.status === "REQUESTED" && !r.canApprove && <p className={ui.hint}>Esperando a aprovação da Gestão.</p>}
             {r.status === "APPROVED" && !r.canPay && <p className={ui.hint}>Aprovado: esperando o Pix do Pagamento.</p>}
             {r.status === "APPROVED" && r.remittance && (
-              <p className="text-sm text-sky-800 dark:text-sky-300">Enviado ao banco na remessa nº {r.remittance.nsa} (pagamento em {r.remittance.payDay.split("-").reverse().join("/")}).</p>
+              <p className="text-sm text-sky-800 dark:text-sky-300">
+                Enviado ao banco na remessa nº {r.remittance.nsa} (pagamento em {r.remittance.payDay.split("-").reverse().join("/")})
+                {r.bankResult === "SCHEDULED" ? ": agendado no banco." : r.bankResult === "PENDING" ? ": pendente de assinatura no Internet Banking." : "."}
+              </p>
+            )}
+            {r.status === "APPROVED" && !r.remittance && r.bankResult === "REJECTED" && (
+              <p className="text-sm text-red-700 dark:text-red-400">O banco recusou o Pix: {r.bankNote}. Corrija o cadastro; ele entra na próxima remessa.</p>
             )}
             {acts && (
               <div data-tour="sq-pagar" className="relative flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
