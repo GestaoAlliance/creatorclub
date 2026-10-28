@@ -16,7 +16,8 @@ export type NoticeKind =
   | "FIRST_SALE"
   | "WITHDRAWAL_WINDOW"
   | "NEAR_MINIMUM"
-  | "CONTRACT_ENDING";
+  | "CONTRACT_ENDING"
+  | "IDLE";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -26,6 +27,17 @@ const brl = (c: number) => formatBRL(c).replace(/ /g, " ");
 const items = (n: number, brandSlug: string) => `${n} ${kitNoun(brandSlug, n)}`;
 
 export const notices = {
+  /**
+   * D-IDLE45 (reunião de 2026-10-27; texto escolhido pelo responsável, sem falar em encerrar até o parecer jurídico):
+   * N dias sem venda com o cupom. Uma vez por período parado (`since` = última venda ou início; `step` = 1º, 2º… período).
+   */
+  idle: (days: number, since: string, step: number): Notice => ({
+    kind: "IDLE",
+    dedupeKey: `idle:${since}:${step}`,
+    title: `${days} dias sem vendas com o seu cupom`,
+    body: `Faz ${days} dias que não entra venda com o seu cupom. Bora divulgar? Se precisar de ideia de conteúdo ou ajuda, fala com a gente.`,
+    path: null,
+  }),
   /** Fechamento do mês (dia 1) liberou comissão (D-CONTRACT). */
   commissionReleased: (month: string): Notice => ({
     kind: "COMMISSION_RELEASED",

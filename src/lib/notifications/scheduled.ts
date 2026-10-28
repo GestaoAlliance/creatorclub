@@ -2,6 +2,7 @@ import type { PrismaClient, ReleaseBasis } from "@/generated/prisma/client";
 import { accumulatedSales, dayKey, isUgcOnly, monthKey, noticeEmail, notices, releaseMinFor, type Notice } from "@/domain";
 import { creatorBalance, releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
+import { idleFor } from "@/lib/creators/idle";
 import type { EmailSender } from "@/lib/email/sender";
 import { configuredOrigin } from "@/lib/site";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
@@ -23,7 +24,7 @@ const hourIn = (now: Date, tz: string) => Number(new Intl.DateTimeFormat("en-GB"
 export async function runDueNotices(prisma: PrismaClient, now = new Date(), only?: { brandId: string }): Promise<number> {
   const brands = await prisma.brand.findMany({
     where: { archivedAt: null, ...(only ? { id: only.brandId } : {}) },
-    select: { id: true, timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
+    select: { id: true, timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true, idleNoticeDays: true },
   });
   let total = 0;
   for (const brand of brands) {
@@ -40,7 +41,7 @@ export async function runDueNotices(prisma: PrismaClient, now = new Date(), only
 
 async function brandNotices(
   prisma: PrismaClient,
-  brand: { id: string; timezone: string; withdrawalWindowStartDay: number; withdrawalWindowEndDay: number; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis },
+  brand: { id: string; timezone: string; withdrawalWindowStartDay: number; withdrawalWindowEndDay: number; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis; idleNoticeDays: number | null },
   day: string,
   now: Date,
 ): Promise<number> {
@@ -49,7 +50,7 @@ async function brandNotices(
   const dom = Number(day.slice(8, 10));
   const creators = await prisma.creator.findMany({
     where: { brandId: brand.id, status: "ACTIVE" },
-    select: { id: true, brandId: true, categories: true, withdrawalsUnlockedAt: true, contractEnd: true, contractTemplate: { select: { releaseMinCents: true } } },
+    select: { id: true, brandId: true, status: true, createdAt: true, contractStart: true, categories: true, withdrawalsUnlockedAt: true, contractEnd: true, contractTemplate: { select: { releaseMinCents: true } } },
   });
   const partners = creators.filter((c) => !isUgcOnly(c.categories));
   const out: { brandId: string; creatorId: string; notice: Notice }[] = [];
@@ -86,6 +87,18 @@ async function brandNotices(
     if (!min) continue;
     const acc = accumulatedSales(sales.get(c.id)!, released.get(c.id) ?? null, month);
     if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, notices.nearMinimum(month, min - acc, brand.releaseBasis === "COMMISSION"));
+  }
+
+  // D-IDLE45: N dias sem venda (da última venda ou do início do contrato), uma vez por período de N dias parada.
+  if (brand.idleNoticeDays) {
+    const n = brand.idleNoticeDays;
+    const idle = await idleFor(prisma, partners, tz, now);
+    for (const c of partners) {
+      const st = idle.get(c.id);
+      if (!st || st.days < n) continue;
+      const since = st.lastSaleDay ?? dayOf(c.contractStart) ?? dayKey(c.createdAt, tz);
+      push(c.id, notices.idle(n, since, Math.floor(st.days / n)));
+    }
   }
 
   // Contrato vencendo: fim nos próximos 30 dias.
