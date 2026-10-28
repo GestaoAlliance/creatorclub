@@ -40,3 +40,4 @@ export * from "./shop";
 export * from "./phone";
 export * from "./cnpj";
 export * from "./cnab240";
+export * from "./instagram";

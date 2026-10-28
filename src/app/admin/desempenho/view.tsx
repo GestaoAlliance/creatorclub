@@ -5,10 +5,13 @@ import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
 import { formatBRL, kitNoun } from "@/domain";
 import type { monthPerformance } from "@/lib/creators/performance";
+import { InstagramTab, type IgSort } from "./instagram";
+import type { instagramRanking } from "@/lib/instagram/ranking";
 
 type Data = Awaited<ReturnType<typeof monthPerformance>>;
 type Row = Data["partners"][number];
-export type Search = { mes?: string; ordem?: string; tipo?: string; aba?: string; semvenda?: string };
+export type Search = { mes?: string; ordem?: string; tipo?: string; aba?: string; semvenda?: string; igordem?: string };
+type Ig = { data: Awaited<ReturnType<typeof instagramRanking>>; sort: IgSort; now: Date } | null;
 
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const monthName = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]} de ${m.slice(0, 4)}`;
@@ -55,9 +58,10 @@ function KitText({ k, brandSlug }: { k: NonNullable<Row["kit"]>; brandSlug: stri
 }
 
 /** Desempenho do mês (U4): resumo, ranking de influencers e prescritores, e UGC à parte. Só exibe. */
-export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search; brandSlug: string }) {
+export function DesempenhoView({ data, sp, brandSlug, ig = null }: { data: Data; sp: Search; brandSlug: string; ig?: Ig }) {
   const { summary: s } = data;
   const ugcTab = sp.aba === "ugc";
+  const igTab = sp.aba === "instagram" && ig !== null;
   const partners = data.partners.filter((r) => (!sp.tipo || (r.categories as string[]).includes(sp.tipo)) && (sp.semvenda !== "1" || r.orders === 0));
   const isCurrent = data.month === data.current;
   const q = (extra: Record<string, string | undefined>) => {
@@ -71,6 +75,7 @@ export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search
         creator ativa. Toque no nome para abrir a ficha.
       </PageHeader>
 
+      {!igTab && (<>
       <form data-tour="de-filtros" className="glass flex flex-wrap items-center gap-2 rounded-3xl p-4" role="search">
         {ugcTab && <input type="hidden" name="aba" value="ugc" />}
         <select name="mes" defaultValue={data.month} aria-label="Mês" className={ui.inputSm}>
@@ -107,14 +112,18 @@ export function DesempenhoView({ data, sp, brandSlug }: { data: Data; sp: Search
           <Kpi label="Clientes novas" value={s.customersKnown ? s.newCustomers : "—"} hint={s.customersKnown ? "primeira compra na loja" : "precisa de read_customers no app"} />
         </div>
       </Card>
+      </>)}
 
       <nav aria-label="Grupo" data-tour="de-grupos" className="flex flex-wrap items-center gap-2">
-        <Link href={q({ aba: undefined })} className={ugcTab ? ui.pill : ui.pillOn}>Influencers e prescritores <span className="opacity-80">{data.partners.length}</span></Link>
+        <Link href={q({ aba: undefined })} className={ugcTab || igTab ? ui.pill : ui.pillOn}>Influencers e prescritores <span className="opacity-80">{data.partners.length}</span></Link>
         <Link href={q({ aba: "ugc", tipo: undefined, semvenda: undefined, ordem: undefined })} className={ugcTab ? ui.pillOn : ui.pill}>UGC <span className="opacity-80">{data.ugc.length}</span></Link>
+        <Link href="/admin/desempenho?aba=instagram" className={igTab ? ui.pillOn : ui.pill}>Instagram</Link>
         <HelpTip id="de-grupos" />
       </nav>
 
-      {!ugcTab ? (
+      {igTab ? (
+        <InstagramTab data={ig.data} sort={ig.sort} now={ig.now} />
+      ) : !ugcTab ? (
         <Card title={`Ranking de ${monthName(data.month)}`} icon={<Trophy className="size-4" />} help="de-ranking">
           {!isCurrent && <p className={ui.hint}>O mínimo mostra o acumulado de hoje; vendas, pedidos e kit são do mês escolhido.</p>}
           {partners.length === 0 ? (

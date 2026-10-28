@@ -21,6 +21,7 @@ import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm
 import { AccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
+import { InstagramCard } from "./ig-card";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -66,7 +67,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "" }: { posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null }: { ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -511,6 +512,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             badge: posts.length,
             content: (
               <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+                {ig && <div className="lg:col-span-2"><InstagramCard ig={ig} /></div>}
                 <Card title="Posts">
                   <PostList posts={posts} canRemove={p.canEdit} />
                 </Card>

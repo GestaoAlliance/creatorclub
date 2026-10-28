@@ -57,6 +57,9 @@ model Brand {
   /// Último número sequencial de remessa (NSA) gerado pela marca.
   remittanceSeq             Int                 @default(0)
   remittances               PaymentRemittance[]
+  /// D-INSTAGRAM: conta profissional do Instagram da marca (ID da Meta) usada para ler as creators e os posts que marcam a marca.
+  instagramUserId           String?
+  instagramTags             InstagramTag[]
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
@@ -270,6 +273,8 @@ model CreatorAccount {
   updatedAt         DateTime  @updatedAt
 
   user         User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  instagramSnapshots InstagramSnapshot[]
+  instagramPosts     InstagramPost[]
   creators     Creator[]
   invites      CreatorInvite[]
   applications CreatorApplication[]
@@ -1635,4 +1640,64 @@ model Prospect {
 
   @@unique([brandId, handle])
   @@index([brandId, ownerId])
+}
+
+/// D-INSTAGRAM: leitura diária do Instagram de uma pessoa (pela conta da marca). Só recebe inserções.
+model InstagramSnapshot {
+  id         String          @id @default(uuid())
+  accountId  String
+  day        DateTime        @db.Date
+  handle     String
+  status     InstagramStatus
+  followers  Int?
+  mediaCount Int?
+  createdAt  DateTime        @default(now())
+
+  account CreatorAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@unique([accountId, day])
+}
+
+/// D-INSTAGRAM: como foi a leitura do perfil.
+enum InstagramStatus {
+  OK
+  /// Perfil pessoal, privado ou @ inexistente: a Meta não mostra.
+  UNREADABLE
+}
+
+/// D-INSTAGRAM: post de uma creator (últimos posts de cada leitura; curtidas e comentários atualizam).
+model InstagramPost {
+  /// ID do post na Meta.
+  id          String   @id
+  accountId   String
+  postedAt    DateTime
+  mediaType   String
+  productType String?
+  likes       Int?
+  comments    Int?
+  caption     String?
+  permalink   String
+  updatedAt   DateTime @updatedAt
+
+  account CreatorAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, postedAt])
+}
+
+/// D-INSTAGRAM: post público que marcou o Instagram da marca.
+model InstagramTag {
+  id        String   @id @default(uuid())
+  brandId   String
+  mediaId   String
+  username  String
+  postedAt  DateTime
+  permalink String
+  likes     Int?
+  comments  Int?
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, mediaId])
+  @@index([brandId, postedAt])
 }

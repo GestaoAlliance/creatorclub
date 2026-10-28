@@ -12,7 +12,7 @@ export type WeeklyData = {
   top: { name: string; cents: number }[];
   profit: { cents: number; revenueCents: number } | null;
   pending: { applications: number; toApprove: number; toPay: number; actions: number };
-  alerts: { idle: number; contracts: number; nearMin: number; kits: number };
+  alerts: { idle: number; contracts: number; nearMin: number; kits: number; igDrops?: number };
   link: string | null;
 };
 
@@ -47,6 +47,7 @@ export function weeklySummaryText(d: WeeklyData): string {
     a.nearMin && `${plural(a.nearMin, "creator perto", "creators perto")} do mínimo do mês (vale um empurrão)`,
     a.contracts && `${plural(a.contracts, "contrato vencendo", "contratos vencendo")} ou vencido${a.contracts === 1 ? "" : "s"}`,
     a.kits && `${plural(a.kits, "kit parado", "kits parados")}`,
+    a.igDrops && `${plural(a.igDrops, "creator com", "creators com")} engajamento no Instagram 40% menor em 30 dias`,
   ].filter(Boolean) as string[];
   if (alerts.length) lines.push(["🚨 *Alertas*", ...alerts.map((x) => `• ${x}`)].join("\n"));
   if (d.link) lines.push(`Painel: ${d.link}`);
