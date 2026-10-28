@@ -10,7 +10,8 @@ import type { EmailContent } from "@/domain";
 export class EmailError extends Error {}
 
 export type EmailBrand = { slug: string; name: string };
-export type EmailMessage = EmailContent & { to: string; idempotencyKey?: string; brand?: EmailBrand | null };
+export type EmailAttachment = { filename: string; content: Uint8Array };
+export type EmailMessage = EmailContent & { to: string; idempotencyKey?: string; brand?: EmailBrand | null; attachments?: EmailAttachment[] };
 export type EmailSender = (message: EmailMessage) => Promise<{ id: string }>;
 
 /** Caixa de cada marca (slug → nome antes do @). */
@@ -36,7 +37,14 @@ export function resendSender(apiKey: string, domain: string, fetchImpl: typeof f
           "Content-Type": "application/json",
           ...(m.idempotencyKey ? { "Idempotency-Key": m.idempotencyKey } : {}),
         },
-        body: JSON.stringify({ from, to: [m.to], subject: m.subject, html: m.html, text: m.text }),
+        body: JSON.stringify({
+          from,
+          to: [m.to],
+          subject: m.subject,
+          html: m.html,
+          text: m.text,
+          ...(m.attachments?.length ? { attachments: m.attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64") })) } : {}),
+        }),
         signal: AbortSignal.timeout(10_000),
       });
     } catch {

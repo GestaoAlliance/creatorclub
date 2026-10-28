@@ -24,6 +24,7 @@ const input = (form: FormData) => ({
   defaultDiscount: String(form.get("defaultDiscount") ?? ""),
   ...(form.has("approvalSuggestion") ? { approvalSuggestion: String(form.get("approvalSuggestion") ?? "") } : {}),
   ...(form.has("shopDiscount") ? { shopDiscount: String(form.get("shopDiscount") ?? "") } : {}),
+  ...(form.has("financeEmail") ? { financeEmail: String(form.get("financeEmail") ?? "") } : {}),
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
 });
 

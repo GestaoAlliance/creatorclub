@@ -35,6 +35,8 @@ export type BrandInput = {
   approvalSuggestion?: string;
   /** M5.1 (D-SHOPBALANCE): desconto da creator na loja com o saldo, em % ("0" a "90"). */
   shopDiscount?: string;
+  /** D-NFMAIL: e-mail do financeiro (vazio = não envia). */
+  financeEmail?: string;
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
 };
@@ -67,6 +69,7 @@ function clean(input: BrandInput) {
     ...(input.nfInstructions !== undefined && { nfInstructions }),
     ...(input.whatsappInstance !== undefined && { whatsappInstance }),
     ...(input.approvalSuggestion !== undefined && { approvalSuggestion: input.approvalSuggestion.trim().replace(/\s+/g, " ").slice(0, 120) || null }),
+    ...(input.financeEmail !== undefined && { financeEmail: financeEmailOf(input.financeEmail) }),
   };
   // M4.4a (D-BRANDLOGIN): padrões das aprovações novas (quem já é creator mantém a dela).
   const pct = (raw: string | undefined, label: string, max: number) => {
@@ -91,6 +94,14 @@ function clean(input: BrandInput) {
     ...(defaultDiscountBps !== undefined && { defaultDiscountBps }),
   };
   return { name, primaryColor: color, nfTakerDocument: cnpj, legalName, storeUrl, ...nf, ...defaults };
+}
+
+/** D-NFMAIL: e-mail do financeiro, minúsculo; vazio = null. */
+function financeEmailOf(raw: string): string | null {
+  const t = raw.trim().toLowerCase();
+  if (!t) return null;
+  if (t.length > 200 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t)) throw new BrandError("E-mail do financeiro inválido.");
+  return t;
 }
 
 /** "vermefree.com.br" → "https://vermefree.com.br" (sem barra no fim); vazio = sem site. */
@@ -124,7 +135,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, defaultCommissionBps: true, defaultDiscountBps: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, financeEmail: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
@@ -160,6 +171,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       whatsappInstance: true,
       approvalSuggestion: true,
       shopDiscountBps: true,
+      financeEmail: true,
       products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
       storeUrl: true,
       defaultCommissionBps: true,
