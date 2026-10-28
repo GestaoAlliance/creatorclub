@@ -9,14 +9,21 @@ describe("matriz de permissões (D-ROLES)", () => {
     SUPER_ADMIN: [
       "creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "withdrawals.manage", "shipping.view", "shipping.manage",
       "personal.address", "personal.fiscal", "ledger.adjust", "prospects.own", "integrations.manage", "staff.manage",
-      "portal.viewAs", "tiktok.view",
+      "portal.viewAs", "tiktok.view", "performance.view",
     ],
-    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view"],
+    GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view", "performance.view"],
     ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
     PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
     HUNTER: ["prospects.own"],
     TIKTOK: ["tiktok.view"],
+    VIEWER: ["creators.view", "money.view", "withdrawals.view", "shipping.view", "personal.address", "personal.fiscal", "performance.view"],
   };
+
+  it("D-VIEWER: Leitura não muda nada", () => {
+    for (const p of ["creators.edit", "withdrawals.approve", "withdrawals.manage", "shipping.manage", "ledger.adjust", "staff.manage", "integrations.manage", "portal.viewAs"] as const) {
+      expect(ROLE_PERMISSIONS.VIEWER).not.toContain(p);
+    }
+  });
 
   it("cada papel tem exatamente as permissões decididas", () => {
     for (const role of Object.keys(expected) as StaffRole[]) {

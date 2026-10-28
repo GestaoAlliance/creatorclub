@@ -12,6 +12,7 @@ const ROLE_OPTIONS = (
     <option value="PAGAMENTO">Pagamento</option>
     <option value="HUNTER">Hunter</option>
     <option value="TIKTOK">TikTok (só a lista do TikTok)</option>
+    <option value="VIEWER">Leitura (vê tudo, não muda nada)</option>
   </>
 );
 

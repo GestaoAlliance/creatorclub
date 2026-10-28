@@ -9,6 +9,7 @@ const ROLE_LABEL: Record<string, string> = {
   PAGAMENTO: "Pagamento",
   HUNTER: "Hunter",
   TIKTOK: "TikTok",
+  VIEWER: "Leitura",
 };
 
 export type ResolvedInvite = {

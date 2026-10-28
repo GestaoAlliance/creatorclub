@@ -299,6 +299,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-213 — 2026-10-28 — Papel "Leitura" para Admin Botanika e Guilherme (D-VIEWER)
+- **Feito:** `StaffRole.VIEWER` (migração `20261029120000_viewer_role`), permissões só de ver (creators, vendas, saques,
+  envios, Desempenho, dados pessoais e fiscais); permissão nova `performance.view` para o Desempenho; "Leitura" nos
+  convites, em Equipe e no texto do convite. Conferido na prévia: as telas abrem sem botões de aprovar, pagar ou editar.
+- **Falta (responsável):** gerar o convite aberto em Equipe, papel Leitura, marca Botanika.
+- **Próximo da reunião:** aviso de 45 dias sem vendas; cadastro PJ; remessa SICOOB; Alelo.
+- **Verificado:** testes (unitários e de integração), typecheck, build, migração sem divergência e capturas.
+
 ### CP-212 — 2026-10-28 — E-mail ao financeiro a cada NF (D-NFMAIL)
 - **Feito:** `Brand.financeEmail` (Marcas → "E-mail do financeiro"), migração `20261029090000_finance_email` (Botanika =
   financeiro@botanicabrasil.com, a confirmar a grafia); `emailNfToFinance` (`src/lib/withdrawals/finance-mail.ts`)

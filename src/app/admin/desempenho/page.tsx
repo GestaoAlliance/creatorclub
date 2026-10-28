@@ -16,7 +16,7 @@ const SORTS: PerformanceSort[] = ["vendas", "minimo", "nome"];
 export default async function DesempenhoPage({ searchParams }: { searchParams: Promise<Search> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/desempenho");
-  const allowed = brandsWith(actor.grants, "creators.edit");
+  const allowed = brandsWith(actor.grants, "performance.view");
   if (allowed !== "ALL" && allowed.length === 0) redirect("/admin");
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;

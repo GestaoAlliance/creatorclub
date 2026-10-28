@@ -39,7 +39,7 @@ const GROUPS: Group[] = [
       { href: "/vendas", label: "Vendas", needs: "money.view" },
       { href: "/vendas/produtos", label: "Produtos", needs: "money.view" },
       { href: "/cupons", label: "Cupons", needs: "creators.edit" },
-      { href: "/desempenho", label: "Desempenho", needs: "creators.edit" },
+      { href: "/desempenho", label: "Desempenho", needs: "performance.view" },
     ],
   },
   {

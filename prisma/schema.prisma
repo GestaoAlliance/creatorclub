@@ -174,6 +174,7 @@ enum StaffRole {
   PAGAMENTO
   HUNTER
   TIKTOK // D-TIKTOKLIST: só a lista do TikTok
+  VIEWER // D-VIEWER: só leitura (acompanhamento da marca, sem mudar nada)
 }
 
 /// Papel de alguém da equipe numa marca. brandId nulo = todas as marcas (só SUPER_ADMIN).
