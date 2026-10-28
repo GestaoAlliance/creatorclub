@@ -5,12 +5,13 @@
 
 ## Onde estamos
 
-- **Fase atual:** pendências antes da Fase 5 resolvidas (M4.7, U6, junho e pagamentos antigos da VermeFree, faxina
-  da fila em CP-187). O sistema está no ar com as 3 marcas; o que falta para o lançamento depende das pessoas abaixo.
+- **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-216). O sistema está no ar com
+  as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** **M5.2** Estoque dos kits (antes: decisão 12, se as marcas usam o Bling).
-  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, domínio/e-mails no Turbo Cloud.
+  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
+  Marcas e teste da remessa na homologação, convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
-  claro/escuro) no PR; site ao vivo: https://creatorclub-six.vercel.app (cada merge na `main` vai ao ar).
+  claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ### O que depende de quem (conferido em produção em 2026-10-24)
@@ -24,7 +25,8 @@
 | **Juci** (Pagamento) | Aprovar o saldo de abertura (nenhum aprovado ainda; pagamentos antigos importados: Botanika 34, VermeFree 18) e dizer onde estão as NFs antigas (I7) | Pagamentos → Abertura |
 | **Responsável** | Instalar `docs/sheets/leitura-vermefree.gs` na conta Google da VermeFree | Apps Script |
 | **Responsável** | WhatsApp das marcas (M2.2, D-WHATSAPP): `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, instância da Evolution de cada marca em Marcas, WhatsApp de quem é da Gestão em Equipe (resumo semanal), ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n | Vercel, Marcas, Equipe, n8n |
-| **Responsável** | Domínio (P3) e Resend (P2): comprar o domínio, verificar no Resend, `RESEND_API_KEY` e `EMAIL_FROM` na Vercel, SMTP do Supabase Auth | Registro de domínio, Resend, Vercel, Supabase |
+| **Responsável** | Conta SICOOB da Botanika (convênio CNAB 240, agência, conta) e teste da remessa na homologação (D-REMESSA) | Marcas, Internet Banking SICOOB |
+| **Responsável** | Login "Leitura" de Admin Botanika e Guilherme (D-VIEWER) e convites de Álvaro (Envio) e Juci (Pagamento), só Botanika | Equipe |
 | **Responsável** | Logo de cada marca (nenhuma tem; aparece na tela de entrar e no ícone do app) | Configurações → Marcas |
 | **Responsável** | Semana de teste (U1): convidar Juci (Pagamento) e Álvaro (Envio); 3 a 5 creators de teste no portal; divulgar `/inscricao` e os links das hunters (`/i/codigo`) | Equipe, Hunters |
 | **Responsável** | Revisar os textos de contrato e termo (Botanika, VermeFree e Revita; de preferência com advogado); início do contrato das UGC nas fichas | Contratos, Termo |
@@ -218,12 +220,12 @@ já existem antes de desenhar.
 ### Antes do corte (pedidos do responsável em 2026-10-09, D-GAPS)
 - [x] **P1** Backup dos bancos (D-BACKUP): cópia diária cifrada pelo GitHub Actions (CP-82), ligada em 2026-10-10
   (CP-84): primeira cópia do banco novo (74 tabelas com dados) e cópia única do app antigo, as duas com sucesso.
-- [~] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL), antes de convidar as creators.
-  Código pronto (CP-81): convite da creator e da equipe vai por e-mail ao ser gerado. Para ligar: comprar o domínio
-  (P3); criar a conta no Resend e verificar o domínio (registros DNS); pôr `RESEND_API_KEY` e `EMAIL_FROM` na Vercel;
-  configurar o SMTP do Supabase Auth com o Resend ("esqueci a senha"); testar com um e-mail da equipe.
-- [ ] **P3** Domínio do projeto (o responsável compra) e os links `/r/...` antigos: o domínio do app antigo precisa
-  redirecionar para o v2, senão os links nas bios quebram no corte.
+- [x] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL): ligado em 2026-10-28 (CP-206):
+  Resend verificado, `RESEND_API_KEY` e `EMAIL_DOMAIN` na Vercel, um remetente por marca (D-EMAILFROM), SMTP do Supabase
+  Auth com o Resend ("esqueci a senha"), caixas botanika@, vermefree@ e revita@ no Turbo Cloud.
+- [~] **P3** Domínio do projeto: `creatorclub.app.br` no ar desde 2026-10-28 (CP-206, D-DOMAIN; DNS na Cloudflare).
+  *Falta:* os links `/r/...` do app antigo: o domínio do app antigo precisa redirecionar para o v2, senão os links
+  nas bios quebram no corte.
 - [x] **P4** Termo de aceite da creator no primeiro acesso ao portal (D-TERMS): portal bloqueado até aceitar; nome
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
