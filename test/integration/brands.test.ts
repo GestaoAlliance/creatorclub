@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { brandList, createBrand, slugFrom, updateBrand } from "@/lib/brands/manage";
-import { grantRole } from "@/lib/team/invites";
+import { changeRoleGrant, grantRole } from "@/lib/team/invites";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
-async function userWith(role: "SUPER_ADMIN" | "GESTAO", brandId: string | null) {
+async function userWith(role: "SUPER_ADMIN" | "GESTAO" | "ENVIO", brandId: string | null) {
   const id = randomUUID();
   await prisma.user.create({ data: { id, email: `${id}@x.com`, name: role, roleGrants: { create: { role, brandId } } } });
   return (await loadActor(prisma, id))!;
@@ -62,5 +62,24 @@ describe("marcas e papéis por marca (A1b, banco real)", () => {
     await expect(grantRole(prisma, ana, { userId: ana.userId, role: "ENVIO", brandId: b.brand.id })).rejects.toThrow(/permissão/);
     await prisma.user.update({ where: { id: ana.userId }, data: { disabledAt: new Date() } });
     await expect(grantRole(prisma, sa, { userId: ana.userId, role: "ENVIO", brandId: b.brand.id })).rejects.toThrow(/não encontrada/);
+  });
+
+  it("D-ROLECHANGE: troca a função na mesma marca sem somar papel; super admin fica fixo", async () => {
+    const sa = await userWith("SUPER_ADMIN", null);
+    const a = await seedBrand(prisma);
+    const analise = await userWith("ENVIO", a.brand.id);
+    const grant = await prisma.roleGrant.findFirstOrThrow({ where: { userId: analise.userId } });
+    await changeRoleGrant(prisma, sa, { grantId: grant.id, role: "GESTAO" });
+    expect(await prisma.roleGrant.findMany({ where: { userId: analise.userId }, select: { role: true, brandId: true } })).toEqual([{ role: "GESTAO", brandId: a.brand.id }]);
+    expect(await prisma.auditLog.findFirst({ where: { action: "role.change", entityId: analise.userId }, select: { before: true, after: true } })).toEqual({
+      before: { role: "ENVIO", brandId: a.brand.id },
+      after: { role: "GESTAO", brandId: a.brand.id },
+    });
+    await grantRole(prisma, sa, { userId: analise.userId, role: "ENVIO", brandId: a.brand.id });
+    await expect(changeRoleGrant(prisma, sa, { grantId: grant.id, role: "ENVIO" })).rejects.toThrow(/já tem essa função/);
+    await expect(changeRoleGrant(prisma, sa, { grantId: grant.id, role: "SUPER_ADMIN" })).rejects.toThrow(/inválido/);
+    const superGrant = await prisma.roleGrant.findFirstOrThrow({ where: { userId: sa.userId } });
+    await expect(changeRoleGrant(prisma, sa, { grantId: superGrant.id, role: "GESTAO" })).rejects.toThrow(/Super admin/);
+    await expect(changeRoleGrant(prisma, analise, { grantId: grant.id, role: "ENVIO" })).rejects.toThrow(/permissão/);
   });
 });

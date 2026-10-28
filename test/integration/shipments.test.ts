@@ -86,6 +86,8 @@ describe("envios de produtos (banco real)", () => {
     await cancelShipment(prisma, s.envio, b);
     expect((await staffShipments(prisma, s.envio, { status: "CANCELLED" })).map((x) => x.id)).toEqual([b]);
     expect((await staffShipments(prisma, s.envio)).map((x) => x.id).sort()).toEqual([a, b].sort());
+    // D-SHIPRECIPIENT: a fila traz CPF, CNPJ, telefone e e-mail para o Envio montar o pedido.
+    expect(Object.keys((await staffShipments(prisma, s.envio))[0]!.creator.account).sort()).toEqual(["allergies", "cnpj", "cpf", "email", "name", "phone"]);
   });
 
   it("dois cliques ao mesmo tempo em 'enviado': só um vale", async () => {

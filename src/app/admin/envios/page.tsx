@@ -4,6 +4,7 @@ import { HelpTip } from "@/components/ui/tour";
 import { PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { redirect } from "next/navigation";
+import { formatDoc } from "@/domain";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { scopedActor, staffContext } from "@/lib/staff/context";
@@ -67,12 +68,19 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         <HelpTip id="en-situacao" />
       </nav>
       <ShipmentsTable
-        shipments={shipments.map((s) => ({
-          ...s,
-          canManage: can(actor.grants, "shipping.manage", s.brandId),
-          canApprove: can(actor.grants, "creators.edit", s.brandId),
-          address: can(actor.grants, "personal.address", s.brandId) ? (s.address as ShipmentAddress) : null,
-        }))}
+        shipments={shipments.map((s) => {
+          const { cpf, cnpj, phone, email, ...account } = s.creator.account;
+          // D-SHIPRECIPIENT: quem vê o endereço (Envio, Gestão) vê também os dados do destinatário; nada disso vai para os outros.
+          const personal = can(actor.grants, "personal.address", s.brandId);
+          return {
+            ...s,
+            creator: { id: s.creator.id, account },
+            canManage: can(actor.grants, "shipping.manage", s.brandId),
+            canApprove: can(actor.grants, "creators.edit", s.brandId),
+            address: personal ? (s.address as ShipmentAddress) : null,
+            recipient: personal ? { cpf: cpf ? formatDoc(cpf) : null, cnpj: cnpj ? formatDoc(cnpj) : null, phone, email } : null,
+          };
+        })}
       />
     </>
   );

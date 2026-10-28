@@ -5,7 +5,7 @@ import { publicOrigin } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revokeStaffInvite, setStaffPhone, TeamError } from "@/lib/team/invites";
+import { changeRoleGrant, createStaffInvite, disableStaffUser, grantRole, revokeRoleGrant, revokeStaffInvite, setStaffPhone, TeamError } from "@/lib/team/invites";
 import { emailStaffInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
 
@@ -63,6 +63,18 @@ export async function grantRoleAction(_prev: GrantState, form: FormData): Promis
     await grantRole(db(), await currentActor(), { userId: String(form.get("userId") ?? ""), role: form.get("role"), brandId: form.get("brandId") });
     revalidatePath("/admin/equipe");
     return { ok: "Papel adicionado." };
+  } catch (error) {
+    if (error instanceof TeamError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-ROLECHANGE: troca a função de um papel na mesma marca. */
+export async function changeRoleAction(_prev: GrantState, form: FormData): Promise<GrantState> {
+  try {
+    await changeRoleGrant(db(), await currentActor(), { grantId: String(form.get("id") ?? ""), role: form.get("role") });
+    revalidatePath("/admin/equipe");
+    return { ok: "Função trocada." };
   } catch (error) {
     if (error instanceof TeamError) return { error: error.message };
     throw error;
