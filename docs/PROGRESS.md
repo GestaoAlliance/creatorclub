@@ -299,6 +299,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-208 — 2026-10-28 — Trocar função na equipe e dados do destinatário no Envio (D-ROLECHANGE, D-SHIPRECIPIENT)
+- **Pedido do responsável:** trocar a função de quem já está cadastrado (sem somar outra) e o Envio ver CPF e o que
+  precisa para mandar o pedido, em todas as marcas (a Analise, do Envio da Revita, não conseguia conferir o CPF).
+- **Feito:** `changeRoleGrant` (mesma marca, auditado) com a lista no selo do papel em Equipe; texto "Adicionar papel
+  (outra marca ou mais uma função)". Fila de Envios com CPF, CNPJ, telefone e e-mail no cartão, só para quem vê o
+  endereço; os dados não vão para a tela de quem não pode.
+- **Verificado:** testes (unitários e de integração), typecheck, build e capturas (Equipe e Envios).
+
 ### CP-207 — 2026-10-27 — Telefone do cadastro sem o +55 (D-PHONE)
 - **Pedido do responsável:** creators digitavam o +55 junto com o DDD e o número ficava errado (a máscara cortava em 11
   dígitos e gravava "(55) 31921-1323").

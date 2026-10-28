@@ -3,22 +3,51 @@
 import { useActionState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { grantRoleAction, phoneAction } from "./actions";
+import { changeRoleAction, grantRoleAction, phoneAction } from "./actions";
+
+const ROLE_OPTIONS = (
+  <>
+    <option value="GESTAO">Gestão</option>
+    <option value="ENVIO">Envio</option>
+    <option value="PAGAMENTO">Pagamento</option>
+    <option value="HUNTER">Hunter</option>
+    <option value="TIKTOK">TikTok (só a lista do TikTok)</option>
+  </>
+);
+
+/** D-ROLECHANGE: troca a função do papel na mesma marca; muda ao escolher na lista. */
+export function RoleSelect({ grantId, role, brandName }: { grantId: string; role: string; brandName: string }) {
+  const [state, action, pending] = useActionState(changeRoleAction, undefined);
+  return (
+    <form action={action} className="inline-flex items-center gap-1.5">
+      <input type="hidden" name="id" value={grantId} />
+      <select
+        name="role"
+        key={role}
+        defaultValue={role}
+        disabled={pending}
+        aria-label={`Função na ${brandName}`}
+        onChange={(e) => e.currentTarget.form?.requestSubmit()}
+        className="rounded-md border border-stone-300 bg-white px-1.5 py-0.5 text-xs dark:border-white/15 dark:bg-white/[0.04]"
+      >
+        {ROLE_OPTIONS}
+      </select>
+      <span>· {brandName}</span>
+      {state?.error && <Msg state={state} />}
+    </form>
+  );
+}
 
 /** A1b (D-ALLIANCE): dar mais um papel, marca por marca, a quem já está na equipe. */
 export function GrantForm({ userId, brands }: { userId: string; brands: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(grantRoleAction, undefined);
   return (
     <details>
-      <summary className="cursor-pointer text-xs text-stone-500 hover:underline">Adicionar papel em outra marca</summary>
+      <summary className="cursor-pointer text-xs text-stone-500 hover:underline">Adicionar papel (outra marca ou mais uma função)</summary>
       <form action={action} className="mt-2 flex flex-wrap items-center gap-2">
         <input type="hidden" name="userId" value={userId} />
         <select name="role" aria-label="Papel" className={ui.inputSm} defaultValue="GESTAO">
-          <option value="GESTAO">Gestão</option>
-          <option value="ENVIO">Envio</option>
-          <option value="PAGAMENTO">Pagamento</option>
-          <option value="HUNTER">Hunter</option>
-          <option value="TIKTOK">TikTok (só a lista do TikTok)</option>
+          {ROLE_OPTIONS}
         </select>
         <select name="brandId" aria-label="Marca" className={ui.inputSm}>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}

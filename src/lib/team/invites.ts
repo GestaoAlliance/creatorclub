@@ -164,6 +164,34 @@ export async function grantRole(prisma: PrismaClient, actor: Actor | null, input
   });
 }
 
+/** D-ROLECHANGE: troca a função de um papel na mesma marca (ex.: Envio → Gestão na Revita), sem somar papéis. */
+export async function changeRoleGrant(prisma: PrismaClient, actor: Actor | null, input: { grantId: string; role: unknown }) {
+  const manager = requireStaffManager(actor);
+  const role = STAFF_ROLES.find((r) => r === input.role);
+  if (!role || role === "SUPER_ADMIN") throw new TeamError("Papel inválido.");
+  await prisma.$transaction(async (tx) => {
+    const grant = await tx.roleGrant.findUnique({ where: { id: input.grantId }, include: { user: { select: { disabledAt: true } } } });
+    if (!grant || grant.user.disabledAt) throw new TeamError("Papel não encontrado.");
+    if (!grant.brandId || grant.role === "SUPER_ADMIN") throw new TeamError("Super admin não troca de função.");
+    if (grant.role === role) return;
+    const exists = await tx.roleGrant.findFirst({ where: { userId: grant.userId, role, brandId: grant.brandId }, select: { id: true } });
+    if (exists) throw new TeamError("Essa pessoa já tem essa função nessa marca. Tire o papel que sobrou no ×.");
+    await tx.roleGrant.update({ where: { id: grant.id }, data: { role } });
+    await tx.auditLog.create({
+      data: {
+        brandId: grant.brandId,
+        actorType: "USER",
+        actorId: manager.userId,
+        action: "role.change",
+        entity: "User",
+        entityId: grant.userId,
+        before: { role: grant.role, brandId: grant.brandId },
+        after: { role, brandId: grant.brandId },
+      },
+    });
+  });
+}
+
 export async function revokeRoleGrant(prisma: PrismaClient, actor: Actor | null, grantId: string) {
   const manager = requireStaffManager(actor);
   await prisma.$transaction(async (tx) => {

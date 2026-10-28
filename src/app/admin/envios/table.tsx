@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin } from "lucide-react";
+import { ExternalLink, IdCard, MapPin } from "lucide-react";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { badge, ui } from "@/components/ui/styles";
@@ -6,12 +6,20 @@ import { formatAddress, type ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type staffShipments } from "@/lib/shipments/shipments";
 import { ApprovalForms, CancelForm, DeliveredForm, ShippedForm } from "./forms";
 
-type Row = Omit<Awaited<ReturnType<typeof staffShipments>>[number], "address"> & { canManage: boolean; canApprove: boolean; address: ShipmentAddress | null };
+type Base = Awaited<ReturnType<typeof staffShipments>>[number];
+type Recipient = { cpf: string | null; cnpj: string | null; phone: string | null; email: string };
+type Row = Omit<Base, "address" | "creator"> & {
+  creator: { id: string; account: { name: string; allergies: string | null } };
+  canManage: boolean;
+  canApprove: boolean;
+  address: ShipmentAddress | null;
+  recipient: Recipient | null;
+};
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 const STATUS_BADGE = { AWAITING_APPROVAL: badge.red, PREPARING: badge.amber, SHIPPED: badge.sky, DELIVERED: badge.green, CANCELLED: badge.neutral } as const;
 
-/** Envios da equipe, um cartão por envio. O endereço só aparece para quem tem `personal.address` na marca. */
+/** Envios da equipe, um cartão por envio. Endereço e dados do destinatário só para quem tem `personal.address` na marca. */
 export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
   if (shipments.length === 0) return <p className={ui.muted}>Nenhum envio.</p>;
   return (
@@ -37,10 +45,26 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
               {s.items.map((it) => <li key={it.title}><span className="font-semibold tabular-nums">{it.quantity}×</span> {it.title}</li>)}
             </ul>
             {s.note && <p className={ui.hint}>{s.note}</p>}
-            {s.address && (
-              <div className={`${ui.inset} flex gap-2 text-xs`}>
-                <MapPin className="mt-0.5 size-3.5 shrink-0 text-stone-500" />
-                <div>{formatAddress(s.address).map((l) => <div key={l}>{l}</div>)}</div>
+            {(s.address || s.recipient) && (
+              <div className={`${ui.inset} flex flex-col gap-2 text-xs`}>
+                {s.recipient && (
+                  <div className="flex gap-2">
+                    <IdCard className="mt-0.5 size-3.5 shrink-0 text-stone-500" />
+                    <div>
+                      <div>
+                        {s.recipient.cpf ? <>CPF <span className="font-mono">{s.recipient.cpf}</span></> : "CPF não informado"}
+                        {s.recipient.cnpj && <> · CNPJ <span className="font-mono">{s.recipient.cnpj}</span></>}
+                      </div>
+                      <div>{[s.recipient.phone, s.recipient.email].filter(Boolean).join(" · ")}</div>
+                    </div>
+                  </div>
+                )}
+                {s.address && (
+                  <div className="flex gap-2">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-stone-500" />
+                    <div>{formatAddress(s.address).map((l) => <div key={l}>{l}</div>)}</div>
+                  </div>
+                )}
               </div>
             )}
             {(s.trackingCode || s.deliveredAt || s.cancelledAt) && (

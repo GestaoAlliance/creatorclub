@@ -7,7 +7,7 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { teamOverview } from "@/lib/team/invites";
 import { disableUserAction, revokeGrantAction, revokeInviteAction } from "./actions";
-import { GrantForm, PhoneForm } from "./grant-form";
+import { GrantForm, PhoneForm, RoleSelect } from "./grant-form";
 import { InviteForm } from "./invite-form";
 import { AccessBox } from "@/components/staff/access-box";
 
@@ -56,7 +56,8 @@ export default async function EquipePage() {
                   <ul className="flex flex-wrap gap-1.5">
                     {u.roleGrants.map((g) => (
                       <li key={g.id} className={`${badge.neutral} inline-flex items-center gap-1.5`}>
-                        {ROLE_LABEL[g.role]} · {brandName(g.brandId)}
+                        {/* D-ROLECHANGE: função de marca troca na lista; super admin fica fixo. */}
+                        {g.brandId && g.role !== "SUPER_ADMIN" ? <RoleSelect grantId={g.id} role={g.role} brandName={brandName(g.brandId)} /> : <>{ROLE_LABEL[g.role]} · {brandName(g.brandId)}</>}
                         {!(u.id === actor.userId && g.role === "SUPER_ADMIN") && (
                           <form action={revokeGrantAction} className="inline">
                             <input type="hidden" name="id" value={g.id} />

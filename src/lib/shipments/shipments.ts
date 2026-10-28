@@ -205,7 +205,8 @@ export async function staffShipments(prisma: PrismaClient, actor: Actor | null, 
     orderBy: { createdAt: "desc" },
     take: 200,
     // M4.3 (D-PROFILEFIELDS): alergias e restrições aparecem para quem monta o envio.
-    select: { ...SHIPMENT_SELECT, brandId: true, creator: { select: { id: true, account: { select: { name: true, allergies: true } } } } },
+    // D-SHIPRECIPIENT: CPF, CNPJ, telefone e e-mail para quem monta o envio (a tela só mostra com `personal.address`).
+    select: { ...SHIPMENT_SELECT, brandId: true, creator: { select: { id: true, account: { select: { name: true, allergies: true, cpf: true, cnpj: true, phone: true, email: true } } } } },
   });
 }
 
