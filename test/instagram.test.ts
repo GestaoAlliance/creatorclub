@@ -44,3 +44,24 @@ describe("Instagram (M5.3, D-INSTAGRAM)", () => {
     expect(followerGrowth([{ day: "2026-10-01", followers: 1 }])).toBeNull();
   });
 });
+
+describe("API da Meta (D-INSTAGRAM)", async () => {
+  const { discoverProfile, brandTags, GraphError } = await import("@/lib/instagram/graph");
+  const reply = (body: unknown) => async () => ({ ok: true, status: 200, json: async () => body });
+  it("limite da Meta vira erro para tentar de novo; perfil não profissional vira não lido", async () => {
+    await expect(discoverProfile(reply({ error: { code: 4, message: "Application request limit reached" } }), "t", "1", "ana")).rejects.toBeInstanceOf(GraphError);
+    expect(await discoverProfile(reply({ error: { code: 110, error_subcode: 2207013 } }), "t", "1", "ana")).toEqual({ status: "UNREADABLE" });
+    const ok = await discoverProfile(reply({ business_discovery: { followers_count: 10, media_count: 1, media: { data: [{ id: "m", timestamp: "2026-10-01T10:00:00+0000", media_type: "CAROUSEL_ALBUM", like_count: 3, permalink: "https://x" }, { id: "sem-data" }] } } }), "t", "1", "ana");
+    expect(ok).toEqual({ status: "OK", followers: 10, mediaCount: 1, posts: [expect.objectContaining({ id: "m", mediaType: "CAROUSEL_ALBUM", likes: 3, comments: null, postedAt: new Date("2026-10-01T10:00:00Z") })] });
+  });
+  it("posts que marcam a marca seguem as páginas", async () => {
+    let calls = 0;
+    const f = async (url: string) => {
+      calls++;
+      const page = url.includes("after=2") ? { data: [{ id: "b", username: "Bia", timestamp: "2026-10-02T10:00:00+0000", permalink: "https://b" }] } : { data: [{ id: "a", username: "Ana", timestamp: "2026-10-01T10:00:00+0000", permalink: "https://a" }], paging: { next: "https://graph.facebook.com/next?after=2" } };
+      return { ok: true, status: 200, json: async () => page };
+    };
+    expect((await brandTags(f, "t", "1")).map((t) => t.username)).toEqual(["ana", "bia"]);
+    expect(calls).toBe(2);
+  });
+});

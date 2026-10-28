@@ -7,8 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **M5.3** Instagram: esperar o token da Meta do responsável; com ele, conferir o acesso de cada
-  marca, mostrar o plano (leitura diária, tabelas, telas) e só então construir.
+- **Próxima tarefa:** **M5.3** Instagram, parte 2: ligar VermeFree e Revita (passo a passo com o responsável na
+  Meta) e conferir a primeira leitura real da Botanika em produção.
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -86,8 +86,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [~] **M5.3** Instagram automático pela API oficial, consultando pela conta de cada marca (D-INSTAGRAM): seguidores,
   engajamento, posts que marcam a marca, ranking, frequência de posts, venda por mil seguidores, cupom na legenda,
   crescimento de seguidores, formato que mais engaja, alerta de queda (40%) e lista de perfis que não dá para ler.
-  Feito: contas em `src/domain/instagram.ts`. *Falta:* token da Meta (app "Creator Club" + usuário do sistema no
-  Business Manager, roteiro mandado em 2026-10-28), leitura diária, telas.
+  Feito: app "Creator Club" e usuário do sistema "CreatorClub" no portfólio Smarter ADS; token na Vercel
+  (`META_SYSTEM_TOKEN`); leitura diária, aba Instagram no Desempenho, quadro na ficha, alerta no resumo semanal (CP-221).
+  *Falta:* ligar VermeFree e Revita (compartilhar o Instagram delas com o portfólio Smarter ADS e atribuir ao
+  CreatorClub) para os posts que marcam essas marcas.
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -308,6 +310,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-221 — 2026-10-28 — Instagram: leitura diária, aba no Desempenho e quadro na ficha (D-INSTAGRAM)
+- **Feito:** na Meta, com o responsável: app "Creator Club" (1512671070687204), usuário do sistema CreatorClub com a
+  página e o @botanikabrasil; token na Vercel (`META_SYSTEM_TOKEN`); testado no navegador: lê o @botanikabrasil,
+  outro perfil (business_discovery) e os posts que marcam a marca. Código: `src/lib/instagram/` (API, leitura diária a
+  partir das 4h, uma pessoa a cada 30 s; ranking); tabelas `InstagramSnapshot` (só inserção), `InstagramPost`,
+  `InstagramTag`, `Brand.instagramUserId` (Botanika ligada na migração `20261101090000_instagram`); aba "Instagram"
+  em Desempenho; quadro "Instagram" na ficha (aba Conteúdo); queda de 40% no resumo semanal. Só a equipe vê; só
+  creators ativas.
+- **Testes:** API simulada (limite, perfil não lido, páginas), integração (leitura, ranking, ficha, agendamento, travas).
+- **Próxima:** VermeFree e Revita na Meta; conferir a primeira leitura em produção.
 
 ### CP-220 — 2026-10-28 — Instagram: decisões e contas (M5.3, D-INSTAGRAM)
 - **Feito:** `src/domain/instagram.ts` (engajamento em pontos-base, posts por semana, último post, melhor formato,

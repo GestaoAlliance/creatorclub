@@ -3,6 +3,7 @@ import { addDaysKey, dayKey, weeklySummaryText } from "@/domain";
 import { actionQueue } from "@/lib/actions/queue";
 import { productReport } from "@/lib/reports/products";
 import { staffDashboard } from "@/lib/staff/dashboard";
+import { engagementDropCount } from "@/lib/instagram/ranking";
 import { WhatsAppError, type WhatsAppSender } from "./whatsapp";
 
 /**
@@ -29,13 +30,15 @@ export function previousWeek(now: Date): { monday: string; from: string; to: str
 /** Monta o resumo de uma marca (sem enviar). */
 export async function weeklySummary(prisma: PrismaClient, brand: { id: string; name: string }, week: { from: string; to: string }, origin: string | null, now = new Date()) {
   const period = { from: week.from, to: week.to, preset: "" };
-  const [d, products, applications, toApprove, toPay, tasks] = await Promise.all([
+  const [d, products, applications, toApprove, toPay, tasks, igDrops] = await Promise.all([
     staffDashboard(prisma, brand.id, period, "", now),
     productReport(prisma, brand.id, period),
     prisma.creatorApplication.count({ where: { brandId: brand.id, status: "NEW" } }),
     prisma.withdrawal.count({ where: { brandId: brand.id, status: "REQUESTED" } }),
     prisma.withdrawal.count({ where: { brandId: brand.id, status: "APPROVED" } }),
     actionQueue(prisma, brand.id, now),
+    // D-INSTAGRAM: queda de engajamento de 40% ou mais.
+    engagementDropCount(prisma, brand.id, now),
   ]);
   const count = (k: string) => tasks.filter((t) => t.kind === k).length;
   return weeklySummaryText({
@@ -47,7 +50,7 @@ export async function weeklySummary(prisma: PrismaClient, brand: { id: string; n
     top: d.topCreators.slice(0, 3).map((c) => ({ name: c.name, cents: c.salesCents })),
     profit: products.program && products.productsWithCost > 0 ? { cents: products.program.profitCents, revenueCents: products.program.revenueCents } : null,
     pending: { applications, toApprove, toPay, actions: tasks.length },
-    alerts: { idle: count("IDLE"), contracts: count("CONTRACT"), nearMin: count("NEAR_MIN"), kits: count("KIT_PENDING") + count("SHIP_STUCK") },
+    alerts: { idle: count("IDLE"), contracts: count("CONTRACT"), nearMin: count("NEAR_MIN"), kits: count("KIT_PENDING") + count("SHIP_STUCK"), igDrops },
     link: origin ? `${origin}/admin/marca` : null,
   });
 }
