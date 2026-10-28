@@ -8,6 +8,9 @@ import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentActor } from "@/lib/auth/current";
+import { configuredSender } from "@/lib/email/sender";
+import { publicOrigin } from "@/lib/site";
+import { emailNfToFinance } from "@/lib/withdrawals/finance-mail";
 import { cancelMyWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 import {
   assertCanStart,
@@ -59,7 +62,9 @@ export async function submitWithdrawal(_prev: SubmitState, form: FormData): Prom
     if (data.size > MAX_NF_BYTES) return { error: "A nota fiscal passa de 10 MB." };
     const pdf = new Uint8Array(await data.arrayBuffer());
     const pixKey = String(form.get("pixKey") ?? "");
-    await requestWithdrawal(db(), ctx, { actorUserId: actor.userId, requestId, amountCents, pdf, ...(pixKey ? { pixKey } : {}) });
+    const r = await requestWithdrawal(db(), ctx, { actorUserId: actor.userId, requestId, amountCents, pdf, ...(pixKey ? { pixKey } : {}) });
+    // D-NFMAIL: a NF vai para o financeiro da marca (uma vez por saque; falha só fica na auditoria).
+    if (r.created) await emailNfToFinance(db(), configuredSender(), { withdrawalId: r.withdrawalId, pdf, origin: publicOrigin(await headers()), actorUserId: actor.userId });
   } catch (error) {
     if (error instanceof WithdrawalRequestError) return { error: error.message };
     throw error;

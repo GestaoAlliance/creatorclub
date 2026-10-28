@@ -299,6 +299,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-212 — 2026-10-28 — E-mail ao financeiro a cada NF (D-NFMAIL)
+- **Feito:** `Brand.financeEmail` (Marcas → "E-mail do financeiro"), migração `20261029090000_finance_email` (Botanika =
+  financeiro@botanicabrasil.com, a confirmar a grafia); `emailNfToFinance` (`src/lib/withdrawals/finance-mail.ts`)
+  chamado depois do pedido de saque com NF, PDF anexo (`attachments` no remetente do Resend), auditoria do envio.
+- **Próximo da reunião:** acesso só de leitura (Admin Botanika e Guilherme); aviso de 45 dias sem vendas; cadastro PJ;
+  remessa SICOOB; Alelo.
+- **Verificado:** testes (unitários e de integração), typecheck, build e migração sem divergência.
+
 ### CP-211 — 2026-10-28 — Envio inicial: Opção 2 (2 produtos + 3 vídeos) na aprovação (D-WELCOMEVIDEO)
 - **Feito:** campo "Envio inicial" na aprovação de Candidatas; Opção 2 libera 2 produtos de boas-vindas e guarda os 3
   vídeos combinados (`Creator.welcomeVideos`, migração `20261028230000_welcome_videos`); mensagem de aprovação e ficha

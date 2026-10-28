@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
+import { EmailError, type EmailMessage } from "@/lib/email/sender";
+import { emailNfToFinance } from "@/lib/withdrawals/finance-mail";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
 import { danfseLines, makePdf } from "../nf-pdf";
 import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
@@ -39,6 +41,24 @@ describe("conferência da NF no pedido de saque (D-NFCHECK, banco real)", () => 
     const r = await requestWithdrawal(prisma, c.ctx, { actorUserId: c.userId, requestId: randomUUID(), amountCents: 80_000, pdf: nf({ key }) }, IN_WINDOW);
     expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: r.withdrawalId } })).toMatchObject({ nfCheck: "OK", nfAccessKey: key });
     expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: c.account.id } })).cnpj).toBe(ISSUER);
+  });
+
+  it("D-NFMAIL: cada NF vai para o financeiro da marca com o PDF; sem e-mail na marca não sai; falha fica na auditoria", async () => {
+    const c = await creatorWith(80_000);
+    const pdf = nf({ key: keyFor(77) });
+    const r = await requestWithdrawal(prisma, c.ctx, { actorUserId: c.userId, requestId: randomUUID(), amountCents: 80_000, pdf }, IN_WINDOW);
+    const sent: EmailMessage[] = [];
+    const sender = async (m: EmailMessage) => (sent.push(m), { id: "e1" });
+    const input = { withdrawalId: r.withdrawalId, pdf, origin: "https://creatorclub.app.br", actorUserId: c.userId };
+    expect(await emailNfToFinance(prisma, sender, input)).toBe(false); // marca sem e-mail do financeiro
+    await prisma.brand.update({ where: { id: c.brand.id }, data: { financeEmail: "financeiro@marca.test" } });
+    expect(await emailNfToFinance(prisma, sender, input)).toBe(true);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ to: "financeiro@marca.test", idempotencyKey: `nf-finance-${r.withdrawalId}`, subject: expect.stringContaining("R$"), text: expect.stringContaining("https://creatorclub.app.br/admin/saques") });
+    expect(sent[0]!.attachments).toEqual([{ filename: expect.stringMatching(/\.pdf$/), content: pdf }]);
+    expect(await prisma.auditLog.count({ where: { entityId: r.withdrawalId, action: "withdrawal.nf_emailed" } })).toBe(1);
+    expect(await emailNfToFinance(prisma, async () => { throw new EmailError("recusou"); }, input)).toBe(false);
+    expect(await prisma.auditLog.count({ where: { entityId: r.withdrawalId, action: "withdrawal.nf_email_failed" } })).toBe(1);
   });
 
   it("tomadora, valor, emissor ou código diferente bloqueia com o motivo; nada é gravado", async () => {

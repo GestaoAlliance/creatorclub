@@ -44,6 +44,8 @@ model Brand {
   /// D-TIERKIT: a partir deste mês (AAAA-MM) os produtos vêm pela tabela mensal de vendas (Botanika, 2026-11);
   /// null = meta de R$ 1.000 em janelas de 45/30 dias (D-GOALKIT).
   monthlyKitFrom            String?
+  /// D-NFMAIL: e-mail do financeiro que recebe cada nota fiscal enviada pelas creators (null = não envia).
+  financeEmail              String?
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão

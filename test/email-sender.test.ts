@@ -36,6 +36,12 @@ describe("remetente Resend (D-EMAIL)", () => {
     expect(configuredSender({ RESEND_API_KEY: "re_x", EMAIL_DOMAIN: "b.c" })).toBeTypeOf("function");
   });
 
+  it("D-NFMAIL: anexo vai em base64", async () => {
+    const f = fakeFetch(200, { id: "e" });
+    await resendSender("k", "creatorclub.app.br", f.fn)({ ...msg, attachments: [{ filename: "nf.pdf", content: new Uint8Array([37, 80, 68, 70]) }] });
+    expect(JSON.parse(String(f[0]!.init.body)).attachments).toEqual([{ filename: "nf.pdf", content: "JVBERg==" }]);
+  });
+
   it("cada marca manda da própria caixa; sem marca (ou marca sem caixa) sai da padrão (D-EMAILFROM)", async () => {
     const d = "creatorclub.app.br";
     expect(fromAddress(d, { slug: "botanika", name: "Botanika" })).toBe("Botanika Creator Club <botanika@creatorclub.app.br>");

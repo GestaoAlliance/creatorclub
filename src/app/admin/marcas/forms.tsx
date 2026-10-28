@@ -22,6 +22,7 @@ type Values = {
   defaultDiscount: string;
   approvalSuggestion?: string;
   shopDiscount?: string;
+  financeEmail?: string;
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -86,6 +87,13 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
             <label className={ui.label}>
               Desconto da creator na loja com o saldo (%)
               <input name="shopDiscount" defaultValue={initial.shopDiscount ?? "0"} inputMode="decimal" className={ui.input} />
+            </label>
+          )}
+          {/* D-NFMAIL: cada nota fiscal enviada vai para este e-mail, com o PDF. */}
+          {!create && (
+            <label className={ui.label}>
+              E-mail do financeiro (recebe cada NF enviada)
+              <input name="financeEmail" type="email" defaultValue={initial.financeEmail ?? ""} placeholder="financeiro@marca.com.br" className={ui.input} />
             </label>
           )}
           {/* D-D4SIGN: "💡 Nossa sugestão" da mensagem de aprovação. */}

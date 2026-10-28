@@ -127,3 +127,28 @@ export function passwordResetEmail(input: { name: string; brandName: string; lin
     ].join("\n"),
   };
 }
+
+/** D-NFMAIL: aviso ao financeiro da marca a cada nota fiscal enviada por uma creator (o PDF vai anexo). */
+export function financeNfEmail(input: { brandName: string; creatorName: string; cnpj: string | null; amountCents: number; accessKey: string | null; link: string }): EmailContent {
+  const value = (input.amountCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const lines = [
+    `Creator: ${input.creatorName}`,
+    `CNPJ da nota: ${input.cnpj ?? "não informado"}`,
+    `Valor do saque: ${value}`,
+    ...(input.accessKey ? [`Chave de acesso: ${input.accessKey}`] : []),
+  ];
+  return {
+    subject: `NF de ${input.creatorName} · ${value} · ${input.brandName}`,
+    html: layout({
+      title: `Nova nota fiscal · ${escapeHtml(input.brandName)}`,
+      paragraphs: [
+        "Uma creator enviou a nota fiscal do saque. O PDF está anexo.",
+        lines.map((l) => escapeHtml(l)).join("<br>"),
+        "A Gestão aprova o pedido e o Pagamento paga pela tela de Saques.",
+      ],
+      button: { label: "Abrir Saques", href: input.link },
+      footer: [`E-mail automático do Creator Club ${escapeHtml(input.brandName)}, um por nota enviada.`],
+    }),
+    text: [`Nova nota fiscal · ${input.brandName}`, "", "Uma creator enviou a nota fiscal do saque. O PDF está anexo.", "", ...lines, "", `Abrir Saques: ${input.link}`].join("\n"),
+  };
+}
