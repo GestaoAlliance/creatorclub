@@ -231,6 +231,8 @@ model CreatorAccount {
   phone             String?
   cpf               String?
   cnpj              String?
+  /// D-PJADDR: regime do CNPJ (MEI, SIMPLES, OUTRO); fora do MEI os produtos vão para o endereço do CNPJ.
+  taxRegime         String?
   pixKey            String?
   instagram         String? // sem o @
   tiktok            String? // sem o @ (D-SIGNUPACCOUNT)

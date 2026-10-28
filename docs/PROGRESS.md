@@ -299,6 +299,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-215 — 2026-10-28 — Cadastro PJ: regime tributário e endereço do CNPJ (D-PJADDR)
+- **Feito:** regime no cadastro (`CreatorAccount.taxRegime`, migração `20261029180000_tax_regime`, trava
+  `CreatorAccount_taxRegime`); `src/domain/cnpj.ts` e `src/lib/cnpj/lookup.ts` (BrasilAPI); o formulário preenche e
+  trava o endereço do CNPJ; `submitSignup` e `updateMyAddress` conferem CEP e número fora do MEI.
+- **Observação:** a sessão do Claude não alcança a BrasilAPI (rede); os testes usam respostas simuladas e a prévia usou
+  uma consulta falsa. O servidor da Vercel consulta normalmente.
+- **Próximo da reunião:** remessa SICOOB (CNAB 240, Pix); Alelo (depende dos contratos separados).
+- **Verificado:** testes (unitários e de integração), typecheck, build, migração sem divergência e capturas.
+
 ### CP-214 — 2026-10-28 — Aviso de 45 dias sem vendas na Botanika (D-IDLE45)
 - **Feito:** `Brand.idleNoticeDays` (Botanika = 45) e aviso `IDLE` na rodada diária dos avisos (portal, WhatsApp ou
   e-mail), uma vez por período parado; trava `Notification_valid` com o tipo novo; migração `20261029150000_idle_notice`.

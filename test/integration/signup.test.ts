@@ -97,6 +97,35 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     expect(await signupCouponTaken(prisma, brand.id, code)).toBe(true);
   });
 
+  it("D-PJADDR: empresa fora do MEI precisa entregar no endereço do CNPJ; MEI não; Receita fora do ar não trava", async () => {
+    const { brand } = await seedBrand(prisma);
+    const info = { legalName: "MARIA LTDA", mei: false, active: true, address: { zip: "01310100", street: "AV PAULISTA", number: "1000", complement: null, district: "BELA VISTA", city: "SAO PAULO", state: "SP" } };
+    const pj = (email: string, regime: string, number = "1000") => {
+      const b = base(brand.slug, email, "10.0.0.9");
+      return { ...b, values: { ...b.values, cnpj: "11.222.333/0001-81", taxRegime: regime, addrNumber: number } };
+    };
+    const { auth } = fakeAuth();
+    const other = await submitSignup(prisma, pj(`${randomUUID()}@x.com`, "SIMPLES", "999"), auth, new Date(), async () => info);
+    expect(other).toMatchObject({ ok: false, errors: { addrZip: expect.stringContaining("endereço do CNPJ: AV PAULISTA, 1000") } });
+    expect(await submitSignup(prisma, pj(`${randomUUID()}@x.com`, "SIMPLES"), auth, new Date(), async () => "notfound")).toMatchObject({ ok: false, errors: { cnpj: expect.stringContaining("Receita") } });
+
+    const email = `${randomUUID()}@x.com`;
+    expect(await submitSignup(prisma, pj(email, "OUTRO"), auth, new Date(), async () => info)).toMatchObject({ ok: true });
+    const acc = await prisma.creatorAccount.findUniqueOrThrow({ where: { email }, select: { taxRegime: true, applications: { select: { raw: true } } } });
+    expect(acc.taxRegime).toBe("OUTRO");
+    expect(acc.applications[0]!.raw).toMatchObject({ "Endereço do CNPJ:": "conferido com a Receita (MARIA LTDA)", "Regime tributário do CNPJ:": "Lucro Presumido ou Real" });
+
+    let asked = 0;
+    const mei = await submitSignup(prisma, pj(`${randomUUID()}@x.com`, "MEI", "999"), auth, new Date(), async () => (asked++, info));
+    expect(mei).toMatchObject({ ok: true });
+    expect(asked).toBe(0); // MEI nem consulta
+    const down = `${randomUUID()}@x.com`;
+    expect(await submitSignup(prisma, pj(down, "SIMPLES", "999"), auth, new Date(), async () => "unavailable")).toMatchObject({ ok: true });
+    const d = await prisma.creatorAccount.findUniqueOrThrow({ where: { email: down }, select: { applications: { select: { raw: true } } } });
+    expect(d.applications[0]!.raw).toMatchObject({ "Endereço do CNPJ:": expect.stringContaining("não conferido") });
+    await expectDbError(prisma.creatorAccount.update({ where: { email }, data: { taxRegime: "LUCRO" } }), /CreatorAccount_taxRegime/);
+  });
+
   it("robô, erros, senha curta, limite por aparelho; falha no banco apaga o login criado", async () => {
     const { brand } = await seedBrand(prisma);
     const { auth, users } = fakeAuth();

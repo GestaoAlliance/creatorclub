@@ -38,3 +38,4 @@ export * from "./prospect";
 export * from "./install";
 export * from "./shop";
 export * from "./phone";
+export * from "./cnpj";

@@ -41,6 +41,20 @@ async function setup() {
 }
 
 describe("envios de produtos (banco real)", () => {
+  it("D-PJADDR: empresa fora do MEI só troca para o endereço do CNPJ; MEI e sem regime trocam livre", async () => {
+    const s = await setup();
+    const info = { legalName: "MARIA LTDA", mei: false, active: true, address: { zip: "01310100", street: "AV PAULISTA", number: "1000", complement: null, district: "BELA VISTA", city: "SAO PAULO", state: "SP" } };
+    const look = async () => info;
+    await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { cnpj: "11222333000181", taxRegime: "SIMPLES" } });
+    await expect(updateMyAddress(prisma, s.ctx, s.userId, { ...ADDRESS, number: "2000" }, look)).rejects.toThrow(/endereço da empresa: AV PAULISTA, 1000/);
+    await expect(updateMyAddress(prisma, s.ctx, s.userId, ADDRESS, look)).resolves.toMatchObject({ number: "1000" });
+    await expect(updateMyAddress(prisma, s.ctx, s.userId, { ...ADDRESS, number: "2000" }, async () => "unavailable")).resolves.toMatchObject({ number: "2000" });
+    await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { taxRegime: "MEI" } });
+    await expect(updateMyAddress(prisma, s.ctx, s.userId, { ...ADDRESS, number: "3000" }, look)).resolves.toMatchObject({ number: "3000" });
+    await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { taxRegime: null } });
+    await expect(updateMyAddress(prisma, s.ctx, s.userId, { ...ADDRESS, number: "4000" }, look)).resolves.toMatchObject({ number: "4000" });
+  });
+
   it("creator cadastra o endereço; equipe registra, envia; creator confirma 'Recebi'; tudo auditado", async () => {
     const s = await setup();
     await expect(createShipment(prisma, s.envio, { creatorId: s.creator.id, items: [{ productId: s.whey.id, quantity: 1 }] })).rejects.toThrow(/endereço/);
