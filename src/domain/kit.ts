@@ -103,3 +103,32 @@ export function goalWindowsUntil(start: string, today: string): GoalWindow[] {
     out.push(w);
   }
 }
+
+/**
+ * D-TIERKIT (regras da Botanika da reunião de 2026-10-27; respostas do responsável em 2026-10-28): produtos pelas
+ * vendas do mês (mês do pagamento, D-MONTH). Nos 3 primeiros meses da creator (o mês da entrada e os dois seguintes),
+ * R$ 500 → 1 produto (vendendo mais, vale a tabela normal se der mais); depois, R$ 1.000 → 1, R$ 4.000 → 2, R$ 6.000 → 3, R$ 10.000 ou mais → 4. Liberado na hora, por
+ * faixa: ao passar de cada faixa, libera a diferença. Vale nas marcas com `monthlyKitFrom` (Botanika desde 2026-11).
+ */
+export const TIER_TRIAL_MONTHS = 3;
+export const TIER_TRIAL: readonly KitTier[] = [{ fromCents: 50_000, products: 1 }];
+export const TIER_REGULAR: readonly KitTier[] = [
+  { fromCents: 100_000, products: 1 },
+  { fromCents: 400_000, products: 2 },
+  { fromCents: 600_000, products: 3 },
+  { fromCents: 1_000_000, products: 4 },
+];
+
+/** O mês (AAAA-MM) ainda está nos 3 primeiros meses de quem entrou no dia `entryDay` (AAAA-MM-DD)? */
+export function isTierTrialMonth(entryDay: string, month: string): boolean {
+  const [y, m] = entryDay.slice(0, 7).split("-").map(Number) as [number, number];
+  const end = y * 12 + (m - 1) + TIER_TRIAL_MONTHS;
+  const [my, mm] = month.split("-").map(Number) as [number, number];
+  return my * 12 + (mm - 1) < end;
+}
+
+/** Total de produtos do mês pela tabela (0 = nenhuma faixa). Nos 3 primeiros meses vale a maior das duas tabelas. */
+export function tierProducts(salesCents: number, trial: boolean): number {
+  const regular = kitProductsFor(TIER_REGULAR, salesCents);
+  return trial ? Math.max(regular, kitProductsFor(TIER_TRIAL, salesCents)) : regular;
+}

@@ -299,6 +299,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-210 — 2026-10-28 — Botanika: produtos pela tabela mensal (D-TIERKIT)
+- **Respostas do responsável:** começa nas vendas de novembro; 3 primeiros meses contam da entrada de cada creator;
+  libera na hora, por faixa; nos 3 primeiros meses vale a maior das duas tabelas.
+- **Feito:** `Brand.monthlyKitFrom` (Botanika = 2026-11) e trava do `KitGrant` (mês por faixa usa `window` = total do
+  mês), migração `20261028210000_monthly_tier_kits`; `tierProducts`/`isTierTrialMonth` em `src/domain/kit.ts`;
+  `grantTierKits` (`src/lib/shipments/tier-kits.ts`) no worker; a meta antiga da Botanika só conta vendas até outubro.
+- **Próximo:** Opção 2 do envio inicial (2 produtos + 3 vídeos, escolhida na aprovação).
+- **Verificado:** testes (unitários e de integração), typecheck, build e migração sem divergência.
+
 ### CP-209 — 2026-10-28 — Botanika libera com R$ 100 de comissão (D-MIN100)
 - **Origem:** reunião de 2026-10-27 (Vanessa, Guilherme, Admin Botanika, Álvaro) e as regras da Botanika no grupo;
   respostas do responsável: só Botanika por enquanto (preparado por marca), mínimo de R$ 100 de comissão (também

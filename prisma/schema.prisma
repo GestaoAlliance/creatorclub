@@ -41,6 +41,9 @@ model Brand {
   releaseMinPrescriberCents Int          @default(30000)
   /// D-MIN100: o mínimo conta as vendas (padrão) ou a comissão acumulada (Botanika).
   releaseBasis              ReleaseBasis @default(SALES)
+  /// D-TIERKIT: a partir deste mês (AAAA-MM) os produtos vêm pela tabela mensal de vendas (Botanika, 2026-11);
+  /// null = meta de R$ 1.000 em janelas de 45/30 dias (D-GOALKIT).
+  monthlyKitFrom            String?
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão
@@ -1049,7 +1052,8 @@ model KitGrant {
   /// GOAL = meta de R$ 1.000 numa janela de 45/30 dias (D-GOALKIT).
   kind       String    @default("MONTHLY")
   month      String // AAAA-MM das vendas (boas-vindas: mês da aprovação; meta: mês em que a janela começa)
-  /// D-GOALKIT: número da janela da meta (0 = primeiros 45 dias); 0 nos outros tipos.
+  /// D-GOALKIT: número da janela da meta (0 = primeiros 45 dias); D-TIERKIT (MONTHLY): total de produtos do mês
+  /// até esta liberação (1 a 4); 0 nos outros tipos.
   window     Int       @default(0)
   salesCents Int
   products   Int

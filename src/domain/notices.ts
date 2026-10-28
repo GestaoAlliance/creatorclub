@@ -35,9 +35,10 @@ export const notices = {
     path: "/saque",
   }),
   /** Kit do mês (D-KIT), de boas-vindas (D-WELCOMEKIT) ou da meta de vendas (D-GOALKIT; `month` = dia em que a janela começou). */
-  kitAvailable: (kind: "MONTHLY" | "WELCOME" | "GOAL", month: string, products: number, brandSlug = "botanika"): Notice => ({
+  kitAvailable: (kind: "MONTHLY" | "WELCOME" | "GOAL", month: string, products: number, brandSlug = "botanika", step?: number): Notice => ({
     kind: "KIT_AVAILABLE",
-    dedupeKey: `kit:${kind}:${month}`,
+    // D-TIERKIT: o mesmo mês pode liberar mais de uma vez (uma por faixa).
+    dedupeKey: step ? `kit:${kind}:${month}:${step}` : `kit:${kind}:${month}`,
     title:
       kind === "WELCOME" ? `Seu kit de boas-vindas: ${items(products, brandSlug)}` : kind === "GOAL" ? `Meta batida! Você ganhou ${items(products, brandSlug)}` : `Você ganhou ${items(products, brandSlug)}`,
     body:
