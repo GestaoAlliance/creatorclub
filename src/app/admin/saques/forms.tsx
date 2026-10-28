@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { approveAction, payAction, payBatchAction, recheckAction, rejectAction } from "./actions";
+import { approveAction, payAction, payBatchAction, recheckAction, rejectAction, remessaAction, removeRemessaAction } from "./actions";
 
 export function ApproveForm({ withdrawalId, label }: { withdrawalId: string; label: string }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
@@ -114,6 +114,61 @@ export function BatchBar({ count }: { count: number }) {
         </button>
         <button className={ui.btnSm} disabled={pending || sel.n === 0}>{pending ? "Salvando…" : "Pix feitos: marcar selecionados como pagos"}</button>
       </div>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+/** D-REMESSA: arquivo de remessa SICOOB (Pix) com os aprovados ainda não enviados ao banco. */
+export function RemessaBar({ brandId, count, cents, today, problems }: { brandId: string; count: number; cents: number; today: string; problems: { name: string | null; problem: string }[] }) {
+  const [state, action, pending] = useActionState(remessaAction, undefined);
+  useEffect(() => {
+    if (!state?.file) return;
+    const url = URL.createObjectURL(new Blob([state.file.content], { type: "text/plain" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: state.file.name });
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [state]);
+  const blocking = problems.filter((p) => !p.problem.startsWith("Nenhum saque"));
+  return (
+    <form action={action} className={`${ui.card} flex flex-col gap-3`}>
+      <input type="hidden" name="brandId" value={brandId} />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-semibold">Remessa SICOOB (Pix)</p>
+          <p className={ui.hint}>
+            {count === 0 ? "Nenhum saque aprovado esperando remessa." : `${count} ${count === 1 ? "saque aprovado" : "saques aprovados"} ainda não ${count === 1 ? "enviado" : "enviados"} ao banco · ${brl(cents)}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className={ui.label}>
+            Data do pagamento
+            <input type="date" name="payDay" min={today} defaultValue={today} required className={ui.inputSm} />
+          </label>
+          <button className={ui.btnSm} disabled={pending || count === 0 || blocking.length > 0}>{pending ? "Gerando…" : "Gerar arquivo de remessa"}</button>
+        </div>
+      </div>
+      {blocking.length > 0 && (
+        <ul className="list-disc pl-5 text-sm text-amber-800 dark:text-amber-300">
+          {blocking.map((p, i) => <li key={i}>{p.name ? `${p.name}: ` : ""}{p.problem}</li>)}
+        </ul>
+      )}
+      {state?.problems && state.problems.length > 0 && (
+        <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-400">{state.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      )}
+      <Msg state={state?.error || state?.ok ? { ...(state.error ? { error: state.error } : {}), ...(state.ok ? { ok: state.ok } : {}) } : undefined} />
+      <p className={ui.hint}>Os saques do arquivo ficam marcados como "enviados ao banco". Depois que o banco processar, marque como pagos aqui.</p>
+    </form>
+  );
+}
+
+/** Saque recusado pelo banco: tira da remessa para ir na próxima. */
+export function RemoveRemessaForm({ withdrawalId }: { withdrawalId: string }) {
+  const [state, action, pending] = useActionState(removeRemessaAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-1.5">
+      <input type="hidden" name="withdrawalId" value={withdrawalId} />
+      <button className={`${ui.ghostSm} self-start`} disabled={pending}>Banco recusou: tirar da remessa</button>
       <Msg state={state} />
     </form>
   );

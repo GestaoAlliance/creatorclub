@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { generateRemessa, RemessaError, removeFromRemessa } from "@/lib/withdrawals/remessa";
 import { approveWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -54,4 +55,29 @@ export async function payBatchAction(_prev: ActionState, form: FormData): Promis
     if (r.failed.length) throw new WithdrawalDecisionError(`${ok} ${r.failed.length} não ${r.failed.length === 1 ? "foi" : "foram"}: ${r.failed[0]!.reason}`);
     return ok;
   }, "");
+}
+
+export type RemessaState = { error?: string; problems?: string[]; file?: { name: string; content: string }; ok?: string } | undefined;
+
+/** D-REMESSA: gera o arquivo CNAB 240 (Pix) dos aprovados ainda não enviados; o navegador baixa. */
+export async function remessaAction(_prev: RemessaState, form: FormData): Promise<RemessaState> {
+  try {
+    const r = await generateRemessa(db(), await currentActor(), String(form.get("brandId") ?? ""), String(form.get("payDay") ?? ""));
+    revalidatePath("/admin/saques");
+    return { file: { name: r.fileName, content: r.content }, ok: `Remessa nº ${r.nsa}: ${r.count} ${r.count === 1 ? "saque" : "saques"}. Envie o arquivo no Internet Banking do SICOOB.` };
+  } catch (error) {
+    if (error instanceof RemessaError) return { error: error.message, problems: error.problems.map((p) => p.problem) };
+    throw error;
+  }
+}
+
+export async function removeRemessaAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await removeFromRemessa(db(), await currentActor(), String(form.get("withdrawalId") ?? ""));
+    revalidatePath("/admin/saques");
+    return { ok: "Saque fora da remessa: entra na próxima." };
+  } catch (error) {
+    if (error instanceof RemessaError) return { error: error.message };
+    throw error;
+  }
 }

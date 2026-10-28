@@ -299,6 +299,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-216 — 2026-10-28 — Remessa SICOOB de Pix, CNAB 240 (D-REMESSA)
+- **Feito:** `src/domain/cnab240.ts` (leiaute do guia SICOOB, conferências e linhas de 240 posições);
+  `src/lib/withdrawals/remessa.ts` (gera, marca os saques, número sequencial por marca, tira da remessa);
+  `PaymentRemittance` (só inserção, RLS) e `Withdrawal.remittanceId`, migração `20261030090000_payment_remittance`;
+  bloco "Remessa SICOOB (Pix)" em Saques → Aprovados; conta no SICOOB em Marcas.
+- **Falta (responsável/equipe):** preencher em Marcas o convênio CNAB 240, agência e conta da Botanika; testar o arquivo
+  na homologação do SICOOB (pontos a confirmar com o banco: tipo de conta "01" no Pix por chave e a densidade "01600").
+- **Depois:** ler o arquivo de retorno do SICOOB (pagos/rejeitados sozinhos); Alelo para PF.
+- **Verificado:** testes (unitários e de integração), typecheck, build, migração sem divergência e captura.
+
 ### CP-215 — 2026-10-28 — Cadastro PJ: regime tributário e endereço do CNPJ (D-PJADDR)
 - **Feito:** regime no cadastro (`CreatorAccount.taxRegime`, migração `20261029180000_tax_regime`, trava
   `CreatorAccount_taxRegime`); `src/domain/cnpj.ts` e `src/lib/cnpj/lookup.ts` (BrasilAPI); o formulário preenche e

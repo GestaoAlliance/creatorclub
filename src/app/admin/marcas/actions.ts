@@ -25,6 +25,7 @@ const input = (form: FormData) => ({
   ...(form.has("approvalSuggestion") ? { approvalSuggestion: String(form.get("approvalSuggestion") ?? "") } : {}),
   ...(form.has("shopDiscount") ? { shopDiscount: String(form.get("shopDiscount") ?? "") } : {}),
   ...(form.has("financeEmail") ? { financeEmail: String(form.get("financeEmail") ?? "") } : {}),
+  ...Object.fromEntries((["bankConvenio", "bankAgency", "bankAgencyDv", "bankAccount", "bankAccountDv"] as const).filter((k) => form.has(k)).map((k) => [k, String(form.get(k) ?? "")])),
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
 });
 

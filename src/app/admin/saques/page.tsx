@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { redirect } from "next/navigation";
-import { formatBRL } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { scopedActor, staffContext } from "@/lib/staff/context";
@@ -11,7 +10,10 @@ import { withdrawalQueue, type QueueFilter } from "@/lib/withdrawals/decide";
 import { payoutSummary } from "@/lib/withdrawals/summary";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { BatchBar } from "./forms";
+import { dayKey, formatBRL } from "@/domain";
+import { can } from "@/lib/auth/permissions";
+import { remessaPreview } from "@/lib/withdrawals/remessa";
+import { BatchBar, RemessaBar } from "./forms";
 import { SaquesTable } from "./table";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +39,8 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
   const defaultTab: QueueFilter = approves !== "ALL" && approves.length === 0 ? "APPROVED" : "REQUESTED";
   const tab = TABS.find((t) => t.ver === ver)?.id ?? defaultTab;
   const [rows, sum] = await Promise.all([withdrawalQueue(db(), inBrand, tab), payoutSummary(db(), inBrand, brandId ? [brandId] : undefined)]);
+  const today = dayKey(new Date(), "America/Sao_Paulo");
+  const remessa = tab === "APPROVED" && brandId && can(actor.grants, "withdrawals.manage", brandId) ? await remessaPreview(db(), actor, brandId, today) : null;
 
   return (
     <>
@@ -64,6 +68,8 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
         <HelpTip id="sq-abas" />
         <Link href="/admin/saques/conferencia" className={`${ui.link} ml-auto text-sm`}>Conferir a planilha de pagamentos →</Link>
       </nav>
+      {/* D-REMESSA: arquivo do SICOOB para quem paga (marca escolhida no topo). */}
+      {tab === "APPROVED" && remessa && brandId && <RemessaBar brandId={brandId} count={remessa.count} cents={remessa.totalCents} today={today} problems={remessa.problems} />}
       {tab === "APPROVED" && rows.some((r) => r.canPay) && <BatchBar count={rows.filter((r) => r.canPay).length} />}
       <SaquesTable rows={rows} />
     </>
