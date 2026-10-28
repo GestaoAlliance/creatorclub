@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient, ReleaseBasis } from "@/generated/prisma/client";
 import { notify } from "@/lib/notifications/notify";
 import { notices,
   accumulatedSales,
@@ -15,7 +15,8 @@ import { notices,
 
 /**
  * Fechamento mensal (D-CONTRACT). No dia 1, para cada creator, o mês que fechou entra nas vendas acumuladas desde a
- * última liberação; atingindo o mínimo do contrato (R$ 300 desde D-MIN300), grava uma
+ * última liberação; atingindo o mínimo do contrato (R$ 300 em vendas desde D-MIN300; na Botanika, R$ 100 de comissão,
+ * D-MIN100), grava uma
  * `CommissionRelease` e a comissão desses meses fica disponível para o saque (NF do dia 1 ao 10).
  * Vendas = subtotal atual dos pedidos elegíveis atribuídos (pagos ou parcialmente reembolsados, não cancelados, não
  * teste), pelo mês do pagamento (D-MONTH). Roda pelo worker (`/api/jobs/run`); `MonthClosing` impede refazer.
@@ -41,6 +42,22 @@ export async function salesByMonth(prisma: Db, creatorIds: string[], timeZone: s
     const m = monthKey(r.order.paidAt!, timeZone);
     const byMonth = out.get(r.creatorId)!;
     byMonth.set(m, (byMonth.get(m) ?? 0) + Math.max(0, r.order.subtotalCents));
+  }
+  return out;
+}
+
+/**
+ * D-MIN100: o que conta para o mínimo, por creator e mês. Vendas (padrão) ou, na marca com `releaseBasis` COMMISSION
+ * (Botanika), a comissão lançada no extrato (comissões menos estornos), no mês do pagamento do pedido (D-MONTH).
+ */
+export async function releaseAmountsByMonth(prisma: Db, creatorIds: string[], timeZone: string, basis: ReleaseBasis): Promise<Map<string, Map<string, number>>> {
+  if (basis === "SALES") return salesByMonth(prisma, creatorIds, timeZone);
+  const out = new Map<string, Map<string, number>>(creatorIds.map((id) => [id, new Map()]));
+  if (creatorIds.length === 0) return out;
+  for (const e of await ledgerEntriesWithMonth(prisma, creatorIds, timeZone)) {
+    if ((e.type !== "COMMISSION" && e.type !== "REVERSAL") || !e.month) continue;
+    const byMonth = out.get(e.creatorId)!;
+    byMonth.set(e.month, (byMonth.get(e.month) ?? 0) + e.amountCents);
   }
   return out;
 }
@@ -97,9 +114,11 @@ export async function creatorBalance(prisma: Db, creator: { id: string; brandId:
 
 export type ReleaseProgress = {
   releasedThrough: string | null;
-  /** Mínimo de vendas do contrato; `null` = contrato sem comissão (UGC permuta). */
+  /** D-MIN100: o mínimo conta vendas ou comissão. */
+  basis: ReleaseBasis;
+  /** Mínimo do contrato; `null` = contrato sem comissão (UGC permuta). */
   minCents: number | null;
-  /** Vendas acumuladas desde a última liberação, contando o mês corrente. */
+  /** Acumulado (vendas ou comissão) desde a última liberação, contando o mês corrente. */
   accumulatedCents: number;
   /** Próximo fechamento (dia 1 do mês seguinte). */
   nextClosingAt: Date;
@@ -112,14 +131,16 @@ export async function releaseProgress(prisma: Db, creatorId: string, now: Date):
     select: {
       categories: true,
       contractTemplate: { select: { releaseMinCents: true } },
-      brand: { select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true } },
+      brand: { select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true } },
     },
   });
   const tz = creator.brand.timezone;
-  const [sales, released] = await Promise.all([salesByMonth(prisma, [creatorId], tz), releasedThroughFor(prisma, [creatorId])]);
+  const basis = creator.brand.releaseBasis;
+  const [sales, released] = await Promise.all([releaseAmountsByMonth(prisma, [creatorId], tz, basis), releasedThroughFor(prisma, [creatorId])]);
   const releasedThrough = released.get(creatorId) ?? null;
   return {
     releasedThrough,
+    basis,
     minCents: releaseMinFor(creator.categories, creator.brand, creator.contractTemplate),
     accumulatedCents: accumulatedSales(sales.get(creatorId)!, releasedThrough, monthKey(now, tz)),
     nextClosingAt: monthClosesAt(monthKey(now, tz), tz),
@@ -135,7 +156,7 @@ export function lastClosedMonth(now: Date, timeZone: string): string {
 export async function closeDueMonths(prisma: PrismaClient, now = new Date(), only?: { brandId: string }): Promise<number> {
   const brands = await prisma.brand.findMany({
     where: { archivedAt: null, ...(only ? { id: only.brandId } : {}) },
-    select: { id: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true },
+    select: { id: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
   });
   let total = 0;
   for (const brand of brands) {
@@ -148,7 +169,7 @@ export async function closeDueMonths(prisma: PrismaClient, now = new Date(), onl
 
 async function closeBrandMonth(
   prisma: PrismaClient,
-  brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number },
+  brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis },
   month: string,
   now: Date,
 ): Promise<number> {
@@ -162,12 +183,12 @@ async function closeBrandMonth(
         select: { id: true, categories: true, contractTemplate: { select: { releaseMinCents: true } } },
       });
       const ids = creators.map((c) => c.id);
-      const [sales, released] = await Promise.all([salesByMonth(tx, ids, brand.timezone), releasedThroughFor(tx, ids)]);
+      const [sales, released] = await Promise.all([releaseAmountsByMonth(tx, ids, brand.timezone, brand.releaseBasis), releasedThroughFor(tx, ids)]);
       const rows = creators.flatMap((c) => {
         const minCents = releaseMinFor(c.categories, brand, c.contractTemplate);
         if (minCents === null) return []; // contrato sem comissão (UGC permuta)
         return planReleases({ salesByMonth: sales.get(c.id)!, releasedThrough: released.get(c.id) ?? null, lastClosedMonth: month, minCents }).map(
-          (r) => ({ brandId: brand.id, creatorId: c.id, month: r.month, salesCents: r.salesCents, minCents, releasedAt: now }),
+          (r) => ({ brandId: brand.id, creatorId: c.id, month: r.month, salesCents: r.salesCents, minCents, basis: brand.releaseBasis, releasedAt: now }),
         );
       });
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });

@@ -16,7 +16,7 @@ import {
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
-import { releasedThroughFor } from "@/lib/commission/release";
+import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { creatorReturns } from "@/lib/reports/creator-return";
 import { IDLE_SELECT, idleFor } from "./idle";
 import { ugcCyclesFor } from "./ugc";
@@ -39,7 +39,7 @@ export async function monthPerformance(
   now = new Date(),
 ) {
   if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new PerformanceError("Sem permissão.");
-  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true } });
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true } });
   const tz = brand.timezone;
   const current = monthKey(now, tz);
   const months = lastMonths(current, 12);
@@ -60,7 +60,7 @@ export async function monthPerformance(
   const ids = creators.map((c) => c.id);
   // M3.3 (D-RETURN): lucro que cada uma deixa e clientes novas no mês escolhido.
   const range = { gte: startOfLocalDay(`${month}-01`, tz), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, tz) };
-  const [attributions, released, idle, cycles, returns] = await Promise.all([
+  const [attributions, released, idle, cycles, returns, commissionByMonth] = await Promise.all([
     prisma.orderAttribution.findMany({
       where: { creatorId: { in: ids }, order: { paidAt: { not: null }, financialStatus: { in: PAID }, cancelledAt: null, test: false } },
       select: { creatorId: true, order: { select: { paidAt: true, subtotalCents: true } } },
@@ -69,6 +69,8 @@ export async function monthPerformance(
     idleFor(prisma, creators, tz, now),
     ugcCyclesFor(prisma, creators, tz, now),
     creatorReturns(prisma, brandId, range, ids),
+    // D-MIN100: na Botanika o mínimo conta a comissão acumulada, não as vendas.
+    brand.releaseBasis === "COMMISSION" ? releaseAmountsByMonth(prisma, ids, tz, "COMMISSION") : Promise.resolve(null),
   ]);
 
   // Vendas e pedidos por creator e mês.
@@ -86,7 +88,7 @@ export async function monthPerformance(
     const s = of(c.id, month);
     const p = of(c.id, prev);
     const minCents = releaseMinFor(c.categories, brand, c.contractTemplate);
-    const centsByMonth = new Map([...by].map(([k, v]) => [k, v.cents]));
+    const centsByMonth = commissionByMonth?.get(c.id) ?? new Map([...by].map(([k, v]) => [k, v.cents]));
     const tiers = parseKitTiers(c.contractTemplate?.kitTiers);
     const st = idle.get(c.id);
     return {

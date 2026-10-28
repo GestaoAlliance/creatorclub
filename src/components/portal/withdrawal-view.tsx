@@ -5,7 +5,7 @@ import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { NfDataList } from "./nf-data";
 import { HelpTip } from "@/components/ui/tour";
-import { ReleaseProgressBar, releaseNote } from "@/components/ui/release-progress";
+import { ReleaseProgressBar, releaseNote, releaseWhat } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -29,6 +29,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
     ? WITHDRAWAL_BLOCK_TEXT[block]
         .replace("{start}", String(policy.windowStartDay))
         .replace("{end}", String(policy.windowEndDay))
+        .replace("{what}", releaseWhat(tab.release))
         .replace("{min}", tab.release.minCents === null ? "o mínimo do contrato" : formatBRL(tab.release.minCents))
     : null;
   const st = tab.statement;
@@ -74,7 +75,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
         <ReleaseProgressBar r={tab.release} />
         <p className="text-xs text-stone-500">
           {tab.release.minCents !== null &&
-            `A comissão do mês é liberada no dia 1 do mês seguinte quando suas vendas acumuladas chegam a ${formatBRL(tab.release.minCents)}; se não chegarem, elas somam com as do mês seguinte. `}
+            `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
           Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
           liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix até o dia 15.
         </p>

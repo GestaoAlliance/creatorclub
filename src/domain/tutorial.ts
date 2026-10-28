@@ -38,11 +38,11 @@ export const HELP = {
   },
   "minimo-mes": {
     title: "Mínimo do contrato",
-    text: "No dia 1 a comissão vira saldo se as suas vendas acumuladas chegarem ao mínimo do contrato. A barra mostra quanto falta.",
+    text: "No dia 1 a comissão vira saldo se o seu acumulado (vendas ou comissão, conforme a marca) chegar ao mínimo do contrato. A barra mostra quanto falta.",
   },
   "a-liberar": {
     title: "A liberar",
-    text: "Comissões das suas vendas esperando o fechamento do mês. No dia 1 elas viram saldo disponível quando suas vendas acumuladas chegam ao mínimo do seu contrato.",
+    text: "Comissões das suas vendas esperando o fechamento do mês. No dia 1 elas viram saldo disponível quando o seu acumulado chega ao mínimo do contrato.",
   },
   "vendas-mes": {
     title: "Vendas do mês",
@@ -182,7 +182,7 @@ export const HELP = {
   },
   "fi-saldo": {
     title: "Saldo",
-    text: "Vem do extrato dela. A liberar vira disponível no dia 1 quando as vendas acumuladas chegam ao mínimo do contrato.",
+    text: "Vem do extrato dela. A liberar vira disponível no dia 1 quando o acumulado dela (vendas ou comissão, conforme a marca) chega ao mínimo do contrato.",
   },
   "fi-conferencia": {
     title: "Conferência da Ana",

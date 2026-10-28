@@ -8,7 +8,7 @@ import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
-import { ReleaseProgressBar } from "@/components/ui/release-progress";
+import { ReleaseProgressBar, releaseWhat } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
 import { birthdayLabel, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
@@ -181,7 +181,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           <p className={ui.hint}>
             {st.release.minCents === null
               ? "Contrato sem comissão (permuta)"
-              : `Comissão liberada no fechamento do mês (dia 1) quando as vendas acumuladas chegam a ${formatBRL(st.release.minCents)}`}
+              : `Comissão liberada no fechamento do mês (dia 1) quando a ${releaseWhat(st.release)} chega a ${formatBRL(st.release.minCents)}`}
             {st.releasedThrough ? `; liberada até ${st.releasedThrough.slice(5)}/${st.releasedThrough.slice(0, 4)}` : "; nada liberado ainda"}. Venda conta no mês do pagamento.
           </p>
         </Card>

@@ -4,6 +4,7 @@ import { PERIOD_PRESETS } from "@/lib/portal/period";
 import { SALE_STATUS_LABEL, type SalesPage, type SaleStatus } from "@/lib/portal/sales";
 import { SalesChart } from "./sales-chart";
 import { HelpTip } from "@/components/ui/tour";
+import { releaseWhat } from "@/components/ui/release-progress";
 
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 const pct = (bps: number | null) => (bps === null ? "—" : `${(bps / 100).toString().replace(".", ",")}%`);
@@ -125,7 +126,7 @@ export function SalesView({ page, base, noCommission = false }: { page: SalesPag
       <p className="px-1 text-xs text-stone-500">
         {noCommission ? "Valor" : "Base"} = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago.
         {!noCommission && page.release.minCents !== null &&
-          ` A comissão é liberada no dia 1 do mês seguinte quando as vendas acumuladas chegam a ${formatBRL(page.release.minCents)}.`}
+          ` A comissão é liberada no dia 1 do mês seguinte quando a ${releaseWhat(page.release)} chega a ${formatBRL(page.release.minCents)}.`}
       </p>
     </div>
   );

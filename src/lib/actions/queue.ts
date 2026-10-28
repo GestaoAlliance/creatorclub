@@ -22,7 +22,7 @@ import {
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
-import { releasedThroughFor, salesByMonth } from "@/lib/commission/release";
+import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
 import { lastPostDays } from "@/lib/posts/posts";
@@ -62,7 +62,7 @@ export type ActionTask = {
 export async function actionQueue(prisma: PrismaClient, brandId: string, now = new Date()): Promise<ActionTask[]> {
   const brand = await prisma.brand.findUniqueOrThrow({
     where: { id: brandId },
-    select: { name: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true },
+    select: { name: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
   });
   const tz = brand.timezone;
   const today = Date.parse(`${dayKey(now, tz)}T00:00:00Z`);
@@ -120,12 +120,12 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   // Perto do mínimo do mês (parceiras ativas com comissão).
   const partners = creators.filter((c) => c.status === "ACTIVE" && !isUgcOnly(c.categories));
   const ids = partners.map((c) => c.id);
-  const [sales, released] = await Promise.all([salesByMonth(prisma, ids, tz), releasedThroughFor(prisma, ids)]);
+  const [sales, released] = await Promise.all([releaseAmountsByMonth(prisma, ids, tz, brand.releaseBasis), releasedThroughFor(prisma, ids)]);
   for (const c of partners) {
     const min = releaseMinFor(c.categories, brand, c.contractTemplate);
     if (!min) continue;
     const acc = accumulatedSales(sales.get(c.id)!, released.get(c.id) ?? null, month);
-    if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, `NEAR_MIN:${c.id}:${month}`, { kind: "NEAR_MIN", missingCents: min - acc });
+    if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, `NEAR_MIN:${c.id}:${month}`, { kind: "NEAR_MIN", missingCents: min - acc, commission: brand.releaseBasis === "COMMISSION" });
   }
 
   // Aniversário (creators não desligadas com data de nascimento).

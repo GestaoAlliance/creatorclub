@@ -1,6 +1,6 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient, ReleaseBasis } from "@/generated/prisma/client";
 import { accumulatedSales, dayKey, isUgcOnly, monthKey, noticeEmail, notices, releaseMinFor, type Notice } from "@/domain";
-import { creatorBalance, releasedThroughFor, salesByMonth } from "@/lib/commission/release";
+import { creatorBalance, releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import type { EmailSender } from "@/lib/email/sender";
 import { configuredOrigin } from "@/lib/site";
@@ -23,7 +23,7 @@ const hourIn = (now: Date, tz: string) => Number(new Intl.DateTimeFormat("en-GB"
 export async function runDueNotices(prisma: PrismaClient, now = new Date(), only?: { brandId: string }): Promise<number> {
   const brands = await prisma.brand.findMany({
     where: { archivedAt: null, ...(only ? { id: only.brandId } : {}) },
-    select: { id: true, timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, releaseMinCents: true, releaseMinPrescriberCents: true },
+    select: { id: true, timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
   });
   let total = 0;
   for (const brand of brands) {
@@ -40,7 +40,7 @@ export async function runDueNotices(prisma: PrismaClient, now = new Date(), only
 
 async function brandNotices(
   prisma: PrismaClient,
-  brand: { id: string; timezone: string; withdrawalWindowStartDay: number; withdrawalWindowEndDay: number; releaseMinCents: number; releaseMinPrescriberCents: number },
+  brand: { id: string; timezone: string; withdrawalWindowStartDay: number; withdrawalWindowEndDay: number; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis },
   day: string,
   now: Date,
 ): Promise<number> {
@@ -80,12 +80,12 @@ async function brandNotices(
 
   // Perto do mínimo: passou de 70% do mínimo do contrato e ainda não chegou (uma vez por mês).
   const ids = partners.map((c) => c.id);
-  const [sales, released] = await Promise.all([salesByMonth(prisma, ids, tz), releasedThroughFor(prisma, ids)]);
+  const [sales, released] = await Promise.all([releaseAmountsByMonth(prisma, ids, tz, brand.releaseBasis), releasedThroughFor(prisma, ids)]);
   for (const c of partners) {
     const min = releaseMinFor(c.categories, brand, c.contractTemplate);
     if (!min) continue;
     const acc = accumulatedSales(sales.get(c.id)!, released.get(c.id) ?? null, month);
-    if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, notices.nearMinimum(month, min - acc));
+    if (acc >= min * NEAR_MIN_SHARE && acc < min) push(c.id, notices.nearMinimum(month, min - acc, brand.releaseBasis === "COMMISSION"));
   }
 
   // Contrato vencendo: fim nos próximos 30 dias.
