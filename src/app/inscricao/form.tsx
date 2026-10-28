@@ -3,17 +3,17 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { formatBrPhone, NICHES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
+import { formatBrPhone, mustShipToCnpj, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
-import { checkCouponAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
+import { checkCouponAction, cnpjAddressAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
 
 export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null };
 
 const BY_KEY = new Map(SIGNUP_QUESTIONS.map((q) => [q.key, q]));
 
 const input =
-  "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-[var(--b)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--b)_15%,transparent)] aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
+  "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-[15px] text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-[var(--b)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--b)_15%,transparent)] aria-[invalid=true]:border-red-500 read-only:bg-stone-100 read-only:text-stone-600 disabled:bg-stone-100 dark:border-white/15 dark:read-only:bg-white/[0.02] dark:bg-white/[0.04] dark:text-white dark:focus:border-white dark:focus:ring-white/10";
 
 /** Máscaras enquanto a pessoa digita. */
 const digits = (v: string, max: number) => v.replace(/\D/g, "").slice(0, max);
@@ -87,6 +87,8 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const asked = useRef("");
+  // D-PJADDR: empresa que não é MEI recebe no endereço do CNPJ (vem da Receita e fica travado).
+  const [cnpjAddr, setCnpjAddr] = useState<{ cnpj: string; legalName: string } | { cnpj: string; state: "loading" | "notfound" | "unavailable" } | null>(null);
   const numberRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const set = (k: string, value: string) => setV((cur) => ({ ...cur, [k]: value }));
@@ -110,6 +112,25 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
     const t = setTimeout(() => void checkCouponAction(brand.slug, code).then(setCoupon), 500);
     return () => clearTimeout(t);
   }, [v.coupon, brand.slug]);
+
+  const cnpjDigits = (v.cnpj ?? "").replace(/\D/g, "");
+  const needsCnpjAddr = mustShipToCnpj(cnpjDigits, v.taxRegime);
+  useEffect(() => {
+    if (!needsCnpjAddr) return setCnpjAddr(null);
+    let alive = true;
+    setCnpjAddr({ cnpj: cnpjDigits, state: "loading" });
+    void cnpjAddressAction(cnpjDigits).then((r) => {
+      if (!alive) return;
+      if ("state" in r) return setCnpjAddr({ cnpj: cnpjDigits, state: r.state });
+      const a = r.address;
+      setV((cur) => ({ ...cur, addrZip: `${a.zip.slice(0, 5)}-${a.zip.slice(5)}`, addrStreet: a.street, addrNumber: a.number, addrComplement: a.complement ?? "", addrDistrict: a.district, addrCity: a.city, addrState: a.state }));
+      setCnpjAddr({ cnpj: cnpjDigits, legalName: r.legalName });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [needsCnpjAddr, cnpjDigits]);
+  const addrLocked = cnpjAddr !== null && "legalName" in cnpjAddr;
 
   const searchZip = async (d: string) => {
     if (d.length !== 8 || asked.current === d) return;
@@ -177,6 +198,14 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
           <Field label={q("cpf").label} error={errors.cpf}>{text("cpf", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
           <Field label={q("cnpj").label} optional hint={q("cnpj").hint} error={errors.cnpj}>{text("cnpj", { inputMode: "numeric", autoComplete: "off" })}</Field>
         </div>
+        {cnpjDigits.length > 0 && (
+          <Field label={q("taxRegime").label} error={errors.taxRegime} className="sm:max-w-[calc(50%-0.5rem)]" hint="MEI pode receber os produtos em outro endereço; empresa no Simples ou outro regime recebe no endereço do CNPJ.">
+            <select name="taxRegime" value={v.taxRegime ?? ""} onChange={(e) => set("taxRegime", e.target.value)} required aria-invalid={errors.taxRegime ? true : undefined} className={input}>
+              <option value="" disabled>Escolha</option>
+              {Object.entries(TAX_REGIMES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label={q("birthDate").label} optional hint="Para a equipe comemorar com você." error={errors.birthDate} className="sm:max-w-[calc(50%-0.5rem)]">
           {text("birthDate", { type: "date", autoComplete: "bday" })}
         </Field>
@@ -274,6 +303,17 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
       </Block>
 
       <Block title={sec("endereco").title} hint={sec("endereco").hint}>
+        {cnpjAddr && (
+          <p className="rounded-xl bg-stone-100 px-3.5 py-2.5 text-xs text-stone-600 dark:bg-white/5 dark:text-stone-300">
+            {"legalName" in cnpjAddr
+              ? `Os produtos vão para o endereço do CNPJ (${cnpjAddr.legalName}), como manda a nota fiscal. Para mudar, fale com a equipe.`
+              : cnpjAddr.state === "loading"
+                ? "Buscando o endereço do seu CNPJ na Receita…"
+                : cnpjAddr.state === "notfound"
+                  ? "Não encontramos este CNPJ na Receita: confira os números."
+                  : "Não deu para buscar o endereço do CNPJ agora. Preencha com o endereço do CNPJ."}
+          </p>
+        )}
         <Field
           label="CEP"
           className="sm:max-w-[calc(50%-0.5rem)]"
@@ -283,7 +323,7 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
           }
         >
           <span className="relative">
-            {text("addrZip", {
+            {text("addrZip", { readOnly: addrLocked, 
               required: true,
               inputMode: "numeric",
               autoComplete: "postal-code",
@@ -300,20 +340,21 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
           </span>
         </Field>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Rua" className="col-span-2" error={errors.addrStreet}>{text("addrStreet", { required: true, autoComplete: "address-line1" })}</Field>
-          <Field label="Número" error={errors.addrNumber}>{text("addrNumber", { required: true, maxLength: 20, ref: numberRef })}</Field>
+          <Field label="Rua" className="col-span-2" error={errors.addrStreet}>{text("addrStreet", { readOnly: addrLocked,  required: true, autoComplete: "address-line1" })}</Field>
+          <Field label="Número" error={errors.addrNumber}>{text("addrNumber", { readOnly: addrLocked,  required: true, maxLength: 20, ref: numberRef })}</Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Complemento" optional error={errors.addrComplement}>{text("addrComplement", { maxLength: 80, autoComplete: "address-line2" })}</Field>
-          <Field label="Bairro" error={errors.addrDistrict}>{text("addrDistrict", { required: true, maxLength: 80 })}</Field>
+          <Field label="Complemento" optional error={errors.addrComplement}>{text("addrComplement", { readOnly: addrLocked,  maxLength: 80, autoComplete: "address-line2" })}</Field>
+          <Field label="Bairro" error={errors.addrDistrict}>{text("addrDistrict", { readOnly: addrLocked,  required: true, maxLength: 80 })}</Field>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Cidade" className="col-span-2" error={errors.addrCity}>{text("addrCity", { required: true, maxLength: 80, autoComplete: "address-level2" })}</Field>
+          <Field label="Cidade" className="col-span-2" error={errors.addrCity}>{text("addrCity", { readOnly: addrLocked,  required: true, maxLength: 80, autoComplete: "address-level2" })}</Field>
           <Field label="UF" error={errors.addrState}>
-            <select name="addrState" value={v.addrState ?? ""} onChange={(e) => set("addrState", e.target.value)} required aria-invalid={errors.addrState ? true : undefined} className={input}>
+            <select name="addrState" value={v.addrState ?? ""} onChange={(e) => set("addrState", e.target.value)} disabled={addrLocked} required aria-invalid={errors.addrState ? true : undefined} className={input}>
               <option value="" disabled>—</option>
               {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
             </select>
+            {addrLocked && <input type="hidden" name="addrState" value={v.addrState ?? ""} />}
           </Field>
         </div>
       </Block>

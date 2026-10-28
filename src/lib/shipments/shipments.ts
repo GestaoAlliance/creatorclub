@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { notices, type Notice } from "@/domain";
+import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
+import { cnpjAddressLine, mustShipToCnpj, notices, sameShipAddress, type Notice } from "@/domain";
 import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
@@ -38,10 +39,16 @@ function assertManage(actor: Actor | null, brandId: string): asserts actor is Ac
 
 // ───── Endereço (portal) ─────
 
-export async function updateMyAddress(prisma: PrismaClient, ctx: PortalContext, actorUserId: string, input: AddressInput): Promise<Address> {
+export async function updateMyAddress(prisma: PrismaClient, ctx: PortalContext, actorUserId: string, input: AddressInput, cnpjLookup: CnpjLookup = lookupCnpj): Promise<Address> {
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é alterado em nome da creator.");
   const address = normalizeAddress(input);
-  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true, brandId: true } });
+  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true, brandId: true, account: { select: { cnpj: true, taxRegime: true } } } });
+  // D-PJADDR: empresa que não é MEI recebe os produtos no endereço do CNPJ (Receita fora do ar: não trava).
+  if (mustShipToCnpj(creator.account.cnpj, creator.account.taxRegime)) {
+    const info = await cnpjLookup(creator.account.cnpj!);
+    if (info !== "notfound" && info !== "unavailable" && !sameShipAddress(address, info.address))
+      throw new ShipmentError(`Como o seu CNPJ não é MEI, os produtos vão para o endereço da empresa: ${cnpjAddressLine(info.address)}. Para outro endereço, fale com a equipe.`);
+  }
   await prisma.$transaction([
     prisma.creatorAccount.update({ where: { id: creator.accountId }, data: addressColumns(address) }),
     prisma.auditLog.create({

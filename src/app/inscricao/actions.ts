@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
+import { lookupCnpj } from "@/lib/cnpj/lookup";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
 import { requestPortalAccess, signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
@@ -62,6 +63,14 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
   const signedIn = await (await supabaseServer()).auth.signInWithPassword({ email, password });
   if (signedIn.error) redirect(`/entrar?next=/conta`);
   redirect("/conta");
+}
+
+export type CnpjAddressResult = { legalName: string; mei: boolean | null; address: { zip: string; street: string; number: string; complement: string | null; district: string; city: string; state: string } } | { state: "notfound" | "unavailable" };
+
+/** D-PJADDR: endereço do CNPJ (dados públicos da Receita) para preencher a entrega de quem não é MEI. */
+export async function cnpjAddressAction(cnpj: string): Promise<CnpjAddressResult> {
+  const info = await lookupCnpj(cnpj);
+  return typeof info === "string" ? { state: info } : { legalName: info.legalName, mei: info.mei, address: info.address };
 }
 
 export type CouponCheck = { code: string; state: "ok" | "taken" | "invalid" };

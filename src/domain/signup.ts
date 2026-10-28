@@ -2,6 +2,7 @@ import { birthdayLabel, parseBirthDate } from "./birthday";
 import { cleanProfile, profileAnswers, type ProfileFields } from "./profile";
 import { dayKey } from "./time";
 import { validBrPhone } from "./phone";
+import { isTaxRegime, TAX_REGIMES, type TaxRegime } from "./cnpj";
 
 /**
  * Formulário de inscrição do próprio sistema (D-SIGNUP): um formulário por marca (D-SIGNUPBRAND), com as mesmas perguntas
@@ -40,6 +41,8 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "fullName", title: "Seu nome completo:", label: "Nome completo", kind: "text", required: true },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
   { key: "cnpj", title: "CNPJ: ", label: "CNPJ", kind: "text", required: false, hint: "Se você emite nota como empresa ou MEI, informe aqui." },
+  // D-PJADDR: regime tributário de quem informa CNPJ (MEI pode receber em outro endereço; os outros, no do CNPJ).
+  { key: "taxRegime", title: "Regime tributário do CNPJ:", label: "Regime tributário", kind: "text", required: false },
   // M4.2 (D-TAGS): aniversário (opcional), para a equipe comemorar.
   { key: "birthDate", title: "Data de nascimento:", label: "Data de nascimento", kind: "text", required: false },
   { key: "email", title: "EMAIL:", label: "E-mail", kind: "email", required: true, hint: "É com ele que você entra no portal." },
@@ -54,7 +57,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 
 /** Blocos do cadastro, na ordem da página (a senha vem no fim, fora das respostas). */
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: string; keys: readonly string[] }[] = [
-  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj", "birthDate"] },
+  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj", "taxRegime", "birthDate"] },
   { id: "contato", title: "Contato", keys: ["email", "phone"] },
   { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok", "tiktokShop"] },
   { id: "cupom", title: "Seu cupom", hint: "O código que seus seguidores usam na compra. É por ele que contamos as suas vendas.", keys: ["coupon"] },
@@ -159,6 +162,8 @@ export type SignupAccount = {
   phone: string;
   cpf: string;
   cnpj: string | null;
+  /** D-PJADDR: regime do CNPJ (null sem CNPJ). */
+  taxRegime: TaxRegime | null;
   instagram: string;
   tiktok: string | null;
   /** Tem TikTok Shop ativo (null = não respondeu). */
@@ -194,6 +199,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
     else if (q.kind === "tel" && !validBrPhone(v)) errors[q.key] = "Informe só o DDD e o número, sem o +55 (ex.: (31) 99211-3232).";
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
+    else if (q.key === "taxRegime" && !isTaxRegime(v)) errors[q.key] = "Escolha o regime do CNPJ.";
     else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
     else if (q.key === "tiktokShop" && v !== "Sim" && v !== "Não") errors[q.key] = "Responda Sim ou Não.";
@@ -206,9 +212,21 @@ export function validateSignup(values: Record<string, string | undefined>, today
       }
       continue;
     }
+    if (q.key === "taxRegime") {
+      clean.taxRegime = v;
+      answers[q.title] = TAX_REGIMES[v as TaxRegime];
+      continue;
+    }
     const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : q.kind === "tel" ? validBrPhone(v)! : v;
     clean[q.key] = out;
     answers[q.title] = q.key === "instagram" || q.key === "tiktok" ? `@${out}` : out;
+  }
+  // D-PJADDR: com CNPJ, o regime é obrigatório; sem CNPJ, não se pergunta.
+  if (clean.cnpj && !clean.taxRegime && !errors.cnpj) errors.taxRegime = "Escolha o regime do CNPJ.";
+  if (!clean.cnpj) {
+    delete clean.taxRegime;
+    delete answers["Regime tributário do CNPJ:"];
+    delete errors.taxRegime;
   }
   const profile = cleanProfile(values);
   if (!profile.ok) Object.assign(errors, profile.errors);
@@ -225,6 +243,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       phone: clean.phone!,
       cpf: clean.cpf!.replace(/\D/g, ""),
       cnpj: clean.cnpj ? clean.cnpj.replace(/\D/g, "") : null,
+      taxRegime: clean.cnpj && clean.taxRegime ? (clean.taxRegime as TaxRegime) : null,
       instagram: clean.instagram!,
       tiktok: clean.tiktok || null,
       tiktokShop: clean.tiktokShop ? clean.tiktokShop === "Sim" : null,

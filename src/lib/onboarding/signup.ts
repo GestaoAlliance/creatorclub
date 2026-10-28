@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { normalizeHunterCode, signupBrandFor, signupConsentText, validateSignup } from "@/domain";
+import { cnpjAddressLine, mustShipToCnpj, normalizeHunterCode, sameShipAddress, signupBrandFor, signupConsentText, validateSignup } from "@/domain";
+import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
 import { passwordProblem } from "@/lib/auth/rules";
 import { hashIp } from "@/lib/links/tracked";
 import { ApplicationError, receiveApplication } from "./applications";
@@ -42,6 +43,7 @@ export async function submitSignup(
   input: { brandSlug: string; values: Record<string, string | undefined>; password: string; honeypot: string; hunterCode: string | null; ip: string | null },
   auth: SignupAuth,
   now = new Date(),
+  cnpjLookup: CnpjLookup = lookupCnpj,
 ): Promise<SignupOutcome> {
   const brand = await prisma.brand.findUnique({ where: { slug: input.brandSlug.toLowerCase() }, select: { id: true, slug: true, name: true, archivedAt: true } });
   if (!brand || brand.archivedAt) throw new ApplicationError("Marca não encontrada.");
@@ -77,6 +79,17 @@ export async function submitSignup(
   if (couponTaken) errors.coupon = "Este cupom já está em uso. Escolha outro.";
   if (Object.keys(errors).length) return { ok: false, errors };
 
+  // D-PJADDR: empresa que não é MEI recebe os produtos no endereço do CNPJ (dados públicos da Receita).
+  let cnpjNote: string | null = null;
+  if (mustShipToCnpj(acc.cnpj, acc.taxRegime)) {
+    const info = await cnpjLookup(acc.cnpj!);
+    if (info === "notfound") return { ok: false, errors: { cnpj: "Não encontramos este CNPJ na Receita. Confira os números." } };
+    if (info === "unavailable") cnpjNote = "não conferido (consulta da Receita fora do ar)";
+    else if (!sameShipAddress(acc.address, info.address))
+      return { ok: false, errors: { addrZip: `Para empresa que não é MEI, os produtos vão para o endereço do CNPJ: ${cnpjAddressLine(info.address)}.` } };
+    else cnpjNote = `conferido com a Receita (${info.legalName})`;
+  }
+
   const login = await auth.createUser(acc.email, input.password);
   if ("error" in login) {
     return login.error === "exists"
@@ -89,6 +102,7 @@ export async function submitSignup(
     ...checked.answers,
     [BRANDS_QUESTION]: brandName,
     ...(code ? { [HUNTER_QUESTION]: code } : {}),
+    ...(cnpjNote ? { "Endereço do CNPJ:": cnpjNote } : {}),
     Aceite: signupConsentText(brandName),
   };
   try {
@@ -102,6 +116,7 @@ export async function submitSignup(
           phone: acc.phone,
           cpf: acc.cpf,
           cnpj: acc.cnpj,
+          taxRegime: acc.taxRegime,
           instagram: acc.instagram,
           tiktok: acc.tiktok,
           tiktokShop: acc.tiktokShop,
