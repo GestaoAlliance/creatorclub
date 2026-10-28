@@ -46,6 +46,8 @@ model Brand {
   monthlyKitFrom            String?
   /// D-NFMAIL: e-mail do financeiro que recebe cada nota fiscal enviada pelas creators (null = não envia).
   financeEmail              String?
+  /// D-IDLE45: dias sem venda para avisar a creator (portal e WhatsApp/e-mail); null = sem aviso (Botanika: 45).
+  idleNoticeDays            Int?
   nfInstructions            String? // M1.3: observações livres para emitir a nota
   nfServiceCode             String? // M1.3 (D-NFDATA): código do serviço na nota; null = padrão 17.06.01
   nfServiceDescription      String? // M1.3: descrição do serviço na nota; null = padrão

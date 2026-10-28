@@ -299,6 +299,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-214 — 2026-10-28 — Aviso de 45 dias sem vendas na Botanika (D-IDLE45)
+- **Feito:** `Brand.idleNoticeDays` (Botanika = 45) e aviso `IDLE` na rodada diária dos avisos (portal, WhatsApp ou
+  e-mail), uma vez por período parado; trava `Notification_valid` com o tipo novo; migração `20261029150000_idle_notice`.
+- **Espera:** encerramento automático em 60 dias (parecer jurídico da Dra. Carolina, pelo Guilherme).
+- **Próximo da reunião:** cadastro PJ (regime tributário, endereço = CNPJ, MEI exceção); remessa SICOOB; Alelo.
+- **Verificado:** testes (unitários e de integração), typecheck, build e migração sem divergência.
+
 ### CP-213 — 2026-10-28 — Papel "Leitura" para Admin Botanika e Guilherme (D-VIEWER)
 - **Feito:** `StaffRole.VIEWER` (migração `20261029120000_viewer_role`), permissões só de ver (creators, vendas, saques,
   envios, Desempenho, dados pessoais e fiscais); permissão nova `performance.view` para o Desempenho; "Leitura" nos

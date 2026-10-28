@@ -52,6 +52,24 @@ describe("avisos por data (U5b, banco real)", () => {
     expect(await kinds(a.creator.id)).not.toContain("window:2026-12:open");
   });
 
+  it("D-IDLE45: marca com aviso de 45 dias avisa a creator parada, uma vez por período; marca sem o aviso não", async () => {
+    const a = await world(); // última venda em 15/10
+    const only = { brandId: a.brand.id };
+    await runDueNotices(prisma, T("2026-11-29T13:00:00Z"), only); // 45 dias, mas a marca não tem o aviso
+    expect(await kinds(a.creator.id)).not.toContain("idle:2026-10-15:1");
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { idleNoticeDays: 45 } });
+    await runDueNotices(prisma, T("2026-11-28T13:00:00Z"), only); // 44 dias: ainda não
+    expect((await kinds(a.creator.id)).filter((k) => k.startsWith("idle:"))).toEqual([]);
+    await runDueNotices(prisma, T("2026-11-30T13:00:00Z"), only); // 46 dias
+    await runDueNotices(prisma, T("2026-12-05T13:00:00Z"), only); // mesmo período: não repete
+    expect((await kinds(a.creator.id)).filter((k) => k.startsWith("idle:"))).toEqual(["idle:2026-10-15:1"]);
+    const n = await prisma.notification.findFirstOrThrow({ where: { creatorId: a.creator.id, kind: "IDLE" } });
+    expect(n.body).toContain("Faz 45 dias que não entra venda");
+    expect(n.body).not.toMatch(/encerr/i);
+    await runDueNotices(prisma, T("2027-01-14T13:00:00Z"), only); // 91 dias: segundo período
+    expect((await kinds(a.creator.id)).filter((k) => k.startsWith("idle:"))).toEqual(["idle:2026-10-15:1", "idle:2026-10-15:2"]);
+  });
+
   it("e-mail: só com remetente e endereço, só avisos das últimas 24 h, nunca para e-mail de importação", async () => {
     const a = await world();
     const sent: EmailMessage[] = [];
