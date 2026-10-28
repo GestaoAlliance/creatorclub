@@ -7,8 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** perguntar ao responsável (M5.2 Olist e Alelo PF estão bloqueados: as marcas ainda vão contratar
-  os dois; opções: M5.3 Instagram, P3 links antigos `/r/`).
+- **Próxima tarefa:** perguntar ao responsável (M5.2 Olist e Alelo PF esperam contrato; P3 fechado; opção aberta:
+  M5.3 Instagram, que depende do Business Manager da Meta).
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -228,9 +228,9 @@ já existem antes de desenhar.
 - [x] **P2** E-mail de convite e senha pelo Resend com domínio próprio (D-SMTP, D-EMAIL): ligado em 2026-10-28 (CP-206):
   Resend verificado, `RESEND_API_KEY` e `EMAIL_DOMAIN` na Vercel, um remetente por marca (D-EMAILFROM), SMTP do Supabase
   Auth com o Resend ("esqueci a senha"), caixas botanika@, vermefree@ e revita@ no Turbo Cloud.
-- [~] **P3** Domínio do projeto: `creatorclub.app.br` no ar desde 2026-10-28 (CP-206, D-DOMAIN; DNS na Cloudflare).
-  *Falta:* os links `/r/...` do app antigo: o domínio do app antigo precisa redirecionar para o v2, senão os links
-  nas bios quebram no corte.
+- [x] **P3** Domínio do projeto: `creatorclub.app.br` no ar desde 2026-10-28 (CP-206, D-DOMAIN; DNS na Cloudflare).
+  Links `/r/...` do app antigo: ninguém usa mais (resposta de 2026-10-28); nada a redirecionar. O v2 atende
+  `/r/[marca]/[código]` no domínio novo e no endereço antigo da Vercel.
 - [x] **P4** Termo de aceite da creator no primeiro acesso ao portal (D-TERMS): portal bloqueado até aceitar; nome
   completo + CPF + data, IP e navegador gravados; versões (texto novo pede novo aceite); `/admin/termo` (super admin).
   Texto v1 é rascunho com as regras já combinadas: recomenda-se revisão de um advogado.
@@ -305,6 +305,9 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-219 — 2026-10-28 — P3 fechado (só documentação)
+- **Feito:** os links `/r/` do app antigo não são mais usados (resposta do responsável); P3 marcado como feito.
 
 ### CP-218 — 2026-10-28 — Olist e Alelo: decididos e bloqueados (só documentação)
 - **Feito:** respostas do responsável registradas: estoque pelo Olist só leitura nas 3 marcas (M5.2) e Alelo para PF
