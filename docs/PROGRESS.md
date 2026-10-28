@@ -7,8 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** perguntar ao responsável (M5.2 Olist e Alelo PF esperam contrato; P3 fechado; opção aberta:
-  M5.3 Instagram, que depende do Business Manager da Meta).
+- **Próxima tarefa:** **M5.3** Instagram: esperar o token da Meta do responsável; com ele, conferir o acesso de cada
+  marca, mostrar o plano (leitura diária, tabelas, telas) e só então construir.
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -83,8 +83,11 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [!] **Alelo (PF)**: saque de pessoa física no cartão Alelo (contrato PF: "Modelo contrato Botanika ALELO", Drive);
   PF deixa de informar chave Pix (D-ALELOPF). *Bloqueado:* a Botanika ainda vai contratar a Alelo; depois, o modelo
   do arquivo de pedido de crédito do portal da Alelo. Até lá, PF segue no Pix (remessa SICOOB).
-- [ ] **M5.3** Instagram automático (seguidores, engajamento, ranking). *Antes:* decisão 13 (alguém confere se as
-  marcas estão num Business Manager verificado na Meta; o responsável não sabe, 2026-10-24).
+- [~] **M5.3** Instagram automático pela API oficial, consultando pela conta de cada marca (D-INSTAGRAM): seguidores,
+  engajamento, posts que marcam a marca, ranking, frequência de posts, venda por mil seguidores, cupom na legenda,
+  crescimento de seguidores, formato que mais engaja, alerta de queda (40%) e lista de perfis que não dá para ler.
+  Feito: contas em `src/domain/instagram.ts`. *Falta:* token da Meta (app "Creator Club" + usuário do sistema no
+  Business Manager, roteiro mandado em 2026-10-28), leitura diária, telas.
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -305,6 +308,11 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-220 — 2026-10-28 — Instagram: decisões e contas (M5.3, D-INSTAGRAM)
+- **Feito:** `src/domain/instagram.ts` (engajamento em pontos-base, posts por semana, último post, melhor formato,
+  queda de 40% em 30 dias contra os 90 anteriores, venda por mil seguidores, cupom na legenda, crescimento) e testes.
+- **Próxima:** token da Meta; depois o plano da leitura diária e das telas.
 
 ### CP-219 — 2026-10-28 — P3 fechado (só documentação)
 - **Feito:** os links `/r/` do app antigo não são mais usados (resposta do responsável); P3 marcado como feito.
