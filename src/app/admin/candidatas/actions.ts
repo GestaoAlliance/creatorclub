@@ -42,6 +42,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
       email: String(form.get("email") ?? ""),
       contractTemplateId: String(form.get("contractTemplateId") ?? "") || null,
       ...(form.has("payout") ? { receivesAsIndividual: form.get("payout") === "cpf" } : {}),
+      welcomeWithVideos: form.get("welcome") === "videos",
     });
     // Sem revalidatePath aqui: a linha sumiria da aba "Novas" junto com o convite e o botão de WhatsApp. A tela
     // atualiza quando a equipe clica em "Concluir" (router.refresh).

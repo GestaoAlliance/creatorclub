@@ -1,5 +1,6 @@
 import { closeDueMonths } from "@/lib/commission/release";
 import { grantGoalKits } from "@/lib/shipments/goal-kits";
+import { grantTierKits } from "@/lib/shipments/tier-kits";
 import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
 import { emailPendingNotices, runDueNotices, siteOrigin } from "@/lib/notifications/scheduled";
@@ -26,6 +27,8 @@ export async function POST(request: Request): Promise<Response> {
     const released = await closeDueMonths(prisma);
     // D-GOALKIT: produto liberado assim que a creator bate R$ 1.000 na janela da meta.
     const goalKits = await grantGoalKits(prisma);
+    // D-TIERKIT: na Botanika (desde 2026-11), produtos pela tabela mensal, liberados por faixa.
+    const tierKits = await grantTierKits(prisma);
     // U5b (D-NOTICES): avisos por data (uma rodada por marca e dia) e e-mail dos avisos recentes, se houver remetente.
     const notices = await runDueNotices(prisma);
     // M2.2 (D-WHATSAPP): com o n8n configurado, a marca com instância da Evolution avisa pelo WhatsApp (sem e-mail).
@@ -35,7 +38,7 @@ export async function POST(request: Request): Promise<Response> {
     // M3.4 (D-WEEKLY): resumo semanal da gestão, segunda a partir das 9h.
     const weekly = await runWeeklySummaries(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, goalKits, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

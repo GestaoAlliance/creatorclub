@@ -5,6 +5,7 @@ import { closeDueMonths } from "@/lib/commission/release";
 import { portalContext } from "@/lib/portal/context";
 import { approveShipment, chooseKit, myPendingKits, rejectShipment } from "@/lib/shipments/kits";
 import { grantGoalKits } from "@/lib/shipments/goal-kits";
+import { grantTierKits } from "@/lib/shipments/tier-kits";
 import { markShipped } from "@/lib/shipments/shipments";
 import { updateMyAddress } from "@/lib/shipments/shipments";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
@@ -130,7 +131,7 @@ describe("produto pela meta de vendas (D-GOALKIT, banco real)", () => {
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-13" } }), /KitGrant_month_format/);
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", products: 0 } }), /KitGrant_values/);
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", status: "CHOSEN" } }), /KitGrant_chosen/);
-    await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", window: 2 } }), /KitGrant_kind/); // janela só na meta
+    await expectDbError(prisma.kitGrant.create({ data: { ...base, kind: "WELCOME", month: "2026-10", window: 2 } }), /KitGrant_kind/); // janela só na meta e no mês por faixa
     await expectDbError(prisma.kitGrant.create({ data: { ...base, month: "2026-10", kind: "OUTRO" } }), /KitGrant_kind/);
     const ship = { brandId: s.brand.id, creatorId: s.creator.id, address: {}, createdById: "x" };
     await expectDbError(prisma.shipment.create({ data: { ...ship, approvedAt: new Date() } }), /Shipment_approval/);
@@ -150,5 +151,32 @@ describe("produtos que a creator pode escolher (D-KITOPTIONS, banco real)", () =
     await expect(chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.creatina.id, quantity: 1 }])).rejects.toThrow(/indisponível/);
     const shipmentId = await chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.whey.id, quantity: 1 }]);
     expect(await prisma.shipmentItem.findMany({ where: { shipmentId }, select: { title: true, quantity: true } })).toEqual([{ title: "Whey", quantity: 1 }]);
+  });
+
+  it("D-TIERKIT: tabela mensal (Botanika) libera por faixa, na hora; 3 primeiros meses com R$ 500; meta antiga para", async () => {
+    const s = await setup([]);
+    await prisma.brand.update({ where: { id: s.brand.id }, data: { monthlyKitFrom: "2026-11" } });
+    // Entrou em setembro: novembro ainda é o 3º mês (R$ 500 → 1); dezembro já é a tabela normal.
+    await prisma.creator.update({ where: { id: s.creator.id }, data: { contractStart: T("2026-09-15T00:00:00Z"), goalStartAt: T("2026-10-27T00:00:00Z") } });
+    await sale(s, "2026-10-30T15:00:00Z", 120_000); // outubro: fora da tabela; meta antiga só até outubro
+    expect(await grantTierKits(prisma, T("2026-10-31T12:00:00Z"))).toBe(0);
+    await sale(s, "2026-11-05T15:00:00Z", 60_000);
+    expect(await grantTierKits(prisma, T("2026-11-05T16:00:00Z"))).toBe(1); // R$ 600 no 3º mês → 1
+    expect(await grantTierKits(prisma, T("2026-11-05T17:00:00Z"))).toBe(0); // não repete
+    await sale(s, "2026-11-10T15:00:00Z", 400_000); // R$ 4.600 → 2 no total: +1
+    expect(await grantTierKits(prisma, T("2026-11-10T16:00:00Z"))).toBe(1);
+    await sale(s, "2026-12-03T15:00:00Z", 90_000); // dezembro, tabela normal: R$ 900 não dá
+    expect(await grantTierKits(prisma, T("2026-12-03T16:00:00Z"))).toBe(0);
+    await sale(s, "2026-12-04T15:00:00Z", 1_000_000); // R$ 10.900 → 4 de uma vez
+    expect(await grantTierKits(prisma, T("2026-12-04T16:00:00Z"))).toBe(1);
+    expect(await prisma.kitGrant.findMany({ where: { creatorId: s.creator.id, kind: "MONTHLY" }, orderBy: [{ month: "asc" }, { window: "asc" }], select: { month: true, window: true, products: true } })).toEqual([
+      { month: "2026-11", window: 1, products: 1 },
+      { month: "2026-11", window: 2, products: 1 },
+      { month: "2026-12", window: 4, products: 4 },
+    ]);
+    expect(await prisma.notification.count({ where: { creatorId: s.creator.id, kind: "KIT_AVAILABLE" } })).toBe(3);
+    // Meta antiga (R$ 1.000 em 45 dias) não conta novembro em diante: outubro sozinho (R$ 1.200) já bateu e libera 1, mais nada.
+    expect(await grantGoalKits(prisma, T("2026-12-05T12:00:00Z"))).toBe(1);
+    expect(await grantGoalKits(prisma, T("2027-01-20T12:00:00Z"))).toBe(0);
   });
 });

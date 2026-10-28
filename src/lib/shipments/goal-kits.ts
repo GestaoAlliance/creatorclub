@@ -13,7 +13,7 @@ import { notify } from "@/lib/notifications/notify";
 const PAID = ["PAID", "PARTIALLY_REFUNDED"];
 
 export async function grantGoalKits(prisma: PrismaClient, now = new Date()): Promise<number> {
-  const brands = await prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, slug: true, timezone: true } });
+  const brands = await prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, slug: true, timezone: true, monthlyKitFrom: true } });
   let granted = 0;
   for (const brand of brands) {
     const today = dayKey(now, brand.timezone);
@@ -26,7 +26,13 @@ export async function grantGoalKits(prisma: PrismaClient, now = new Date()): Pro
     const rows = await prisma.orderAttribution.findMany({
       where: {
         creatorId: { in: creators.map((c) => c.id) },
-        order: { paidAt: { gte: startOfLocalDay(earliest.toISOString().slice(0, 10), brand.timezone) }, financialStatus: { in: PAID }, cancelledAt: null, test: false },
+        order: {
+          // D-TIERKIT: na marca com tabela mensal, a meta só conta as vendas de antes da tabela (Botanika: até outubro).
+          paidAt: { gte: startOfLocalDay(earliest.toISOString().slice(0, 10), brand.timezone), ...(brand.monthlyKitFrom ? { lt: startOfLocalDay(`${brand.monthlyKitFrom}-01`, brand.timezone) } : {}) },
+          financialStatus: { in: PAID },
+          cancelledAt: null,
+          test: false,
+        },
       },
       select: { creatorId: true, order: { select: { paidAt: true, subtotalCents: true } } },
     });

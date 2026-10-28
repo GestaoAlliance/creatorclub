@@ -29,6 +29,8 @@ export function approvalMessage(p: {
   ordersUrl?: string | null;
   loginUrl?: string | null;
   inviteLink?: string | null;
+  /** D-WELCOMEVIDEO: Opção 2 (2 produtos + 3 vídeos para a marca). */
+  withVideos?: boolean;
 }): string {
   const pct = (p.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const suggestion = p.suggestion?.trim();
@@ -39,8 +41,16 @@ export function approvalMessage(p: {
       : "*3. Acesse seu portal:* Acompanhe suas vendas, saldo, extrato e solicite seus saques. Já já te mando o link de acesso.";
   return [
     "Prontinho, sua parceria foi aprovada! 💖✨",
-    `Para começar, você tem direito a escolher 1 produto da ${p.brand} para experimentar!`,
-    "*1. Escolha seu produto:* Acesse a aba Pedidos na plataforma e faça sua solicitação.",
+    ...(p.withVideos
+      ? [
+          `Para começar, você tem direito a escolher 2 produtos da ${p.brand} para experimentar!`,
+          "Como combinamos, em troca você grava 3 vídeos para a marca usar no tráfego e no Instagram (pode ser em collab com a gente).",
+          "*1. Escolha seus produtos:* Acesse a aba Pedidos na plataforma e faça sua solicitação.",
+        ]
+      : [
+          `Para começar, você tem direito a escolher 1 produto da ${p.brand} para experimentar!`,
+          "*1. Escolha seu produto:* Acesse a aba Pedidos na plataforma e faça sua solicitação.",
+        ]),
     ...(p.ordersUrl ? [`🔗 ${p.ordersUrl}`] : []),
     ...(suggestion ? [`💡 Nossa sugestão: ${suggestion} ✨`] : []),
     `*2. Seu cupom exclusivo:* ${p.coupon}`,

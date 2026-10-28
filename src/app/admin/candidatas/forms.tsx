@@ -59,14 +59,15 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
   const [copied, setCopied] = useState(false);
   const [category, setCategory] = useState<string>(p.category);
   const [template, setTemplate] = useState(() => defaultTemplate(p.templates, p.category));
+  const [welcome, setWelcome] = useState<"one" | "videos">("one");
   if (state?.ok) {
     const o = state.ok;
     const pct = (o.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     const msg = (extra: { loginUrl?: string; ordersUrl?: string | null; inviteLink?: string | null }) =>
-      approvalMessage({ brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, suggestion: o.suggestion, ...extra });
+      approvalMessage({ brand: p.brand, coupon: o.coupon, discountBps: o.discountBps, suggestion: o.suggestion, withVideos: welcome === "videos", ...extra });
     return (
       <Done>
-        <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos). Contrato marcado como assinado e 1 produto liberado na aba Pedidos.</p>
+        <p><strong>{p.name}</strong> agora é creator. Cupom <strong className="font-mono">{o.coupon}</strong> criado na Shopify ({pct}% de desconto, combinável com outros descontos). Contrato marcado como assinado e {welcome === "videos" ? "2 produtos liberados na aba Pedidos (combinado: 3 vídeos para a marca)" : "1 produto liberado na aba Pedidos"}.</p>
         {o.loginUrl ? (
           <>
             <p>Ela já criou a senha no cadastro: entra no portal com o e-mail dela, sem convite.</p>
@@ -137,6 +138,14 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
             </select>
           </label>
         )}
+        {/* D-WELCOMEVIDEO: Opção 2 das regras da Botanika. */}
+        <label className={`${ui.label} col-span-full sm:col-span-2`}>
+          Envio inicial
+          <select name="welcome" value={welcome} onChange={(e) => setWelcome(e.target.value as "one" | "videos")} className={ui.inputSm}>
+            <option value="one">1 produto</option>
+            <option value="videos">2 produtos + 3 vídeos para a marca</option>
+          </select>
+        </label>
         <label className={`${ui.label} col-span-full ${p.templates.length > 0 ? "sm:col-span-2" : ""}`}>
           {p.hasLogin ? "E-mail (do login dela)" : "E-mail do convite"}
           <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />

@@ -53,4 +53,13 @@ describe("mensagem de aprovação (D-D4SIGN)", () => {
     expect(msg).toContain("Crie sua senha por este link");
     expect(msg).toContain("https://x.test/convite/abc");
   });
+
+  it("D-WELCOMEVIDEO: Opção 2 fala de 2 produtos e dos 3 vídeos", async () => {
+    const { approvalMessage } = await import("@/domain");
+    const msg = approvalMessage({ brand: "Botanika", coupon: "ANA", discountBps: 500, withVideos: true });
+    expect(msg).toContain("escolher 2 produtos da Botanika");
+    expect(msg).toContain("3 vídeos");
+    expect(msg).toContain("Escolha seus produtos");
+    expect(approvalMessage({ brand: "Botanika", coupon: "ANA", discountBps: 500 })).not.toContain("vídeos");
+  });
 });
