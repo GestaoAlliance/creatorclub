@@ -16,6 +16,7 @@ export const STAFF_ROLE_LABEL: Record<string, string> = {
   PAGAMENTO: "Pagamento",
   HUNTER: "Hunter",
   TIKTOK: "TikTok",
+  VIEWER: "Leitura",
 };
 
 async function deliver(

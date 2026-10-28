@@ -22,7 +22,7 @@ import { IDLE_SELECT, idleFor } from "./idle";
 import { ugcCyclesFor } from "./ugc";
 
 /**
- * Painel do mês (U4, D-PERFORMANCE), só Gestão e super admin (`creators.edit`): por creator ativa, vendas e pedidos do
+ * Painel do mês (U4, D-PERFORMANCE), Gestão, Leitura e super admin (`performance.view`): por creator ativa, vendas e pedidos do
  * mês (pela data do pagamento, D-MONTH), comparação com o mês anterior, quanto falta para o mínimo do contrato (hoje),
  * a faixa do kit e quem está sem vender. UGC (permuta) fica numa lista própria, com os vídeos do ciclo.
  */
@@ -38,7 +38,7 @@ export async function monthPerformance(
   opts: { month?: string | undefined; sort?: PerformanceSort } = {},
   now = new Date(),
 ) {
-  if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new PerformanceError("Sem permissão.");
+  if (!actor || !can(actor.grants, "performance.view", brandId)) throw new PerformanceError("Sem permissão.");
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true } });
   const tz = brand.timezone;
   const current = monthKey(now, tz);

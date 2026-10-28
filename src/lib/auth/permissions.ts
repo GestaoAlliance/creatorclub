@@ -4,7 +4,7 @@
  * Tabela decidida em 2026-10-09 (D-ROLES em docs/DECISIONS.md).
  */
 
-export type StaffRole = "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER" | "TIKTOK";
+export type StaffRole = "SUPER_ADMIN" | "GESTAO" | "ENVIO" | "PAGAMENTO" | "HUNTER" | "TIKTOK" | "VIEWER";
 
 export type Permission =
   | "creators.view" // lista e ficha das creators da marca
@@ -22,7 +22,8 @@ export type Permission =
   | "integrations.manage" // conectar loja Shopify
   | "staff.manage" // convidar e remover pessoas da equipe
   | "portal.viewAs" // ver o portal de uma creator, só leitura (D-VIEWAS)
-  | "tiktok.view"; // D-TIKTOKLIST: lista de quem tem TikTok (só leitura)
+  | "tiktok.view" // D-TIKTOKLIST: lista de quem tem TikTok (só leitura)
+  | "performance.view"; // D-VIEWER: painel Desempenho (Gestão e Leitura)
 
 const ALL: readonly Permission[] = [
   "creators.view",
@@ -41,18 +42,22 @@ const ALL: readonly Permission[] = [
   "staff.manage",
   "portal.viewAs",
   "tiktok.view",
+  "performance.view",
 ];
 
 export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPER_ADMIN: ALL,
   // U6 (D-PROSPECT): a Gestão também prospecta (e vê as prospecções de todas pela creators.edit).
-  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view"],
+  GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view", "performance.view"],
   ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
   PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],
   // D-TIKTOKLIST: só a lista do TikTok (ex.: a Mafe), sem vendas, saldo, CPF ou pagamentos.
   TIKTOK: ["tiktok.view"],
+  // D-VIEWER (reunião de 2026-10-27; responsável): Admin Botanika e Guilherme acompanham custos, impostos e o andamento,
+  // sem mudar nada: creators, vendas, saldos, saques com a NF, envios e Desempenho, só leitura.
+  VIEWER: ["creators.view", "money.view", "withdrawals.view", "shipping.view", "personal.address", "personal.fiscal", "performance.view"],
 };
 
 /** Papel da pessoa: global (brandId null, só SUPER_ADMIN) ou numa marca. */
