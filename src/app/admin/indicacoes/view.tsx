@@ -12,6 +12,13 @@ const STATUS: Record<string, [string, string]> = {
   APPROVED: ["aprovada", badge.green],
   REJECTED: ["recusada", badge.neutral],
 };
+/** D-AUTENTIQUE2: a hunter acompanha a assinatura do contrato (só vê; quem aprova é a Gestão). */
+const CONTRACT: Record<string, [string, string]> = {
+  SENT: ["contrato não assinado", badge.amber],
+  SIGNED: ["contrato assinado", badge.green],
+  REJECTED: ["recusou o contrato", badge.red],
+  CANCELLED: ["contrato cancelado", badge.neutral],
+};
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "2-digit" });
 const followers = (raw: string | null) => {
   const n = parseFollowers(raw);
@@ -61,7 +68,10 @@ export function IndicacoesView({ links, origin }: { links: Links; origin: string
                             {a.followers ? ` · ${followers(a.followers)} seguidores` : ""} · inscrita em {day(a.submittedAt)}
                           </span>
                         </span>
-                        <span className={style}>{label}</span>
+                        <span className="flex flex-wrap gap-1.5">
+                          {a.status === "NEW" && a.contract && CONTRACT[a.contract] && <span className={CONTRACT[a.contract]![1]}>{CONTRACT[a.contract]![0]}</span>}
+                          <span className={style}>{label}</span>
+                        </span>
                       </li>
                     );
                   })}

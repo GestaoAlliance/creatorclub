@@ -9,6 +9,9 @@ import { CouponCreateError, createDiscountInShopify, validCouponDiscount } from 
 import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { notify } from "@/lib/notifications/notify";
 import { hunterLinkIdFor } from "./hunters";
+import { cancelApplicationContracts } from "@/lib/autentique/applications";
+import { hasAutentique } from "@/lib/autentique/credentials";
+import type { Fetcher } from "@/lib/autentique/client";
 
 /**
  * Candidatas dos formulários Hunter (D-ONBOARD) e de Captação (D-CAPTACAO). O script do Google Forms manda cada
@@ -284,6 +287,37 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
       );
       return { ...a, priority };
   });
+  // D-AUTENTIQUE2: marcas com Autentique e o contrato mais recente de cada candidata.
+  const [autentique, requests] = await Promise.all([
+    prisma.brandIntegration.findMany({ where: { kind: "AUTENTIQUE", status: "CONNECTED", secretEncrypted: { not: null }, brandId: { in: brandIds } }, select: { brandId: true } }),
+    prisma.contractRequest.findMany({
+      where: { applicationId: { in: mapped.map((m) => m.id) } },
+      orderBy: { sentAt: "desc" },
+      select: {
+        applicationId: true, status: true, sandbox: true, sentAt: true, signedAt: true, rejectedAt: true, rejectReason: true, signLink: true, linkSentAt: true, lastCheckedAt: true, lastError: true,
+        pendingCouponCode: true, pendingDiscountBps: true, rateBps: true, contractTemplate: { select: { name: true, documentKind: true } },
+      },
+    }),
+  ]);
+  const withAutentique = new Set(autentique.map((b) => b.brandId));
+  const lastRequest = new Map<string, (typeof requests)[number]>();
+  for (const r of requests) if (r.applicationId && !lastRequest.has(r.applicationId)) lastRequest.set(r.applicationId, r);
+  const contractError = new Map(rows.map((x) => [x.id, x.contractError]));
+  const withContract = <T extends { id: string; brandId: string }>(m: T) => {
+    const r = lastRequest.get(m.id);
+    return {
+      ...m,
+      autentique: withAutentique.has(m.brandId),
+      contractError: contractError.get(m.id) ?? null,
+      contract: r
+        ? {
+            status: r.status, sandbox: r.sandbox, sentAt: r.sentAt, signedAt: r.signedAt, rejectedAt: r.rejectedAt, rejectReason: r.rejectReason, signLink: r.signLink, linkSentAt: r.linkSentAt,
+            lastCheckedAt: r.lastCheckedAt, lastError: r.lastError, coupon: r.pendingCouponCode, discountBps: r.pendingDiscountBps, rateBps: r.rateBps,
+            templateName: r.contractTemplate.name, category: r.contractTemplate.documentKind,
+          }
+        : null,
+    };
+  };
   const templates = await prisma.contractTemplate.findMany({
     where: { brandId: { in: brandIds } },
     orderBy: { createdAt: "asc" },
@@ -294,7 +328,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>,
     total: mapped.length,
     hunters,
-    rows: filterApplications(mapped, filters),
+    rows: filterApplications(mapped, filters).map(withContract),
   };
 }
 
@@ -316,6 +350,25 @@ export async function approveApplication(
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
   const { brand } = app;
+  // D-AUTENTIQUE2: na marca com Autentique, só aprova com o contrato assinado, e com os valores escritos nele.
+  const signed = (await hasAutentique(prisma, app.brandId))
+    ? await prisma.contractRequest.findFirst({
+        where: { applicationId: app.id, status: "SIGNED" },
+        orderBy: { signedAt: "desc" },
+        select: { id: true, pendingCouponCode: true, pendingDiscountBps: true, rateBps: true, contractTemplateId: true, signedAt: true, contractTemplate: { select: { documentKind: true } } },
+      })
+    : undefined;
+  if (signed === null) throw new ApplicationError("Ela ainda não assinou o contrato no Autentique: a aprovação libera depois da assinatura.");
+  if (signed) {
+    input = {
+      ...input,
+      couponCode: signed.pendingCouponCode ?? input.couponCode,
+      discountBps: signed.pendingDiscountBps ?? input.discountBps,
+      rateBps: signed.rateBps ?? input.rateBps,
+      category: signed.contractTemplate.documentKind as Category,
+      contractTemplateId: signed.contractTemplateId,
+    };
+  }
   const coupon = validateNewCouponCode(input.couponCode);
   if (!coupon.ok) throw new ApplicationError("Cupom inválido: letras e números, até 20.");
   if (!["INFLUENCER", "PRESCRITOR", "UGC"].includes(input.category)) throw new ApplicationError("Tipo inválido.");
@@ -340,7 +393,8 @@ export async function approveApplication(
     : null;
   if (input.contractTemplateId && !template) throw new ApplicationError("Versão de contrato inválida.");
   if (!template && (await prisma.contractTemplate.count({ where: { brandId: app.brandId } })) > 0) throw new ApplicationError("Escolha a versão do contrato que ela assinou.");
-  const start = dayKey(now);
+  // Com o Autentique, o contrato vale da assinatura; no D4Sign, da aprovação.
+  const start = dayKey(signed?.signedAt ?? now);
 
   // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.
   if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
@@ -436,6 +490,7 @@ export async function approveApplication(
         data: { status: "APPROVED", decidedAt: now, decidedById: actor.userId, creatorId: creator.id },
       });
       if (count === 0) throw new ApplicationError("Esta candidata já foi decidida.");
+      if (signed) await tx.contractRequest.update({ where: { id: signed.id }, data: { creatorId: creator.id } });
       await tx.auditLog.create({
         data: {
           brandId: app.brandId,
@@ -444,7 +499,7 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractStart: start, welcomeProducts, welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractRequestId: signed?.id ?? null, contractStart: start, welcomeProducts, welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
       return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };
@@ -537,7 +592,7 @@ export async function createStaffApplication(prisma: PrismaClient, actor: Actor 
  * Recusar várias de uma vez (M4.1, D-MANUALAPP): só as que ainda estão "Novas" e da marca em que a pessoa edita
  * creators; as outras são ignoradas e contadas. Mesmo motivo (opcional) para todas; uma auditoria por candidata.
  */
-export async function rejectApplications(prisma: PrismaClient, actor: Actor | null, applicationIds: readonly string[], note: string, now = new Date()) {
+export async function rejectApplications(prisma: PrismaClient, actor: Actor | null, applicationIds: readonly string[], note: string, now = new Date(), deps: { fetcher?: Fetcher; encKey?: Buffer } = {}) {
   if (!actor) throw new ApplicationError("Sem permissão.");
   const ids = [...new Set(applicationIds)].slice(0, 500);
   if (ids.length === 0) throw new ApplicationError("Marque ao menos uma candidata.");
@@ -559,10 +614,12 @@ export async function rejectApplications(prisma: PrismaClient, actor: Actor | nu
     }
     return n;
   });
+  // D-AUTENTIQUE2: contrato esperando assinatura é cancelado no Autentique.
+  await cancelApplicationContracts(prisma, ok.map((a) => a.id), actor.userId, deps);
   return { rejected, skipped: ids.length - rejected };
 }
 
-export async function rejectApplication(prisma: PrismaClient, actor: Actor | null, applicationId: string, note: string, now = new Date()) {
+export async function rejectApplication(prisma: PrismaClient, actor: Actor | null, applicationId: string, note: string, now = new Date(), deps: { fetcher?: Fetcher; encKey?: Buffer } = {}) {
   const app = await prisma.creatorApplication.findUnique({ where: { id: applicationId }, select: { id: true, brandId: true, status: true } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
@@ -577,4 +634,5 @@ export async function rejectApplication(prisma: PrismaClient, actor: Actor | nul
       data: { brandId: app.brandId, actorType: "USER", actorId: actor.userId, action: "application.rejected", entity: "CreatorApplication", entityId: app.id, after: { note: decisionNote } },
     });
   });
+  return { cancelled: await cancelApplicationContracts(prisma, [app.id], actor.userId, deps) };
 }

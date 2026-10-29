@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PRIORITY_LABEL } from "@/domain";
+import { contractBadge, PRIORITY_LABEL } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationCard } from "./card";
 import type { TemplateOption } from "./forms";
@@ -62,6 +62,10 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     priority: { level: a.priority.level, label: PRIORITY_LABEL[a.priority.level], reasons: (a.priority.level === "REPETIDA" ? ["resolver por último"] : a.priority.reasons).join(" · ") },
     days: daysAgo(a.submittedAt),
     canDecide: status === "NEW" && a.canDecide,
+    brandName: a.brandName,
+    // D-AUTENTIQUE2: selo do contrato e aprovar só depois de assinado (marcas com Autentique).
+    contract: a.autentique ? contractBadge(a.contract, a.contractError) : null,
+    approvable: !a.autentique || a.contract?.status === "SIGNED",
     creatorId: status === "APPROVED" ? a.creatorId : null,
     detail: <ApplicationDetail a={a} status={status} templates={templates} />,
   };

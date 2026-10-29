@@ -10,7 +10,7 @@ import { sheetSwitchAction } from "./actions";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
-import { BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
+import { AutentiqueForm, BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,9 @@ export default async function SyncPage() {
   const health = await syncHealth(db(), scopedActor(actor, (await staffContext(actor)).brand?.id));
   const sheets = new Map(await Promise.all(health.map(async (h) => [h.brand.id, await sheetSyncStatus(db(), h.brand.id)] as const)));
   const superAdmin = brandsWith(actor.grants, "staff.manage") === "ALL";
+  const autentique = new Map(
+    (await db().brandIntegration.findMany({ where: { kind: "AUTENTIQUE", brandId: { in: health.map((h) => h.brand.id) } }, select: { brandId: true, status: true, externalId: true, scopes: true } })).map((r) => [r.brandId, r]),
+  );
 
   return (
     <>
@@ -109,6 +112,20 @@ export default async function SyncPage() {
             </Card>
           )}
 
+          <Card title="Autentique (contratos)">
+            {(() => {
+              const a = autentique.get(h.brand.id);
+              const on = a?.status === "CONNECTED";
+              return (
+                <>
+                  <p className="text-sm">
+                    {on ? <>Conectado à conta <strong>{a?.externalId}</strong>{a?.scopes === "sandbox" ? " · modo teste" : ""}.</> : "Não conectado: nesta marca o contrato segue pelo D4Sign. Conectado, o cadastro do site gera o contrato sozinho e a aprovação espera a assinatura."}
+                  </p>
+                  <AutentiqueForm brandId={h.brand.id} connected={on} sandbox={a?.scopes === "sandbox"} />
+                </>
+              );
+            })()}
+          </Card>
 
           <Card title="Planilhas (só leitura)">
             {(() => {

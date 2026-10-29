@@ -969,56 +969,60 @@ enum ApplicationStatus {
 /// Resposta do formulário de cadastro (D-ONBOARD). Chega pelo script do Google Forms; a equipe aprova (vira creator,
 /// cupom, taxa e convite) ou recusa. A resposta original fica em `raw`.
 model CreatorApplication {
-  id              String            @id @default(uuid())
-  brandId         String
-  source          String // hunter_form | captacao_form (D-CAPTACAO)
-  externalKey     String // id da resposta no Google Forms
-  submittedAt     DateTime
-  fullName        String
-  email           String?
-  phone           String?
-  instagram       String?
-  followers       String?
-  niche           String?
-  kindAnswer      String? // resposta do "Sou:"
-  address         String?
-  suggestedCoupon String?
-  cpf             String?
-  cnpj            String?
-  companyName     String?
-  pixKey          String?
-  storiesViews    String? // D-CAPTACAO: "Quantos visualizações tem seus stories?"
-  brandsWanted    String? // D-CAPTACAO: "Tenho interesse em representar:" (Botanika / Botanika e VermeFree)
-  collabInterest  String? // D-CAPTACAO: interesse em collab com o perfil da marca (Sim/Não)
-  note            String? // observação da equipe (ex.: status da planilha antiga)
-  hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
-  hunterLinkId    String?
+  id               String            @id @default(uuid())
+  brandId          String
+  source           String // hunter_form | captacao_form (D-CAPTACAO)
+  externalKey      String // id da resposta no Google Forms
+  submittedAt      DateTime
+  fullName         String
+  email            String?
+  phone            String?
+  instagram        String?
+  followers        String?
+  niche            String?
+  kindAnswer       String? // resposta do "Sou:"
+  address          String?
+  suggestedCoupon  String?
+  cpf              String?
+  cnpj             String?
+  companyName      String?
+  pixKey           String?
+  storiesViews     String? // D-CAPTACAO: "Quantos visualizações tem seus stories?"
+  brandsWanted     String? // D-CAPTACAO: "Tenho interesse em representar:" (Botanika / Botanika e VermeFree)
+  collabInterest   String? // D-CAPTACAO: interesse em collab com o perfil da marca (Sim/Não)
+  note             String? // observação da equipe (ex.: status da planilha antiga)
+  hunterCode       String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
+  hunterLinkId     String?
   /// D-ORIGIN: etiqueta de campanha do link do cadastro (`?origem=`) e "Como conheceu a marca?" (opcional).
-  campaignTag     String?
-  heardFrom       String?
-  tiktok          String? // D-SIGNUPACCOUNT
+  campaignTag      String?
+  heardFrom        String?
+  tiktok           String? // D-SIGNUPACCOUNT
   /// M4.2 (D-TAGS): data de nascimento informada na candidatura (vai para a conta na aprovação).
-  birthDate       DateTime?         @db.Date
+  birthDate        DateTime?         @db.Date
   /// D-SIGNUPACCOUNT: conta criada no próprio cadastro (com login); a aprovação usa esta conta.
-  accountId       String?
+  accountId        String?
   /// D-SIGNUP: inscrição pelo formulário do próprio sistema — quando aceitou o uso dos dados e hash do IP do dia
   /// (só para limitar envios repetidos; o IP em si nunca é gravado).
-  consentAt       DateTime?
-  ipHash          String?
-  raw             Json
-  status          ApplicationStatus @default(NEW)
-  decidedAt       DateTime?
-  decidedById     String?
-  decisionNote    String?
-  creatorId       String?
-  prospects       Prospect[]
-  createdAt       DateTime          @default(now())
+  consentAt        DateTime?
+  ipHash           String?
+  raw              Json
+  status           ApplicationStatus @default(NEW)
+  decidedAt        DateTime?
+  decidedById      String?
+  decisionNote     String?
+  creatorId        String?
+  /// D-AUTENTIQUE2: por que o contrato automático não saiu (ex.: cupom já existe); limpo quando sai.
+  contractError    String?
+  prospects        Prospect[]
+  contractRequests ContractRequest[]
+  createdAt        DateTime          @default(now())
 
   brand      Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   hunterLink HunterLink?     @relation(fields: [hunterLinkId], references: [id], onDelete: Restrict)
   account    CreatorAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
 
   @@unique([brandId, source, externalKey])
+  @@unique([id, brandId])
   @@index([accountId])
   @@index([brandId, status, submittedAt])
 }
@@ -1306,7 +1310,9 @@ enum ContractRequestStatus {
 model ContractRequest {
   id                 String                @id @default(uuid())
   brandId            String
-  creatorId          String
+  /// D-AUTENTIQUE2: contrato da candidata (antes da aprovação) fica só com `applicationId`; aprovada, ganha a creator.
+  creatorId          String?
+  applicationId      String?
   contractDocumentId String
   contractTemplateId String
   provider           String                @default("AUTENTIQUE")
@@ -1318,6 +1324,11 @@ model ContractRequest {
   bodySha256         String
   pendingCouponCode  String?
   pendingDiscountBps Int?
+  /// D-AUTENTIQUE2: comissão escrita no contrato da candidata (a aprovação usa a mesma).
+  rateBps            Int?
+  /// D-AUTENTIQUE2: link de assinatura do Autentique e quando foi mandado pelo WhatsApp da marca.
+  signLink           String?
+  linkSentAt         DateTime?
   couponCreatedAt    DateTime?
   /// Pedido do responsável (2026-10-23): convite do portal mandado sozinho depois da assinatura (e-mail e/ou WhatsApp).
   inviteSentAt       DateTime?
@@ -1330,13 +1341,15 @@ model ContractRequest {
   lastError          String?
   createdById        String
 
-  brand            Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  creator          Creator          @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
-  contractDocument ContractDocument @relation(fields: [contractDocumentId, brandId], references: [id, brandId], onDelete: Restrict)
-  contractTemplate ContractTemplate @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
+  brand            Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator          Creator?            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  application      CreatorApplication? @relation(fields: [applicationId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractDocument ContractDocument    @relation(fields: [contractDocumentId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractTemplate ContractTemplate    @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([brandId, status])
   @@index([creatorId])
+  @@index([applicationId])
 }
 
 /// D-SHEETSYNC: hora da última alteração de cada campo sincronizado com as planilhas (gatilho no banco).
