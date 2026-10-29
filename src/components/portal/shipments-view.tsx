@@ -1,10 +1,11 @@
 import { Check, ExternalLink, Package, Plus, Truck } from "lucide-react";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type myShipments } from "@/lib/shipments/shipments";
 import type { Address } from "@/lib/shipments/address";
-import { monthLabel, type myPendingKits } from "@/lib/shipments/kits";
+import { monthLabel, type KitProgress, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
+import { KitProgressCard } from "./kit-progress";
 import { ShopPicker } from "./shop-picker";
 import type { ShopState } from "@/lib/shipments/shop";
 import { HelpTip } from "@/components/ui/tour";
@@ -55,6 +56,7 @@ export function ShipmentsView({
   viewOnly,
   informedAddress = null,
   shop,
+  progress = null,
 }: {
   marca: string;
   address: Address | null;
@@ -64,6 +66,8 @@ export function ShipmentsView({
   viewOnly: boolean;
   /** M5.1 (D-SHOPBALANCE): loja com o saldo. */
   shop: ShopState;
+  /** D-KITPROGRESS: como liberar o próximo produto. */
+  progress?: KitProgress | null;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -82,6 +86,14 @@ export function ShipmentsView({
           </div>
         </details>
       )}
+      {/* D-VIEWAS: na visualização da equipe nada é pedido em nome da creator (os botões ficam travados). */}
+      {viewOnly && kits.kits.length > 0 && (
+        <p className="rounded-2xl border border-amber-400/60 bg-amber-100/70 px-4 py-2.5 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
+          Visualização da equipe: os botões de escolher produto ficam travados. Só a creator faz o pedido pelo portal dela (para pedir por ela, use &quot;Novo envio&quot; em Envios).
+        </p>
+      )}
+      {/* D-KITPROGRESS: sem produto liberado agora, mostra como liberar o próximo. */}
+      {kits.kits.length === 0 && progress && <KitProgressCard progress={progress} brandSlug={marca} />}
       {/* M5.1 (D-SHOPBALANCE): comprar produtos com o saldo. */}
       <details className="group flex flex-col gap-4">
         <summary className="glass inline-flex w-fit cursor-pointer list-none items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold">

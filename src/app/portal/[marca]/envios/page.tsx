@@ -1,7 +1,7 @@
 import { ShipmentsView } from "@/components/portal/shipments-view";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
-import { myPendingKits } from "@/lib/shipments/kits";
+import { kitProgress, myPendingKits } from "@/lib/shipments/kits";
 import { myShop } from "@/lib/shipments/shop";
 import { informedAddress, myAddress, myShipments } from "@/lib/shipments/shipments";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PortalShipments({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
-  const [address, shipments, kits, shop] = await Promise.all([myAddress(db(), ctx), myShipments(db(), ctx), myPendingKits(db(), ctx), myShop(db(), ctx)]);
+  const [address, shipments, kits, shop, progress] = await Promise.all([myAddress(db(), ctx), myShipments(db(), ctx), myPendingKits(db(), ctx), myShop(db(), ctx), kitProgress(db(), ctx)]);
   const informed = address ? null : await informedAddress(db(), ctx);
-  return <ShipmentsView marca={ctx.brand.slug} address={address} shipments={shipments} kits={kits} viewOnly={ctx.viewAs !== null} informedAddress={informed} shop={shop} />;
+  return <ShipmentsView marca={ctx.brand.slug} address={address} shipments={shipments} kits={kits} viewOnly={ctx.viewAs !== null} informedAddress={informed} shop={shop} progress={progress} />;
 }
