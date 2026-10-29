@@ -112,7 +112,7 @@ export const HELP = {
     text: "Seu extrato mês a mês. Toque no mês para ver tudo o que entrou e saiu do seu saldo.",
   },
   "solicitar-pedido": {
-    title: "Solicitar pedido",
+    title: "Liberado para você pedir",
     text: "Quando um kit é liberado para você, escolha aqui os produtos que quer receber. A equipe aprova e depois envia.",
   },
   endereco: {

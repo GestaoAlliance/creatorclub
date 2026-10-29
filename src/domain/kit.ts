@@ -135,3 +135,15 @@ export function tierProducts(salesCents: number, trial: boolean): number {
   const regular = kitProductsFor(TIER_REGULAR, salesCents);
   return trial ? Math.max(regular, kitProductsFor(TIER_TRIAL, salesCents)) : regular;
 }
+
+/**
+ * D-KITPROGRESS: próxima faixa da tabela mensal acima das vendas do mês (o total de produtos do mês que ela libera), ou
+ * null se já está na faixa mais alta.
+ */
+export function nextTier(salesCents: number, trial: boolean): { fromCents: number; total: number } | null {
+  const current = tierProducts(salesCents, trial);
+  const next = [...TIER_REGULAR, ...(trial ? TIER_TRIAL : [])]
+    .filter((t) => t.fromCents > salesCents && tierProducts(t.fromCents, trial) > current)
+    .sort((a, b) => a.fromCents - b.fromCents)[0];
+  return next ? { fromCents: next.fromCents, total: tierProducts(next.fromCents, trial) } : null;
+}

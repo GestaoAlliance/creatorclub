@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { kitNoun, productPhoto, validateKitChoice } from "@/domain";
+import { addDaysKey, dayKey, GOAL_SALES_CENTS, goalWindowsUntil, isTierTrialMonth, kitNoun, monthKey, nextTier, productPhoto, startOfLocalDay, tierProducts, validateKitChoice } from "@/domain";
+import { salesByMonth } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -144,5 +145,53 @@ export async function rejectShipment(prisma: PrismaClient, actor: Actor | null, 
     if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
     await tx.kitGrant.updateMany({ where: { shipmentId }, data: { status: "PENDING", shipmentId: null, chosenAt: null } });
     await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.rejected", entity: "Shipment", entityId: shipmentId, after: { reason: why } } });
+  });
+}
+
+/**
+ * D-KITPROGRESS: como liberar o próximo produto, para a aba Pedidos. Marca com tabela mensal (Botanika): vendas do mês
+ * e a próxima faixa. Outras: a janela atual da meta de R$ 1.000 (45 dias, depois 30) e quanto falta.
+ */
+export type KitProgress =
+  | { kind: "TIER"; month: string; salesCents: number; total: number; next: { fromCents: number; total: number } | null; trial: boolean }
+  | { kind: "GOAL"; from: string; to: string; salesCents: number; goalCents: number; granted: boolean };
+
+export async function kitProgress(prisma: PrismaClient, ctx: PortalContext, now = new Date()): Promise<KitProgress | null> {
+  const [brand, c] = await Promise.all([
+    prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true, monthlyKitFrom: true } }),
+    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { status: true, contractStart: true, activatedAt: true, goalStartAt: true, awaitingContractAt: true } }),
+  ]);
+  if (c.status !== "ACTIVE" || c.awaitingContractAt) return null;
+  const month = monthKey(now, brand.timezone);
+  if (brand.monthlyKitFrom && month >= brand.monthlyKitFrom) {
+    const salesCents = (await salesByMonth(prisma, [ctx.creatorId], brand.timezone)).get(ctx.creatorId)!.get(month) ?? 0;
+    const entry = c.contractStart ? c.contractStart.toISOString().slice(0, 10) : c.activatedAt ? dayKey(c.activatedAt, brand.timezone) : (c.goalStartAt?.toISOString().slice(0, 10) ?? null);
+    const trial = entry !== null && isTierTrialMonth(entry, month);
+    return { kind: "TIER", month, salesCents, total: tierProducts(salesCents, trial), next: nextTier(salesCents, trial), trial };
+  }
+  if (!c.goalStartAt) return null;
+  const today = dayKey(now, brand.timezone);
+  const w = goalWindowsUntil(c.goalStartAt.toISOString().slice(0, 10), today).at(-1);
+  if (!w) return null;
+  const [rows, granted] = await Promise.all([
+    prisma.orderAttribution.findMany({
+      where: {
+        creatorId: ctx.creatorId,
+        order: { paidAt: { gte: startOfLocalDay(w.from, brand.timezone), lt: startOfLocalDay(w.to, brand.timezone) }, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] }, cancelledAt: null, test: false },
+      },
+      select: { order: { select: { subtotalCents: true } } },
+    }),
+    prisma.kitGrant.count({ where: { creatorId: ctx.creatorId, kind: "GOAL", window: w.index } }),
+  ]);
+  return { kind: "GOAL", from: w.from, to: addDaysKey(w.to, -1), salesCents: rows.reduce((s, r) => s + Math.max(0, r.order.subtotalCents), 0), goalCents: GOAL_SALES_CENTS, granted: granted > 0 };
+}
+
+/** D-SHOPTAB: histórico dos produtos que ela ganhou (1º pedido, metas, meses), com a situação de cada um. */
+export async function myKitHistory(prisma: PrismaClient, ctx: PortalContext) {
+  return prisma.kitGrant.findMany({
+    where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: { id: true, kind: true, month: true, products: true, status: true, createdAt: true, shipment: { select: { status: true } } },
   });
 }

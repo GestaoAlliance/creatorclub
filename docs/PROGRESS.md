@@ -315,6 +315,27 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-236 — 2026-10-29 — Pedidos (prêmios) e Loja em abas separadas (D-SHOPTAB)
+- **Feito:** aba nova **Loja** (`/portal/[marca]/loja`): comprar com o saldo (mesmo `ShopPicker`), aviso quando o saldo
+  é R$ 0 (produtos e preços ficam visíveis) e "Minhas compras". Aba **Pedidos** reorganizada: "Liberado para você pedir"
+  no topo (sempre aberto), "Seu próximo produto" sempre que houver progresso, "Seus prêmios" (histórico dos kits com a
+  situação: liberado, em aprovação, enviado…), endereço e "Meus envios" com etiqueta (1º pedido, Prêmio, Loja, Envio da
+  equipe). No celular a Loja fica em "Mais". Sem mudança no banco.
+- **Próxima:** perguntar ao responsável.
+
+### CP-235 — 2026-10-29 — Primeiro envio para quem nunca recebeu e "Seu próximo produto" (D-FIRSTKIT, D-KITPROGRESS)
+- **Diagnóstico:** o pedido só aparece com um kit liberado (`KitGrant`). Creators que vieram das planilhas e nunca
+  receberam produto não tinham kit de boas-vindas (ele nasce só na aprovação/assinatura) e, sem início da meta
+  (`goalStartAt`), nunca ganhavam o produto da meta de R$ 1.000. O "+" travado era a visualização da equipe ("ver
+  como"), que é só leitura (D-VIEWAS).
+- **Feito:** migração `20261108090000_first_kit`: creator ativa sem nenhum envio e sem nenhum kit ganha 1 produto de
+  boas-vindas; nas marcas sem a tabela mensal, quem não tinha início da meta começa hoje (auditado). Aba Pedidos: sem
+  produto liberado, o quadro "Seu próximo produto" (Botanika: vendas do mês e quanto falta para a próxima faixa, com a
+  tabela; outras: a janela da meta, vendido e quanto falta). No "ver como", aviso de que os botões ficam travados.
+  Teste: `test/integration/kit-progress.test.ts`, `test/tier-kit.test.ts`.
+- **Observação:** na Botanika o quadro aparece a partir de novembro (tabela mensal desde 2026-11).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-234 — 2026-10-29 — Lembretes dos saques no WhatsApp da equipe (D-WDREMIND)
 - **Feito:** `src/lib/notifications/withdrawals.ts` (worker): a partir das 9h, quem é Pagamento recebe os saques
   aprovados sem pagar nos dias 13 ("faltam 2 dias") e 15 ("vence hoje") e, depois do 15, todo dia ("atrasados"), com

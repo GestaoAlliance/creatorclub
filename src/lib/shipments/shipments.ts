@@ -200,6 +200,9 @@ const SHIPMENT_SELECT = {
   approvedAt: true,
   rejectReason: true,
   items: { select: { title: true, quantity: true }, orderBy: { title: "asc" as const } },
+  // D-SHOPTAB: etiqueta "Loja" ou "Prêmio" nos envios da creator.
+  balanceCents: true,
+  kit: { select: { kind: true } },
 } as const;
 
 export async function myShipments(prisma: PrismaClient, ctx: PortalContext) {

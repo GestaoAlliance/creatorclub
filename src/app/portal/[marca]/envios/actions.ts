@@ -17,6 +17,7 @@ async function run(marca: string, fn: (userId: string) => Promise<void>, ok: str
     if (!actor) return { error: "Sua sessão expirou. Entre de novo." };
     await fn(actor.userId);
     revalidatePath(`/portal/${marca}/envios`);
+    revalidatePath(`/portal/${marca}/loja`);
     return { ok };
   } catch (error) {
     if (error instanceof ShipmentError || error instanceof AddressError) return { error: error.message };
