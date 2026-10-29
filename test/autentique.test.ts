@@ -102,3 +102,15 @@ describe("PDF do contrato (D-AUTENTIQUE)", () => {
     expect(text).toContain("Cláusula 120");
   });
 });
+
+describe("chave pela variável segura da Vercel (D-AUTENTIQUEENV)", () => {
+  it("lê a chave da marca pelo slug; JSON quebrado, marca ausente ou chave estranha ficam sem chave", async () => {
+    const { envAutentiqueToken } = await import("@/lib/autentique/credentials");
+    const env = { AUTENTIQUE_TOKENS: JSON.stringify({ botanika: "a".repeat(64), vermefree: "curta" }) };
+    expect(envAutentiqueToken("botanika", env)).toBe("a".repeat(64));
+    expect(envAutentiqueToken("vermefree", env)).toBeNull();
+    expect(envAutentiqueToken("revita-derma", env)).toBeNull();
+    expect(envAutentiqueToken("botanika", { AUTENTIQUE_TOKENS: "{quebrado" })).toBeNull();
+    expect(envAutentiqueToken("botanika", {})).toBeNull();
+  });
+});

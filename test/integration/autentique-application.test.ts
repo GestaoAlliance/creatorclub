@@ -216,4 +216,21 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     await expectDbError(prisma.creator.update({ where: { id: creator.id }, data: { pendingCouponCode: "ABC" } }), /Creator_pending_coupon/);
     await expectDbError(prisma.creator.update({ where: { id: creator.id }, data: { pendingCouponCode: "abc", pendingDiscountBps: 500 } }), /Creator_pending_coupon/);
   });
+
+  it("sem o modelo PF/PJ vale o texto do tipo; quem espera sem contrato enviado é tentado de novo a cada hora", async () => {
+    const s = await setup();
+    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER", title: "Contrato Influencer", body: `INFLUENCER. ${BODY}` });
+    const app = await apply(s.brand.slug, { "Vai receber como:": "Empresa (CNPJ)", "CNPJ: ": "11.222.333/0001-81" });
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: false }, shop);
+    const now = new Date("2026-11-03T15:10:00Z");
+    await enqueueDueContractChecks(prisma, now);
+    const hour = Math.floor(now.getTime() / 3_600_000);
+    expect(await prisma.job.count({ where: { type: CONTRACT_SEND_JOB, dedupeKey: `contract-creator:${r.creatorId}:${hour}` } })).toBe(1);
+    await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey });
+    const req = await prisma.contractRequest.findFirstOrThrow({ where: { creatorId: r.creatorId } });
+    expect(req.body.startsWith("INFLUENCER.")).toBe(true); // texto do tipo, sem o modelo de empresa publicado
+    // Com contrato enviado, não entra mais na nova tentativa.
+    await enqueueDueContractChecks(prisma, new Date(now.getTime() + 3_600_000));
+    expect(await prisma.job.count({ where: { type: CONTRACT_SEND_JOB, dedupeKey: `contract-creator:${r.creatorId}:${hour + 1}` } })).toBe(0);
+  });
 });
