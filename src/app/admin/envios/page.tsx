@@ -1,4 +1,4 @@
-import { Plus, Printer } from "lucide-react";
+import { Download, Plus, Printer } from "lucide-react";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { PageHeader } from "@/components/ui/page";
@@ -76,6 +76,23 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         ))}
         <HelpTip id="en-situacao" />
       </nav>
+      {/* D-SHIPCSV: planilha dos envios com a situação escolhida acima e, se quiser, o período (data do pedido). */}
+      {canPrint && (
+        <form action="/admin/envios/csv" method="get" className="flex flex-wrap items-end gap-2">
+          {status && <input type="hidden" name="situacao" value={status} />}
+          <label className={ui.label}>
+            Pedidos de
+            <input type="date" name="de" className={ui.inputSm} />
+          </label>
+          <label className={ui.label}>
+            até
+            <input type="date" name="ate" className={ui.inputSm} />
+          </label>
+          <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`}>
+            <Download className="size-4" /> Baixar planilha ({status ? SHIPMENT_STATUS_LABEL[status] : "todos"})
+          </button>
+        </form>
+      )}
       <ShipmentsTable
         shipments={shipments.map((s) => {
           const { cpf, cnpj, phone, email, ...account } = s.creator.account;

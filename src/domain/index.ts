@@ -43,3 +43,4 @@ export * from "./cnab240";
 export * from "./instagram";
 export * from "./origin";
 export * from "./contract-status";
+export * from "./shipments-csv";
