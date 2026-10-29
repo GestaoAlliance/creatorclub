@@ -8,6 +8,7 @@ import { configuredWhatsApp, whatsappPendingNotices } from "@/lib/notifications/
 import { runWeeklySummaries } from "@/lib/notifications/weekly";
 import { runShippingAlerts } from "@/lib/notifications/shipping";
 import { remindReceipts } from "@/lib/shipments/reminders";
+import { runWithdrawalReminders } from "@/lib/notifications/withdrawals";
 import { jobHandlers } from "@/lib/jobs/handlers";
 import { runJobs } from "@/lib/jobs/queue";
 import { isAuthorizedBearer } from "@/lib/jobs/secret";
@@ -46,8 +47,10 @@ export async function POST(request: Request): Promise<Response> {
     const weekly = await runWeeklySummaries(prisma, whatsapp, siteOrigin());
     // D-SHIPALERT: envios novos (de hora em hora) e parados há 3 dias (9h) no WhatsApp de quem é Envio.
     const shipping = await runShippingAlerts(prisma, whatsapp, siteOrigin());
+    // D-WDREMIND: saques aprovados sem pagar (Pagamento, dias 13, 15 e atrasados) e pedidos sem aprovar (Gestão, dia 11).
+    const withdrawalReminders = await runWithdrawalReminders(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, receipts, goalKits, tierKits, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, receipts, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

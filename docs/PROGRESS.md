@@ -10,7 +10,7 @@
 - **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
   ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; ~~4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias~~; ~~5) rastreio clicável e aviso "kit
-  enviado" para a creator~~; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
+  enviado" para a creator~~; ~~6) lembrete da Juci no dia 15 com saques aprovados sem pagar~~. Olist depois do contrato.
   Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -314,6 +314,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-234 — 2026-10-29 — Lembretes dos saques no WhatsApp da equipe (D-WDREMIND)
+- **Feito:** `src/lib/notifications/withdrawals.ts` (worker): a partir das 9h, quem é Pagamento recebe os saques
+  aprovados sem pagar nos dias 13 ("faltam 2 dias") e 15 ("vence hoje") e, depois do 15, todo dia ("atrasados"), com
+  nome, valor, total e o link de Saques; quem é Gestão recebe no dia 11 os saques pedidos esperando a aprovação. Sem
+  nada pendente, nada sai; uma mensagem por marca, dia e pessoa (`SummaryRun`). Textos em
+  `src/domain/shipping-alert.ts`. Teste: `test/integration/withdrawal-reminders.test.ts`. Sem mudança no banco.
+- **Pendente do responsável:** WhatsApp da Juci e da Ana cadastrado em Equipe.
+- **Próxima:** fila das telas da equipe concluída; perguntar ao responsável a próxima tarefa (Olist quando houver
+  contrato; textos dos 2 contratos da Influencer).
 
 ### CP-233 — 2026-10-29 — Sem a escolha de 1 ou 2 produtos no cadastro; 2 modelos de contrato (D-CONTRACTFLOW)
 - **Feito (pedido do responsável):** o cadastro do site não pergunta mais "Seu primeiro envio"; o envio inicial volta a
