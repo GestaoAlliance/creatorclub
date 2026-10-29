@@ -68,6 +68,9 @@ const PRODUCT_PHOTOS: Record<string, readonly [RegExp, string][]> = {
     [/hair botanika/i, "botanika-hair"],
     [/tri ?\[?mg\]?|tri magn/i, "botanika-tri-magnesio"],
     [/tetra ?vit/i, "botanika-tetravit"],
+    [/whey balance.*chocolate/i, "botanika-whey-chocolate"],
+    [/whey balance.*sem sabor/i, "botanika-whey-sem-sabor"],
+    [/whey balance.*cappuccino/i, "botanika-whey-cappuccino"],
   ],
   vermefree: [[/protocolo.*adulto/i, "vermefree-protocolo-adulto"]],
 };

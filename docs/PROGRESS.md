@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-237 — 2026-10-29 — Botanika: Tri[Mg] e Whey 455 g (3 sabores) no pedido da creator (D-KITOPTIONS)
+- **Feito (pedido do responsável):** migração `20261109090000_botanika_kit_options` marca como opção do pedido da
+  Botanika o Tri[Mg] Complex e o Whey Balance 455 g Chocolate, Sem Sabor e Cappuccino (pelos ids da Shopify; os já
+  marcados, Hair e TetraVit, continuam; auditado). Fotos do Whey nos 3 sabores em `public/produtos/` (da loja).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-236 — 2026-10-29 — Pedidos (prêmios) e Loja em abas separadas (D-SHOPTAB)
 - **Feito:** aba nova **Loja** (`/portal/[marca]/loja`): comprar com o saldo (mesmo `ShopPicker`), aviso quando o saldo
   é R$ 0 (produtos e preços ficam visíveis) e "Minhas compras". Aba **Pedidos** reorganizada: "Liberado para você pedir"
