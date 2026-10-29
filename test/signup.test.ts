@@ -4,7 +4,7 @@ import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onbo
 
 const full: Record<string, string> = {
   fullName: "  Maria   Exemplo ", cpf: "529.982.247-25", cnpj: "", email: "Maria@Example.com", phone: "(11) 91234-5678",
-  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria10", payoutAs: "Pessoa física (CPF)",
+  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria", payoutAs: "Pessoa física (CPF)",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp",
 };
 const ADDRESS = "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
@@ -23,12 +23,12 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.answers["@ do seu TikTok:"]).toBe("@maria.tt");
     expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
     expect(r.account).toEqual({
-      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: null, coupon: "MARIA10", receivesAsIndividual: true,
+      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: null, coupon: "MARIA", receivesAsIndividual: true,
       profile: { professionalId: null, niches: [], youtube: null, kwai: null, allergies: null, mediaKitUrl: null },
       address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
     });
     const f = parseHunterAnswers(r.answers);
-    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", tiktok: "@maria.tt", suggestedCoupon: "MARIA10", kindAnswer: null });
+    expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", tiktok: "@maria.tt", suggestedCoupon: "MARIA", kindAnswer: null });
     // Sem a pergunta "Sou:", entra como Influencer; a Ana muda na aprovação.
     expect(categoryFromAnswer(f.kindAnswer)).toBe("INFLUENCER");
     expect(extraAnswers(r.answers)).toEqual([]);
@@ -65,8 +65,9 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(pf.ok && pf.account).toMatchObject({ cnpj: null, taxRegime: null, receivesAsIndividual: true });
   });
 
-  it("cupom: letras e números, de 3 a 20; acento cai; grava em maiúsculas", () => {
-    expect(signupCouponValid("maria10")).toBe(true);
+  it("cupom (D-COUPONLETTERS): só letras, de 3 a 20; acento cai; grava em maiúsculas", () => {
+    expect(signupCouponValid("maria10")).toBe(false);
+    expect(signupCouponValid("maria")).toBe(true);
     expect(signupCouponValid("Júlia")).toBe(true);
     expect(signupCouponValid("ABC")).toBe(true);
     expect(signupCouponValid("AB")).toBe(false);
@@ -74,7 +75,8 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(signupCouponValid("ABCDEFGHIJKLMNOPQRSTU")).toBe(false);
     expect(signupCouponValid("ana maria")).toBe(false);
     expect(signupCouponValid("ana-b")).toBe(false);
-    expect(signupCouponPreview("maria 10!")).toBe("MARIA10");
+    expect(signupCouponPreview("maria 10!")).toBe("MARIA");
+    expect(validateSignup({ ...full, coupon: "maria10" })).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/só com letras/) } });
     expect(signupCouponPreview("Júlia_Colares")).toBe("JULIACOLARES");
     expect(validateSignup({ ...full, coupon: "ab" })).toMatchObject({ ok: false, errors: { coupon: expect.stringMatching(/de 3 a 20/) } });
   });

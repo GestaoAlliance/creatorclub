@@ -36,12 +36,12 @@ describe("respostas do formulário Hunter", () => {
     expect(() => parseHunterAnswers({ "EMAIL:": "x@y.com" })).toThrow(/sem nome/);
   });
 
-  it("tipo pelo 'Sou:' e cupom no formato aceito (letras e números, até 20)", () => {
+  it("tipo pelo 'Sou:' e cupom no formato aceito (D-COUPONLETTERS: só letras, até 20)", () => {
     expect(categoryFromAnswer(answers["Sou:"])).toBe("PRESCRITOR");
     expect(categoryFromAnswer("Influencer")).toBe("INFLUENCER");
     expect(categoryFromAnswer("UGC")).toBe("UGC");
-    expect(couponFromSuggestion("Mari10")).toBe("MARI10");
-    expect(couponFromSuggestion("Mari 10!")).toBe("MARI10");
+    expect(couponFromSuggestion("Mari10")).toBe("MARI");
+    expect(couponFromSuggestion("Mari 10!")).toBe("MARI");
     expect(couponFromSuggestion("joão")).toBe("JOAO");
     expect(couponFromSuggestion("BELASAUDAVEL, BELA")).toBe("BELASAUDAVEL");
     expect(couponFromSuggestion(null)).toBe("");

@@ -56,7 +56,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "tiktok", title: "@ do seu TikTok:", label: "TikTok", kind: "text", required: false },
   // Pedido da Vanessa (2026-10-27): logo abaixo do TikTok; "Sim" ou "Não".
   { key: "tiktokShop", title: "Tem TikTok Shop ativo?", label: "Tem TikTok Shop ativo?", kind: "text", required: false },
-  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto. De 3 a 20 letras." },
+  { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido, só com letras (ex.: MARIA ou JUJUFIT). De 3 a 20 letras." },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
 ];
 
@@ -69,18 +69,18 @@ export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: strin
   { id: "endereco", title: "Endereço de entrega", hint: "Para onde enviamos os seus produtos.", keys: ["address"] },
 ];
 
-/** Cupom escolhido no cadastro (D-SIGNUPACCOUNT, substitui D-SIGNUPCOUPON): letras e números, de 3 a 20; acento cai. */
+/** Cupom escolhido no cadastro (D-SIGNUPACCOUNT; D-COUPONLETTERS, pedido da Vanessa em 2026-10-29): só letras, de 3 a 20; acento cai. */
 export const SIGNUP_COUPON_MIN = 3;
 export const SIGNUP_COUPON_MAX = 20;
 
 export function signupCouponValid(raw: string): boolean {
   const plain = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-  return new RegExp(`^[A-Z0-9]{${SIGNUP_COUPON_MIN},${SIGNUP_COUPON_MAX}}$`).test(plain);
+  return new RegExp(`^[A-Z]{${SIGNUP_COUPON_MIN},${SIGNUP_COUPON_MAX}}$`).test(plain);
 }
 
-/** Cupom como ele aparece enquanto se digita: só letras e números, maiúsculas, até 20. */
+/** Cupom como ele aparece enquanto se digita: só letras, maiúsculas, até 20 (números não entram). */
 export function signupCouponPreview(raw: string): string {
-  return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, SIGNUP_COUPON_MAX);
+  return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, SIGNUP_COUPON_MAX);
 }
 
 /** @ de rede social sem o @, sem o endereço do site e sem espaços ("https://instagram.com/maria/" → "maria"). */
@@ -207,7 +207,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
     else if (q.key === "cpf" && !cpfValid(v)) errors[q.key] = "CPF inválido.";
     else if (q.key === "cnpj" && v.replace(/\D/g, "").length !== 14) errors[q.key] = "CNPJ precisa ter 14 números.";
     else if (q.key === "taxRegime" && !isTaxRegime(v)) errors[q.key] = "Escolha o regime do CNPJ.";
-    else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
+    else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, só com letras, de 3 a 20 (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
     else if (q.key === "tiktokShop" && v !== "Sim" && v !== "Não") errors[q.key] = "Responda Sim ou Não.";
     else if (q.kind === "choice" && q.options && !q.options.includes(v)) errors[q.key] = "Escolha uma das opções.";

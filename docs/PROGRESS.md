@@ -315,6 +315,25 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-238 — 2026-10-29 — Aprovar sempre trava até o contrato; cupom só com letras (D-CONTRACTLOCK, D-COUPONLETTERS)
+- **Feito (pedidos da Vanessa e do responsável):** aprovar em Candidatas sempre deixa a creator esperando o contrato
+  (portal, cupom e pedido travados), com ou sem Autentique. Libera quando ela assina no Autentique ou quando a Gestão
+  clica "Contrato assinado (fora do Autentique)" na aba Aprovadas (`confirmSignedOutside`: contrato vale do dia,
+  cancela o Autentique aberto e roda a ativação). Migração `20261110090000_contract_lock`: aprovadas desde 26/10 sem
+  contrato assinado no Autentique voltam a esperar (o cupom delas continua) e recebem o contrato pela fila. Ativação
+  e contrato usam o cupom que ela já tem quando não há cupom reservado. Cupom só com letras no cadastro (o campo tira
+  os números) e na aprovação; a sugestão vem sem números; cupom reservado conta como em uso no cadastro. Testes
+  ajustados (aprovar → "Contrato assinado").
+- **Pendente do responsável:** colar a chave do Autentique em Integrações (Botanika e VermeFree); o sistema não
+  alcança o banco nem a Vercel daqui para gravar.
+- **Próxima:** perguntar ao responsável.
+
+### CP-237 — 2026-10-29 — Botanika: Tri[Mg] e Whey 455 g (3 sabores) no pedido da creator (D-KITOPTIONS)
+- **Feito (pedido do responsável):** migração `20261109090000_botanika_kit_options` marca como opção do pedido da
+  Botanika o Tri[Mg] Complex e o Whey Balance 455 g Chocolate, Sem Sabor e Cappuccino (pelos ids da Shopify; os já
+  marcados, Hair e TetraVit, continuam; auditado). Fotos do Whey nos 3 sabores em `public/produtos/` (da loja).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-236 — 2026-10-29 — Pedidos (prêmios) e Loja em abas separadas (D-SHOPTAB)
 - **Feito:** aba nova **Loja** (`/portal/[marca]/loja`): comprar com o saldo (mesmo `ShopPicker`), aviso quando o saldo
   é R$ 0 (produtos e preços ficam visíveis) e "Minhas compras". Aba **Pedidos** reorganizada: "Liberado para você pedir"

@@ -4,6 +4,7 @@ import { addMonthsToDay, dayKey, longDate } from "@/domain";
 import { loadActor } from "@/lib/auth/actor";
 import { contractsOverview, creatorContractSignature, pendingContract, publishContract, signContract, signedContractText } from "@/lib/contracts/sign";
 import { approveApplication, receiveApplication } from "@/lib/onboarding/applications";
+import { confirmSignedOutside } from "@/lib/autentique/applications";
 import { chooseKit, myPendingKits } from "@/lib/shipments/kits";
 import { informedAddress, updateMyAddress } from "@/lib/shipments/shipments";
 import { portalContext } from "@/lib/portal/context";
@@ -37,6 +38,8 @@ async function setup() {
   });
   const code = letters(6);
   const r = await approveApplication(prisma, sa, { applicationId: app.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 500, contractTemplateId: template.id }, shop);
+  // D-CONTRACTLOCK: aprovar trava; a Gestão marca "Contrato assinado" e a parceria fica ativa (cupom criado).
+  await confirmSignedOutside(prisma, sa, r.creatorId, { clientFor: shop, origin: null });
   // D-D4SIGN: a aprovação já sai com o contrato assinado; aqui volta ao jeito antigo (assinar no portal), que segue
   // valendo para quem foi aprovada antes da mudança.
   await prisma.creator.update({ where: { id: r.creatorId }, data: { contractSigned: null, contractStart: null, contractEnd: null, contractRequiredAt: new Date() } });
