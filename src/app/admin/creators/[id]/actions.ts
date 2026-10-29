@@ -22,6 +22,7 @@ import { formatBRL } from "@/domain";
 import { addCreatorNote, NoteError } from "@/lib/creators/timeline";
 import { addCreatorTag, removeCreatorTag, TagError } from "@/lib/creators/tags";
 import { archiveCreator, ArchiveError, unarchiveCreator } from "@/lib/creators/archive";
+import { OriginError, setCreatorOrigin } from "@/lib/creators/origin";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -31,7 +32,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError) {
       return { error: error.message };
     }
     throw error;
@@ -228,4 +229,14 @@ export async function archiveAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId") ?? "");
   const undo = form.get("undo") === "1";
   return run(id, async () => (undo ? unarchiveCreator(db(), await currentActor(), id) : archiveCreator(db(), await currentActor(), id)), undo ? "Desarquivada: voltou como Pausada, com o cupom valendo." : "Arquivada.");
+}
+
+/** D-ORIGIN: a Gestão marca de onde veio quem não tem inscrição (importadas). */
+export async function originAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  return run(
+    id,
+    async () => setCreatorOrigin(db(), await currentActor(), id, { kind: String(form.get("kind") ?? ""), hunterId: String(form.get("hunterId") ?? "") || null, note: String(form.get("note") ?? "") }),
+    "Origem salva.",
+  );
 }

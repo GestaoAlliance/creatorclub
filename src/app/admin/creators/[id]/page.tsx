@@ -16,6 +16,7 @@ import { brandTags } from "@/lib/creators/tags";
 import { creatorPosts, postCampaignOptions } from "@/lib/posts/posts";
 import { dayKey } from "@/domain";
 import { creatorInstagram } from "@/lib/instagram/ranking";
+import { brandHunters, canSeeOrigin, originsFor } from "@/lib/creators/origin";
 import { CreatorProfileView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   }
 
   const RETURN_DAYS = 90;
-  const [terms, contract, numbers, timeline, own, ret, tags, posts, postCampaigns, ig] = await Promise.all([
+  const [terms, contract, numbers, timeline, own, ret, tags, posts, postCampaigns, ig, origin] = await Promise.all([
     creatorTermsStatus(db(), p.id, p.brandId),
     creatorContractSignature(db(), p.id),
     // M0.2: números de 30 dias, aguardando pagamento e estornos (só quem vê dinheiro) e a linha do tempo.
@@ -68,9 +69,13 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     postCampaignOptions(db(), p.id),
     // D-INSTAGRAM: quadro do Instagram (só quem vê o Desempenho).
     creatorInstagram(db(), actor, p.id),
+    // D-ORIGIN: de onde veio (Gestão, Leitura e super admin) e os hunters para marcar à mão.
+    canSeeOrigin(actor, p.brandId)
+      ? Promise.all([originsFor(db(), [p.id]), brandHunters(db(), p.brandId)]).then(([m, hunters]) => ({ origin: m.get(p.id)!, hunters }))
+      : Promise.resolve(null),
   ]);
   // Link rastreado que ela divulga (D-LINK), com o domínio desta requisição (o mesmo do portal).
   const h = await headers();
   const linkBase = `${publicOrigin(h)}/r/${own.slug}/`;
-  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} returnDays={RETURN_DAYS} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} ig={ig} today={dayKey(new Date())} />;
+  return <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} returnDays={RETURN_DAYS} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} ig={ig} origin={origin} today={dayKey(new Date())} />;
 }

@@ -22,6 +22,8 @@ import { AccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
 import { InstagramCard } from "./ig-card";
+import { OriginLine } from "./origin-form";
+import type { Origin } from "@/domain";
 import { UgcVideosCard } from "./ugc-card";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -67,7 +69,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null }: { ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null }: { origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   return (
@@ -95,6 +97,11 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 {p.profile.professionalId && <span className={badge.sky}>{p.profile.professionalId}</span>}
                 {p.profile.niches.map((n) => <span key={n} className={badge.neutral}>{n}</span>)}
               </div>
+              {origin && (
+                <div className="mt-2">
+                  <OriginLine creatorId={p.id} origin={origin.origin} hunters={origin.hunters} canEdit={p.canEdit} />
+                </div>
+              )}
               {/* M4.2 (D-TAGS): tags da marca, só a equipe vê. */}
               <div className="mt-2">
                 <TagsEditor creatorId={p.id} tags={p.tags} suggestions={tagSuggestions} canEdit={p.canEdit} />

@@ -6,6 +6,8 @@ import { badge, ui } from "@/components/ui/styles";
 import { formatBRL, kitNoun } from "@/domain";
 import type { monthPerformance } from "@/lib/creators/performance";
 import { InstagramTab, type IgSort } from "./instagram";
+import { OriginTab } from "./origin";
+import type { OriginSummaryRow } from "@/lib/creators/origin";
 import type { instagramRanking } from "@/lib/instagram/ranking";
 
 type Data = Awaited<ReturnType<typeof monthPerformance>>;
@@ -58,10 +60,11 @@ function KitText({ k, brandSlug }: { k: NonNullable<Row["kit"]>; brandSlug: stri
 }
 
 /** Desempenho do mês (U4): resumo, ranking de influencers e prescritores, e UGC à parte. Só exibe. */
-export function DesempenhoView({ data, sp, brandSlug, ig = null }: { data: Data; sp: Search; brandSlug: string; ig?: Ig }) {
+export function DesempenhoView({ data, sp, brandSlug, ig = null, origin = null }: { data: Data; sp: Search; brandSlug: string; ig?: Ig; origin?: OriginSummaryRow[] | null }) {
   const { summary: s } = data;
   const ugcTab = sp.aba === "ugc";
   const igTab = sp.aba === "instagram" && ig !== null;
+  const originTab = sp.aba === "origem" && origin !== null;
   const partners = data.partners.filter((r) => (!sp.tipo || (r.categories as string[]).includes(sp.tipo)) && (sp.semvenda !== "1" || r.orders === 0));
   const isCurrent = data.month === data.current;
   const q = (extra: Record<string, string | undefined>) => {
@@ -78,10 +81,11 @@ export function DesempenhoView({ data, sp, brandSlug, ig = null }: { data: Data;
       {!igTab && (<>
       <form data-tour="de-filtros" className="glass flex flex-wrap items-center gap-2 rounded-3xl p-4" role="search">
         {ugcTab && <input type="hidden" name="aba" value="ugc" />}
+        {originTab && <input type="hidden" name="aba" value="origem" />}
         <select name="mes" defaultValue={data.month} aria-label="Mês" className={ui.inputSm}>
           {data.months.map((m) => <option key={m} value={m}>{monthName(m)}{m === data.current ? " (atual)" : ""}</option>)}
         </select>
-        {!ugcTab && (
+        {!ugcTab && !originTab && (
           <>
             <select name="tipo" defaultValue={sp.tipo ?? ""} aria-label="Tipo" className={ui.inputSm}>
               <option value="">Influencers e prescritores</option>
@@ -115,13 +119,16 @@ export function DesempenhoView({ data, sp, brandSlug, ig = null }: { data: Data;
       </>)}
 
       <nav aria-label="Grupo" data-tour="de-grupos" className="flex flex-wrap items-center gap-2">
-        <Link href={q({ aba: undefined })} className={ugcTab || igTab ? ui.pill : ui.pillOn}>Influencers e prescritores <span className="opacity-80">{data.partners.length}</span></Link>
+        <Link href={q({ aba: undefined })} className={ugcTab || igTab || originTab ? ui.pill : ui.pillOn}>Influencers e prescritores <span className="opacity-80">{data.partners.length}</span></Link>
         <Link href={q({ aba: "ugc", tipo: undefined, semvenda: undefined, ordem: undefined })} className={ugcTab ? ui.pillOn : ui.pill}>UGC <span className="opacity-80">{data.ugc.length}</span></Link>
         <Link href="/admin/desempenho?aba=instagram" className={igTab ? ui.pillOn : ui.pill}>Instagram</Link>
+        <Link href={q({ aba: "origem", tipo: undefined, semvenda: undefined, ordem: undefined })} className={originTab ? ui.pillOn : ui.pill}>Origem</Link>
         <HelpTip id="de-grupos" />
       </nav>
 
-      {igTab ? (
+      {originTab ? (
+        <OriginTab rows={origin} monthLabel={monthName(data.month)} />
+      ) : igTab ? (
         <InstagramTab data={ig.data} sort={ig.sort} now={ig.now} />
       ) : !ugcTab ? (
         <Card title={`Ranking de ${monthName(data.month)}`} icon={<Trophy className="size-4" />} help="de-ranking">

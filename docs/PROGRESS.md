@@ -7,6 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
+- **Antes da fila abaixo (pedido do responsável em 2026-10-29):** origem das creators, parte 2 — etiqueta de campanha
+  no link do cadastro (`?origem=...`) e a pergunta "Como conheceu a marca?" no cadastro do site (D-ORIGIN).
 - **Próxima tarefa:** telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
   2) etiqueta e declaração de conteúdo (remetente por marca em Marcas); 3) planilha dos envios; 4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
@@ -314,6 +316,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-224 — 2026-10-29 — De onde veio cada creator (D-ORIGIN, parte 1)
+- **Feito:** origem pela inscrição aprovada (formulário Hunter, Captação, cadastro do site, equipe, prospecção; hunter
+  pelo link/código) ou marcada à mão pela Gestão na ficha para quem não tem inscrição (`Creator.originKind`,
+  `originHunterId`, `originNote`, trava `Creator_origin`; migração `20261102090000_creator_origin`). Na ficha:
+  "Veio de". Na lista de Creators: "veio de" em cada linha e filtro por origem/hunter. Desempenho → aba "Origem":
+  inscritas, aprovadas, ativas, quantas venderam e vendas do mês por origem e por hunter. Vê: Gestão, Leitura e
+  super admin (`performance.view`).
+- **Testes:** `test/origin.test.ts`, `test/integration/origin.test.ts`.
+- **Próxima:** parte 2 (etiqueta de campanha e "Como conheceu a marca?").
 
 ### CP-223 — 2026-10-29 — "Precisa de você" por função (D-NEEDSROLE)
 - **Feito:** revisão das telas do Álvaro (Envio), Juci (Pagamento) e Leitura com os usuários de teste. O "Precisa de

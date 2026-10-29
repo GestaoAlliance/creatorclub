@@ -10,6 +10,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
+import { originsFor } from "./origin";
 
 /**
  * Ficha da creator (E4.4): contato, situação (D-STATUS), cupons, taxa e convite.
@@ -50,7 +51,9 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
   ]);
   const money = can(actor.grants, "money.view", brandId);
   const fiscal = can(actor.grants, "personal.fiscal", brandId);
-  const [idle, ugc, lastOrders, sales] = await Promise.all([
+  // D-ORIGIN: de onde veio (Gestão, Leitura e super admin).
+  const showOrigin = can(actor.grants, "performance.view", brandId);
+  const [idle, ugc, lastOrders, sales, origins] = await Promise.all([
     idleFor(prisma, creators, brand.timezone),
     ugcCyclesFor(prisma, creators, brand.timezone),
     lastOrderFor(prisma, creators.map((c) => c.id)),
@@ -61,6 +64,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
           select: { subtotalCents: true, paidAt: true, attribution: { select: { creatorId: true } } },
         })
       : Promise.resolve([]),
+    showOrigin ? originsFor(prisma, creators.map((c) => c.id)) : Promise.resolve(null),
   ]);
   const since30 = Date.now() - 30 * 86_400_000;
   const stats = new Map<string, { salesCents: number; orders: number; sales30Cents: number; lastPaidAt: Date | null }>();
@@ -95,6 +99,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
         return last ? { name: last.name, day: dayKey(last.paidAt, brand.timezone) } : null;
       })(),
       joinedAt: c.createdAt,
+      origin: origins?.get(c.id) ?? null,
       email: fakeEmail ? null : c.account.email,
       phone: c.account.phone,
       instagram: c.account.instagram,
