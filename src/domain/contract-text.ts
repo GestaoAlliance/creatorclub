@@ -11,6 +11,27 @@ export const CONTRACT_KINDS = ["INFLUENCER", "PRESCRITOR", "UGC"] as const;
 export type ContractKind = (typeof CONTRACT_KINDS)[number];
 export const CONTRACT_KIND_LABEL: Record<ContractKind, string> = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC (permuta)" };
 
+/**
+ * D-CONTRACTFLOW: textos de contrato publicados em Contratos. Além do texto de cada tipo, a Influencer tem 4 modelos
+ * pelo que ela escolheu no cadastro: pessoa física ou empresa, e 1 produto ou 2 produtos + 3 vídeos.
+ */
+export const CONTRACT_TEXT_KINDS = [...CONTRACT_KINDS, "INFLUENCER_PF_1", "INFLUENCER_PF_2", "INFLUENCER_PJ_1", "INFLUENCER_PJ_2"] as const;
+export type ContractTextKind = (typeof CONTRACT_TEXT_KINDS)[number];
+export const CONTRACT_TEXT_LABEL: Record<ContractTextKind, string> = {
+  ...CONTRACT_KIND_LABEL,
+  INFLUENCER_PF_1: "Influencer · pessoa física (CPF) · 1 produto",
+  INFLUENCER_PF_2: "Influencer · pessoa física (CPF) · 2 produtos + 3 vídeos",
+  INFLUENCER_PJ_1: "Influencer · empresa (CNPJ) · 1 produto",
+  INFLUENCER_PJ_2: "Influencer · empresa (CNPJ) · 2 produtos + 3 vídeos",
+};
+export const isContractTextKind = (k: string): k is ContractTextKind => (CONTRACT_TEXT_KINDS as readonly string[]).includes(k);
+
+/** Texto do contrato para o envio pelo Autentique: Influencer usa o modelo das duas escolhas; os outros tipos, o próprio. */
+export function contractTextKind(category: ContractKind, receivesAsIndividual: boolean, withVideos: boolean): ContractTextKind {
+  if (category !== "INFLUENCER") return category;
+  return `INFLUENCER_${receivesAsIndividual ? "PF" : "PJ"}_${withVideos ? 2 : 1}` as ContractTextKind;
+}
+
 /** Campos que o texto pode usar. */
 export const CONTRACT_FIELDS = {
   CONTRATADA: "qualificação: nome, CPF e endereço (ou empresa, CNPJ e representante)",

@@ -69,7 +69,7 @@ export function IndicacoesView({ links, origin }: { links: Links; origin: string
                           </span>
                         </span>
                         <span className="flex flex-wrap gap-1.5">
-                          {a.status === "NEW" && a.contract && CONTRACT[a.contract] && <span className={CONTRACT[a.contract]![1]}>{CONTRACT[a.contract]![0]}</span>}
+                          {a.status !== "REJECTED" && a.contract && CONTRACT[a.contract] && <span className={CONTRACT[a.contract]![1]}>{CONTRACT[a.contract]![0]}</span>}
                           <span className={style}>{label}</span>
                         </span>
                       </li>

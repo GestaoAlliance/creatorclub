@@ -31,7 +31,7 @@ function cpf(): string {
 }
 
 const values = (email: string, coupon = `C${randomUUID().slice(0, 8)}`): Record<string, string> => ({
-  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon,
+  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon, payoutAs: "Pessoa física (CPF)", welcome: "1 produto",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: "", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
 });
 
@@ -105,7 +105,7 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     const info = { legalName: "MARIA LTDA", mei: false, active: true, address: { zip: "01310100", street: "AV PAULISTA", number: "1000", complement: null, district: "BELA VISTA", city: "SAO PAULO", state: "SP" } };
     const pj = (email: string, regime: string, number = "1000") => {
       const b = base(brand.slug, email, "10.0.0.9");
-      return { ...b, values: { ...b.values, cnpj: "11.222.333/0001-81", taxRegime: regime, addrNumber: number } };
+      return { ...b, values: { ...b.values, payoutAs: "Empresa (CNPJ)", cnpj: "11.222.333/0001-81", taxRegime: regime, addrNumber: number } };
     };
     const { auth } = fakeAuth();
     const other = await submitSignup(prisma, pj(`${randomUUID()}@x.com`, "SIMPLES", "999"), auth, new Date(), async () => info);

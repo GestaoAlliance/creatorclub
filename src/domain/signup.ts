@@ -37,10 +37,17 @@ export type SignupQuestion = {
  * campos, e a conta (com senha) nasce no envio. Os títulos seguem os do Google para a equipe ler a resposta igual
  * (`parseHunterAnswers`); o tipo entra como Influencer e a Ana muda na aprovação; o Pix é pedido no primeiro saque.
  */
+/** D-CONTRACTFLOW: como ela recebe (escolhe o contrato e o saque com recibo ou nota) e o envio inicial. */
+export const PAYOUT_PF = "Pessoa física (CPF)";
+export const PAYOUT_PJ = "Empresa (CNPJ)";
+export const WELCOME_ONE = "1 produto";
+export const WELCOME_TWO = "2 produtos + 3 vídeos para a marca";
+
 export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "fullName", title: "Seu nome completo:", label: "Nome completo", kind: "text", required: true },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
-  { key: "cnpj", title: "CNPJ: ", label: "CNPJ", kind: "text", required: false, hint: "Se você emite nota como empresa ou MEI, informe aqui." },
+  { key: "payoutAs", title: "Vai receber como:", label: "Vai receber como", kind: "choice", options: [PAYOUT_PF, PAYOUT_PJ], required: true, hint: "Pessoa física saca com recibo; empresa (inclusive MEI) saca com nota fiscal." },
+  { key: "cnpj", title: "CNPJ: ", label: "CNPJ", kind: "text", required: false, hint: "O CNPJ da empresa que emite a nota." },
   // D-PJADDR: regime tributário de quem informa CNPJ (MEI pode receber em outro endereço; os outros, no do CNPJ).
   { key: "taxRegime", title: "Regime tributário do CNPJ:", label: "Regime tributário", kind: "text", required: false },
   // M4.2 (D-TAGS): aniversário (opcional), para a equipe comemorar.
@@ -51,16 +58,18 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "tiktok", title: "@ do seu TikTok:", label: "TikTok", kind: "text", required: false },
   // Pedido da Vanessa (2026-10-27): logo abaixo do TikTok; "Sim" ou "Não".
   { key: "tiktokShop", title: "Tem TikTok Shop ativo?", label: "Tem TikTok Shop ativo?", kind: "text", required: false },
+  { key: "welcome", title: "Envio inicial:", label: "Seu primeiro envio", kind: "choice", options: [WELCOME_ONE, WELCOME_TWO], required: true, hint: "Com 2 produtos, você grava 3 vídeos para a marca usar no tráfego e no Instagram (pode ser em collab com a marca)." },
   { key: "coupon", title: "SUGESTÃO DE NOME DE CUPOM:", label: "Seu cupom", kind: "text", required: true, hint: "Use o seu nome ou apelido (ex.: MARIA ou JUJUFIT), sem números de desconto. De 3 a 20 letras." },
   { key: "address", title: "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)", label: "Endereço de entrega", kind: "long", required: true },
 ];
 
 /** Blocos do cadastro, na ordem da página (a senha vem no fim, fora das respostas). */
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: string; keys: readonly string[] }[] = [
-  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "cnpj", "taxRegime", "birthDate"] },
+  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "payoutAs", "cnpj", "taxRegime", "birthDate"] },
   { id: "contato", title: "Contato", keys: ["email", "phone"] },
   { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok", "tiktokShop"] },
   { id: "cupom", title: "Seu cupom", hint: "O código que seus seguidores usam na compra. É por ele que contamos as suas vendas.", keys: ["coupon"] },
+  { id: "envio", title: "Seu primeiro envio", hint: "Os produtos que você recebe para começar a parceria.", keys: ["welcome"] },
   { id: "endereco", title: "Endereço de entrega", hint: "Para onde enviamos os seus produtos.", keys: ["address"] },
 ];
 
@@ -173,6 +182,9 @@ export type SignupAccount = {
   /** M4.3 (D-PROFILEFIELDS): perfil opcional. */
   profile: ProfileFields;
   coupon: string;
+  /** D-CONTRACTFLOW: pessoa física (recibo) ou empresa (nota) e 2 produtos + 3 vídeos (Opção 2) ou 1 produto. */
+  receivesAsIndividual: boolean;
+  welcomeWithVideos: boolean;
   address: { zip: string; street: string; number: string; complement: string | null; district: string; city: string; state: string };
 };
 
@@ -203,6 +215,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
     else if (q.key === "coupon" && !signupCouponValid(v)) errors[q.key] = "Use o seu nome ou apelido, de 3 a 20 letras e números (ex.: MARIA).";
     else if ((q.key === "instagram" || q.key === "tiktok") && !socialHandle(v)) errors[q.key] = "Informe o seu @.";
     else if (q.key === "tiktokShop" && v !== "Sim" && v !== "Não") errors[q.key] = "Responda Sim ou Não.";
+    else if (q.kind === "choice" && q.options && !q.options.includes(v)) errors[q.key] = "Escolha uma das opções.";
     if (q.key === "birthDate") {
       const b = parseBirthDate(v, today);
       if (!b.ok || !b.day) errors[q.key] = "Data de nascimento inválida.";
@@ -220,6 +233,13 @@ export function validateSignup(values: Record<string, string | undefined>, today
     const out = q.key === "coupon" ? signupCouponPreview(v) : q.key === "instagram" || q.key === "tiktok" ? socialHandle(v) : q.kind === "tel" ? validBrPhone(v)! : v;
     clean[q.key] = out;
     answers[q.title] = q.key === "instagram" || q.key === "tiktok" ? `@${out}` : out;
+  }
+  // D-CONTRACTFLOW: empresa precisa do CNPJ; pessoa física não usa CNPJ (o que foi digitado cai).
+  if (clean.payoutAs === PAYOUT_PJ && !clean.cnpj && !errors.cnpj) errors.cnpj = "Informe o CNPJ da empresa.";
+  if (clean.payoutAs === PAYOUT_PF) {
+    delete clean.cnpj;
+    delete answers["CNPJ: "];
+    delete errors.cnpj;
   }
   // D-PJADDR: com CNPJ, o regime é obrigatório; sem CNPJ, não se pergunta.
   if (clean.cnpj && !clean.taxRegime && !errors.cnpj) errors.taxRegime = "Escolha o regime do CNPJ.";
@@ -250,6 +270,8 @@ export function validateSignup(values: Record<string, string | undefined>, today
       birthDate: clean.birthDate || null,
       profile: profile.value,
       coupon: clean.coupon!,
+      receivesAsIndividual: clean.payoutAs !== PAYOUT_PJ,
+      welcomeWithVideos: clean.welcome === WELCOME_TWO,
       address: {
         zip,
         street: part("addrStreet").slice(0, 160),

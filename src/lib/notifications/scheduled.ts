@@ -132,7 +132,8 @@ export async function emailPendingNotices(
       emailedAt: null,
       createdAt: { gte: new Date(now.getTime() - DAY) },
       creator: { account: { email: { not: { endsWith: FAKE_EMAIL_DOMAIN } } } },
-      ...(opts.whatsappOn ? { brand: { whatsappInstance: null } } : {}),
+      // D-CONTRACTFLOW: "parceria ativa" vai também por e-mail.
+      ...(opts.whatsappOn ? { OR: [{ brand: { whatsappInstance: null } }, { kind: "PARTNERSHIP_ACTIVE" }] } : {}),
     },
     orderBy: { createdAt: "asc" },
     take: 20,

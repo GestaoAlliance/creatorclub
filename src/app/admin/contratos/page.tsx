@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, PageHeader } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { CONTRACT_FIELDS, CONTRACT_KIND_LABEL } from "@/domain";
+import { CONTRACT_FIELDS, CONTRACT_TEXT_LABEL } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { contractsOverview } from "@/lib/contracts/sign";
@@ -44,7 +44,7 @@ export default async function ContratosPage() {
         )}
       </Card>
       {o.kinds.map((k) => (
-        <Card key={k.kind} title={`${CONTRACT_KIND_LABEL[k.kind]}${k.current ? ` · versão ${k.current.version}` : ""}`} icon={<ScrollText className="size-4" />}>
+        <Card key={k.kind} title={`${CONTRACT_TEXT_LABEL[k.kind]}${k.current ? ` · versão ${k.current.version}` : ""}`} icon={<ScrollText className="size-4" />}>
           {k.current ? (
             <>
               <p className="font-medium">{k.current.title}</p>

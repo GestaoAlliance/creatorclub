@@ -10,6 +10,8 @@ import { db } from "@/lib/db";
 import { pendingTerms } from "@/lib/terms/terms";
 import { ContractGate } from "@/components/portal/contract-gate";
 import { pendingContract } from "@/lib/contracts/sign";
+import { AwaitingContractGate } from "@/components/portal/awaiting-contract";
+import { awaitingContract } from "@/lib/autentique/applications";
 import { unreadCount } from "@/lib/notifications/notify";
 import { loginBrand } from "@/lib/brands/assets";
 
@@ -49,6 +51,15 @@ export default async function PortalLayout({ children, params }: { children: Rea
   }
   const unread = await unreadCount(db(), ctx);
   const endedAt = ctx.status === "DEACTIVATED" ? (await db().creator.findUnique({ where: { id: ctx.creatorId }, select: { deactivatedAt: true } }))?.deactivatedAt ?? null : null;
+  // D-CONTRACTFLOW: aprovada esperando o contrato do Autentique: nada do portal até a parceria ficar ativa.
+  const wait = ctx.viewAs ? null : await awaitingContract(db(), ctx.creatorId);
+  if (wait) {
+    return (
+      <PortalShell ctx={ctx} unread={unread} endedAt={endedAt}>
+        <AwaitingContractGate brandName={ctx.brand.name} wait={wait} />
+      </PortalShell>
+    );
+  }
   // Contrato pendente (D-SIGNCONTRACT): quem foi aprovada em Candidatas assina antes de tudo, depois vem o termo.
   const contract = ctx.viewAs ? null : await pendingContract(db(), ctx);
   if (contract) {

@@ -1,13 +1,12 @@
 "use client";
 
 import { FileSignature, RefreshCw } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
 import { contractBadge } from "@/domain";
 import { checkContractAction, sendContractAction } from "./actions";
 
-const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
 const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const pct = (bps: number) => (bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
@@ -30,25 +29,15 @@ export type ContractInfo = {
 };
 
 /**
- * Contrato da candidata pelo Autentique (D-AUTENTIQUE2): situação, link de assinatura, conferir agora e
- * enviar/reenviar com cupom, tipo, comissão e desconto (reenviar cancela o contrato ainda não assinado).
+ * Contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW): situação, link de assinatura, conferir agora e
+ * reenviar (cancela o contrato ainda não assinado e manda de novo, com os valores da aprovação).
  */
-export function ContractBox(p: {
-  applicationId: string;
-  contract: ContractInfo | null;
-  error: string | null;
-  canDecide: boolean;
-  coupon: string;
-  category: keyof typeof CATEGORY;
-  ratePct: number;
-  discountPct: number;
-}) {
+export function ContractBox(p: { creatorId: string; contract: ContractInfo | null; error: string | null; awaiting: { signed: boolean } | null; canManage: boolean }) {
   const c = p.contract;
-  const b = contractBadge(c, p.error);
+  const b = p.awaiting?.signed && c?.status === "SIGNED" ? { label: "assinado: ativando a parceria", tone: "amber" as const } : !p.awaiting && c?.status === "SIGNED" ? { label: "parceria ativa", tone: "green" as const } : contractBadge(c, p.error);
   const [check, checkAction, checking] = useActionState(checkContractAction, undefined);
   const [send, sendAction, sending] = useActionState(sendContractAction, undefined);
-  const [editing, setEditing] = useState(false);
-  const canSend = p.canDecide && c?.status !== "SIGNED";
+  const canSend = p.canManage && p.awaiting !== null && !p.awaiting.signed;
   return (
     <section className={`${ui.inset} flex flex-col gap-2 text-sm`}>
       <p className="flex flex-wrap items-center gap-2">
@@ -58,7 +47,7 @@ export function ContractBox(p: {
         {c?.sandbox && <span className={badge.neutral}>modo teste</span>}
       </p>
       {!c && p.error && <p className="text-red-800 dark:text-red-300">Não saiu sozinho: {p.error}</p>}
-      {!c && !p.error && <p className={ui.hint}>Candidatas do site recebem o contrato sozinhas; as dos formulários antigos, pelo botão abaixo.</p>}
+      {!c && !p.error && <p className={ui.hint}>O contrato sai sozinho em até 1 minuto depois da aprovação.</p>}
       {c && (
         <>
           <p className={ui.hint}>
@@ -71,7 +60,7 @@ export function ContractBox(p: {
             {c.rejectedAt && ` · recusado em ${when(c.rejectedAt)}${c.rejectReason ? ` (“${c.rejectReason}”)` : ""}`}
             {c.status === "SENT" && c.lastCheckedAt && ` · conferido em ${when(c.lastCheckedAt)}`}
           </p>
-          {c.lastError && <p className="text-xs text-amber-800 dark:text-amber-300">Último aviso do Autentique: {c.lastError}</p>}
+          {c.lastError && <p className="text-xs text-amber-800 dark:text-amber-300">Último aviso: {c.lastError}</p>}
           {c.status === "SENT" && c.signLink && (
             <p className="text-xs">
               Link de assinatura: <a href={c.signLink} target="_blank" rel="noopener noreferrer" className={ui.link}>{c.signLink}</a>
@@ -79,54 +68,25 @@ export function ContractBox(p: {
           )}
         </>
       )}
-      {p.canDecide && (
+      {p.canManage && p.awaiting && (
         <div className="flex flex-wrap items-center gap-2">
-          {c?.status === "SENT" && (
+          {(c?.status === "SENT" || p.awaiting.signed) && (
             <form action={checkAction}>
-              <input type="hidden" name="applicationId" value={p.applicationId} />
+              <input type="hidden" name="creatorId" value={p.creatorId} />
               <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`} disabled={checking}>
                 <RefreshCw className="size-3.5" /> {checking ? "Conferindo…" : "Conferir agora"}
               </button>
             </form>
           )}
-          {canSend && !editing && (
-            <button type="button" className={ui.btnSm} onClick={() => setEditing(true)}>
-              {c?.status === "SENT" ? "Reenviar contrato" : "Enviar contrato"}
-            </button>
+          {canSend && (
+            <form action={sendAction}>
+              <input type="hidden" name="creatorId" value={p.creatorId} />
+              <button className={ui.btnSm} disabled={sending}>{sending ? "Enviando…" : c?.status === "SENT" ? "Reenviar contrato" : "Enviar contrato"}</button>
+            </form>
           )}
         </div>
       )}
       <Msg state={check} />
-      {canSend && editing && (
-        <form action={sendAction} className="flex flex-col gap-2">
-          <input type="hidden" name="applicationId" value={p.applicationId} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <label className={ui.label}>
-              Cupom
-              <input name="coupon" defaultValue={c?.coupon ?? p.coupon} required maxLength={20} className={`${ui.inputSm} font-mono uppercase`} />
-            </label>
-            <label className={ui.label}>
-              Tipo
-              <select name="category" defaultValue={c?.category ?? p.category} className={ui.inputSm}>
-                {Object.entries(CATEGORY).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </label>
-            <label className={ui.label}>
-              Comissão %
-              <input name="rate" defaultValue={String(c?.rateBps != null ? c.rateBps / 100 : p.ratePct).replace(".", ",")} inputMode="decimal" required className={ui.inputSm} />
-            </label>
-            <label className={ui.label}>
-              Desconto %
-              <input name="discount" defaultValue={String(c?.discountBps != null ? c.discountBps / 100 : p.discountPct).replace(".", ",")} inputMode="decimal" required className={ui.inputSm} />
-            </label>
-          </div>
-          {c?.status === "SENT" && <p className={ui.hint}>O contrato que ela ainda não assinou será cancelado no Autentique e o novo vai para o e-mail e o WhatsApp dela.</p>}
-          <div className="flex flex-wrap gap-2">
-            <button className={ui.btnSm} disabled={sending}>{sending ? "Enviando…" : "Enviar pelo Autentique"}</button>
-            <button type="button" className={ui.ghostSm} onClick={() => setEditing(false)}>Cancelar</button>
-          </div>
-        </form>
-      )}
       <Msg state={send} />
     </section>
   );

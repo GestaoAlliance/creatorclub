@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
-import { checkApplicationNow, ContractSendError, sendApplicationContract } from "@/lib/autentique/applications";
+import { checkCreatorNow, ContractSendError, sendCreatorContract } from "@/lib/autentique/applications";
 
 export type ApproveState =
   | {
@@ -25,6 +25,8 @@ export type ApproveState =
         /** D-D4SIGN: aba Pedidos (passando pelo login) e produto sugerido da marca, para a mensagem de aprovação. */
         ordersUrl?: string;
         suggestion: string | null;
+        /** D-CONTRACTFLOW: aprovada esperando o contrato do Autentique (cupom reservado, sem mensagem agora). */
+        awaitingContract?: boolean;
       };
     }
   | undefined;
@@ -56,7 +58,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
       // M4.4a (D-BRANDLOGIN): o link de entrar abre com a cara da marca.
       return {
         ok: {
-          coupon: r.couponCode, discountBps, creatorId: r.creatorId, link: null, suggestion,
+          coupon: r.couponCode, discountBps, creatorId: r.creatorId, link: null, suggestion, awaitingContract: r.awaitingContract,
           loginUrl: `${origin}/entrar?marca=${brand.slug}`, ordersUrl: `${origin}/entrar?next=/portal/${brand.slug}/envios`,
         },
       };
@@ -79,7 +81,7 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
     }
     return {
       ok: {
-        coupon: r.couponCode, discountBps, creatorId: r.creatorId, link, suggestion,
+        coupon: r.couponCode, discountBps, creatorId: r.creatorId, link, suggestion, awaitingContract: r.awaitingContract,
         ...(inviteError ? { inviteError } : {}), ...(mail ? { mail } : {}), ...(mailError ? { mailError } : {}),
       },
     };
@@ -140,29 +142,28 @@ export async function createApplicationAction(_prev: CreateState, form: FormData
 
 export type ContractState = { error?: string; ok?: string } | undefined;
 
-/** D-AUTENTIQUE2: envia (ou reenvia, cancelando o anterior) o contrato da candidata pelo Autentique. */
+/** D-CONTRACTFLOW: reenvia o contrato da creator aprovada (o anterior, não assinado, é cancelado no Autentique). */
 export async function sendContractAction(_prev: ContractState, form: FormData): Promise<ContractState> {
   try {
-    const r = await sendApplicationContract(db(), await currentActor(), String(form.get("applicationId") ?? ""), {
-      couponCode: String(form.get("coupon") ?? ""),
-      category: String(form.get("category") ?? "") as Category,
-      rateBps: percentToBps(String(form.get("rate") ?? "")),
-      discountBps: percentToBps(String(form.get("discount") ?? "")),
-    });
+    const r = await sendCreatorContract(db(), await currentActor(), String(form.get("creatorId") ?? ""));
     revalidatePath("/admin/candidatas");
     return { ok: `Contrato enviado para ${r?.email}${r?.sandbox ? " (modo teste)" : ""}.${r?.signLink ? " O link vai também pelo WhatsApp da marca." : ""}` };
   } catch (error) {
-    if (error instanceof ContractSendError || error instanceof ReviewError) return { error: error.message };
+    if (error instanceof ContractSendError) return { error: error.message };
     throw error;
   }
 }
 
-/** D-AUTENTIQUE2: "Conferir agora" (o sistema confere sozinho a cada 5 minutos). */
+/** D-CONTRACTFLOW: "Conferir agora" (o sistema confere sozinho a cada 5 minutos). */
 export async function checkContractAction(_prev: ContractState, form: FormData): Promise<ContractState> {
   try {
-    const r = await checkApplicationNow(db(), await currentActor(), String(form.get("applicationId") ?? ""));
+    const r = await checkCreatorNow(db(), await currentActor(), String(form.get("creatorId") ?? ""));
     revalidatePath("/admin/candidatas");
-    return r.signed ? { ok: "Contrato assinado." } : r.rejected ? { ok: "Ela recusou o contrato no Autentique." } : r.errors ? { error: "Não deu para conferir agora; o sistema tenta de novo em 5 minutos." } : { ok: "Ainda não assinado." };
+    if (r.activated) return { ok: "Contrato assinado: cupom criado, plataforma liberada e mensagem enviada." };
+    if (r.signed) return { ok: "Contrato assinado. Ativando a parceria (cupom na Shopify)…" };
+    if (r.rejected) return { ok: "Ela recusou o contrato no Autentique." };
+    if (r.errors) return { error: "Não deu para concluir agora; o sistema tenta de novo em 5 minutos." };
+    return { ok: "Ainda não assinado." };
   } catch (error) {
     if (error instanceof ContractSendError) return { error: error.message };
     throw error;

@@ -322,6 +322,11 @@ model Creator {
   brandId                 String
   accountId               String
   categories              CreatorCategory[]
+  /// D-CONTRACTFLOW: aprovada esperando o contrato do Autentique (portal travado; cupom e kit só depois da assinatura).
+  awaitingContractAt      DateTime?
+  /// D-CONTRACTFLOW: cupom escolhido na aprovação, reservado até a assinatura (criado na Shopify depois).
+  pendingCouponCode       String?
+  pendingDiscountBps      Int?
   status                  CreatorStatus     @default(ACTIVE)
   activatedAt             DateTime?
   deactivatedAt           DateTime?
@@ -1015,6 +1020,9 @@ model CreatorApplication {
   creatorId        String?
   /// D-AUTENTIQUE2: por que o contrato automático não saiu (ex.: cupom já existe); limpo quando sai.
   contractError    String?
+  /// D-CONTRACTFLOW: escolhas do cadastro do site ("Vai receber como:" e "Envio inicial:").
+  payoutAnswer     String?
+  welcomeAnswer    String?
   prospects        Prospect[]
   contractRequests ContractRequest[]
   createdAt        DateTime          @default(now())

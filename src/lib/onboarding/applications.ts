@@ -9,7 +9,7 @@ import { CouponCreateError, createDiscountInShopify, validCouponDiscount } from 
 import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { notify } from "@/lib/notifications/notify";
 import { hunterLinkIdFor } from "./hunters";
-import { cancelApplicationContracts } from "@/lib/autentique/applications";
+import { cancelApplicationContracts, enqueueCreatorContract } from "@/lib/autentique/applications";
 import { hasAutentique } from "@/lib/autentique/credentials";
 import type { Fetcher } from "@/lib/autentique/client";
 
@@ -43,6 +43,9 @@ export type HunterFields = {
   brandsWanted: string | null;
   collabInterest: string | null;
   hunterCode: string | null;
+  /** D-CONTRACTFLOW: "Vai receber como:" e "Envio inicial:" do cadastro do site. */
+  payoutAnswer: string | null;
+  welcomeAnswer: string | null;
 };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -69,6 +72,9 @@ const QUESTIONS: [keyof HunterFields, string][] = [
   ["collabInterest", "estamos selecionando alguns parceiros"],
   // D-HUNTERLINK: vem pré-preenchida pelo link do hunter
   ["hunterCode", "codigo de quem te convidou"],
+  // D-CONTRACTFLOW
+  ["payoutAnswer", "vai receber como"],
+  ["welcomeAnswer", "envio inicial"],
 ];
 
 /** Campo a que a pergunta corresponde (ou `null` se é uma pergunta sem campo próprio, que fica só na resposta original). */
@@ -117,6 +123,8 @@ export function parseHunterAnswers(answers: Record<string, unknown>): HunterFiel
     storiesViews: out.storiesViews ?? null,
     brandsWanted: out.brandsWanted ?? null,
     collabInterest: out.collabInterest ?? null,
+    payoutAnswer: out.payoutAnswer ?? null,
+    welcomeAnswer: out.welcomeAnswer ?? null,
     hunterCode: out.hunterCode ?? null,
   };
 }
@@ -264,6 +272,9 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         hunterCode: r.hunterLink ? null : r.hunterCode?.trim() || null,
         campaignTag: r.campaignTag,
         heardFrom: r.heardFrom,
+        // D-CONTRACTFLOW: o que ela escolheu no cadastro (pré-preenche a aprovação).
+        payoutAnswer: r.payoutAnswer,
+        welcomeAnswer: r.welcomeAnswer,
         followersCount: parseFollowers(r.followers),
         duplicates: findDuplicates(r, pool(r.brandId)).filter((d) => !(d.kind === "creator" && d.id === r.creatorId)),
       };
@@ -300,14 +311,19 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     }),
   ]);
   const withAutentique = new Set(autentique.map((b) => b.brandId));
+  // D-CONTRACTFLOW: aprovada esperando o contrato (portal travado até assinar e ativar).
+  const awaiting = new Map(
+    (await prisma.creator.findMany({ where: { id: { in: mapped.flatMap((m) => (m.creatorId ? [m.creatorId] : [])) }, awaitingContractAt: { not: null } }, select: { id: true, contractSigned: true } })).map((c) => [c.id, c]),
+  );
   const lastRequest = new Map<string, (typeof requests)[number]>();
   for (const r of requests) if (r.applicationId && !lastRequest.has(r.applicationId)) lastRequest.set(r.applicationId, r);
   const contractError = new Map(rows.map((x) => [x.id, x.contractError]));
-  const withContract = <T extends { id: string; brandId: string }>(m: T) => {
+  const withContract = <T extends { id: string; brandId: string; creatorId: string | null }>(m: T) => {
     const r = lastRequest.get(m.id);
     return {
       ...m,
       autentique: withAutentique.has(m.brandId),
+      awaitingContract: m.creatorId ? (awaiting.get(m.creatorId) ? { signed: awaiting.get(m.creatorId)!.contractSigned === true } : null) : null,
       contractError: contractError.get(m.id) ?? null,
       contract: r
         ? {
@@ -344,31 +360,15 @@ export async function approveApplication(
   },
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
-): Promise<{ creatorId: string; accountId: string; couponCode: string }> {
+): Promise<{ creatorId: string; accountId: string; couponCode: string; awaitingContract: boolean }> {
   const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true } } } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
   const { brand } = app;
-  // D-AUTENTIQUE2: na marca com Autentique, só aprova com o contrato assinado, e com os valores escritos nele.
-  const signed = (await hasAutentique(prisma, app.brandId))
-    ? await prisma.contractRequest.findFirst({
-        where: { applicationId: app.id, status: "SIGNED" },
-        orderBy: { signedAt: "desc" },
-        select: { id: true, pendingCouponCode: true, pendingDiscountBps: true, rateBps: true, contractTemplateId: true, signedAt: true, contractTemplate: { select: { documentKind: true } } },
-      })
-    : undefined;
-  if (signed === null) throw new ApplicationError("Ela ainda não assinou o contrato no Autentique: a aprovação libera depois da assinatura.");
-  if (signed) {
-    input = {
-      ...input,
-      couponCode: signed.pendingCouponCode ?? input.couponCode,
-      discountBps: signed.pendingDiscountBps ?? input.discountBps,
-      rateBps: signed.rateBps ?? input.rateBps,
-      category: signed.contractTemplate.documentKind as Category,
-      contractTemplateId: signed.contractTemplateId,
-    };
-  }
+  // D-CONTRACTFLOW: na marca com Autentique, aprovar não cria o cupom nem o kit: a creator espera o contrato, que sai
+  // sozinho; o cupom fica reservado e é criado na Shopify depois da assinatura.
+  const autentique = await hasAutentique(prisma, app.brandId);
   const coupon = validateNewCouponCode(input.couponCode);
   if (!coupon.ok) throw new ApplicationError("Cupom inválido: letras e números, até 20.");
   if (!["INFLUENCER", "PRESCRITOR", "UGC"].includes(input.category)) throw new ApplicationError("Tipo inválido.");
@@ -388,32 +388,37 @@ export async function approveApplication(
   const cnpjDigits = app.cnpj?.replace(/\D/g, "") ?? "";
 
   // D-D4SIGN: versão do contrato que ela assinou no D4Sign (da mesma marca): dá a duração e as faixas do kit.
+  // D-CONTRACTFLOW: com Autentique, sem escolha, a versão mais nova do tipo.
   const template = input.contractTemplateId
     ? await prisma.contractTemplate.findFirst({ where: { id: input.contractTemplateId, brandId: app.brandId }, select: { id: true, months: true } })
-    : null;
+    : autentique
+      ? ((await prisma.contractTemplate.findMany({ where: { brandId: app.brandId, documentKind: input.category }, select: { id: true, months: true, key: true } })).sort((a, b) => b.key.localeCompare(a.key))[0] ?? null)
+      : null;
   if (input.contractTemplateId && !template) throw new ApplicationError("Versão de contrato inválida.");
   if (!template && (await prisma.contractTemplate.count({ where: { brandId: app.brandId } })) > 0) throw new ApplicationError("Escolha a versão do contrato que ela assinou.");
-  // Com o Autentique, o contrato vale da assinatura; no D4Sign, da aprovação.
-  const start = dayKey(signed?.signedAt ?? now);
+  if (autentique && !template) throw new ApplicationError("Não há versão de contrato deste tipo nesta marca (Contratos).");
+  const start = dayKey(now);
 
   // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.
   if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
     throw new ApplicationError(`O cupom ${coupon.code} já existe nesta marca. Escolha outro.`);
+  if (await prisma.creator.findFirst({ where: { brandId: app.brandId, pendingCouponCode: coupon.code }, select: { id: true } }))
+    throw new ApplicationError(`O cupom ${coupon.code} já está reservado para outra creator esperando o contrato. Escolha outro.`);
   const known = await prisma.creatorAccount.findUnique({ where: { email }, select: { creators: { select: { brandId: true } } } });
   if (known?.creators.some((c) => c.brandId === app.brandId)) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
   // Isolamento entre marcas (D-BRANDISOLATION): juntar ao cadastro de quem já é creator de uma marca fora do acesso de
   // quem aprova mostraria a essa pessoa os dados que a creator deu lá (CPF, Pix, endereço). Só quem tem as duas marcas.
   if (known?.creators.some((c) => !can(actor.grants, "creators.edit", c.brandId)))
     throw new ApplicationError("Este e-mail já é de uma creator de outra marca que você não acessa. Peça a um super admin para aprovar esta candidata.");
-  let shopifyId: string;
+  let shopifyId: string | null = null;
   try {
-    shopifyId = await createDiscountInShopify(prisma, app.brandId, coupon.code, input.discountBps, clientFor, now);
+    if (!autentique) shopifyId = await createDiscountInShopify(prisma, app.brandId, coupon.code, input.discountBps, clientFor, now);
   } catch (error) {
     if (error instanceof CouponCreateError) throw new ApplicationError(`Cupom não criado na Shopify: ${error.message} Nada foi gravado.`);
     throw error;
   }
 
-  let created: { creatorId: string; accountId: string; couponCode: string };
+  let created: { creatorId: string; accountId: string; couponCode: string; awaitingContract: boolean };
   try {
     created = await prisma.$transaction(async (tx) => {
       const taken = await tx.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } });
@@ -461,27 +466,37 @@ export async function approveApplication(
           // D-D4SIGN: aprovar já é o contrato assinado (no D4Sign, antes do cadastro); vale da aprovação pelos meses da
           // versão. Sem contrato no portal.
           contractTemplateId: template?.id ?? null,
-          contractSigned: true,
-          contractStart: new Date(`${start}T00:00:00Z`),
-          contractEnd: template ? new Date(`${addMonthsToDay(start, template.months)}T00:00:00Z`) : null,
           contractRequiredAt: null,
+          // D-CONTRACTFLOW: com Autentique, o contrato vale da assinatura; até lá o portal fica travado e o cupom reservado.
+          ...(autentique
+            ? { contractSigned: false, contractStart: null, contractEnd: null, awaitingContractAt: now, pendingCouponCode: coupon.code, pendingDiscountBps: input.discountBps }
+            : {
+                contractSigned: true,
+                contractStart: new Date(`${start}T00:00:00Z`),
+                contractEnd: template ? new Date(`${addMonthsToDay(start, template.months)}T00:00:00Z`) : null,
+              }),
           // Pedido da Vanessa (2026-10-27): creator CPF saca com recibo; creator CNPJ, com nota fiscal.
           receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14,
-          // D-GOALKIT: as janelas da meta de vendas (45 dias, depois 30) começam na aprovação.
-          goalStartAt: new Date(`${start}T00:00:00Z`),
+          // D-GOALKIT: as janelas da meta de vendas (45 dias, depois 30) começam na aprovação (com Autentique, na assinatura).
+          goalStartAt: autentique ? null : new Date(`${start}T00:00:00Z`),
           welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0,
         },
       });
-      const c = await tx.coupon.create({
-        data: { brandId: app.brandId, code: coupon.code, kind: "CREATOR", classifiedAt: now, classifiedById: actor.userId, discountBps: input.discountBps, shopifyId },
-      });
-      await tx.couponAssignment.create({
-        data: { brandId: app.brandId, couponId: c.id, creatorId: creator.id, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
-      });
-      // D-D4SIGN: 1 produto de boas-vindas em todas as marcas, para ela escolher na aba Pedidos; D-WELCOMEVIDEO: 2 na Opção 2.
-      const month = start.slice(0, 7);
-      await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: welcomeProducts } });
-      await notify(tx, [{ brandId: app.brandId, creatorId: creator.id, notice: notices.kitAvailable("WELCOME", month, welcomeProducts, brand.slug) }]);
+      if (autentique) {
+        // D-CONTRACTFLOW: o contrato sai sozinho (tarefa gravada junto com a creator).
+        await enqueueCreatorContract(tx, app.brandId, creator.id, now);
+      } else {
+        const c = await tx.coupon.create({
+          data: { brandId: app.brandId, code: coupon.code, kind: "CREATOR", classifiedAt: now, classifiedById: actor.userId, discountBps: input.discountBps, shopifyId },
+        });
+        await tx.couponAssignment.create({
+          data: { brandId: app.brandId, couponId: c.id, creatorId: creator.id, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
+        });
+        // D-D4SIGN: 1 produto de boas-vindas em todas as marcas, para ela escolher na aba Pedidos; D-WELCOMEVIDEO: 2 na Opção 2.
+        const month = start.slice(0, 7);
+        await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: welcomeProducts } });
+        await notify(tx, [{ brandId: app.brandId, creatorId: creator.id, notice: notices.kitAvailable("WELCOME", month, welcomeProducts, brand.slug) }]);
+      }
       await tx.commissionPolicy.create({
         data: { brandId: app.brandId, creatorId: creator.id, rateBps: input.rateBps, validFrom: now, createdById: actor.userId, confirmedAt: now, confirmedById: actor.userId },
       });
@@ -490,7 +505,6 @@ export async function approveApplication(
         data: { status: "APPROVED", decidedAt: now, decidedById: actor.userId, creatorId: creator.id },
       });
       if (count === 0) throw new ApplicationError("Esta candidata já foi decidida.");
-      if (signed) await tx.contractRequest.update({ where: { id: signed.id }, data: { creatorId: creator.id } });
       await tx.auditLog.create({
         data: {
           brandId: app.brandId,
@@ -499,10 +513,10 @@ export async function approveApplication(
           action: "application.approved",
           entity: "CreatorApplication",
           entityId: app.id,
-          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, contractRequestId: signed?.id ?? null, contractStart: start, welcomeProducts, welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
+          after: { creatorId: creator.id, coupon: coupon.code, shopifyId, receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14, contractTemplateId: template?.id ?? null, awaitingContract: autentique, contractStart: autentique ? null : start, welcomeProducts, welcomeVideos: input.welcomeWithVideos ? WELCOME_VIDEOS : 0, category: input.category, rateBps: input.rateBps, discountBps: input.discountBps },
         },
       });
-      return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code };
+      return { creatorId: creator.id, accountId: account.id, couponCode: coupon.code, awaitingContract: autentique };
     });
   } catch (error) {
     // Raro (outra pessoa decidiu ao mesmo tempo): o desconto já existe na loja e precisa ser apagado lá.

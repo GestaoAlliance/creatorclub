@@ -119,7 +119,7 @@ export default async function SyncPage() {
               return (
                 <>
                   <p className="text-sm">
-                    {on ? <>Conectado à conta <strong>{a?.externalId}</strong>{a?.scopes === "sandbox" ? " · modo teste" : ""}.</> : "Não conectado: nesta marca o contrato segue pelo D4Sign. Conectado, o cadastro do site gera o contrato sozinho e a aprovação espera a assinatura."}
+                    {on ? <>Conectado à conta <strong>{a?.externalId}</strong>{a?.scopes === "sandbox" ? " · modo teste" : ""}.</> : "Não conectado: nesta marca o contrato segue pelo D4Sign. Conectado, aprovar em Candidatas manda o contrato sozinho e o cupom e a plataforma liberam na assinatura."}
                   </p>
                   <AutentiqueForm brandId={h.brand.id} connected={on} sandbox={a?.scopes === "sandbox"} />
                 </>

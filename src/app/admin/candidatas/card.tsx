@@ -3,6 +3,7 @@ import Link from "next/link";
 import { InstagramLink, LinkifiedText, WhatsappLink } from "@/components/ui/contact-links";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
+import { PAYOUT_PF, PAYOUT_PJ, WELCOME_ONE, WELCOME_TWO } from "@/domain";
 import { ContractBox } from "./contract";
 import { DecisionForms, type TemplateOption } from "./forms";
 
@@ -77,26 +78,27 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
           </dl>
         </details>
       )}
-      {/* D-AUTENTIQUE2: contrato pelo Autentique antes da aprovação (Botanika e VermeFree). */}
-      {a.autentique && (status === "NEW" || a.contract) && (
-        <ContractBox
-          applicationId={a.id}
-          contract={a.contract}
-          error={a.contractError}
-          canDecide={status === "NEW" && a.canDecide}
-          coupon={a.couponProposal}
-          category={a.categoryProposal}
-          ratePct={a.defaultRateBps / 100}
-          discountPct={a.defaultDiscountBps / 100}
-        />
+      {/* D-CONTRACTFLOW: depois da aprovação, o contrato pelo Autentique (situação, link, conferir e reenviar). */}
+      {a.creatorId && (a.awaitingContract || a.contract) && (
+        <ContractBox creatorId={a.creatorId} contract={a.contract} error={a.contractError} awaiting={a.awaitingContract} canManage={a.canDecide} />
+      )}
+      {(a.payoutAnswer || a.welcomeAnswer) && (
+        <p className={ui.hint}>
+          {a.payoutAnswer && <>Vai receber como: <span className="font-medium">{a.payoutAnswer}</span></>}
+          {a.payoutAnswer && a.welcomeAnswer && " · "}
+          {a.welcomeAnswer && <>Envio inicial: <span className="font-medium">{a.welcomeAnswer}</span></>}
+        </p>
       )}
       {status === "NEW" && a.canDecide && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
           <DecisionForms
             hasLogin={a.hasLogin} applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal}
             templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} hasCnpj={Boolean(a.cnpj)}
-            autentique={a.autentique}
-            signed={a.contract?.status === "SIGNED" && a.contract.coupon ? { coupon: a.contract.coupon, category: a.contract.category, ratePct: (a.contract.rateBps ?? a.defaultRateBps) / 100, discountPct: (a.contract.discountBps ?? a.defaultDiscountBps) / 100, templateName: a.contract.templateName } : null}
+            choices={{
+              autentique: a.autentique,
+              payout: a.payoutAnswer === PAYOUT_PJ ? "cnpj" : a.payoutAnswer === PAYOUT_PF ? "cpf" : null,
+              welcome: a.welcomeAnswer === WELCOME_TWO ? "videos" : a.welcomeAnswer === WELCOME_ONE ? "one" : null,
+            }}
           />
         </div>
       )}
