@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/current";
 import { ContractSignError, signContract } from "@/lib/contracts/sign";
@@ -33,5 +34,7 @@ export async function signContractAction(_prev: ContractState, form: FormData): 
     if (error instanceof ContractSignError) return { error: error.message };
     throw error;
   }
+  // A trava fica na moldura (layout) do portal: sem isso ela continua aparecendo depois do aceite até recarregar a página.
+  revalidatePath(`/portal/${marca}`, "layout");
   redirect(`/portal/${marca}`);
 }
