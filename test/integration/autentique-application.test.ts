@@ -8,14 +8,17 @@ import {
   CONTRACT_LINK_JOB,
   CONTRACT_SEND_JOB,
   enqueueDueContractChecks,
+  remindUnsignedContracts,
   runCreatorContractJob,
   sendContractLink,
   sendCreatorContract,
+  undoApproval,
 } from "@/lib/autentique/applications";
 import type { Fetcher } from "@/lib/autentique/client";
 import { connectAutentique } from "@/lib/autentique/credentials";
 import { publishContract } from "@/lib/contracts/sign";
 import type { WhatsAppMessage } from "@/lib/notifications/whatsapp";
+import { actionQueue } from "@/lib/actions/queue";
 import { approveApplication, listApplications, receiveApplication } from "@/lib/onboarding/applications";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
@@ -232,5 +235,62 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     // Com contrato enviado, não entra mais na nova tentativa.
     await enqueueDueContractChecks(prisma, new Date(now.getTime() + 3_600_000));
     expect(await prisma.job.count({ where: { type: CONTRACT_SEND_JOB, dedupeKey: `contract-creator:${r.creatorId}:${hour + 1}` } })).toBe(0);
+  });
+
+  it("D-UNDOAPPROVAL: desfazer de quem não assinou cancela o contrato, libera o cupom, desliga e volta para Recusadas", async () => {
+    const s = await setup();
+    const app = await apply(s.brand.slug);
+    const code = letters(6);
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
+    const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, { fetcher: s.aut.fetcher, encKey });
+    const hunter = await s.mk("HUNTER");
+    await expect(undoApproval(prisma, hunter, r.creatorId, "não assinou", { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/Sem permissão/);
+    await expect(undoApproval(prisma, s.gestao, r.creatorId, "  ", { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/motivo/);
+
+    expect(await undoApproval(prisma, s.gestao, r.creatorId, "não assinou em 10 dias", { fetcher: s.aut.fetcher, encKey })).toMatchObject({ cancelled: 1 });
+    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ status: "CANCELLED" });
+    expect(s.aut.state.deleted).toHaveLength(1);
+    expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId } })).toMatchObject({ status: "DEACTIVATED", awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null });
+    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).toMatchObject({ status: "REJECTED", creatorId: null, decisionNote: "não assinou em 10 dias" });
+    // O cupom reservado fica livre para outra aprovação.
+    const other = await apply(s.brand.slug);
+    await expect(approveApplication(prisma, s.gestao, { applicationId: other.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop)).resolves.toMatchObject({ awaitingContract: true });
+    await expect(undoApproval(prisma, s.gestao, r.creatorId, "de novo", { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/ainda não assinou/);
+  });
+
+  it("D-CONTRACTREMIND: lembrete no WhatsApp no dia 3 e no dia 7 (uma vez cada, no horário); no dia 7 entra em Ações", async () => {
+    const s = await setup();
+    const app = await apply(s.brand.slug);
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
+    const sentAt = new Date("2026-11-02T15:00:00Z");
+    const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, { fetcher: s.aut.fetcher, encKey, now: sentAt });
+    await prisma.contractRequest.update({ where: { id: sent!.requestId }, data: { sentAt } });
+    const msgs: WhatsAppMessage[] = [];
+    // Outros testes deixam contratos no mesmo banco: conta só os deste.
+    const sender = async (m: WhatsAppMessage) => void (m.notificationId.startsWith(sent!.requestId) && msgs.push(m));
+    const mine = async (iso: string) => {
+      const before = msgs.length;
+      await remindUnsignedContracts(prisma, sender, at(iso));
+      return msgs.length - before;
+    };
+    const at = (iso: string) => new Date(iso);
+
+    expect(await mine("2026-11-04T15:00:00Z")).toBe(0); // dia 2
+    expect(await mine("2026-11-05T23:30:00Z")).toBe(0); // 20h30: fora do horário
+    expect(await mine("2026-11-06T13:00:00Z")).toBe(1); // dia 3+
+    expect(await mine("2026-11-06T14:00:00Z")).toBe(0);
+    expect(msgs[0]).toMatchObject({ kind: "CONTRACT_REMINDER", notificationId: `${sent!.requestId}:3`, phone: "5511988887777" });
+    expect(msgs[0]!.text).toContain("https://assina.ae/");
+    expect((await actionQueue(prisma, s.brand.id, at("2026-11-06T14:00:00Z"))).some((t) => t.kind === "UNSIGNED")).toBe(false);
+
+    expect(await mine("2026-11-09T16:00:00Z")).toBe(1); // dia 7
+    expect(await mine("2026-11-10T16:00:00Z")).toBe(0);
+    expect(msgs.map((m) => m.notificationId)).toEqual([`${sent!.requestId}:3`, `${sent!.requestId}:7`]);
+    const tasks = await actionQueue(prisma, s.brand.id, at("2026-11-09T17:00:00Z"));
+    expect(tasks.find((t) => t.kind === "UNSIGNED")).toMatchObject({ creatorId: r.creatorId, owner: "GESTAO", detail: expect.stringMatching(/há 7 dias/) });
+
+    // Assinou: sai de Ações.
+    await prisma.creator.update({ where: { id: r.creatorId }, data: { contractSigned: true } });
+    expect((await actionQueue(prisma, s.brand.id, at("2026-11-09T17:00:00Z"))).some((t) => t.kind === "UNSIGNED")).toBe(false);
   });
 });

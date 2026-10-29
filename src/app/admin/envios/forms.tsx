@@ -1,9 +1,10 @@
 "use client";
 
 import { CARRIERS } from "@/domain";
-import { useActionState } from "react";
-import { approveAction, cancelAction, createShipmentAction, deliveredAction, rejectAction, shippedAction } from "./actions";
+import { useActionState, useState } from "react";
+import { approveAction, cancelAction, createShipmentAction, firstKitNoticeAction, deliveredAction, rejectAction, shippedAction } from "./actions";
 
+import { AddressFields } from "@/components/ui/address-fields";
 import { Msg } from "@/components/ui/msg";
 import { Picker } from "@/components/ui/picker";
 import { ui } from "@/components/ui/styles";
@@ -15,6 +16,8 @@ export function NewShipmentForm(props: {
   products: { id: string; title: string }[];
 }) {
   const [state, action, pending] = useActionState(createShipmentAction, undefined);
+  const [creatorId, setCreatorId] = useState("");
+  const noAddress = props.creators.find((c) => c.id === creatorId)?.hasAddress === false;
   return (
     <form action={action} className={ui.card}>
       <h2 className={ui.h2}>Novo envio</h2>
@@ -24,9 +27,17 @@ export function NewShipmentForm(props: {
           name="creatorId"
           required
           placeholder="Escolher a creator…"
-          options={props.creators.map((c) => ({ id: c.id, name: c.name, detail: c.detail, tag: c.hasAddress ? null : "sem endereço", disabled: !c.hasAddress }))}
+          onChange={setCreatorId}
+          options={props.creators.map((c) => ({ id: c.id, name: c.name, detail: c.detail, tag: c.hasAddress ? null : "sem endereço" }))}
         />
       </div>
+      {noAddress && (
+        <fieldset className={`${ui.inset} flex flex-col gap-2`}>
+          <legend className="text-xs font-medium text-stone-500">Endereço de entrega</legend>
+          <p className={ui.hint}>Ela ainda não tem endereço no portal. O endereço digitado vai neste envio e fica salvo na conta dela.</p>
+          <AddressFields key={creatorId} inputClass={ui.input} />
+        </fieldset>
+      )}
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-2 text-xs font-medium text-stone-500">Produtos (quantidade)</legend>
         {props.products.length === 0 && <p className={ui.hint}>Nenhum produto carregado da loja ainda.</p>}
@@ -114,5 +125,25 @@ export function ApprovalForms({ shipmentId }: { shipmentId: string }) {
       </form>
       <Msg state={noState} />
     </div>
+  );
+}
+
+/** D-FIRSTKITNOTICE (só super admin): mostra quantas e o texto; dispara só no clique, espaçado no WhatsApp. */
+export function FirstKitNotice(p: { count: number; names: string[]; text: string; hasWhatsApp: boolean }) {
+  const [state, action, pending] = useActionState(firstKitNoticeAction, undefined);
+  return (
+    <details className={ui.card}>
+      <summary className="cursor-pointer text-sm font-medium">Avisar creators com 1º pedido liberado ({p.count})</summary>
+      <div className="mt-3 flex flex-col gap-3 text-sm">
+        <p className={ui.hint}>Vai pelo WhatsApp da marca, uma mensagem a cada 45 segundos (das 9h às 20h), só para quem ainda não pediu o produto.</p>
+        <pre className={`${ui.inset} whitespace-pre-wrap font-sans text-sm`}>{p.text}</pre>
+        <p className={ui.hint}>Para: {p.names.join(", ")}</p>
+        {!p.hasWhatsApp && <p className="text-amber-800 dark:text-amber-300">Esta marca ainda não tem WhatsApp ligado.</p>}
+        <form action={action} onSubmit={(e) => { if (!confirm(`Mandar o aviso para ${p.count} creators?`)) e.preventDefault(); }} className="flex items-center gap-3">
+          <button className={ui.btnSm} disabled={pending || !p.hasWhatsApp}>{pending ? "Colocando na fila…" : `Mandar para ${p.count}`}</button>
+          <Msg state={state} />
+        </form>
+      </div>
+    </details>
   );
 }

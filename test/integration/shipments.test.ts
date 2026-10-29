@@ -93,6 +93,20 @@ describe("envios de produtos (banco real)", () => {
     expect(await prisma.auditLog.count({ where: { action: "creator.address", entityId: s.account.id } })).toBe(2);
   });
 
+  it("D-SHIPANYONE: creator sem endereço recebe envio com o endereço digitado, que fica salvo na conta", async () => {
+    const s = await setup();
+    const items = [{ productId: s.whey.id, quantity: 1 }];
+    await expect(createShipment(prisma, s.envio, { creatorId: s.creator.id, items, address: { ...ADDRESS, zip: "123" } })).rejects.toThrow(/CEP/);
+    const id = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items, address: ADDRESS });
+    const shipment = await prisma.shipment.findUniqueOrThrow({ where: { id } });
+    expect(shipment.address).toMatchObject({ zip: "01310100", state: "SP" });
+    expect(await myAddress(prisma, s.ctx)).toMatchObject({ zip: "01310100", state: "SP" });
+    expect((await shipmentFormData(prisma, s.envio)).creators.find((c) => c.id === s.creator.id)?.hasAddress).toBe(true);
+    // Com endereço salvo, o do portal vale e o digitado é ignorado.
+    const again = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items, address: { ...ADDRESS, number: "9" } });
+    expect((await prisma.shipment.findUniqueOrThrow({ where: { id: again } })).address).toMatchObject({ number: ADDRESS.number });
+  });
+
   it("equipe marca entregue ou cancela; entregue não cancela", async () => {
     const s = await setup();
     await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);

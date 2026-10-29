@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { FirstKitNoticeError, startFirstKitNotices } from "@/lib/shipments/first-kit-notice";
+import { staffContext } from "@/lib/staff/context";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { approveShipment, rejectShipment } from "@/lib/shipments/kits";
+import type { AddressInput } from "@/lib/shipments/address";
 import { cancelShipment, createShipment, markDeliveredByStaff, markShipped, ShipmentError } from "@/lib/shipments/shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -25,7 +28,16 @@ export async function createShipmentAction(_prev: ActionState, form: FormData): 
     .map(([k, v]) => ({ productId: k.slice(4), quantity: Number(String(v) || "0") }))
     .filter((i) => i.quantity !== 0);
   return run(
-    async () => createShipment(db(), await currentActor(), { creatorId: String(form.get("creatorId") ?? ""), items, note: String(form.get("note") ?? "") }),
+    async () =>
+      createShipment(db(), await currentActor(), {
+        creatorId: String(form.get("creatorId") ?? ""),
+        items,
+        note: String(form.get("note") ?? ""),
+        // D-SHIPANYONE: só vem quando a creator não tem endereço (campos abertos no formulário).
+        address: form.has("zip")
+          ? (Object.fromEntries(["zip", "street", "number", "complement", "district", "city", "state"].map((k) => [k, String(form.get(k) ?? "")])) as AddressInput)
+          : undefined,
+      }),
     "Envio registrado.",
   );
 }
@@ -59,4 +71,19 @@ export async function approveAction(_prev: ActionState, form: FormData): Promise
 /** D-KITAPPROVAL: a Gestão recusa com motivo (o kit volta para ela escolher de novo). */
 export async function rejectAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => rejectShipment(db(), await currentActor(), String(form.get("shipmentId")), String(form.get("reason") ?? "")), "Pedido recusado.");
+}
+
+/** D-FIRSTKITNOTICE: o super admin dispara o aviso do 1º produto da marca escolhida no topo. */
+export async function firstKitNoticeAction(_prev: ActionState): Promise<ActionState> {
+  const actor = await currentActor();
+  try {
+    const brandId = actor ? (await staffContext(actor)).brand?.id : undefined;
+    if (!brandId) return { error: "Escolha a marca no topo." };
+    const r = await startFirstKitNotices(db(), actor, brandId);
+    revalidatePath("/admin/envios");
+    return { ok: `${r.queued} avisos na fila do WhatsApp.` };
+  } catch (error) {
+    if (error instanceof FirstKitNoticeError) return { error: error.message };
+    throw error;
+  }
 }

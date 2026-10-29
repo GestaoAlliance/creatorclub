@@ -315,6 +315,22 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-242 — 2026-10-29 — Novo envio para qualquer creator, desfazer aprovação, lembretes do contrato e aviso do 1º produto
+- **Feito:** (1) **D-SHIPANYONE**: em Envios → Novo envio, qualquer creator ativa pode ser escolhida (Gestão, Envio e
+  super admin); sem endereço no portal, abrem os campos (CEP preenche o resto) e o endereço vai no envio e fica salvo
+  na conta dela. (2) **D-UNDOAPPROVAL**: em Candidatas → Aprovadas, "Desfazer aprovação (não assinou)" com motivo:
+  contrato cancelado no Autentique, cupom reservado liberado, creator Desligada (nada apagado), candidatura em
+  Recusadas, e o botão do WhatsApp com a mensagem de recusa. (3) **D-CONTRACTREMIND**: contrato sem assinar ganha
+  lembrete no WhatsApp da marca no dia 3 e no dia 7 (com o link, das 9h às 20h, uma vez cada; colunas
+  `ContractRequest.reminder3At/reminder7At`, migração `20261112090000_contract_reminders`); do dia 7 em diante entra em
+  Ações como "Contrato sem assinar" (Gestão). (4) **D-FIRSTKITNOTICE**: em Envios, só para o super admin, "Avisar
+  creators com 1º pedido liberado (N)" com o texto e os nomes; só dispara no clique, uma mensagem a cada 45 s, para
+  quem ainda não pediu (`src/lib/shipments/first-kit-notice.ts`). Testes: `shipments`, `autentique-application`,
+  `first-kit-notice` (integração) e `actions`.
+- **Pendente:** OK do responsável nos textos do lembrete e do aviso do 1º produto; os 2 textos de contrato da
+  Influencer que a Vanessa vai mandar; planilha/comprovantes da Juci para o saldo de abertura (D-OPENFLOW).
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-241 — 2026-10-29 — Olist ERP (Botanika), parte 1: estoque só leitura (D-OLIST)
 - **Feito:** token da API v2 do Olist ERP da Botanika na variável secreta `OLIST_TOKENS` (Vercel, só produção; JSON por
   slug). Catálogo da Shopify passa a guardar o SKU (`Product.sku`); a cada 30 min (`olist.stock`) o saldo dos produtos

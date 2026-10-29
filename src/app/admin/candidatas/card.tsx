@@ -80,7 +80,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       )}
       {/* D-CONTRACTFLOW: depois da aprovação, o contrato pelo Autentique (situação, link, conferir e reenviar). */}
       {a.creatorId && (a.awaitingContract || a.contract) && (
-        <ContractBox creatorId={a.creatorId} contract={a.contract} error={a.contractError} awaiting={a.awaitingContract} canManage={a.canDecide} />
+        <ContractBox creatorId={a.creatorId} contract={a.contract} error={a.contractError} awaiting={a.awaitingContract} canManage={a.canDecide} person={{ name: a.fullName, phone: a.phone, brand: a.brandName }} />
       )}
       {(a.payoutAnswer || a.welcomeAnswer) && (
         <p className={ui.hint}>

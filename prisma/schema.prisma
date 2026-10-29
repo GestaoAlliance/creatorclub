@@ -1345,6 +1345,9 @@ model ContractRequest {
   rateBps            Int?
   /// D-AUTENTIQUE2: link de assinatura do Autentique e quando foi mandado pelo WhatsApp da marca.
   signLink           String?
+  /// D-CONTRACTREMIND: lembrete no WhatsApp no dia 3 e no dia 7 sem assinar.
+  reminder3At        DateTime?
+  reminder7At        DateTime?
   linkSentAt         DateTime?
   couponCreatedAt    DateTime?
   /// Pedido do responsável (2026-10-23): convite do portal mandado sozinho depois da assinatura (e-mail e/ou WhatsApp).
