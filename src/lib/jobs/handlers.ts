@@ -7,6 +7,7 @@ import { PRODUCTS_JOB, productsSyncHandler } from "@/lib/shopify/products";
 import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
 import { instagramHandlers } from "@/lib/instagram/sync";
 import { autentiqueHandlers } from "@/lib/autentique/applications";
+import { olistHandlers } from "@/lib/olist/stock";
 import type { JobHandlers } from "./queue";
 
 /** Tipos de tarefa conhecidos pelo worker. Cada etapa da E3 registra o seu aqui. */
@@ -19,6 +20,7 @@ export function jobHandlers(): JobHandlers {
     ...backfillHandlers(prisma),
     ...instagramHandlers(prisma),
     ...autentiqueHandlers(prisma),
+    ...olistHandlers(prisma),
     [RECHECK_JOB]: async (job) => {
       if (!job.brandId) throw new Error("Tarefa sem marca.");
       await recheckBrand(prisma, job.brandId, postCommission);

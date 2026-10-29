@@ -32,10 +32,11 @@ export async function kitProducts(prisma: PrismaClient, brandId: string) {
   const all = await prisma.product.findMany({
     where: { brandId, active: true },
     orderBy: { title: "asc" },
-    select: { id: true, title: true, kitOption: true, brand: { select: { slug: true } } },
+    select: { id: true, title: true, kitOption: true, stockQty: true, brand: { select: { slug: true } } },
   });
   const marked = all.filter((p) => p.kitOption);
-  return (marked.length ? marked : all).map(({ id, title, brand }) => ({ id, title, photo: productPhoto(brand.slug, title) }));
+  // D-OLIST: zerado no Olist fica "sem estoque" (não dá para escolher); sem leitura do Olist, segue disponível.
+  return (marked.length ? marked : all).map(({ id, title, brand, stockQty }) => ({ id, title, photo: productPhoto(brand.slug, title), outOfStock: stockQty !== null && stockQty <= 0 }));
 }
 
 /** Kits que a creator ainda precisa escolher, e os produtos que ela pode escolher. */
@@ -73,6 +74,8 @@ export async function chooseKit(
   const allowed = await kitProducts(prisma, kit.brandId);
   const title = new Map(allowed.map((p) => [p.id, p.title]));
   if (chosen.some((i) => !title.has(i.productId))) throw new ShipmentError("Produto indisponível. Atualize a página.");
+  const empty = allowed.find((p) => p.outOfStock && chosen.some((i) => i.productId === p.id));
+  if (empty) throw new ShipmentError(`${empty.title} está sem estoque no momento. Escolha outro produto.`);
   const now = new Date();
 
   return prisma.$transaction(async (tx) => {

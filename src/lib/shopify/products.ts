@@ -16,11 +16,11 @@ export const PRODUCTS_JOB = "shopify.products.sync";
 export const PRODUCTS_MAX_PAGES = 20;
 
 const productsQuery = (withCost: boolean) => `query Products($after: String) {
-  products(first: 100, after: $after, sortKey: ID) { nodes { id title status variants(first: 1) { nodes { price${
+  products(first: 100, after: $after, sortKey: ID) { nodes { id title status variants(first: 1) { nodes { price sku${
     withCost ? " inventoryItem { unitCost { amount } }" : ""
   } } } } pageInfo { hasNextPage endCursor } } }`;
 
-type ProductNode = { id: string; title: string; status: string; variants?: { nodes: Array<{ price?: string | null; inventoryItem?: { unitCost: { amount: string } | null } | null }> } };
+type ProductNode = { id: string; title: string; status: string; variants?: { nodes: Array<{ price?: string | null; sku?: string | null; inventoryItem?: { unitCost: { amount: string } | null } | null }> } };
 type ProductsPage = { products: { nodes: ProductNode[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
 
 /** "12.5" → 1250 centavos; vazio ou inválido → null. */
@@ -44,16 +44,16 @@ export type ProductsSyncResult = { seen: number; created: number; updated: numbe
 export async function syncProducts(prisma: PrismaClient, brandId: string, client: ShopifyClient, now = new Date()): Promise<ProductsSyncResult> {
   const integration = await prisma.brandIntegration.findFirst({ where: { brandId, kind: "SHOPIFY" }, select: { scopes: true } });
   const withCost = (integration?.scopes ?? "").split(",").map((s) => s.trim()).some((s) => s === "read_inventory" || s === "write_inventory");
-  const seen = new Map<string, { title: string; active: boolean; costCents: number | null; priceCents: number | null }>();
+  const seen = new Map<string, { title: string; active: boolean; costCents: number | null; priceCents: number | null; sku: string | null }>();
   let after: string | null = null;
   for (let page = 0; page < PRODUCTS_MAX_PAGES; page++) {
     const res: ProductsPage = await client.graphql<ProductsPage>(productsQuery(withCost), { after });
-    for (const p of res.products.nodes) seen.set(p.id, { title: p.title.trim(), active: p.status === "ACTIVE", costCents: withCost ? costCents(p) : null, priceCents: priceCents(p) });
+    for (const p of res.products.nodes) seen.set(p.id, { title: p.title.trim(), active: p.status === "ACTIVE", costCents: withCost ? costCents(p) : null, priceCents: priceCents(p), sku: p.variants?.nodes[0]?.sku?.trim() || null });
     if (!res.products.pageInfo.hasNextPage) break;
     after = res.products.pageInfo.endCursor;
     if (page === PRODUCTS_MAX_PAGES - 1) throw new Error("Catálogo maior que o limite de páginas; nada foi desativado.");
   }
-  const existing = await prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, active: true, costCents: true, priceCents: true } });
+  const existing = await prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, active: true, costCents: true, priceCents: true, sku: true } });
   const byShopify = new Map(existing.map((p) => [p.shopifyId, p]));
   const result: ProductsSyncResult = { seen: seen.size, created: 0, updated: 0, deactivated: 0 };
   await prisma.$transaction(async (tx) => {
@@ -61,10 +61,10 @@ export async function syncProducts(prisma: PrismaClient, brandId: string, client
       const old = byShopify.get(shopifyId);
       const cost = withCost ? { costCents: p.costCents, costSyncedAt: now } : {};
       if (!old) {
-        await tx.product.create({ data: { brandId, shopifyId, title: p.title, active: p.active, priceCents: p.priceCents, ...cost } });
+        await tx.product.create({ data: { brandId, shopifyId, title: p.title, active: p.active, priceCents: p.priceCents, sku: p.sku, ...cost } });
         result.created++;
-      } else if (old.title !== p.title || old.active !== p.active || old.priceCents !== p.priceCents || (withCost && old.costCents !== p.costCents)) {
-        await tx.product.update({ where: { id: old.id }, data: { title: p.title, active: p.active, priceCents: p.priceCents, ...cost } });
+      } else if (old.title !== p.title || old.active !== p.active || old.priceCents !== p.priceCents || old.sku !== p.sku || (withCost && old.costCents !== p.costCents)) {
+        await tx.product.update({ where: { id: old.id }, data: { title: p.title, active: p.active, priceCents: p.priceCents, sku: p.sku, ...cost } });
         result.updated++;
       }
     }

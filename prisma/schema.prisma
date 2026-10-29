@@ -838,20 +838,27 @@ model Click {
 
 /// Produto da loja (catálogo da Shopify), para escolher o que vai em cada envio.
 model Product {
-  id           String    @id @default(uuid())
-  brandId      String
-  shopifyId    String
-  title        String
-  active       Boolean   @default(true)
+  id            String    @id @default(uuid())
+  brandId       String
+  shopifyId     String
+  title         String
+  active        Boolean   @default(true)
   /// M3.2 (D-COST): custo unitário (primeira variante) lido da Shopify com `read_inventory`; null = sem custo cadastrado.
-  costCents    Int?
-  costSyncedAt DateTime?
+  costCents     Int?
+  costSyncedAt  DateTime?
   /// M5.1 (D-SHOPBALANCE): preço de venda da primeira variante na Shopify (catálogo diário); null = sem preço ainda.
-  priceCents   Int?
+  priceCents    Int?
   /// D-KITOPTIONS: produto que a creator pode escolher no portal (aba Pedidos). Marca sem nenhum marcado: todos os ativos.
-  kitOption    Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  kitOption     Boolean   @default(false)
+  /// D-OLIST: SKU da primeira variante na Shopify (catálogo diário); casa o produto com o do Olist.
+  sku           String?
+  /// D-OLIST: saldo no Olist ERP (lido a cada 30 min); null = sem leitura (sem token, sem SKU ou não achado).
+  stockQty      Int?
+  stockSyncedAt DateTime?
+  /// D-OLIST: por que a última leitura não achou o produto (ex.: SKU não existe no Olist).
+  stockError    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   brand Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
   items ShipmentItem[]

@@ -63,3 +63,9 @@ export function withdrawalApproveText(brand: string, list: readonly WithdrawalAl
   const n = list.length;
   return [`*${brand}: ${n === 1 ? "1 saque pedido esperando" : `${n} saques pedidos esperando`} a sua aprovação.*`, wdLines(list), "Aprovados, eles vão para a Juci pagar até o dia 15.", link].filter(Boolean).join("\n\n");
 }
+
+/** D-OLIST: estoque baixo no Olist dos produtos que a creator pode escolher (Envio e Gestão, uma vez por dia). */
+export function stockLowText(brand: string, list: readonly { title: string; qty: number }[], link: string | null): string {
+  const lines = list.slice(0, MAX_LINES).map((p) => `• ${p.title}: ${p.qty <= 0 ? "sem estoque" : `${p.qty} ${p.qty === 1 ? "unidade" : "unidades"}`}`);
+  return [`*${brand}: estoque baixo no Olist (produtos do pedido das creators)*`, lines.join("\n"), "Produto zerado some da escolha das creators até repor.", link].filter(Boolean).join("\n\n");
+}

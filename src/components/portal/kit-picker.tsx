@@ -33,7 +33,7 @@ export function KitPicker({
   welcome?: boolean;
   /** D-GOALKIT: produto da meta de R$ 1.000. */
   goal?: boolean;
-  products: { id: string; title: string; photo?: string | null }[];
+  products: { id: string; title: string; photo?: string | null; outOfStock?: boolean }[];
   address: Address | null;
   informed?: string | null;
   viewOnly: boolean;
@@ -71,7 +71,11 @@ export function KitPicker({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.photo} alt="" width={64} height={64} className="size-16 shrink-0 rounded-2xl bg-white object-contain" />
                     )}
-                    <span className={`text-sm ${n ? "font-medium" : ""}`}>{p.title}</span>
+                    <span className={`text-sm ${n ? "font-medium" : ""} ${p.outOfStock ? "text-stone-400" : ""}`}>
+                      {p.title}
+                      {/* D-OLIST: zerado no Olist. */}
+                      {p.outOfStock && <span className="ml-2 rounded-full bg-stone-500/15 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">sem estoque</span>}
+                    </span>
                   </span>
                   <input type="hidden" name={`qty:${p.id}`} value={n} />
                   {single ? (
@@ -82,7 +86,7 @@ export function KitPicker({
                       <Minus className="size-3.5" />
                     </button>
                     <span className="w-5 text-center text-sm font-semibold tabular-nums">{n}</span>
-                    <button type="button" aria-label={`Adicionar ${p.title}`} disabled={viewOnly || left === 0} onClick={() => set(p.id, 1)} className={ui.ghostSm}>
+                    <button type="button" aria-label={`Adicionar ${p.title}`} disabled={viewOnly || left === 0 || p.outOfStock} onClick={() => set(p.id, 1)} className={ui.ghostSm}>
                       <Plus className="size-3.5" />
                     </button>
                   </span>

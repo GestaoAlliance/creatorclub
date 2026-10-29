@@ -79,7 +79,7 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
 - [x] **M5.1** Loja com o saldo (vitrine, preço de creator, frete, compra que abate o saldo e vira envio). Decidido
   (D-SHOPBALANCE): só o saldo disponível; cada marca com o seu saldo. *Falta (Ana, segunda):* preço que a creator
   paga e quem paga o frete.
-- [!] **M5.2** Estoque dos kits pelo **Olist**, nas 3 marcas, **só leitura** (mostrar o estoque e não liberar kit de
+- [~] **M5.2** Estoque dos kits pelo **Olist** (Botanika ligada no CP-241), nas 3 marcas, **só leitura** (mostrar o estoque e não liberar kit de
   produto sem estoque; a baixa segue no Olist). Respostas de 2026-10-28. *Bloqueado:* as marcas ainda vão contratar
   o Olist; quando tiver, gerar o token da API.
 - [!] **Alelo (PF)**: saque de pessoa física no cartão Alelo (contrato PF: "Modelo contrato Botanika ALELO", Drive);
@@ -314,6 +314,18 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-241 — 2026-10-29 — Olist ERP (Botanika), parte 1: estoque só leitura (D-OLIST)
+- **Feito:** token da API v2 do Olist ERP da Botanika na variável secreta `OLIST_TOKENS` (Vercel, só produção; JSON por
+  slug). Catálogo da Shopify passa a guardar o SKU (`Product.sku`); a cada 30 min (`olist.stock`) o saldo dos produtos
+  do pedido das creators é lido no Olist pelo SKU (`Product.stockQty/stockSyncedAt/stockError`, migração
+  `20261111090000_olist_stock`). Zerado aparece "sem estoque" e não pode ser escolhido (portal e servidor); com 20 ou
+  menos, aviso diário no WhatsApp de Envio e Gestão. Em Marcas, cada produto mostra SKU e estoque do Olist (ou o
+  motivo de não achar). Cliente em `src/lib/olist/client.ts`. Testes: `test/olist.test.ts`,
+  `test/integration/olist-stock.test.ts`.
+- **Pendente:** respostas do Álvaro (natureza de operação, valor, situação, transportadora, SKUs) para a parte 2
+  (pedido automático no Olist e rastreio de volta); segundo token que o responsável vai mandar.
+- **Próxima:** Olist parte 2 quando chegarem as respostas.
 
 ### CP-240 — 2026-10-29 — Termo e contrato do portal: a trava sai depois do aceite
 - **Problema (teste da Vanessa com o Gabriel):** ao aceitar o termo, o aceite era gravado mas a tela do termo
