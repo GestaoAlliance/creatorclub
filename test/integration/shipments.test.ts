@@ -16,6 +16,8 @@ import {
 } from "@/lib/shipments/shipments";
 import { updateBrand } from "@/lib/brands/manage";
 import { shipmentsToPrint } from "@/lib/shipments/print";
+import { shipmentsForCsv } from "@/lib/shipments/csv";
+import { shipmentsCsv } from "@/domain";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -173,5 +175,32 @@ describe("envios de produtos (banco real)", () => {
     await updateBrand(prisma, sa, s.brand.id, { ...base, shipFrom: { zip: "", street: "", number: "", complement: "", district: "", city: "", state: "", phone: "" } });
     expect((await shipmentsToPrint(prisma, s.envio, s.brand.id, { preparing: true })).sender?.address).toBeNull();
     await expectDbError(prisma.brand.update({ where: { id: s.brand.id }, data: { shipFrom: { zip: "1" } } }), /Brand_shipFrom/);
+  });
+
+  it("D-SHIPCSV: planilha com a situação e o período da tela; só quem vê o endereço", async () => {
+    const s = await setup();
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    await prisma.product.update({ where: { id: s.whey.id }, data: { costCents: 4_500 } });
+    await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { cpf: "52998224725", phone: "11988887777", instagram: "maria.fit" } });
+    const a = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items: [{ productId: s.whey.id, quantity: 2 }] });
+    const b = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items: [{ productId: s.creatina.id, quantity: 1 }] });
+    await prisma.shipment.update({ where: { id: b }, data: { createdAt: new Date("2026-09-10T15:00:00Z") } });
+    await markShipped(prisma, s.envio, { shipmentId: a, carrier: "Correios", trackingCode: "AB123456789BR" });
+
+    const all = await shipmentsForCsv(prisma, s.envio, s.brand.id);
+    expect(all).toHaveLength(2);
+    expect(all[0]).toMatchObject({ status: "SHIPPED", kind: "Avulso (equipe)", doc: "52998224725", trackingCode: "AB123456789BR", items: [{ title: "Whey", quantity: 2, unitCostCents: 4_500 }] });
+    expect(await shipmentsForCsv(prisma, s.envio, s.brand.id, { status: "PREPARING" })).toHaveLength(1);
+    expect(await shipmentsForCsv(prisma, s.envio, s.brand.id, { from: "2026-09-10", to: "2026-09-10" })).toHaveLength(1);
+    expect(await shipmentsForCsv(prisma, s.envio, s.brand.id, { from: "2026-09-11", to: "2026-09-30" })).toHaveLength(0);
+
+    const csv = shipmentsCsv(all);
+    expect(csv.startsWith("\uFEFFData do pedido;Situação;Tipo;Creator;Instagram")).toBe(true);
+    expect(csv).toContain(";@maria.fit;52998224725;11988887777;");
+    expect(csv).toContain(";Av. Paulista;1000;ap 12;Bela Vista;São Paulo;SP;2x Whey;2;90,00;");
+    expect(csv).toContain(";Correios;AB123456789BR;");
+
+    const pagamento = await userWith("PAGAMENTO", s.brand.id);
+    await expect(shipmentsForCsv(prisma, pagamento, s.brand.id)).rejects.toThrow(/permissão/);
   });
 });

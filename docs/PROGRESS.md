@@ -8,7 +8,7 @@
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
-  ~~2) etiqueta e declaração de conteúdo~~; 3) planilha dos envios; 4) WhatsApp do Álvaro
+  ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; 4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
   enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
   Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
@@ -314,6 +314,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-229 — 2026-10-29 — Planilha dos envios (D-SHIPCSV)
+- **Feito:** "Baixar planilha" em Envios (`/admin/envios/csv`): a situação escolhida na tela e o período opcional pela
+  data do pedido (dias de São Paulo), da marca do topo. Uma linha por envio: data, situação, tipo (boas-vindas, meta,
+  kit do mês, loja com saldo, avulso), creator, @, CPF/CNPJ, telefone, e-mail, endereço em colunas, produtos,
+  quantidade, custo, frete, transportadora, rastreio, enviado/entregue em e dias desde o pedido. Mesmo formato do CSV de
+  vendas (";", acentos no Excel). Só quem vê o endereço (Envio, Gestão, super admin). Testes em
+  `test/shipments-csv.test.ts` e `test/integration/shipments.test.ts`.
+- **Próxima:** 4) WhatsApp do Álvaro quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias.
 
 ### CP-228 — 2026-10-29 — Contrato pelo Autentique na candidatura (D-AUTENTIQUE2)
 - **Feito:** (selo em `src/domain/contract-status.ts`) conexão do Autentique de volta em Integrações (chave cifrada; a de antes foi descartada em D-D4SIGN, então
