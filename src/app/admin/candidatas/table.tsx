@@ -7,7 +7,7 @@ import { Fragment, useActionState, useCallback, useEffect, useState, type ReactN
 import { Msg } from "@/components/ui/msg";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { badge, ui } from "@/components/ui/styles";
-import { instagramUrl, whatsappChatUrl } from "@/domain";
+import { instagramUrl, rejectionMessage, whatsappChatUrl, whatsappLink } from "@/domain";
 import { rejectAction, rejectManyAction } from "./actions";
 
 /** O essencial de cada candidata para a tabela (o cartão completo vem pronto do servidor em `detail`). */
@@ -34,6 +34,10 @@ export type CandidateRow = {
   priority: { level: "ALTA" | "MEDIA" | "BAIXA" | "REPETIDA"; label: string; reasons: string };
   days: number;
   canDecide: boolean;
+  brandName: string;
+  /** D-AUTENTIQUE2: selo do contrato (null = marca sem Autentique) e se já dá para aprovar. */
+  contract: { label: string; tone: "neutral" | "sky" | "amber" | "green" | "red" } | null;
+  approvable: boolean;
   creatorId: string | null;
   detail: ReactNode;
 };
@@ -46,13 +50,22 @@ const handle = (h: string) => h.replace(/^@/, "");
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const ago = (d: number) => (d === 0 ? "hoje" : d === 1 ? "há 1 dia" : `há ${d} dias`);
 
-/** Recusar direto na linha: motivo opcional (só a equipe vê) e confirmar. Quem é recusada não recebe mensagem. */
-function QuickReject({ id, name, onCancel }: { id: string; name: string; onCancel: () => void }) {
+/** Recusar direto na linha: motivo opcional (só a equipe vê), confirmar e abrir o WhatsApp com a recusa (D-AUTENTIQUE2). */
+function QuickReject({ id, name, phone, brand, onCancel }: { id: string; name: string; phone: string | null; brand: string; onCancel: () => void }) {
   const [state, action, pending] = useActionState(rejectAction, undefined);
   const router = useRouter();
-  useEffect(() => {
-    if (state?.ok) router.refresh();
-  }, [state, router]);
+  if (state?.ok) {
+    const wa = whatsappLink(phone, rejectionMessage({ name, brand }));
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="flex flex-col gap-2 rounded-2xl border border-emerald-400/50 bg-emerald-100/70 p-3 text-sm text-emerald-950 dark:bg-emerald-900/30 dark:text-emerald-100">
+        <p>{name}: {state.ok.charAt(0).toLowerCase() + state.ok.slice(1)}</p>
+        <div className="flex flex-wrap gap-2">
+          {wa ? <a href={wa} {...ext} className={`${ui.btnSm} inline-flex items-center gap-1.5`}><WhatsAppIcon className="size-4" /> Abrir WhatsApp com a recusa</a> : <span className={ui.hint}>WhatsApp não reconhecido ({phone || "sem número"}).</span>}
+          <button type="button" onClick={() => router.refresh()} className={ui.ghostSm}>Concluir</button>
+        </div>
+      </div>
+    );
+  }
   return (
     <form action={action} onClick={(e) => e.stopPropagation()} className="flex flex-col gap-2 rounded-2xl border border-red-300/60 bg-red-50/70 p-3 dark:border-red-400/30 dark:bg-red-950/30">
       <input type="hidden" name="applicationId" value={id} />
@@ -122,7 +135,11 @@ function Actions({ c, onApprove, onReject }: { c: CandidateRow; onApprove: () =>
   if (!c.canDecide) return null;
   return (
     <span className="flex items-center justify-end gap-1.5">
-      <button type="button" onClick={(e) => { e.stopPropagation(); onApprove(); }} className={ui.btnSm}>Aprovar</button>
+      {c.approvable ? (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onApprove(); }} className={ui.btnSm}>Aprovar</button>
+      ) : (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onApprove(); }} className={ui.ghostSm} title="Aprovar libera depois que ela assinar o contrato">Ver contrato</button>
+      )}
       <button type="button" onClick={(e) => { e.stopPropagation(); onReject(); }} className={ui.ghostSm} aria-label={`Recusar ${c.name}`}>
         <X className="size-3.5" /> Recusar
       </button>
@@ -163,8 +180,9 @@ function Who({ c }: { c: CandidateRow }) {
         ) : (
           <span className="text-xs text-stone-500">{c.phone ?? "sem WhatsApp"}</span>
         )}
-        {(c.duplicate || c.brands.length > 0) && (
+        {(c.duplicate || c.brands.length > 0 || c.contract) && (
           <div className="mt-1 flex flex-wrap gap-1">
+            {c.contract && <span className={badge[c.contract.tone]}>{c.contract.label}</span>}
             {c.duplicate && <span className={badge.red}>repetida</span>}
             {c.brands.map((b) => <span key={b} className={badge.green}>{b}</span>)}
           </div>
@@ -235,7 +253,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
   const expanded = (c: CandidateRow) =>
     open?.id === c.id && (
       <div id={`cand-${c.id}`} className="flex flex-col gap-3 pb-4" onClick={(e) => e.stopPropagation()}>
-        {open.mode === "reject" ? <QuickReject id={c.id} name={c.name} onCancel={() => setOpen(null)} /> : c.detail}
+        {open.mode === "reject" ? <QuickReject id={c.id} name={c.name} phone={c.phone} brand={c.brandName} onCancel={() => setOpen(null)} /> : c.detail}
       </div>
     );
 

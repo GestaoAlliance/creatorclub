@@ -7,7 +7,7 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
+- **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
   ~~2) etiqueta e declaração de conteúdo~~; 3) planilha dos envios; 4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
   enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
@@ -314,6 +314,23 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-228 — 2026-10-29 — Contrato pelo Autentique na candidatura (D-AUTENTIQUE2)
+- **Feito:** conexão do Autentique de volta em Integrações (chave cifrada; a de antes foi descartada em D-D4SIGN, então
+  precisa colar de novo). `ContractRequest` passa a servir à candidata (`applicationId`, `creatorId` opcional, `rateBps`,
+  `signLink`, `linkSentAt`; `CreatorApplication.contractError`; travas `ContractRequest_target`,
+  `ContractRequest_rate_bps`, `ContractRequest_one_open_per_application`; migração `20261103090000_autentique_application`).
+  Cadastro do site grava a tarefa `autentique.application_contract` na mesma transação: gera o PDF do tipo escolhido
+  (versão de contrato mais nova do tipo), com o cupom sugerido e o padrão da marca, manda pelo Autentique (e-mail) e
+  agenda o link no WhatsApp da marca (9h–20h, texto aprovado). Conferência a cada 5 min (`autentique.check`) e
+  "Conferir agora". Candidatas: selo "contrato não enviado/não assinado/assinado/recusou", quadro do contrato com
+  "Enviar contrato"/"Reenviar contrato" (cancela o anterior no Autentique), aprovar só depois de assinado e com os
+  valores do contrato (contrato liga à creator; vigência da assinatura). Recusar cancela no Autentique e abre o
+  WhatsApp com a mensagem de recusa (botão). Hunter vê "contrato assinado/não assinado" em Minhas indicações. Revita
+  (sem Autentique) segue D-D4SIGN. Testes: `test/autentique.test.ts`, `test/integration/autentique-application.test.ts`,
+  `autentique-connect.test.ts`.
+- **Próxima:** responsável cola a chave do Autentique da Botanika e da VermeFree em Integrações; depois segue a fila das
+  telas da equipe (3) planilha dos envios).
 
 ### CP-227 — 2026-10-29 — Etiqueta e declaração de conteúdo (D-LABEL)
 - **Feito:** endereço de envio (remetente) por marca em Marcas (`Brand.shipFrom`, trava `Brand_shipFrom`, migração

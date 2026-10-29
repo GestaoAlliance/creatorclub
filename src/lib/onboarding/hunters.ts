@@ -243,7 +243,7 @@ export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, n
       _count: { select: { clicks: true } },
       applications: {
         orderBy: { submittedAt: "desc" },
-        select: { id: true, fullName: true, instagram: true, followers: true, submittedAt: true, status: true },
+        select: { id: true, fullName: true, instagram: true, followers: true, submittedAt: true, status: true, contractRequests: { orderBy: { sentAt: "desc" }, take: 1, select: { status: true } } },
       },
     },
   });
@@ -271,6 +271,8 @@ export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, n
       followers: a.followers,
       submittedAt: a.submittedAt,
       status: a.status,
+      /** D-AUTENTIQUE2: situação do contrato no Autentique (null = sem contrato pelo sistema). */
+      contract: a.contractRequests[0]?.status ?? null,
     })),
   }));
 }

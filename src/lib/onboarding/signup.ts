@@ -4,6 +4,7 @@ import { cnpjAddressLine, heardFromValue, mustShipToCnpj, normalizeCampaignTag, 
 import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
 import { passwordProblem } from "@/lib/auth/rules";
 import { hashIp } from "@/lib/links/tracked";
+import { enqueueApplicationContract } from "@/lib/autentique/applications";
 import { ApplicationError, receiveApplication } from "./applications";
 
 /**
@@ -148,6 +149,8 @@ export async function submitSignup(
         accountId: account.id,
       });
       if (campaignTag || heardFrom) await tx.creatorApplication.update({ where: { id: app.id }, data: { campaignTag, heardFrom } });
+      // D-AUTENTIQUE2: o contrato sai sozinho pelo Autentique (marca sem Autentique: a tarefa não faz nada).
+      await enqueueApplicationContract(tx, brand.id, app.id, now);
       await tx.auditLog.create({
         data: { brandId: brand.id, actorType: "USER", actorId: login.userId, action: "signup.account", entity: "CreatorApplication", entityId: app.id, after: { accountId: account.id, coupon: acc.coupon } },
       });

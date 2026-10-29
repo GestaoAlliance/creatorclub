@@ -92,7 +92,7 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
 
     const [panel] = await myHunterPanel(prisma, bia);
     expect(panel).toMatchObject({ code: "bia", clicks: 1, clicks30: 1, counts: { total: 1, inReview: 0, approved: 0, rejected: 1 } });
-    expect(panel!.applications).toEqual([{ id: a1.id, name: "Maria", instagram: "perfil", followers: "12 mil", submittedAt: expect.any(Date), status: "REJECTED" }]);
+    expect(panel!.applications).toEqual([{ id: a1.id, name: "Maria", instagram: "perfil", followers: "12 mil", submittedAt: expect.any(Date), status: "REJECTED", contract: null }]);
     expect(JSON.stringify(panel)).not.toMatch(/motivo interno|11999999999|@x\.com/);
     expect((await staffHome(prisma, bia)).hunter).toEqual({ clicks30: 1, inReview: 0, approved: 0, hasLink: true });
     await expect(myHunterPanel(prisma, gestao)).rejects.toThrow(/permissão/);

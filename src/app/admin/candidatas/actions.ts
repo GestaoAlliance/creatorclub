@@ -13,6 +13,7 @@ import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
+import { checkApplicationNow, ContractSendError, sendApplicationContract } from "@/lib/autentique/applications";
 
 export type ApproveState =
   | {
@@ -92,9 +93,9 @@ export type RejectState = { error?: string; ok?: string } | undefined;
 
 export async function rejectAction(_prev: RejectState, form: FormData): Promise<RejectState> {
   try {
-    await rejectApplication(db(), await currentActor(), String(form.get("applicationId") ?? ""), String(form.get("note") ?? ""));
+    const r = await rejectApplication(db(), await currentActor(), String(form.get("applicationId") ?? ""), String(form.get("note") ?? ""));
     // Como no aprovar: a tela atualiza no "Concluir", depois do WhatsApp de resposta.
-    return { ok: "Candidata recusada." };
+    return { ok: r.cancelled ? "Candidata recusada; contrato cancelado no Autentique." : "Candidata recusada." };
   } catch (error) {
     if (error instanceof ApplicationError) return { error: error.message };
     throw error;
@@ -135,4 +136,35 @@ export async function createApplicationAction(_prev: CreateState, form: FormData
   }
   revalidatePath("/admin/candidatas");
   redirect("/admin/candidatas?origem=staff_form");
+}
+
+export type ContractState = { error?: string; ok?: string } | undefined;
+
+/** D-AUTENTIQUE2: envia (ou reenvia, cancelando o anterior) o contrato da candidata pelo Autentique. */
+export async function sendContractAction(_prev: ContractState, form: FormData): Promise<ContractState> {
+  try {
+    const r = await sendApplicationContract(db(), await currentActor(), String(form.get("applicationId") ?? ""), {
+      couponCode: String(form.get("coupon") ?? ""),
+      category: String(form.get("category") ?? "") as Category,
+      rateBps: percentToBps(String(form.get("rate") ?? "")),
+      discountBps: percentToBps(String(form.get("discount") ?? "")),
+    });
+    revalidatePath("/admin/candidatas");
+    return { ok: `Contrato enviado para ${r?.email}${r?.sandbox ? " (modo teste)" : ""}.${r?.signLink ? " O link vai também pelo WhatsApp da marca." : ""}` };
+  } catch (error) {
+    if (error instanceof ContractSendError || error instanceof ReviewError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-AUTENTIQUE2: "Conferir agora" (o sistema confere sozinho a cada 5 minutos). */
+export async function checkContractAction(_prev: ContractState, form: FormData): Promise<ContractState> {
+  try {
+    const r = await checkApplicationNow(db(), await currentActor(), String(form.get("applicationId") ?? ""));
+    revalidatePath("/admin/candidatas");
+    return r.signed ? { ok: "Contrato assinado." } : r.rejected ? { ok: "Ela recusou o contrato no Autentique." } : r.errors ? { error: "Não deu para conferir agora; o sistema tenta de novo em 5 minutos." } : { ok: "Ainda não assinado." };
+  } catch (error) {
+    if (error instanceof ContractSendError) return { error: error.message };
+    throw error;
+  }
 }
