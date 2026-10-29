@@ -9,8 +9,8 @@
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
   ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; ~~4) WhatsApp do Álvaro
-  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias~~; 5) rastreio clicável e aviso "kit
-  enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
+  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias~~; ~~5) rastreio clicável e aviso "kit
+  enviado" para a creator~~; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
   Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -314,6 +314,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-232 — 2026-10-29 — Rastreio e avisos de envio para a creator (D-TRACKING)
+- **Feito:** link do rastreio no domínio (`src/domain/tracking.ts`): Correios no site dos Correios; Jadlog, Loggi,
+  Melhor Envio (e código fora do padrão dos Correios) no Melhor Rastreio. "Marcar enviado" com a transportadora em
+  lista. Aviso "Seus produtos foram enviados" passa a listar os produtos e levar o link do rastreio. Equipe marcou
+  "entregue": aviso "Seus produtos chegaram!" lembrando o cupom. 10 dias depois do envio sem "Recebi": aviso "Seus
+  produtos chegaram?" uma vez (`src/lib/shipments/reminders.ts`, no worker; só envios de até 14 dias). Em Envios, o
+  filtro "Sem Recebi há 10+ dias". Tipos de aviso novos na trava `Notification_valid` (migração
+  `20261106090000_shipment_notices`). Testes em `test/shipments.test.ts` e `test/integration/shipments.test.ts`.
+- **Conferir no ar:** abrir um link do Melhor Rastreio (o formato `/rastreio/<código>` não pôde ser testado daqui).
+- **Próxima:** 6) lembrete da Juci no dia 15 com saques aprovados sem pagar.
 
 ### CP-231 — 2026-10-29 — Contrato depois da aprovação, nos 4 modelos (D-CONTRACTFLOW)
 - **Feito:** cadastro do site com "Vai receber como" (pessoa física ou empresa; CNPJ só para empresa) e "Seu primeiro

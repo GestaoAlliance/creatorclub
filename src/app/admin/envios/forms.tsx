@@ -1,5 +1,6 @@
 "use client";
 
+import { CARRIERS } from "@/domain";
 import { useActionState } from "react";
 import { approveAction, cancelAction, createShipmentAction, deliveredAction, rejectAction, shippedAction } from "./actions";
 
@@ -55,7 +56,10 @@ export function ShippedForm({ shipmentId }: { shipmentId: string }) {
   return (
     <form action={action} className="flex flex-wrap items-center gap-1.5">
       <input type="hidden" name="shipmentId" value={shipmentId} />
-      <input name="carrier" defaultValue="Correios" className={`${field} w-28`} aria-label="Transportadora" />
+      {/* D-TRACKING: lista, para o link do rastreio sempre funcionar. */}
+      <select name="carrier" defaultValue="Correios" className={`${field} w-32`} aria-label="Transportadora">
+        {CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
       <input name="trackingCode" required placeholder="código de rastreio" className={`${field} w-40 font-mono`} />
       <input name="freight" inputMode="decimal" placeholder="frete R$ (opcional)" className={`${field} w-36`} aria-label="Frete pago (R$)" />
       <button className={ui.btnSm} disabled={pending}>Marcar enviado</button>

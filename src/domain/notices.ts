@@ -19,7 +19,9 @@ export type NoticeKind =
   | "CONTRACT_ENDING"
   | "IDLE"
   | "WITHDRAWAL_BANK_REJECTED"
-  | "PARTNERSHIP_ACTIVE";
+  | "PARTNERSHIP_ACTIVE"
+  | "SHIPMENT_DELIVERED"
+  | "RECEIPT_CHECK";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -74,11 +76,35 @@ export const notices = {
           : `Pelas suas vendas de ${monthName(month)}. Escolha os produtos em Pedidos e a equipe prepara o envio.`,
     path: "/envios",
   }),
-  shipped: (shipmentId: string, carrier: string, trackingCode: string): Notice => ({
+  /** D-TRACKING: o que foi enviado e o link do rastreio (clicável no WhatsApp e no e-mail). */
+  shipped: (shipmentId: string, carrier: string, trackingCode: string, items: readonly { title: string; quantity: number }[] = [], url: string | null = null): Notice => ({
     kind: "SHIPPED",
     dedupeKey: `shipped:${shipmentId}`,
     title: "Seus produtos foram enviados",
-    body: `Envio pela ${carrier}, código de rastreio ${trackingCode}. Quando chegar, toque em "Recebi" em Pedidos.`,
+    body: [
+      items.length ? `Enviamos: ${items.map((i) => `${i.quantity}x ${i.title}`).join(", ")}.` : null,
+      `Envio pela ${carrier}, código de rastreio ${trackingCode}.`,
+      url ? `Acompanhe a entrega: ${url}` : null,
+      `Quando chegar, toque em "Recebi" em Pedidos.`,
+    ].filter(Boolean).join(" "),
+    path: "/envios",
+  }),
+  /** D-TRACKING: a equipe marcou como entregue. */
+  delivered: (shipmentId: string, coupon: string | null): Notice => ({
+    kind: "SHIPMENT_DELIVERED",
+    dedupeKey: `delivered:${shipmentId}`,
+    title: "Seus produtos chegaram!",
+    body: coupon
+      ? `Que tal mostrar nos stories e lembrar seus seguidores do seu cupom ${coupon}? Cada venda com ele conta para você.`
+      : "Que tal mostrar nos stories e contar para os seus seguidores?",
+    path: "/envios",
+  }),
+  /** D-TRACKING: 10 dias depois do envio sem "Recebi" (uma vez por envio). */
+  receiptCheck: (shipmentId: string): Notice => ({
+    kind: "RECEIPT_CHECK",
+    dedupeKey: `receipt-check:${shipmentId}`,
+    title: "Seus produtos chegaram?",
+    body: `Se já chegaram, toque em "Recebi" em Pedidos. Se ainda não, fale com a gente que verificamos a entrega.`,
     path: "/envios",
   }),
   withdrawalPaid: (withdrawalId: string, amountCents: number): Notice => ({

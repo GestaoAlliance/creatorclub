@@ -31,8 +31,9 @@ describe("link de rastreio", () => {
   it("Correios (formato AA123456789BR) ganha link; outros códigos e transportadoras não", () => {
     expect(trackingUrl("Correios", "aa123456789br")).toBe("https://rastreamento.correios.com.br/app/index.php?objeto=AA123456789BR");
     expect(trackingUrl(null, "AA123456789BR")).toContain("objeto=AA123456789BR");
-    expect(trackingUrl("Jadlog", "AA123456789BR")).toBeNull();
-    expect(trackingUrl("Correios", "12345")).toBeNull();
+    // D-TRACKING: as outras transportadoras (e código fora do formato dos Correios) abrem no Melhor Rastreio.
+    expect(trackingUrl("Jadlog", "AA123456789BR")).toBe("https://www.melhorrastreio.com.br/rastreio/AA123456789BR");
+    expect(trackingUrl("Correios", "12345")).toBe("https://www.melhorrastreio.com.br/rastreio/12345");
     expect(trackingUrl("Correios", null)).toBeNull();
   });
 });
