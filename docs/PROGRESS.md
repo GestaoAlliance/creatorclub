@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-240 — 2026-10-29 — Termo e contrato do portal: a trava sai depois do aceite
+- **Problema (teste da Vanessa com o Gabriel):** ao aceitar o termo, o aceite era gravado mas a tela do termo
+  continuava (em todas as abas) até recarregar a página: a trava fica na moldura (layout) do portal e o redirecionamento
+  da ação não a recarregava.
+- **Feito:** `revalidatePath(/portal/<marca>, "layout")` antes do redirecionamento no aceite do termo e na assinatura do
+  contrato no portal (docs do Next: revalidar antes do `redirect`).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-239 — 2026-10-29 — Autentique pela variável segura da Vercel (D-AUTENTIQUEENV)
 - **Feito:** a chave do Autentique de cada marca também é lida da variável `AUTENTIQUE_TOKENS` (Vercel, só produção,
   tipo secreto; JSON por slug), quando não há conexão salva em Integrações (que continua valendo primeiro). Gravadas as

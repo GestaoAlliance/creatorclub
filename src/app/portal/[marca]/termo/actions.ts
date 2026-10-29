@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -29,5 +30,7 @@ export async function acceptTermsAction(_prev: TermsState, form: FormData): Prom
     if (error instanceof TermsError) return { error: error.message };
     throw error;
   }
+  // A trava fica na moldura (layout) do portal: sem isso ela continua aparecendo depois do aceite até recarregar a página.
+  revalidatePath(`/portal/${marca}`, "layout");
   redirect(`/portal/${marca}`);
 }
