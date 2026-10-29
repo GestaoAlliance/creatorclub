@@ -8,6 +8,7 @@ import { ui } from "@/components/ui/styles";
 import type { PerformanceSort } from "@/domain";
 import { instagramRanking } from "@/lib/instagram/ranking";
 import type { IgSort } from "./instagram";
+import { originSummary } from "@/lib/creators/origin";
 import { DesempenhoView, type Search } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   // D-INSTAGRAM: aba Instagram, com as vendas do mês atual para a venda por mil seguidores.
   const now = new Date();
   const ig = igTab ? await instagramRanking(db(), actor, brand.id, new Map([...data.partners, ...data.ugc].map((r) => [r.id, r.salesCents])), now) : null;
+  // D-ORIGIN: aba Origem, com as vendas do mês escolhido.
+  const origin = sp.aba === "origem" ? await originSummary(db(), actor, brand.id, new Map([...data.partners, ...data.ugc].map((r) => [r.id, r.salesCents]))) : null;
   const igSort: IgSort = sp.igordem === "engajamento" || sp.igordem === "venda" ? sp.igordem : "seguidores";
-  return <DesempenhoView data={data} sp={{ ...sp, ordem: sort }} brandSlug={brand.slug} ig={ig ? { data: ig, sort: igSort, now } : null} />;
+  return <DesempenhoView data={data} sp={{ ...sp, ordem: sort }} brandSlug={brand.slug} ig={ig ? { data: ig, sort: igSort, now } : null} origin={origin} />;
 }

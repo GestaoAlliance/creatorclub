@@ -12,14 +12,14 @@ import { CreatorList } from "./list";
 
 export const dynamic = "force-dynamic";
 
-export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string; arquivadas?: string }> }) {
+export default async function CreatorsPage({ searchParams }: { searchParams: Promise<{ portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string; arquivadas?: string; origem?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/creators");
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "creators.view", brand.id)) redirect("/conta");
-  const { portal, contrato, semvenda, categoria, pendencia, tag, arquivadas } = await searchParams;
+  const { portal, contrato, semvenda, categoria, pendencia, tag, arquivadas, origem } = await searchParams;
   const archived = arquivadas === "1";
   const [creators, pendingApplications, archivedCount] = await Promise.all([
     listCreators(db(), scopedActor(actor, brand.id), brand.id, archived),
@@ -48,7 +48,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
           visualização vale só neste aparelho, por 1 hora.
         </p>
       )}
-      <CreatorList {...(tag ? { tag } : {})} rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} pendingApplications={pendingApplications} canInvite={can(actor.grants, "creators.edit", brand.id)} />
+      <CreatorList {...(tag ? { tag } : {})} {...(origem ? { origin: origem } : {})} rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))} contractsOnly={contrato === "1"} idleOnly={semvenda === "1"} category={parseCategoryFilter(categoria)} pendingOnly={pendencia === "1"} pendingApplications={pendingApplications} canInvite={can(actor.grants, "creators.edit", brand.id)} />
     </>
   );
 }

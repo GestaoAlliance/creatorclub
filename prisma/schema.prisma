@@ -177,6 +177,8 @@ model User {
   roleGrants     RoleGrant[]
   creatorAccount CreatorAccount?
   hunterLinks    HunterLink[]
+  /// D-ORIGIN: creators que este hunter trouxe (origem marcada à mão na ficha).
+  originCreators Creator[]       @relation("CreatorOriginHunter")
   prospects      Prospect[]
   creatorNotes   CreatorNote[]
 }
@@ -272,12 +274,12 @@ model CreatorAccount {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  user         User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user               User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
   instagramSnapshots InstagramSnapshot[]
   instagramPosts     InstagramPost[]
-  creators     Creator[]
-  invites      CreatorInvite[]
-  applications CreatorApplication[]
+  creators           Creator[]
+  invites            CreatorInvite[]
+  applications       CreatorApplication[]
 }
 
 /// Convite de uso único para a creator entrar no portal (E2.5). Ligado à conta, nunca ao e-mail solto.
@@ -346,6 +348,10 @@ model Creator {
   goalStartAt             DateTime?         @db.Date
   /// D-WELCOMEVIDEO: envio inicial "2 produtos + 3 vídeos" combinado na aprovação (vídeos que ela deve à marca); 0 = 1 produto.
   welcomeVideos           Int               @default(0)
+  /// D-ORIGIN: origem marcada à mão pela Gestão para quem não tem candidatura (importadas). Com candidatura, vale a dela.
+  originKind              String?
+  originHunterId          String?
+  originNote              String?
   couponRegistered        Boolean?
   followsOnInstagram      Boolean?
   inGroup                 Boolean?
@@ -361,6 +367,7 @@ model Creator {
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 
+  originHunter       User?               @relation("CreatorOriginHunter", fields: [originHunterId], references: [id], onDelete: Restrict)
   brand              Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
   account            CreatorAccount      @relation(fields: [accountId], references: [id], onDelete: Restrict)
   commissionPolicies CommissionPolicy[]

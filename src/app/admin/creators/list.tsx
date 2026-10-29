@@ -9,7 +9,7 @@ import { CopyButton } from "@/components/portal/copy-button";
 import { HelpTip } from "@/components/ui/tour";
 import { badge, ui } from "@/components/ui/styles";
 import { bulkInviteAction, type BulkInviteState } from "./actions";
-import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, matchesCategory, whatsappChatUrl, type CategoryFilter, type CreatorCategoryValue } from "@/domain";
+import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, formatBRL, originKey, originText, type Origin, instagramUrl, matchesCategory, whatsappChatUrl, type CategoryFilter, type CreatorCategoryValue } from "@/domain";
 
 type Row = {
   id: string;
@@ -26,6 +26,8 @@ type Row = {
   lastOrder: { name: string; day: string } | null;
   pendings: string[];
   joinedAt: Date;
+  /** D-ORIGIN: só para quem vê a origem. */
+  origin: Origin | null;
   email: string | null;
   phone: string | null;
   instagram: string | null;
@@ -67,7 +69,7 @@ function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
  * cupom, @, e-mail, WhatsApp ou CPF, e a tabela com redes, WhatsApp, cupom e vendas (ordenável). Tudo no navegador:
  * a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só para quem vê dados fiscais).
  */
-export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number; canInvite?: boolean }) {
+export function CreatorList(p: { rows: Row[]; tag?: string; origin?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number; canInvite?: boolean }) {
   const { rows } = p;
   const router = useRouter();
   // A linha inteira abre a ficha (links e botões de dentro continuam funcionando sozinhos).
@@ -80,6 +82,13 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
   const [category, setCategory] = useState<CategoryFilter>(p.category ?? "");
   const [tag, setTag] = useState(p.tag ?? "");
   const [uf, setUf] = useState("");
+  // D-ORIGIN: filtro por origem (formulário ou hunter); `p.origin` abre já filtrado (link da aba Origem).
+  const [origin, setOrigin] = useState(p.origin ?? "");
+  const originOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) if (r.origin) m.set(originKey(r.origin), originText(r.origin));
+    return [...m].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [rows]);
   const ufs = useMemo(() => [...new Set(rows.map((r) => r.state).filter((x): x is string => Boolean(x)))].sort(), [rows]);
   // M4.2 (D-TAGS): tags em uso na marca, com quantas creators da situação têm cada uma.
   const tagOptions = useMemo(() => {
@@ -109,6 +118,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
       if (!matchesCategory(r.categories, category) || !alertTest(r)) return false;
       if (tag && !r.tags.some((t) => t.id === tag)) return false;
       if (uf && r.state !== uf) return false;
+      if (origin && (!r.origin || originKey(r.origin) !== origin)) return false;
       if (!words.length) return true;
       const hay = norm(`${r.name} ${r.coupon ?? ""} ${r.instagram ?? ""} ${r.tiktok ?? ""} ${r.email ?? ""}`);
       const nums = `${(r.phone ?? "").replace(/\D/g, "")} ${r.cpf ?? ""}`;
@@ -122,7 +132,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
       const c = x < y ? -1 : x > y ? 1 : 0;
       return sort.desc ? -c : c;
     });
-  }, [q, situation, category, alert, sort, rows, tag, uf]);
+  }, [q, situation, category, alert, sort, rows, tag, uf, origin]);
 
   // D-ACCESSREQ: no filtro "sem acesso ao portal", a Gestão marca as creators e gera os convites de uma vez.
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -201,12 +211,20 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
             </label>
             <HelpTip id="cr-filtros" />
           </div>
-          {(ufs.length > 0 || tagOptions.length > 0) && (
+          {(ufs.length > 0 || tagOptions.length > 0 || originOptions.length > 0) && (
             <div className="flex flex-wrap items-center gap-2">
             {ufs.length > 0 && (
               <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado" className={ui.inputSm}>
                 <option value="">Todos os estados</option>
                 {ufs.map((x) => <option key={x} value={x}>{x} ({inSituation.filter((r) => r.state === x).length})</option>)}
+              </select>
+            )}
+            {originOptions.length > 0 && (
+              <select value={origin} onChange={(e) => setOrigin(e.target.value)} aria-label="Origem" className={ui.inputSm}>
+                <option value="">Todas as origens</option>
+                {originOptions.map((o) => (
+                  <option key={o.key} value={o.key}>{o.label} ({inSituation.filter((r) => r.origin && originKey(r.origin) === o.key).length})</option>
+                ))}
               </select>
             )}
             {tagOptions.length > 0 && (
@@ -269,6 +287,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     {wa && <a href={wa} {...ext} className="inline-flex items-center gap-1"><WhatsAppIcon className="size-3.5 text-emerald-600" />WhatsApp</a>}
+                    {c.origin && c.origin.kind !== "UNKNOWN" && <span className="text-stone-500">veio de: {originText(c.origin)}</span>}
                     {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
                     {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</span>}
                     {c.coupon && <span className="font-mono font-semibold">{c.coupon}</span>}
@@ -311,6 +330,7 @@ export function CreatorList(p: { rows: Row[]; tag?: string; contractsOnly?: bool
                           <span className="grid size-10 shrink-0 place-content-center rounded-full bg-gradient-to-br from-brand to-brand/60 text-sm font-semibold text-white shadow-sm dark:from-brand-2 dark:to-brand-2/60">{c.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
                           <div className="min-w-0">
                             <Link href={`/admin/creators/${c.id}`} className="block truncate font-medium hover:underline">{c.name}</Link>
+                            {c.origin && c.origin.kind !== "UNKNOWN" && <span className="block truncate text-xs text-stone-500">veio de: {originText(c.origin)}</span>}
                             {wa ? (
                               <a href={wa} {...ext} className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-emerald-700 dark:text-stone-300"><WhatsAppIcon className="size-3.5 text-emerald-600" />{c.phone}</a>
                             ) : (
