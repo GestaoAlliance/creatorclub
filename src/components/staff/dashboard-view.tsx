@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SalesChart } from "@/components/portal/sales-chart";
+import { needsFor } from "@/lib/staff/needs";
 import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
@@ -48,34 +49,13 @@ export function Stat({ label, value, change, hint }: { label: string; value: Rea
   );
 }
 
-/** "Precisa de você" (o que cada papel tem para fazer agora), em uma faixa de atalhos. */
+/** "Precisa de você" (regra em `needsFor`), em uma faixa de atalhos. */
 function Needs({ h }: { h: StaffHome }) {
-  const items: { href: string; label: string; n: number }[] = [];
-  if (h.creators) {
-    items.push({ href: "/admin/candidatas", label: "cadastros para aprovar", n: h.creators.applications });
-    items.push({ href: "/admin/creators?contrato=1", label: "contratos vencendo ou vencidos", n: h.creators.contractsExpiring + h.creators.contractsExpired });
-    items.push({ href: "/admin/creators?semvenda=1", label: "sem vender há 60 dias", n: h.creators.idle });
-    items.push({ href: "/admin/creators?pendencia=1", label: "a conferir pela Ana", n: h.creators.toReview });
-  }
-  if (h.actions) {
-    if (h.creators) items.push({ href: "/admin/creators/acoes", label: "ações com creators", n: h.actions.open });
-    else items.push({ href: "/admin/envios", label: "envios parados há 3 dias", n: h.actions.shipStuck });
-  }
-  if (h.withdrawals) {
-    const w = h.withdrawals;
-    if (w.mine.approve) items.push({ href: "/admin/saques", label: "saques para aprovar", n: w.toApprove });
-    if (w.mine.pay) items.push({ href: "/admin/saques?ver=aprovados", label: "saques aprovados para pagar", n: w.toPay });
-    if (w.openingsPending !== null) items.push({ href: "/admin/abertura", label: "aberturas a aprovar", n: w.openingsPending });
-  }
-  if (h.shipments) {
-    items.push({ href: "/admin/envios", label: "kits a aprovar", n: h.shipments.awaiting });
-    items.push({ href: "/admin/envios", label: "envios a preparar", n: h.shipments.preparing });
-  }
-  if (h.coupons) items.push({ href: "/admin/cupons", label: "cupons sem tipo ou dona", n: h.coupons.unclassified + h.coupons.ownerPending });
+  const { readOnly, items } = needsFor(h);
   const open = items.filter((i) => i.n > 0);
   return (
     <section className={`${ui.card} gap-3`}>
-      <p className="text-sm font-semibold">Precisa de você</p>
+      <p className="text-sm font-semibold">{readOnly ? "Pendências da equipe" : "Precisa de você"}</p>
       {open.length === 0 ? (
         <p className={ui.muted}>Nada esperando agora.</p>
       ) : (

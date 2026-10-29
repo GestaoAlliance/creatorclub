@@ -21,6 +21,8 @@ export type StaffHome = {
   withdrawals?: { toApprove: number; toApproveCents: number; toPay: number; toPayCents: number; mine: { approve: boolean; pay: boolean }; openingsPending: number | null };
   /** M2.1 (D-ACTIONS): tarefas da fila de ações que esta pessoa cuida (Gestão: todas; Envio: envios parados). */
   actions?: { open: number; shipStuck: number };
+  /** O que é tarefa desta pessoa no "Precisa de você": cuidar das creators (Gestão) e preparar envios (Envio). */
+  mine?: { creators: boolean; shipping: boolean };
   /** U3: a hunter vê as próprias indicações. */
   hunter?: { clicks30: number; inReview: number; approved: number; hasLink: boolean };
 };
@@ -45,7 +47,7 @@ async function idleCount(prisma: PrismaClient, where: { brandId?: { in: string[]
 }
 
 export async function staffHome(prisma: PrismaClient, actor: Actor): Promise<StaffHome> {
-  const out: StaffHome = {};
+  const out: StaffHome = { mine: { creators: scope(actor, "creators.edit") !== null, shipping: scope(actor, "shipping.manage") !== null } };
   const view = scope(actor, "creators.view");
   const edit = scope(actor, "creators.edit");
   const ship = scope(actor, "shipping.view");
