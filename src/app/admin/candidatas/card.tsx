@@ -95,7 +95,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
             hasLogin={a.hasLogin} applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal}
             templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} hasCnpj={Boolean(a.cnpj)}
             choices={{
-              autentique: a.autentique,
+              autentique: true, // D-CONTRACTLOCK: aprovar sempre trava até o contrato
               payout: a.payoutAnswer === PAYOUT_PJ ? "cnpj" : a.payoutAnswer === PAYOUT_PF ? "cpf" : null,
             }}
           />

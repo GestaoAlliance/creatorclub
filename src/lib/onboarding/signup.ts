@@ -31,11 +31,13 @@ export type SignupOutcome = { ok: true; email: string | null } | { ok: false; er
 /** Cupom já usado na marca ou reservado por outra inscrição em análise. */
 export async function signupCouponTaken(prisma: PrismaClient, brandId: string, code: string): Promise<boolean> {
   const c = code.toUpperCase();
-  const [coupon, pending] = await Promise.all([
+  const [coupon, pending, reserved] = await Promise.all([
     prisma.coupon.findFirst({ where: { brandId, code: { equals: c, mode: "insensitive" } }, select: { id: true } }),
     prisma.creatorApplication.findFirst({ where: { brandId, status: "NEW", suggestedCoupon: { equals: c, mode: "insensitive" } }, select: { id: true } }),
+    // D-CONTRACTFLOW: cupom reservado para quem foi aprovada e espera o contrato.
+    prisma.creator.findFirst({ where: { brandId, pendingCouponCode: c }, select: { id: true } }),
   ]);
-  return Boolean(coupon || pending);
+  return Boolean(coupon || pending || reserved);
 }
 
 export async function submitSignup(

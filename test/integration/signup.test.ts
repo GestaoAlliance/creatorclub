@@ -6,7 +6,7 @@ import { approveApplication } from "@/lib/onboarding/applications";
 import { actionQueue } from "@/lib/actions/queue";
 import { requestPortalAccess, SIGNUP_LIMIT_PER_HOUR, signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
 import { createCreatorInvite, inviteCreatorsInBulk } from "@/lib/team/creator-invites";
-import { expectDbError, seedBrand, testClient } from "./fixtures";
+import { expectDbError, seedBrand, testClient, letters } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -30,7 +30,7 @@ function cpf(): string {
   return d.join("");
 }
 
-const values = (email: string, coupon = `C${randomUUID().slice(0, 8)}`): Record<string, string> => ({
+const values = (email: string, coupon = `C${randomUUID().replace(/[^a-f]/g, "").slice(0, 8)}`): Record<string, string> => ({
   fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon, payoutAs: "Pessoa física (CPF)",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: "", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
 });
@@ -67,7 +67,7 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     const { auth, users } = fakeAuth();
     const now = new Date("2026-10-22T15:00:00Z");
     const email = `${randomUUID()}@Example.com`;
-    const code = `MARIA${seq % 1000}`;
+    const code = `MARIA${letters(4)}`;
     const withOrigin = base(brand.slug, email, "1.1.1.1", code.toLowerCase());
     expect(
       await submitSignup(prisma, { ...withOrigin, values: { ...withOrigin.values, heardFrom: "Outro", heardFromOther: "feira" }, hunterCode: "maria", campaignTag: "Stories Outubro" }, auth, now),

@@ -95,6 +95,7 @@ export async function sendCreatorContract(
       ugcVideoGoal: true,
       pendingCouponCode: true,
       pendingDiscountBps: true,
+      couponAssignments: { where: { validTo: null, coupon: { kind: "CREATOR" } }, orderBy: { validFrom: "desc" }, take: 1, select: { coupon: { select: { code: true, discountBps: true } } } },
       brand: { select: { name: true, slug: true } },
       contractTemplate: { select: { id: true, documentKind: true, months: true, releaseMinCents: true, kitTiers: true } },
       commissionPolicies: { where: { validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }] }, orderBy: { validFrom: "desc" }, take: 1, select: { rateBps: true } },
@@ -119,7 +120,11 @@ export async function sendCreatorContract(
   const kind = contractTextKind(category, c.receivesAsIndividual);
   const doc = await currentContract(prisma, c.brandId, kind);
   if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kind]}" (Contratos).`);
-  if (!c.pendingCouponCode || c.pendingDiscountBps === null) throw new ContractSendError("Falta o cupom reservado na aprovação.");
+  // Cupom reservado na aprovação ou, para quem já tinha cupom (D-CONTRACTLOCK), o cupom dela.
+  const current = c.couponAssignments[0]?.coupon ?? null;
+  const couponCode = c.pendingCouponCode ?? current?.code ?? null;
+  const couponDiscount = c.pendingDiscountBps ?? current?.discountBps ?? null;
+  if (!couponCode) throw new ContractSendError("Falta o cupom reservado na aprovação.");
   const rateBps = c.commissionPolicies[0]?.rateBps ?? null;
 
   const address = a.addrStreet
@@ -142,8 +147,8 @@ export async function sendCreatorContract(
     address: fullAddress,
     cnpj: !c.receivesAsIndividual && cnpj.length === 14 ? cnpj : null,
     companyName: !c.receivesAsIndividual ? fold(app?.companyName) || null : null,
-    coupon: c.pendingCouponCode,
-    discountBps: c.pendingDiscountBps,
+    coupon: couponCode,
+    discountBps: couponDiscount,
     rateBps,
     releaseMinCents: c.contractTemplate.releaseMinCents,
     kitTiers: parseKitTiers(c.contractTemplate.kitTiers),
@@ -195,8 +200,8 @@ export async function sendCreatorContract(
         signerEmail: email,
         body,
         bodySha256,
-        pendingCouponCode: c.pendingCouponCode,
-        pendingDiscountBps: c.pendingDiscountBps,
+        pendingCouponCode: couponCode,
+        pendingDiscountBps: couponDiscount,
         rateBps,
         signLink: created.signLink,
         createdById: actorId,
@@ -212,7 +217,7 @@ export async function sendCreatorContract(
         action: "contract.sent",
         entity: "ContractRequest",
         entityId: r.id,
-        after: { creatorId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, kind, coupon: c.pendingCouponCode, templateId: c.contractTemplate!.id },
+        after: { creatorId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, kind, coupon: couponCode, templateId: c.contractTemplate!.id },
       },
     });
     if (created.signLink) await enqueueJob(tx, { type: CONTRACT_LINK_JOB, brandId: c.brandId, payload: { requestId: r.id }, dedupeKey: `contract-link:${r.id}`, runAt: nextWhatsAppTime(now), maxAttempts: 5 });
@@ -376,22 +381,26 @@ async function markSigned(prisma: PrismaClient, requestId: string, now: Date): P
 async function activateCreator(prisma: PrismaClient, creatorId: string, clientFor: ClientFactory, origin: string | null, now: Date) {
   const c = await prisma.creator.findUniqueOrThrow({
     where: { id: creatorId },
-    select: { brandId: true, pendingCouponCode: true, pendingDiscountBps: true, welcomeVideos: true, reviewedById: true, account: { select: { userId: true } }, brand: { select: { name: true, slug: true, approvalSuggestion: true } } },
+    select: {
+      brandId: true, pendingCouponCode: true, pendingDiscountBps: true, welcomeVideos: true, reviewedById: true, account: { select: { userId: true } }, brand: { select: { name: true, slug: true, approvalSuggestion: true } },
+      couponAssignments: { where: { validTo: null, coupon: { kind: "CREATOR" } }, orderBy: { validFrom: "desc" }, take: 1, select: { coupon: { select: { code: true, discountBps: true } } } },
+    },
   });
-  if (!c.pendingCouponCode || c.pendingDiscountBps === null) return;
-  const code = c.pendingCouponCode;
-  const discountBps = c.pendingDiscountBps;
+  // Cupom reservado na aprovação ou, para quem já tinha cupom antes da trava (D-CONTRACTLOCK), o cupom dela.
+  const current = c.couponAssignments[0]?.coupon ?? null;
+  const code = c.pendingCouponCode ?? current?.code ?? null;
+  const discountBps = c.pendingDiscountBps ?? current?.discountBps ?? 0;
   const actorId = c.reviewedById ?? SYSTEM;
-  const existing = await prisma.coupon.findUnique({ where: { brandId_code: { brandId: c.brandId, code } }, select: { id: true, assignments: { select: { creatorId: true } } } });
+  const existing = code ? await prisma.coupon.findUnique({ where: { brandId_code: { brandId: c.brandId, code } }, select: { id: true, assignments: { select: { creatorId: true } } } }) : null;
   if (existing && !existing.assignments.some((x) => x.creatorId === creatorId)) throw new CouponCreateError(`o cupom ${code} já existe nesta marca; escolha outro na ficha.`);
-  const shopifyId = existing ? null : await createDiscountInShopify(prisma, c.brandId, code, discountBps, clientFor, now);
+  const shopifyId = existing || !code ? null : await createDiscountInShopify(prisma, c.brandId, code, discountBps, clientFor, now);
   const withVideos = c.welcomeVideos > 0;
   const products = withVideos ? WELCOME_VIDEO_PRODUCTS : WELCOME_PRODUCTS;
   const loginUrl = origin ? `${origin}/entrar?marca=${c.brand.slug}` : null;
-  const message = approvalMessage({ brand: c.brand.name, coupon: code, discountBps, suggestion: c.brand.approvalSuggestion, withVideos, loginUrl: c.account.userId ? loginUrl : null });
+  const message = approvalMessage({ brand: c.brand.name, coupon: code ?? "(a equipe te manda)", discountBps, suggestion: c.brand.approvalSuggestion, withVideos, loginUrl: c.account.userId ? loginUrl : null });
   await prisma.$transaction(async (tx) => {
-    const coupon = existing ?? (await tx.coupon.create({ data: { brandId: c.brandId, code, kind: "CREATOR", classifiedAt: now, classifiedById: actorId, discountBps, shopifyId } }));
-    if (!existing) {
+    if (code && !existing) {
+      const coupon = await tx.coupon.create({ data: { brandId: c.brandId, code, kind: "CREATOR", classifiedAt: now, classifiedById: actorId, discountBps, shopifyId } });
       await tx.couponAssignment.create({ data: { brandId: c.brandId, couponId: coupon.id, creatorId, validFrom: now, createdById: actorId, confirmedAt: now, confirmedById: actorId } });
     }
     const month = dayKey(now).slice(0, 7);
@@ -437,4 +446,44 @@ export function autentiqueHandlers(prisma: PrismaClient) {
       await checkContracts(prisma, job.brandId);
     },
   };
+}
+
+/**
+ * D-CONTRACTLOCK: a Gestão marca "Contrato assinado" para quem assinou fora do Autentique (ex.: D4Sign) ou quando a marca
+ * ainda não tem Autentique. O contrato passa a valer hoje e a ativação (cupom, kit, portal e mensagem) roda na hora; se a
+ * Shopify falhar, a conferência de 5 em 5 minutos tenta de novo. Contrato do Autentique ainda aberto é cancelado.
+ */
+export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | null, creatorId: string, deps: Deps = {}) {
+  const now = deps.now ?? new Date();
+  const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { brandId: true, awaitingContractAt: true, contractSigned: true, contractTemplate: { select: { months: true } } } });
+  if (!c || !actor || !can(actor.grants, "creators.edit", c.brandId)) throw new ContractSendError("Sem permissão.");
+  if (!c.awaitingContractAt) throw new ContractSendError("Esta creator não está esperando contrato.");
+  if (!c.contractSigned) {
+    const open = await prisma.contractRequest.findMany({ where: { creatorId, status: "SENT" }, select: { id: true, brandId: true, externalId: true } });
+    if (open.length) {
+      const token = (await loadAutentique(prisma, c.brandId, deps.encKey).catch(() => null))?.token ?? null;
+      for (const r of open) await cancelRequest(prisma, r, token, actor.userId, "assinado fora do Autentique", deps);
+    }
+    const start = dayKey(now);
+    await prisma.$transaction([
+      prisma.creator.update({
+        where: { id: creatorId },
+        data: {
+          contractSigned: true,
+          contractRequiredAt: null,
+          contractStart: new Date(`${start}T00:00:00Z`),
+          contractEnd: new Date(`${addMonthsToDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`),
+          goalStartAt: new Date(`${start}T00:00:00Z`),
+        },
+      }),
+      prisma.auditLog.create({ data: { brandId: c.brandId, actorType: "USER", actorId: actor.userId, action: "contract.signed_outside", entity: "Creator", entityId: creatorId, after: { start } } }),
+    ]);
+  }
+  try {
+    await activateCreator(prisma, creatorId, deps.clientFor ?? defaultClientFactory, deps.origin === undefined ? siteOrigin() : deps.origin, now);
+    return { activated: true };
+  } catch (error) {
+    const msg = error instanceof CouponCreateError ? `Cupom: ${error.message}` : String(error instanceof Error ? error.message : error);
+    return { activated: false, error: msg.slice(0, 300) };
+  }
 }

@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
-import { checkCreatorNow, ContractSendError, sendCreatorContract } from "@/lib/autentique/applications";
+import { checkCreatorNow, confirmSignedOutside, ContractSendError, sendCreatorContract } from "@/lib/autentique/applications";
 
 export type ApproveState =
   | {
@@ -164,6 +164,18 @@ export async function checkContractAction(_prev: ContractState, form: FormData):
     if (r.rejected) return { ok: "Ela recusou o contrato no Autentique." };
     if (r.errors) return { error: "Não deu para concluir agora; o sistema tenta de novo em 5 minutos." };
     return { ok: "Ainda não assinado." };
+  } catch (error) {
+    if (error instanceof ContractSendError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-CONTRACTLOCK: "Contrato assinado" (assinou fora do Autentique): libera cupom, kit, portal e a mensagem. */
+export async function signedOutsideAction(_prev: ContractState, form: FormData): Promise<ContractState> {
+  try {
+    const r = await confirmSignedOutside(db(), await currentActor(), String(form.get("creatorId") ?? ""));
+    revalidatePath("/admin/candidatas");
+    return r.activated ? { ok: "Contrato marcado como assinado: cupom criado, plataforma liberada e mensagem enviada." } : { error: `Contrato marcado como assinado, mas a ativação falhou (${r.error}). O sistema tenta de novo em 5 minutos.` };
   } catch (error) {
     if (error instanceof ContractSendError) return { error: error.message };
     throw error;

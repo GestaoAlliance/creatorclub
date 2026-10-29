@@ -1,3 +1,4 @@
+import { confirmSignedOutside } from "@/lib/autentique/applications";
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
@@ -45,6 +46,9 @@ describe("M4.1: nova candidata pela equipe e recusa em massa (D-MANUALAPP, banco
 
     const r = await approveApplication(prisma, gestao, { applicationId: id, couponCode: letters(6), category: "PRESCRITOR", rateBps: 1500, discountBps: 500, email: `${randomUUID()}@x.com`, welcomeWithVideos: true }, clientFor);
     expect(await prisma.creator.count({ where: { id: r.creatorId, brandId: brand.id } })).toBe(1);
+    // D-CONTRACTLOCK: o kit só nasce com o contrato assinado.
+    expect(await prisma.kitGrant.count({ where: { creatorId: r.creatorId } })).toBe(0);
+    await confirmSignedOutside(prisma, gestao, r.creatorId, { clientFor, origin: null });
     // D-WELCOMEVIDEO: Opção 2 libera 2 produtos de boas-vindas e guarda os 3 vídeos combinados.
     expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, select: { welcomeVideos: true } })).toEqual({ welcomeVideos: 3 });
     expect(await prisma.kitGrant.findMany({ where: { creatorId: r.creatorId }, select: { kind: true, products: true } })).toEqual([{ kind: "WELCOME", products: 2 }]);

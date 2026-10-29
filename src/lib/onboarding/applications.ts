@@ -10,7 +10,6 @@ import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { notify } from "@/lib/notifications/notify";
 import { hunterLinkIdFor } from "./hunters";
 import { cancelApplicationContracts, enqueueCreatorContract } from "@/lib/autentique/applications";
-import { hasAutentique } from "@/lib/autentique/credentials";
 import type { Fetcher } from "@/lib/autentique/client";
 
 /**
@@ -137,12 +136,10 @@ export function categoryFromAnswer(answer: string | null): Category {
   return "INFLUENCER";
 }
 
-/** Sugestão de cupom já no formato aceito (letras e números, até 20); vazio se não der. */
+/** Sugestão de cupom já no formato aceito (D-COUPONLETTERS: só letras, até 20); vazio se não der. */
 export function couponFromSuggestion(suggestion: string | null): string {
   const s = (suggestion ?? "").split(/[,/;\n]| ou /i)[0] ?? "";
-  const v = validateNewCouponCode(s);
-  if (v.ok) return v.code;
-  return normalizeCouponCode(s.normalize("NFD").replace(/[^A-Za-z0-9]/g, "")).slice(0, 20);
+  return normalizeCouponCode(s.normalize("NFD").replace(/[^A-Za-z]/g, "")).slice(0, 20);
 }
 
 export async function receiveApplication(
@@ -368,9 +365,13 @@ export async function approveApplication(
   const { brand } = app;
   // D-CONTRACTFLOW: na marca com Autentique, aprovar não cria o cupom nem o kit: a creator espera o contrato, que sai
   // sozinho; o cupom fica reservado e é criado na Shopify depois da assinatura.
-  const autentique = await hasAutentique(prisma, app.brandId);
+  // D-CONTRACTLOCK (2026-10-29): aprovar sempre trava (com ou sem Autentique); libera na assinatura ou quando a Gestão
+  // marca "Contrato assinado" (quem assinou fora, ex.: D4Sign).
+  const autentique = true;
   const coupon = validateNewCouponCode(input.couponCode);
-  if (!coupon.ok) throw new ApplicationError("Cupom inválido: letras e números, até 20.");
+  if (!coupon.ok) throw new ApplicationError("Cupom inválido: só letras, até 20.");
+  // D-COUPONLETTERS (pedido da Vanessa em 2026-10-29): cupom de creator nova só com letras.
+  if (/[0-9]/.test(coupon.code)) throw new ApplicationError("Cupom só com letras (sem números). Ex.: MARIA.");
   if (!["INFLUENCER", "PRESCRITOR", "UGC"].includes(input.category)) throw new ApplicationError("Tipo inválido.");
   try {
     assertBps(input.rateBps);
@@ -396,7 +397,6 @@ export async function approveApplication(
       : null;
   if (input.contractTemplateId && !template) throw new ApplicationError("Versão de contrato inválida.");
   if (!template && (await prisma.contractTemplate.count({ where: { brandId: app.brandId } })) > 0) throw new ApplicationError("Escolha a versão do contrato que ela assinou.");
-  if (autentique && !template) throw new ApplicationError("Não há versão de contrato deste tipo nesta marca (Contratos).");
   const start = dayKey(now);
 
   // F3: confere tudo antes de ir à Shopify; o cupom é criado lá primeiro e, se a Shopify recusar, nada é gravado.

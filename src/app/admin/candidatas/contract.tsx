@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
 import { contractBadge } from "@/domain";
-import { checkContractAction, sendContractAction } from "./actions";
+import { checkContractAction, sendContractAction, signedOutsideAction } from "./actions";
 
 const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const pct = (bps: number) => (bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -37,6 +37,7 @@ export function ContractBox(p: { creatorId: string; contract: ContractInfo | nul
   const b = p.awaiting?.signed && c?.status === "SIGNED" ? { label: "assinado: ativando a parceria", tone: "amber" as const } : !p.awaiting && c?.status === "SIGNED" ? { label: "parceria ativa", tone: "green" as const } : contractBadge(c, p.error);
   const [check, checkAction, checking] = useActionState(checkContractAction, undefined);
   const [send, sendAction, sending] = useActionState(sendContractAction, undefined);
+  const [outside, outsideAction, confirming] = useActionState(signedOutsideAction, undefined);
   const canSend = p.canManage && p.awaiting !== null && !p.awaiting.signed;
   return (
     <section className={`${ui.inset} flex flex-col gap-2 text-sm`}>
@@ -78,6 +79,13 @@ export function ContractBox(p: { creatorId: string; contract: ContractInfo | nul
               </button>
             </form>
           )}
+          {/* D-CONTRACTLOCK: assinou fora do Autentique (ex.: D4Sign) ou a marca ainda não tem Autentique. */}
+          {canSend && (
+            <form action={outsideAction} onSubmit={(e) => { if (!confirm("Confirmar que ela já assinou o contrato? Isso cria o cupom, libera a plataforma e manda a mensagem.")) e.preventDefault(); }}>
+              <input type="hidden" name="creatorId" value={p.creatorId} />
+              <button className={ui.ghostSm} disabled={confirming}>{confirming ? "Liberando…" : "Contrato assinado (fora do Autentique)"}</button>
+            </form>
+          )}
           {canSend && (
             <form action={sendAction}>
               <input type="hidden" name="creatorId" value={p.creatorId} />
@@ -88,6 +96,7 @@ export function ContractBox(p: { creatorId: string; contract: ContractInfo | nul
       )}
       <Msg state={check} />
       <Msg state={send} />
+      <Msg state={outside} />
     </section>
   );
 }
