@@ -317,6 +317,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-225 — 2026-10-29 — Candidatas: "Veio de" em destaque para quem aprova (D-ORIGIN)
+- **Pedido do responsável:** quem aprova (ex.: Fátima na Revita) precisa ver de qual hunter a candidata veio na hora de
+  decidir. Feito: coluna "Veio de" com selo "Hunter: Nome" (cor da marca); código digitado que não bate com nenhum
+  hunter aparece em amarelo ("código X não encontrado"), e formulário de hunter sem código como "Hunter não
+  informado"; no cartão aberto, faixa "Veio pela hunter Fulana (link x)". O atalho "trazidas por hunter" conta
+  também esses casos.
+
 ### CP-224 — 2026-10-29 — De onde veio cada creator (D-ORIGIN, parte 1)
 - **Feito:** origem pela inscrição aprovada (formulário Hunter, Captação, cadastro do site, equipe, prospecção; hunter
   pelo link/código) ou marcada à mão pela Gestão na ficha para quem não tem inscrição (`Creator.originKind`,

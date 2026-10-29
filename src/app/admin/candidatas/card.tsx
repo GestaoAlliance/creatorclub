@@ -27,7 +27,16 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
           </span>
         </span>
       </div>
-      {a.hunter && <p className="text-sm">Trazida por <span className="font-medium">{a.hunter.name}</span> <span className={ui.hint}>(link {a.hunter.code})</span></p>}
+      {/* D-ORIGIN: de qual hunter veio, em destaque para quem decide. */}
+      {a.hunter ? (
+        <p className="rounded-2xl bg-brand/10 px-4 py-2.5 text-sm dark:bg-brand-2/15">
+          Veio pela hunter <span className="font-semibold">{a.hunter.name}</span> <span className={ui.hint}>(link {a.hunter.code})</span>
+        </p>
+      ) : a.hunterCode || a.source === "hunter_form" ? (
+        <p className="rounded-2xl bg-amber-500/10 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-200">
+          {a.hunterCode ? <>Diz que foi convidada pelo código <span className="font-semibold">&quot;{a.hunterCode}&quot;</span>, mas nenhum hunter tem esse código. Confira com a equipe.</> : "Veio pelo formulário de hunter, mas sem o código de quem convidou."}
+        </p>
+      ) : null}
       {a.note && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{a.note}</p>}
       <div className="grid gap-1.5 text-sm sm:grid-cols-2">
         {a.instagram && <p><InstagramLink handle={a.instagram} /></p>}
