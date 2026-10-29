@@ -3,7 +3,7 @@ import Link from "next/link";
 import { InstagramLink, LinkifiedText, WhatsappLink } from "@/components/ui/contact-links";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
-import { PAYOUT_PF, PAYOUT_PJ, WELCOME_ONE, WELCOME_TWO } from "@/domain";
+import { PAYOUT_PF, PAYOUT_PJ } from "@/domain";
 import { ContractBox } from "./contract";
 import { DecisionForms, type TemplateOption } from "./forms";
 
@@ -97,7 +97,6 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
             choices={{
               autentique: a.autentique,
               payout: a.payoutAnswer === PAYOUT_PJ ? "cnpj" : a.payoutAnswer === PAYOUT_PF ? "cpf" : null,
-              welcome: a.welcomeAnswer === WELCOME_TWO ? "videos" : a.welcomeAnswer === WELCOME_ONE ? "one" : null,
             }}
           />
         </div>

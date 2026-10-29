@@ -116,8 +116,7 @@ export async function sendCreatorContract(
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ContractSendError("A creator não tem um e-mail válido para receber o contrato.");
   const category = c.contractTemplate?.documentKind ?? c.categories[0] ?? "INFLUENCER";
   if (!c.contractTemplate || !isContractKind(category)) throw new ContractSendError("Falta a versão do contrato na ficha.");
-  const withVideos = c.welcomeVideos > 0;
-  const kind = contractTextKind(category, c.receivesAsIndividual, withVideos);
+  const kind = contractTextKind(category, c.receivesAsIndividual);
   const doc = await currentContract(prisma, c.brandId, kind);
   if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kind]}" (Contratos).`);
   if (!c.pendingCouponCode || c.pendingDiscountBps === null) throw new ContractSendError("Falta o cupom reservado na aprovação.");

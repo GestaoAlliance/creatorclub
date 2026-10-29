@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-233 — 2026-10-29 — Sem a escolha de 1 ou 2 produtos no cadastro; 2 modelos de contrato (D-CONTRACTFLOW)
+- **Feito (pedido do responsável):** o cadastro do site não pergunta mais "Seu primeiro envio"; o envio inicial volta a
+  ser escolhido pela gestora na aprovação (1 produto por padrão, ou 2 produtos + 3 vídeos). A Influencer passa a ter
+  2 modelos de contrato: `INFLUENCER_PF` (pessoa física) e `INFLUENCER_PJ` (empresa), pela escolha "Vai receber como".
+  Fluxo de assinatura e acesso à plataforma igual ao CP-231. Migração `20261107090000_contract_models_pf_pj` (os 4
+  tipos antigos seguem aceitos na trava, sem uso). Testes ajustados.
+- **Pendente do responsável:** os 2 textos de contrato da Influencer (CPF e CNPJ).
+- **Próxima:** 6) lembrete da Juci no dia 15 com saques aprovados sem pagar.
+
 ### CP-232 — 2026-10-29 — Rastreio e avisos de envio para a creator (D-TRACKING)
 - **Feito:** link do rastreio no domínio (`src/domain/tracking.ts`): Correios no site dos Correios; Jadlog, Loggi,
   Melhor Envio (e código fora do padrão dos Correios) no Melhor Rastreio. "Marcar enviado" com a transportadora em
@@ -340,7 +349,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   Candidatas: aprovar não espera mais a assinatura (D-AUTENTIQUE2 substituída); o quadro do contrato fica na aba
   Aprovadas (conferir, reenviar). Migração `20261105090000_contract_flow`. Teste:
   `test/integration/autentique-application.test.ts`.
-- **Pendente do responsável:** os 4 textos de contrato da Influencer (publicar em Contratos); chave do Autentique da
+- **Pendente do responsável:** os 2 textos de contrato da Influencer, CPF e CNPJ (publicar em Contratos; antes eram 4, ver CP-233); chave do Autentique da
   Botanika, VermeFree e Revita em Integrações.
 - **Próxima:** 5) rastreio clicável e aviso "kit enviado" para a creator.
 
