@@ -77,6 +77,12 @@ export function HuntersView({ brands, origin }: { brands: Brands; origin: string
               <CopyButton value={`${origin}/inscricao/${b.slug}`} label="Copiar" />
             </div>
             <p className={ui.hint}>As respostas viram candidatas em Candidatas. Os formulários antigos do Google continuam chegando lá também.</p>
+            {/* D-ORIGIN: etiqueta de campanha no link. */}
+            <p className={ui.hint}>
+              Para saber qual post, anúncio ou campanha trouxe a inscrição, acrescente uma etiqueta no fim do link, por exemplo{" "}
+              <span className="font-mono">{`${origin}/inscricao/${b.slug}?origem=stories-outubro`}</span>. Ela aparece em Candidatas, na ficha e no
+              Desempenho → Origem.
+            </p>
           </Card>
         </div>
       ))}

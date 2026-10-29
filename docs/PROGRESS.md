@@ -7,8 +7,6 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Antes da fila abaixo (pedido do responsável em 2026-10-29):** origem das creators, parte 2 — etiqueta de campanha
-  no link do cadastro (`?origem=...`) e a pergunta "Como conheceu a marca?" no cadastro do site (D-ORIGIN).
 - **Próxima tarefa:** telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
   2) etiqueta e declaração de conteúdo (remetente por marca em Marcas); 3) planilha dos envios; 4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
@@ -316,6 +314,15 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-226 — 2026-10-29 — Campanha do link e "Como conheceu a marca?" (D-ORIGIN parte 2)
+- **Feito:** o link do cadastro aceita `?origem=etiqueta` (ex.: `/inscricao/botanika?origem=stories-outubro`); a
+  inscrição guarda `campaignTag` e a resposta opcional "Como conheceu a marca?" (`heardFrom`; lista padrão com "Outro:
+  texto"); trava `CreatorApplication_campaign` (migração `20261102100000_application_campaign`). Aparece em Candidatas
+  ("Veio de"), na ficha ("Veio de ... · campanha X · conheceu por: Y") e no Desempenho → Origem, onde o cadastro do site
+  se abre por campanha. Dica de como montar o link em Hunters → "Formulário de inscrição".
+- **Testes:** `test/origin.test.ts`, `test/integration/signup.test.ts`, `test/integration/origin.test.ts`.
+- **Próxima:** fila das telas da equipe (item 2: etiqueta e declaração de conteúdo).
 
 ### CP-225 — 2026-10-29 — Candidatas: "Veio de" em destaque para quem aprova (D-ORIGIN)
 - **Pedido do responsável:** quem aprova (ex.: Fátima na Revita) precisa ver de qual hunter a candidata veio na hora de

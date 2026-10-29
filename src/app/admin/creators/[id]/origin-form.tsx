@@ -18,6 +18,7 @@ export function OriginLine({ creatorId, origin, hunters, canEdit }: { creatorId:
         <span className="text-stone-500">Veio de:</span>
         <span className="font-medium">{originText(origin)}</span>
         {origin.day && <span className={ui.hint}>· inscrita em {origin.day.split("-").reverse().join("/")}</span>}
+        {origin.heardFrom && <span className={ui.hint}>· conheceu por: {origin.heardFrom}</span>}
         {origin.manual && <span className={ui.hint}>· marcada pela equipe{origin.note ? ` (${origin.note})` : ""}</span>}
         {editable && !editing && (
           <button type="button" onClick={() => setEditing(true)} className={ui.ghostSm}>{origin.kind === "UNKNOWN" ? "Marcar origem" : "Alterar"}</button>

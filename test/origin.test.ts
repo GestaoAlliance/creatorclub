@@ -20,3 +20,24 @@ describe("origem da creator (D-ORIGIN)", () => {
     expect(originText(app())).toBe("Cadastro do site");
   });
 });
+
+describe("campanha e como conheceu (D-ORIGIN parte 2)", async () => {
+  const { normalizeCampaignTag, heardFromValue } = await import("@/domain");
+  it("etiqueta de campanha", () => {
+    expect(normalizeCampaignTag("Stories Outubro!")).toBe("stories-outubro");
+    expect(normalizeCampaignTag("Promoção_BF")).toBe("promocao_bf");
+    expect(normalizeCampaignTag("   ")).toBeNull();
+    expect(normalizeCampaignTag("x".repeat(60))).toHaveLength(40);
+  });
+  it("como conheceu", () => {
+    expect(heardFromValue("TikTok", "")).toBe("TikTok");
+    expect(heardFromValue("Outro", "  feira de saúde ")).toBe("Outro: feira de saúde");
+    expect(heardFromValue("Outro", "")).toBe("Outro");
+    expect(heardFromValue("qualquer", "x")).toBeNull();
+  });
+  it("campanha separa a origem no resumo e aparece no texto", () => {
+    const o = app({ campaign: "stories-outubro" });
+    expect(originKey(o)).toBe("SITE:c:stories-outubro");
+    expect(originText(o)).toBe("Cadastro do site · campanha stories-outubro");
+  });
+});

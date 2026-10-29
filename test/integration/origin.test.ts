@@ -51,5 +51,8 @@ describe("origem das creators (D-ORIGIN, banco real)", () => {
     await expectDbError(prisma.creator.update({ where: { id: s.creator.id }, data: { originKind: "XYZ" } }), /Creator_origin/);
     await expectDbError(prisma.creator.update({ where: { id: s.creator.id }, data: { originKind: "SITE", originHunterId: h.id } }), /Creator_origin/);
     await expectDbError(prisma.creator.update({ where: { id: s.creator.id }, data: { originNote: "x" } }), /Creator_origin/);
+    const a = await prisma.creatorApplication.create({ data: { brandId: s.brand.id, source: "staff_form", externalKey: randomUUID(), submittedAt: new Date(), fullName: "Z", raw: {} } });
+    await expectDbError(prisma.creatorApplication.update({ where: { id: a.id }, data: { campaignTag: "Com Espaço" } }), /CreatorApplication_campaign/);
+    await expectDbError(prisma.creatorApplication.update({ where: { id: a.id }, data: { heardFrom: " " } }), /CreatorApplication_campaign/);
   });
 });

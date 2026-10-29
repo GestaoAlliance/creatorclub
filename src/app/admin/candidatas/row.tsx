@@ -55,6 +55,8 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     hunter: a.hunter?.name ?? null,
     hunterCode: a.hunterCode,
     viaHunterForm: a.source === "hunter_form",
+    campaign: a.campaignTag,
+    heardFrom: a.heardFrom,
     brands: a.brands,
     duplicate: a.duplicates.length > 0,
     priority: { level: a.priority.level, label: PRIORITY_LABEL[a.priority.level], reasons: (a.priority.level === "REPETIDA" ? ["resolver por último"] : a.priority.reasons).join(" · ") },

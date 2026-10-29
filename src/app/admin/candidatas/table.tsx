@@ -25,6 +25,9 @@ export type CandidateRow = {
   /** D-ORIGIN: código digitado sem link correspondente, e se veio do formulário de hunter. */
   hunterCode: string | null;
   viaHunterForm: boolean;
+  /** D-ORIGIN: campanha do link e "Como conheceu a marca?". */
+  campaign: string | null;
+  heardFrom: string | null;
   brands: string[];
   duplicate: boolean;
   /** M2.3 (D-PRIORITY): selo e os motivos (aparecem ao passar o mouse e no celular). */
@@ -178,11 +181,18 @@ function Who({ c }: { c: CandidateRow }) {
  */
 /** D-ORIGIN: de onde a candidata veio, em destaque (a Gestão decide sabendo qual hunter trouxe). */
 function CameFrom({ c }: { c: CandidateRow }) {
+  const extra = (
+    <>
+      {c.campaign && <span className="text-[11px] text-stone-500">campanha {c.campaign}</span>}
+      {c.heardFrom && <span className="text-[11px] text-stone-500">conheceu por: {c.heardFrom}</span>}
+    </>
+  );
   if (c.hunter)
     return (
       <span className="flex flex-col items-start gap-0.5">
         <span className="rounded-xl bg-brand px-2.5 py-1 text-xs font-semibold leading-tight text-white dark:bg-brand-2">Hunter: {c.hunter}</span>
         <span className="text-[11px] text-stone-500">{c.origin}</span>
+        {extra}
       </span>
     );
   if (c.hunterCode || c.viaHunterForm)
@@ -190,9 +200,15 @@ function CameFrom({ c }: { c: CandidateRow }) {
       <span className="flex flex-col items-start gap-0.5">
         <span className="rounded-xl bg-amber-500/15 px-2.5 py-1 text-xs font-medium leading-tight text-amber-800 dark:text-amber-300">{c.hunterCode ? `Hunter: código "${c.hunterCode}" não encontrado` : "Hunter não informado"}</span>
         <span className="text-[11px] text-stone-500">{c.origin}</span>
+        {extra}
       </span>
     );
-  return <span className="text-xs">{c.origin}</span>;
+  return (
+    <span className="flex flex-col items-start gap-0.5">
+      <span className="text-xs">{c.origin}</span>
+      {extra}
+    </span>
+  );
 }
 
 export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pending: boolean }) {

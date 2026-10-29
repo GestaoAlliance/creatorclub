@@ -17,14 +17,14 @@ export async function originsFor(prisma: PrismaClient, creatorIds: readonly stri
     prisma.creatorApplication.findMany({
       where: { creatorId: { in: [...creatorIds] } },
       orderBy: { submittedAt: "asc" },
-      select: { creatorId: true, source: true, submittedAt: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
+      select: { creatorId: true, source: true, submittedAt: true, campaignTag: true, heardFrom: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
     }),
     prisma.creator.findMany({ where: { id: { in: [...creatorIds] } }, select: { id: true, originKind: true, originNote: true, originHunter: { select: { id: true, name: true } } } }),
   ]);
   const out = new Map<string, Origin>();
   for (const a of apps) {
     if (!a.creatorId || out.has(a.creatorId)) continue; // a primeira inscrição vale
-    out.set(a.creatorId, originFromApplication({ source: a.source, submittedAt: a.submittedAt, hunter: a.hunterLink?.user ?? null, prospected: a._count.prospects > 0 }));
+    out.set(a.creatorId, originFromApplication({ source: a.source, submittedAt: a.submittedAt, hunter: a.hunterLink?.user ?? null, prospected: a._count.prospects > 0, campaign: a.campaignTag, heardFrom: a.heardFrom }));
   }
   for (const c of creators) {
     if (out.has(c.id)) continue;
@@ -65,7 +65,7 @@ export async function setCreatorOrigin(prisma: PrismaClient, actor: Actor | null
 
 export type OriginSummaryRow = {
   key: string;
-  origin: Pick<Origin, "kind" | "hunter">;
+  origin: Pick<Origin, "kind" | "hunter" | "campaign">;
   /** Inscrições recebidas por este canal (todas as datas). */
   applications: number;
   approved: number;
@@ -81,18 +81,18 @@ export async function originSummary(prisma: PrismaClient, actor: Actor | null, b
     prisma.creator.findMany({ where: { brandId, archivedAt: null }, select: { id: true, status: true } }),
     prisma.creatorApplication.findMany({
       where: { brandId },
-      select: { source: true, submittedAt: true, status: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
+      select: { source: true, submittedAt: true, status: true, campaignTag: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
     }),
   ]);
   const origins = await originsFor(prisma, creators.map((c) => c.id));
   const rows = new Map<string, OriginSummaryRow>();
-  const row = (o: Pick<Origin, "kind" | "hunter">) => {
+  const row = (o: Pick<Origin, "kind" | "hunter" | "campaign">) => {
     const key = originKey(o);
-    if (!rows.has(key)) rows.set(key, { key, origin: { kind: o.kind, hunter: o.hunter }, applications: 0, approved: 0, active: 0, salesCents: 0, sellers: 0 });
+    if (!rows.has(key)) rows.set(key, { key, origin: { kind: o.kind, hunter: o.hunter, campaign: o.campaign ?? null }, applications: 0, approved: 0, active: 0, salesCents: 0, sellers: 0 });
     return rows.get(key)!;
   };
   for (const a of apps) {
-    const r = row(originFromApplication({ source: a.source, submittedAt: a.submittedAt, hunter: a.hunterLink?.user ?? null, prospected: a._count.prospects > 0 }));
+    const r = row(originFromApplication({ source: a.source, submittedAt: a.submittedAt, hunter: a.hunterLink?.user ?? null, prospected: a._count.prospects > 0, campaign: a.campaignTag }));
     r.applications++;
     if (a.status === "APPROVED") r.approved++;
   }

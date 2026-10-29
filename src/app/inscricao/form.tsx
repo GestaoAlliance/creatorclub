@@ -3,7 +3,7 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { formatBrPhone, mustShipToCnpj, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
+import { formatBrPhone, HEARD_FROM_OPTIONS, mustShipToCnpj, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, cnpjAddressAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
@@ -78,7 +78,7 @@ type ZipLookup = "idle" | "loading" | "found" | "notfound" | "error";
  * Cadastro de creator de uma marca (D-SIGNUPACCOUNT): uma página, no modelo da referência do responsável. Endereço com
  * CEP primeiro (D-SIGNUPADDR), cupom conferido na hora (D-SIGNUPACCOUNT) e a senha do login no fim.
  */
-export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; brand: SignupBrand }) {
+export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode: string | null; campaign?: string | null; brand: SignupBrand }) {
   const [state, action, pending] = useActionState(signupAction, { n: 0 } as SignupState);
   const errors = state.errors ?? {};
   const [v, setV] = useState<Record<string, string>>(() => state.values ?? {});
@@ -184,6 +184,7 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
     <form ref={formRef} action={action} className="flex flex-col gap-6">
       <input type="hidden" name="marca" value={brand.slug} />
       {hunterCode && <input type="hidden" name="h" value={hunterCode} />}
+      {campaign && <input type="hidden" name="origem" value={campaign} />}
       {/* Campo que só robô preenche (fica fora da tela). */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
@@ -243,6 +244,16 @@ export function SignupForm({ hunterCode, brand }: { hunterCode: string | null; b
 
       {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}
       <Block title="Sobre você" hint="Tudo opcional. Ajuda a equipe a conhecer o seu trabalho.">
+        {/* D-ORIGIN: como conheceu a marca (opcional). */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Como conheceu a marca?" optional>
+            <select name="heardFrom" value={v.heardFrom ?? ""} onChange={(e) => set("heardFrom", e.target.value)} className={input}>
+              <option value="">Escolha</option>
+              {HEARD_FROM_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          {v.heardFrom === "Outro" && <Field label="Conta para a gente" optional>{text("heardFromOther", { maxLength: 80 })}</Field>}
+        </div>
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 text-sm font-medium text-stone-900 dark:text-stone-100">Nicho do seu conteúdo <span className="font-normal text-stone-500">(pode marcar mais de um)</span></legend>
           <div className="flex flex-wrap gap-2">

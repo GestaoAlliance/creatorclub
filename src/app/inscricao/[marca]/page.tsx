@@ -1,19 +1,21 @@
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
-import { normalizeHunterCode } from "@/domain";
+import { normalizeCampaignTag, normalizeHunterCode } from "@/domain";
 import { SignupForm } from "../form";
 import { signupBrands } from "../hero";
 
 export const dynamic = "force-dynamic";
 
 // Cadastro de creator de uma marca (D-SIGNUPACCOUNT, no modelo da referência do responsável): um cartão com a marca na
-// cor dela (D-BRANDCOLOR) e o formulário. O link do hunter (/i/[codigo]) traz ?h=código.
-export default async function BrandSignupPage({ params, searchParams }: { params: Promise<{ marca: string }>; searchParams: Promise<{ h?: string }> }) {
-  const [{ marca }, { h }] = await Promise.all([params, searchParams]);
+// cor dela (D-BRANDCOLOR) e o formulário. O link do hunter (/i/[codigo]) traz ?h=código; ?origem= marca a campanha.
+export default async function BrandSignupPage({ params, searchParams }: { params: Promise<{ marca: string }>; searchParams: Promise<{ h?: string; origem?: string }> }) {
+  const [{ marca }, { h, origem }] = await Promise.all([params, searchParams]);
   const brand = (await signupBrands()).find((b) => b.slug === marca.toLowerCase());
   if (!brand) notFound();
   const code = normalizeHunterCode(typeof h === "string" ? h : "") || null;
+  // D-ORIGIN: etiqueta de campanha do link (?origem=stories-outubro).
+  const campaign = normalizeCampaignTag(typeof origem === "string" ? origem : "");
   return (
     <div
       style={{ "--b": brand.color } as CSSProperties}
@@ -28,7 +30,7 @@ export default async function BrandSignupPage({ params, searchParams }: { params
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">Cadastro de creator</h1>
           <p className="text-sm text-stone-500">Crie sua conta para acessar o portal.</p>
         </header>
-        <SignupForm hunterCode={code} brand={brand} />
+        <SignupForm hunterCode={code} campaign={campaign} brand={brand} />
       </main>
       <p className="py-6 text-center text-xs text-stone-500">
         <span className="font-bold uppercase tracking-[0.3em] text-stone-700 dark:text-stone-300">{brand.name}</span> · Creator Club ·{" "}
