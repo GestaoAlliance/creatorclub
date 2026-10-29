@@ -79,8 +79,8 @@ async function setup() {
   };
   const sa = await mk("SUPER_ADMIN");
   const gestao = await mk("GESTAO");
-  // D-CONTRACTFLOW: os 4 modelos da Influencer (aqui só 3: falta o de empresa + 1 produto).
-  for (const kind of ["INFLUENCER_PF_1", "INFLUENCER_PF_2", "INFLUENCER_PJ_2"]) {
+  // D-CONTRACTFLOW: os 2 modelos da Influencer (aqui só o de pessoa física; o de empresa falta).
+  for (const kind of ["INFLUENCER_PF"]) {
     await publishContract(prisma, sa, { brandId: brand.id, kind, title: `Contrato ${kind}`, body: `${kind}. ${BODY}` });
   }
   await prisma.contractTemplate.create({ data: { brandId: brand.id, key: "influencer-2026-01", name: "Influencer antigo", months: 3, documentKind: "INFLUENCER" } });
@@ -105,7 +105,6 @@ async function apply(slug: string, extra: Record<string, string> = {}) {
       "Seu whatsapp com DDD:": "(11) 98888-7777",
       "CPF: ": "529.982.247-25",
       "Vai receber como:": "Pessoa física (CPF)",
-      "Envio inicial:": "2 produtos + 3 vídeos para a marca",
       "ENDEREÇO PARA ENTREGA DOS PRODUTOS": "Rua das Flores, 100, Centro, São Paulo/SP",
       "SUGESTÃO DE NOME DE CUPOM:": `MARIA${letters(4)}`,
       ...extra,
@@ -117,7 +116,7 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
   it("aprovar: creator esperando, cupom só reservado; contrato do modelo escolhido; portal travado; assinou: cupom, kit de 2 e mensagem", async () => {
     const s = await setup();
     const app = await apply(s.brand.slug);
-    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).toMatchObject({ payoutAnswer: "Pessoa física (CPF)", welcomeAnswer: "2 produtos + 3 vídeos para a marca" });
+    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).toMatchObject({ payoutAnswer: "Pessoa física (CPF)" });
     const code = letters(6);
     shopCalls.length = 0;
     const r = await approveApplication(
@@ -142,7 +141,7 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey });
     const req = await prisma.contractRequest.findFirstOrThrow({ where: { creatorId: r.creatorId } });
     expect(req).toMatchObject({ status: "SENT", applicationId: app.id, pendingCouponCode: code.toUpperCase(), rateBps: 1500 });
-    expect(req.body.startsWith("INFLUENCER_PF_2.")).toBe(true); // modelo pessoa física + 2 produtos
+    expect(req.body.startsWith("INFLUENCER_PF.")).toBe(true); // modelo pessoa física
     expect(req.body).toContain(`Cupom ${code.toUpperCase()} com 10%; comissão 15%`);
     expect(await prisma.job.count({ where: { type: CONTRACT_LINK_JOB, dedupeKey: `contract-link:${req.id}` } })).toBe(1);
     await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey }); // a fila repetiu: não manda outro
@@ -182,13 +181,13 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
 
   it("modelo que falta fica escrito para a Gestão; reenviar cancela o anterior; recusa no Autentique fica registrada", async () => {
     const s = await setup();
-    const app = await apply(s.brand.slug, { "Vai receber como:": "Empresa (CNPJ)", "CNPJ: ": "11.222.333/0001-81", "Envio inicial:": "1 produto" });
+    const app = await apply(s.brand.slug, { "Vai receber como:": "Empresa (CNPJ)", "CNPJ: ": "11.222.333/0001-81" });
     const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: false, welcomeWithVideos: false }, shop);
     await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey });
-    expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toMatch(/Influencer · empresa \(CNPJ\) · 1 produto/);
+    expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toMatch(/Influencer · empresa \(CNPJ\)"/);
     expect(await prisma.contractRequest.count({ where: { creatorId: r.creatorId } })).toBe(0);
 
-    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER_PJ_1", title: "Contrato PJ 1", body: `INFLUENCER_PJ_1. ${BODY}` });
+    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER_PJ", title: "Contrato PJ", body: `INFLUENCER_PJ. ${BODY}` });
     const hunter = await s.mk("HUNTER");
     await expect(sendCreatorContract(prisma, hunter, r.creatorId, { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/Sem permissão/);
     const first = await sendCreatorContract(prisma, s.gestao, r.creatorId, { fetcher: s.aut.fetcher, encKey });

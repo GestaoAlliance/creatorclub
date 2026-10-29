@@ -330,10 +330,6 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
         </Field>
       </Block>
 
-      <Block title={sec("envio").title} hint={sec("envio").hint}>
-        {chips("welcome")}
-      </Block>
-
       <Block title={sec("endereco").title} hint={sec("endereco").hint}>
         {cnpjAddr && (
           <p className="rounded-xl bg-stone-100 px-3.5 py-2.5 text-xs text-stone-600 dark:bg-white/5 dark:text-stone-300">

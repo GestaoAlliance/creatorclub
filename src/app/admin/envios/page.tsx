@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import type { ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, type ShipmentStatusValue } from "@/lib/shipments/shipments";
 import { NewShipmentForm } from "./forms";
+import { RECEIPT_CHECK_DAYS } from "@/lib/shipments/reminders";
 import { ShipmentsTable } from "./table";
 
 export const dynamic = "force-dynamic";
@@ -19,25 +20,29 @@ export const dynamic = "force-dynamic";
 const STATUSES = Object.keys(SHIPMENT_STATUS_LABEL) as ShipmentStatusValue[];
 
 // Envios de produtos às creators (E7.8). Tela simples da equipe (D-ADMINUI): Envio, Gestão e super admin.
-export default async function EnviosPage({ searchParams }: { searchParams: Promise<{ situacao?: string }> }) {
+export default async function EnviosPage({ searchParams }: { searchParams: Promise<{ situacao?: string; parado?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/envios");
   const view = brandsWith(actor.grants, "shipping.view");
   if (view !== "ALL" && view.length === 0) redirect("/conta");
-  const { situacao } = await searchParams;
-  const status = STATUSES.find((s) => s === situacao);
+  const { situacao, parado } = await searchParams;
+  // D-TRACKING: "Sem Recebi há 10+ dias" (enviados, possível extravio).
+  const stale = parado === "1";
+  const staleBefore = new Date(Date.now() - RECEIPT_CHECK_DAYS * 86_400_000);
+  const status = stale ? undefined : STATUSES.find((s) => s === situacao);
   const manage = brandsWith(actor.grants, "shipping.manage");
   const canManage = manage === "ALL" || manage.length > 0;
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const inBrand = scopedActor(actor, (await staffContext(actor)).brand?.id);
   const [shipments, form] = await Promise.all([
-    staffShipments(db(), inBrand, status ? { status } : {}),
+    staffShipments(db(), inBrand, stale ? { staleBefore } : status ? { status } : {}),
     canManage ? shipmentFormData(db(), inBrand) : null,
   ]);
 
   const awaitingCount = (await staffShipments(db(), inBrand, { status: "AWAITING_APPROVAL" })).length;
   const brandId = (await staffContext(actor)).brand?.id;
   const preparingCount = brandId ? await db().shipment.count({ where: { brandId, status: "PREPARING" } }) : 0;
+  const staleCount = brandId ? await db().shipment.count({ where: { brandId, status: "SHIPPED", shippedAt: { lte: staleBefore } } }) : 0;
   const canPrint = Boolean(brandId && can(actor.grants, "shipping.view", brandId) && can(actor.grants, "personal.address", brandId));
   return (
     <>
@@ -70,10 +75,15 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         </a>
       )}
       <nav aria-label="Situação" data-tour="en-situacao" className="flex flex-wrap items-center gap-2">
-        <Link href="/admin/envios" className={!status ? ui.pillOn : ui.pill}>Todos</Link>
+        <Link href="/admin/envios" className={!status && !stale ? ui.pillOn : ui.pill}>Todos</Link>
         {STATUSES.map((s) => (
           <Link key={s} href={`/admin/envios?situacao=${s}`} className={status === s ? ui.pillOn : ui.pill}>{SHIPMENT_STATUS_LABEL[s]}</Link>
         ))}
+        {(staleCount > 0 || stale) && (
+          <Link href="/admin/envios?parado=1" className={stale ? ui.pillOn : `${ui.pill} !border-amber-400 !text-amber-800 dark:!text-amber-300`}>
+            Sem &quot;Recebi&quot; há {RECEIPT_CHECK_DAYS}+ dias ({staleCount})
+          </Link>
+        )}
         <HelpTip id="en-situacao" />
       </nav>
       {/* D-SHIPCSV: planilha dos envios com a situação escolhida acima e, se quiser, o período (data do pedido). */}

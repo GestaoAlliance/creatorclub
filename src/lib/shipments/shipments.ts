@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
-import { cnpjAddressLine, mustShipToCnpj, notices, sameShipAddress, type Notice } from "@/domain";
+import { cnpjAddressLine, mustShipToCnpj, notices, sameShipAddress, trackingUrl as trackingLink, type Notice } from "@/domain";
 import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
@@ -21,13 +21,8 @@ export class ShipmentError extends Error {}
 export const SHIPMENT_STATUS_LABEL = { AWAITING_APPROVAL: "Aguardando aprovação", PREPARING: "Preparando", SHIPPED: "Enviado", DELIVERED: "Entregue", CANCELLED: "Cancelado" } as const;
 export type ShipmentStatusValue = keyof typeof SHIPMENT_STATUS_LABEL;
 
-/** Link público de rastreio (Correios) quando o código tem o formato deles; outras transportadoras: só o código. */
-export function trackingUrl(carrier: string | null, code: string | null): string | null {
-  if (!code) return null;
-  const c = code.trim().toUpperCase();
-  if (/^[A-Z]{2}\d{9}[A-Z]{2}$/.test(c) && (!carrier || /correios/i.test(carrier))) return `https://rastreamento.correios.com.br/app/index.php?objeto=${c}`;
-  return null;
-}
+/** D-TRACKING: o link do rastreio mora no domínio (também vai no aviso de envio). */
+export { trackingUrl } from "@/domain";
 
 function audit(prisma: PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0], brandId: string, actorId: string, action: string, entityId: string, after: object) {
   return prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId, action, entity: "Shipment", entityId, after } });
@@ -133,6 +128,8 @@ export async function markShipped(
   const trackingCode = input.trackingCode.trim().toUpperCase().slice(0, 60);
   if (!trackingCode) throw new ShipmentError("Informe o código de rastreio.");
   const freightCents = freightToCents(input.freight);
+  // D-TRACKING: o aviso lista o que foi e leva o link do rastreio.
+  const items = await prisma.shipmentItem.findMany({ where: { shipmentId: input.shipmentId }, orderBy: { title: "asc" }, select: { title: true, quantity: true } });
   await transition(
     prisma,
     input.shipmentId,
@@ -140,11 +137,16 @@ export async function markShipped(
     { status: "SHIPPED", carrier, trackingCode, shippedAt: now, shippedById: actor?.userId, freightCents },
     (brandId) => assertManage(actor, brandId),
     { actorId: actor?.userId ?? "", action: "shipment.shipped", after: { carrier, trackingCode, freightCents } },
-    notices.shipped(input.shipmentId, carrier, trackingCode),
+    notices.shipped(input.shipmentId, carrier, trackingCode, items, trackingLink(carrier, trackingCode)),
   );
 }
 
 export async function markDeliveredByStaff(prisma: PrismaClient, actor: Actor | null, shipmentId: string, now = new Date()) {
+  // D-TRACKING: "seus produtos chegaram" com o cupom dela.
+  const s = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+    select: { creator: { select: { couponAssignments: { where: { validTo: null, coupon: { kind: "CREATOR" } }, orderBy: { validFrom: "desc" }, take: 1, select: { coupon: { select: { code: true } } } } } } },
+  });
   await transition(
     prisma,
     shipmentId,
@@ -152,6 +154,7 @@ export async function markDeliveredByStaff(prisma: PrismaClient, actor: Actor | 
     { status: "DELIVERED", deliveredAt: now, deliveredBy: "STAFF", deliveredById: actor?.userId },
     (brandId) => assertManage(actor, brandId),
     { actorId: actor?.userId ?? "", action: "shipment.delivered", after: { by: "STAFF" } },
+    notices.delivered(shipmentId, s?.creator.couponAssignments[0]?.coupon.code ?? null),
   );
 }
 
@@ -203,12 +206,13 @@ export async function myShipments(prisma: PrismaClient, ctx: PortalContext) {
   return prisma.shipment.findMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id }, orderBy: { createdAt: "desc" }, select: SHIPMENT_SELECT });
 }
 
-export async function staffShipments(prisma: PrismaClient, actor: Actor | null, opts: { status?: ShipmentStatusValue } = {}) {
+export async function staffShipments(prisma: PrismaClient, actor: Actor | null, opts: { status?: ShipmentStatusValue; staleBefore?: Date } = {}) {
   if (!actor) throw new ShipmentError("Sem permissão para envios.");
   const brands = brandsWith(actor.grants, "shipping.view");
   if (brands !== "ALL" && brands.length === 0) throw new ShipmentError("Sem permissão para envios.");
   return prisma.shipment.findMany({
-    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), ...(opts.status ? { status: opts.status } : {}) },
+    // D-TRACKING: `staleBefore` = enviados antes da data e ainda sem "Recebi" (possível extravio).
+    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), ...(opts.status ? { status: opts.status } : {}), ...(opts.staleBefore ? { status: "SHIPPED" as const, shippedAt: { lte: opts.staleBefore } } : {}) },
     orderBy: { createdAt: "desc" },
     take: 200,
     // M4.3 (D-PROFILEFIELDS): alergias e restrições aparecem para quem monta o envio.

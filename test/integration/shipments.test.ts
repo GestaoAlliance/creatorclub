@@ -17,6 +17,7 @@ import {
 import { updateBrand } from "@/lib/brands/manage";
 import { shipmentsToPrint } from "@/lib/shipments/print";
 import { shipmentsForCsv } from "@/lib/shipments/csv";
+import { remindReceipts } from "@/lib/shipments/reminders";
 import { shipmentsCsv } from "@/domain";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -202,5 +203,27 @@ describe("envios de produtos (banco real)", () => {
 
     const pagamento = await userWith("PAGAMENTO", s.brand.id);
     await expect(shipmentsForCsv(prisma, pagamento, s.brand.id)).rejects.toThrow(/permissão/);
+  });
+
+  it("D-TRACKING: aviso de enviado com produtos e link; entregue pela equipe avisa com o cupom; 10 dias sem Recebi pergunta uma vez; lista de parados", async () => {
+    const s = await setup();
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    await prisma.couponAssignment.create({ data: { brandId: s.brand.id, couponId: s.coupon.id, creatorId: s.creator.id, validFrom: new Date(), createdById: "t", confirmedAt: new Date(), confirmedById: "t" } });
+    const a = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items: [{ productId: s.whey.id, quantity: 2 }] });
+    await markShipped(prisma, s.envio, { shipmentId: a, carrier: "Jadlog", trackingCode: "12345678901234" });
+    const shipped = await prisma.notification.findFirstOrThrow({ where: { creatorId: s.creator.id, kind: "SHIPPED" } });
+    expect(shipped.body).toBe('Enviamos: 2x Whey. Envio pela Jadlog, código de rastreio 12345678901234. Acompanhe a entrega: https://www.melhorrastreio.com.br/rastreio/12345678901234 Quando chegar, toque em "Recebi" em Pedidos.');
+
+    // 10 dias depois sem "Recebi": pergunta uma vez; aparece na lista de parados da equipe.
+    const later = new Date(Date.now() + 11 * 86_400_000);
+    expect(await remindReceipts(prisma, later)).toBeGreaterThanOrEqual(1);
+    await remindReceipts(prisma, later);
+    expect(await prisma.notification.count({ where: { creatorId: s.creator.id, kind: "RECEIPT_CHECK" } })).toBe(1);
+    expect((await staffShipments(prisma, s.envio, { staleBefore: new Date(Date.now() + 86_400_000) })).map((x) => x.id)).toContain(a);
+    expect((await staffShipments(prisma, s.envio, { staleBefore: new Date(Date.now() - 86_400_000) })).map((x) => x.id)).not.toContain(a);
+
+    await markDeliveredByStaff(prisma, s.envio, a);
+    const delivered = await prisma.notification.findFirstOrThrow({ where: { creatorId: s.creator.id, kind: "SHIPMENT_DELIVERED" } });
+    expect(delivered.body).toContain(`seu cupom ${s.coupon.code}`);
   });
 });

@@ -7,6 +7,7 @@ import { emailPendingNotices, runDueNotices, siteOrigin } from "@/lib/notificati
 import { configuredWhatsApp, whatsappPendingNotices } from "@/lib/notifications/whatsapp";
 import { runWeeklySummaries } from "@/lib/notifications/weekly";
 import { runShippingAlerts } from "@/lib/notifications/shipping";
+import { remindReceipts } from "@/lib/shipments/reminders";
 import { jobHandlers } from "@/lib/jobs/handlers";
 import { runJobs } from "@/lib/jobs/queue";
 import { isAuthorizedBearer } from "@/lib/jobs/secret";
@@ -35,6 +36,8 @@ export async function POST(request: Request): Promise<Response> {
     const tierKits = await grantTierKits(prisma);
     // U5b (D-NOTICES): avisos por data (uma rodada por marca e dia) e e-mail dos avisos recentes, se houver remetente.
     const notices = await runDueNotices(prisma);
+    // D-TRACKING: "Seus produtos chegaram?" 10 dias depois do envio sem "Recebi".
+    const receipts = await remindReceipts(prisma);
     // M2.2 (D-WHATSAPP): com o n8n configurado, a marca com instância da Evolution avisa pelo WhatsApp (sem e-mail).
     const whatsapp = configuredWhatsApp();
     const emailed = await emailPendingNotices(prisma, configuredSender(), siteOrigin(), new Date(), { whatsappOn: whatsapp !== null });
@@ -44,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
     // D-SHIPALERT: envios novos (de hora em hora) e parados há 3 dias (9h) no WhatsApp de quem é Envio.
     const shipping = await runShippingAlerts(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, goalKits, tierKits, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, receipts, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }
