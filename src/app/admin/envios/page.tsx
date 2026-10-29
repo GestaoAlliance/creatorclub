@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Printer } from "lucide-react";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { PageHeader } from "@/components/ui/page";
@@ -36,6 +36,9 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   ]);
 
   const awaitingCount = (await staffShipments(db(), inBrand, { status: "AWAITING_APPROVAL" })).length;
+  const brandId = (await staffContext(actor)).brand?.id;
+  const preparingCount = brandId ? await db().shipment.count({ where: { brandId, status: "PREPARING" } }) : 0;
+  const canPrint = Boolean(brandId && can(actor.grants, "shipping.view", brandId) && can(actor.grants, "personal.address", brandId));
   return (
     <>
       <PageHeader title="Envios">
@@ -59,6 +62,12 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
             <NewShipmentForm creators={form.creators} products={form.products} />
           </div>
         </details>
+      )}
+      {/* D-LABEL: etiquetas (4 por A4) e declarações de todos os envios em "Preparando". */}
+      {preparingCount > 0 && canPrint && (
+        <a href="/imprimir/envios?todos=1" target="_blank" rel="noopener noreferrer" className={`${ui.btn} inline-flex items-center gap-2 self-start`}>
+          <Printer className="size-4" /> Imprimir etiquetas e declarações ({preparingCount} em Preparando)
+        </a>
       )}
       <nav aria-label="Situação" data-tour="en-situacao" className="flex flex-wrap items-center gap-2">
         <Link href="/admin/envios" className={!status ? ui.pillOn : ui.pill}>Todos</Link>

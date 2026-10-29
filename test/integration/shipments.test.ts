@@ -14,6 +14,8 @@ import {
   staffShipments,
   updateMyAddress,
 } from "@/lib/shipments/shipments";
+import { updateBrand } from "@/lib/brands/manage";
+import { shipmentsToPrint } from "@/lib/shipments/print";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -148,5 +150,28 @@ describe("envios de produtos (banco real)", () => {
     await expectDbError(prisma.shipmentItem.create({ data: { brandId: s.brand.id, shipmentId: ok.id, productId: s.whey.id, title: "Whey", quantity: 0 } }), /ShipmentItem_quantity_positive/);
     await expectDbError(prisma.creatorAccount.update({ where: { id: s.account.id }, data: { addrZip: "1234" } }), /CreatorAccount_addr_zip/);
     await expectDbError(prisma.creatorAccount.update({ where: { id: s.account.id }, data: { addrState: "sp" } }), /CreatorAccount_addr_state_uf/);
+  });
+
+  it("D-LABEL: remetente em Marcas; etiqueta e declaração com o custo; só quem vê o endereço", async () => {
+    const s = await setup();
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    await prisma.product.update({ where: { id: s.whey.id }, data: { costCents: 4_500 } });
+    const shipmentId = await createShipment(prisma, s.envio, { creatorId: s.creator.id, items: [{ productId: s.whey.id, quantity: 2 }] });
+    const admin = randomUUID();
+    await prisma.user.create({ data: { id: admin, email: `${admin}@x.com`, name: "Admin", roleGrants: { create: { role: "SUPER_ADMIN" } } } });
+    const sa = (await loadActor(prisma, admin))!;
+    const base = { name: s.brand.name, primaryColor: "#18181B", cnpj: "", legalName: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "", whatsappInstance: "", defaultRate: "15", defaultDiscount: "5" };
+    await expect(updateBrand(prisma, sa, s.brand.id, { ...base, shipFrom: { zip: "123", street: "x", number: "1", complement: "", district: "y", city: "z", state: "MG", phone: "" } })).rejects.toThrow(/Endereço de envio: CEP/);
+    await updateBrand(prisma, sa, s.brand.id, { ...base, shipFrom: { zip: "34006-053", street: "Rua Ministro Orozimbo Nonato", number: "215", complement: "Loja 37", district: "Vila da Serra", city: "Nova Lima", state: "mg", phone: "(31) 3333-4444" } });
+
+    const r = await shipmentsToPrint(prisma, s.envio, s.brand.id, { preparing: true });
+    expect(r.sender).toMatchObject({ name: s.brand.name, address: { zip: "34006053", state: "MG", phone: "3133334444" } });
+    expect(r.shipments).toEqual([expect.objectContaining({ id: shipmentId, items: [{ title: "Whey", quantity: 2, unitCostCents: 4_500 }], totalCents: 9_000 })]);
+    expect((await shipmentsToPrint(prisma, s.envio, s.brand.id, { ids: [shipmentId] })).shipments).toHaveLength(1);
+    const pagamento = await userWith("PAGAMENTO", s.brand.id);
+    await expect(shipmentsToPrint(prisma, pagamento, s.brand.id, { preparing: true })).rejects.toThrow(/permissão/);
+    await updateBrand(prisma, sa, s.brand.id, { ...base, shipFrom: { zip: "", street: "", number: "", complement: "", district: "", city: "", state: "", phone: "" } });
+    expect((await shipmentsToPrint(prisma, s.envio, s.brand.id, { preparing: true })).sender?.address).toBeNull();
+    await expectDbError(prisma.brand.update({ where: { id: s.brand.id }, data: { shipFrom: { zip: "1" } } }), /Brand_shipFrom/);
   });
 });
