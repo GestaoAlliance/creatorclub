@@ -316,7 +316,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 ## Checkpoints (mais recente primeiro)
 
 ### CP-228 — 2026-10-29 — Contrato pelo Autentique na candidatura (D-AUTENTIQUE2)
-- **Feito:** conexão do Autentique de volta em Integrações (chave cifrada; a de antes foi descartada em D-D4SIGN, então
+- **Feito:** (selo em `src/domain/contract-status.ts`) conexão do Autentique de volta em Integrações (chave cifrada; a de antes foi descartada em D-D4SIGN, então
   precisa colar de novo). `ContractRequest` passa a servir à candidata (`applicationId`, `creatorId` opcional, `rateBps`,
   `signLink`, `linkSentAt`; `CreatorApplication.contractError`; travas `ContractRequest_target`,
   `ContractRequest_rate_bps`, `ContractRequest_one_open_per_application`; migração `20261103090000_autentique_application`).

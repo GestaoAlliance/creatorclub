@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { PRIORITY_LABEL } from "@/domain";
+import { contractBadge, PRIORITY_LABEL } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { ApplicationCard } from "./card";
-import { contractBadge } from "./contract";
 import type { TemplateOption } from "./forms";
 import type { CandidateRow } from "./table";
 

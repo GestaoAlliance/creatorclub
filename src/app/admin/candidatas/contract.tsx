@@ -4,6 +4,7 @@ import { FileSignature, RefreshCw } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
+import { contractBadge } from "@/domain";
 import { checkContractAction, sendContractAction } from "./actions";
 
 const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
@@ -27,15 +28,6 @@ export type ContractInfo = {
   templateName: string;
   category: string;
 };
-
-/** Selo do contrato na lista (D-AUTENTIQUE2). */
-export function contractBadge(c: ContractInfo | null, error: string | null): { label: string; tone: keyof typeof badge } {
-  if (!c) return { label: error ? "contrato não enviado (ver motivo)" : "contrato não enviado", tone: error ? "red" : "neutral" };
-  if (c.status === "SIGNED") return { label: "contrato assinado", tone: "green" };
-  if (c.status === "SENT") return { label: "contrato não assinado", tone: "amber" };
-  if (c.status === "REJECTED") return { label: "ela recusou o contrato", tone: "red" };
-  return { label: "contrato cancelado", tone: "neutral" };
-}
 
 /**
  * Contrato da candidata pelo Autentique (D-AUTENTIQUE2): situação, link de assinatura, conferir agora e

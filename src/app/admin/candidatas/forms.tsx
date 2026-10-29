@@ -100,7 +100,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="applicationId" value={p.applicationId} />
-      {locked && <p className={ui.hint}>Valores do contrato que ela assinou ({locked.templateName}). Para mudar, reenvie o contrato acima.</p>}
+      {locked && <p className={ui.hint}>Valores do contrato que ela assinou ({locked.templateName}).</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label className={ui.label}>
           Cupom

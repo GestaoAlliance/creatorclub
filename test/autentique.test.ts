@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { extractText, getDocumentProxy } from "unpdf";
 import { AUTENTIQUE_URL, AutentiqueError, autentiqueMe, createAutentiqueDocument, deleteAutentiqueDocument, getAutentiqueDocument, type Fetcher } from "@/lib/autentique/client";
 import { nextWhatsAppTime } from "@/lib/autentique/applications";
-import { contractLinkMessage, rejectionMessage } from "@/domain";
+import { contractBadge, contractLinkMessage, rejectionMessage } from "@/domain";
 import { contractPdf } from "@/lib/autentique/pdf";
 
 type Call = { url: string; headers: Record<string, string>; body: string | FormData };
@@ -74,6 +74,13 @@ describe("contrato da candidata (D-AUTENTIQUE2)", () => {
     expect(at("2026-10-29T15:00:00Z")).toBe("2026-10-29T15:00:00.000Z"); // 12h em SP: agora
     expect(at("2026-10-29T10:00:00Z")).toBe("2026-10-29T12:00:00.000Z"); // 7h em SP: às 9h do mesmo dia
     expect(at("2026-10-30T01:30:00Z")).toBe("2026-10-30T12:00:00.000Z"); // 22h30 do dia 29 em SP: 9h do dia 30
+  });
+
+  it("selo do contrato em Candidatas", () => {
+    expect(contractBadge(null, null)).toEqual({ label: "contrato não enviado", tone: "neutral" });
+    expect(contractBadge(null, "cupom já existe").tone).toBe("red");
+    expect(contractBadge({ status: "SENT" }, null)).toEqual({ label: "contrato não assinado", tone: "amber" });
+    expect(contractBadge({ status: "SIGNED" }, null)).toEqual({ label: "contrato assinado", tone: "green" });
   });
 
   it("mensagens aprovadas: link do contrato e recusa, com o primeiro nome", () => {
