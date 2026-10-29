@@ -26,6 +26,10 @@ const input = (form: FormData) => ({
   ...(form.has("shopDiscount") ? { shopDiscount: String(form.get("shopDiscount") ?? "") } : {}),
   ...(form.has("financeEmail") ? { financeEmail: String(form.get("financeEmail") ?? "") } : {}),
   ...Object.fromEntries((["bankConvenio", "bankAgency", "bankAgencyDv", "bankAccount", "bankAccountDv"] as const).filter((k) => form.has(k)).map((k) => [k, String(form.get(k) ?? "")])),
+  // D-LABEL: remetente dos envios.
+  ...(form.has("shipFromZip")
+    ? { shipFrom: Object.fromEntries((["zip", "street", "number", "complement", "district", "city", "state", "phone"] as const).map((k) => [k, String(form.get(`shipFrom${k[0]!.toUpperCase()}${k.slice(1)}`) ?? "")])) as { zip: string; street: string; number: string; complement: string; district: string; city: string; state: string; phone: string } }
+    : {}),
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
 });
 

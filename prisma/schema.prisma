@@ -57,6 +57,9 @@ model Brand {
   /// Último número sequencial de remessa (NSA) gerado pela marca.
   remittanceSeq             Int                 @default(0)
   remittances               PaymentRemittance[]
+  /// D-LABEL: endereço de onde saem os envios (remetente da etiqueta e da declaração de conteúdo): { zip, street, number,
+  /// complement, district, city, state, phone }.
+  shipFrom                  Json?
   /// D-INSTAGRAM: conta profissional do Instagram da marca (ID da Meta) usada para ler as creators e os posts que marcam a marca.
   instagramUserId           String?
   instagramTags             InstagramTag[]

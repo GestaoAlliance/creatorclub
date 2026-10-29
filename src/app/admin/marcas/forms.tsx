@@ -24,6 +24,7 @@ type Values = {
   shopDiscount?: string;
   financeEmail?: string;
   bank?: { convenio: string; agency: string; agencyDv: string; account: string; accountDv: string };
+  shipFrom?: { zip: string; street: string; number: string; complement: string; district: string; city: string; state: string; phone: string } | null;
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
@@ -107,6 +108,20 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
               <span className="hidden sm:block" />
               <label className={`${ui.label} col-span-2`}>Conta corrente<input name="bankAccount" defaultValue={initial.bank?.account ?? ""} inputMode="numeric" className={ui.input} /></label>
               <label className={ui.label}>Dígito<input name="bankAccountDv" defaultValue={initial.bank?.accountDv ?? ""} maxLength={1} inputMode="numeric" className={ui.input} /></label>
+            </fieldset>
+          )}
+          {/* D-LABEL: remetente da etiqueta e da declaração de conteúdo (Envios → Imprimir). */}
+          {!create && (
+            <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-6 dark:border-white/10">
+              <legend className="px-1 text-sm font-medium">Endereço de envio (remetente das etiquetas)</legend>
+              <label className={`${ui.label} col-span-2`}>CEP<input name="shipFromZip" defaultValue={initial.shipFrom?.zip ?? ""} inputMode="numeric" className={ui.input} /></label>
+              <label className={`${ui.label} col-span-2 sm:col-span-3`}>Rua<input name="shipFromStreet" defaultValue={initial.shipFrom?.street ?? ""} className={ui.input} /></label>
+              <label className={ui.label}>Número<input name="shipFromNumber" defaultValue={initial.shipFrom?.number ?? ""} className={ui.input} /></label>
+              <label className={`${ui.label} col-span-2`}>Complemento<input name="shipFromComplement" defaultValue={initial.shipFrom?.complement ?? ""} className={ui.input} /></label>
+              <label className={`${ui.label} col-span-2`}>Bairro<input name="shipFromDistrict" defaultValue={initial.shipFrom?.district ?? ""} className={ui.input} /></label>
+              <label className={`${ui.label} col-span-2 sm:col-span-1`}>Cidade<input name="shipFromCity" defaultValue={initial.shipFrom?.city ?? ""} className={ui.input} /></label>
+              <label className={ui.label}>UF<input name="shipFromState" defaultValue={initial.shipFrom?.state ?? ""} maxLength={2} className={ui.input} /></label>
+              <label className={`${ui.label} col-span-2`}>Telefone<input name="shipFromPhone" defaultValue={initial.shipFrom?.phone ?? ""} inputMode="tel" className={ui.input} /></label>
             </fieldset>
           )}
           {/* D-D4SIGN: "💡 Nossa sugestão" da mensagem de aprovação. */}

@@ -8,10 +8,10 @@
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
-  2) etiqueta e declaração de conteúdo (remetente por marca em Marcas); 3) planilha dos envios; 4) WhatsApp do Álvaro
+  ~~2) etiqueta e declaração de conteúdo~~; 3) planilha dos envios; 4) WhatsApp do Álvaro
   quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
   enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
-  Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
+  Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
@@ -314,6 +314,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-227 — 2026-10-29 — Etiqueta e declaração de conteúdo (D-LABEL)
+- **Feito:** endereço de envio (remetente) por marca em Marcas (`Brand.shipFrom`, trava `Brand_shipFrom`, migração
+  `20261102110000_brand_ship_from`); página `/imprimir/envios` (fora do painel, A4): etiquetas 4 por folha (destinatário
+  grande, remetente embaixo) e uma declaração de conteúdo dos Correios por envio (remetente com CNPJ, destinatário com
+  CPF/CNPJ, itens com o valor de custo, totais, peso em branco, texto da declaração e assinatura). Em Envios: botão
+  "Imprimir etiquetas e declarações" (todos em Preparando) e "Etiqueta e declaração" em cada envio. Quem imprime:
+  quem vê o endereço (Envio, Gestão, super admin).
+- **Falta (responsável):** cadastrar o endereço de envio de cada marca em Configurações → Marcas.
+- **Próxima:** item 3, planilha dos envios.
 
 ### CP-226 — 2026-10-29 — Campanha do link e "Como conheceu a marca?" (D-ORIGIN parte 2)
 - **Feito:** o link do cadastro aceita `?origem=etiqueta` (ex.: `/inscricao/botanika?origem=stories-outubro`); a

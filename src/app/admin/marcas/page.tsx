@@ -18,6 +18,14 @@ const pct = (bps: number) => String(bps / 100).replace(".", ",");
 
 // Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin. Em "Todas as marcas" (?todas=1) aparecem
 // todas e a criação de marca nova; dentro de uma marca, só a marca escolhida no topo (pedido do responsável).
+/** D-LABEL: remetente gravado (JSON) para o formulário. */
+function shipFromInitial(v: unknown) {
+  if (!v || typeof v !== "object") return null;
+  const a = v as Record<string, string | null>;
+  const g = (k: string) => a[k] ?? "";
+  return { zip: g("zip"), street: g("street"), number: g("number"), complement: g("complement"), district: g("district"), city: g("city"), state: g("state"), phone: g("phone") };
+}
+
 export default async function MarcasPage({ searchParams }: { searchParams: Promise<{ todas?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marcas");
@@ -61,7 +69,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
             <details>
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" } }} products={b.products} />
+                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom) }} products={b.products} />
               </div>
             </details>
             {/* M4.4a (D-BRANDLOGIN): a tela de entrar com a cara da marca. */}

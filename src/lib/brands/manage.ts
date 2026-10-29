@@ -1,4 +1,5 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { AddressError, normalizeAddress } from "@/lib/shipments/address";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith } from "@/lib/auth/permissions";
 import { NF_SERVICE_CODE } from "@/domain";
@@ -43,6 +44,8 @@ export type BrandInput = {
   bankAgencyDv?: string;
   bankAccount?: string;
   bankAccountDv?: string;
+  /** D-LABEL: remetente dos envios (etiqueta e declaração de conteúdo); todos vazios = sem endereço. */
+  shipFrom?: { zip: string; street: string; number: string; complement: string; district: string; city: string; state: string; phone: string };
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
 };
@@ -77,6 +80,7 @@ function clean(input: BrandInput) {
     ...(input.approvalSuggestion !== undefined && { approvalSuggestion: input.approvalSuggestion.trim().replace(/\s+/g, " ").slice(0, 120) || null }),
     ...(input.financeEmail !== undefined && { financeEmail: financeEmailOf(input.financeEmail) }),
     ...bankOf(input),
+    ...(input.shipFrom !== undefined && { shipFrom: shipFromOf(input.shipFrom) }),
   };
   // M4.4a (D-BRANDLOGIN): padrões das aprovações novas (quem já é creator mantém a dela).
   const pct = (raw: string | undefined, label: string, max: number) => {
@@ -122,6 +126,22 @@ function bankOf(input: { bankConvenio?: string; bankAgency?: string; bankAgencyD
   return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined)) as Partial<Record<keyof typeof out, string | null>>;
 }
 
+/** Auditoria em JSON: o "sem endereço" do Prisma (DbNull) vira null. */
+const forAudit = (data: Record<string, unknown>) => JSON.parse(JSON.stringify({ ...data, ...("shipFrom" in data && { shipFrom: data.shipFrom === Prisma.DbNull ? null : data.shipFrom }) })) as Prisma.InputJsonValue;
+
+/** D-LABEL: endereço do remetente; tudo vazio = sem endereço (Prisma.DbNull). */
+function shipFromOf(a: NonNullable<BrandInput["shipFrom"]>) {
+  if (!Object.values(a).some((v) => v.trim())) return Prisma.DbNull;
+  try {
+    const addr = normalizeAddress(a);
+    const phone = a.phone.replace(/\D/g, "").slice(0, 13);
+    return { ...addr, phone: phone || null };
+  } catch (error) {
+    if (error instanceof AddressError) throw new BrandError(`Endereço de envio: ${error.message}`);
+    throw error;
+  }
+}
+
 /** D-NFMAIL: e-mail do financeiro, minúsculo; vazio = null. */
 function financeEmailOf(raw: string): string | null {
   const t = raw.trim().toLowerCase();
@@ -153,7 +173,7 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
   return prisma.$transaction(async (tx) => {
     const brand = await tx.brand.create({ data: { ...data, slug } });
     await tx.auditLog.create({
-      data: { brandId: brand.id, actorType: "USER", actorId: manager.userId, action: "brand.create", entity: "Brand", entityId: brand.id, after: { ...data, slug } },
+      data: { brandId: brand.id, actorType: "USER", actorId: manager.userId, action: "brand.create", entity: "Brand", entityId: brand.id, after: forAudit({ ...data, slug }) },
     });
     return brand;
   });
@@ -161,13 +181,13 @@ export async function createBrand(prisma: PrismaClient, actor: Actor | null, inp
 
 export async function updateBrand(prisma: PrismaClient, actor: Actor | null, brandId: string, input: BrandInput) {
   const manager = requireSuperAdmin(actor);
-  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, financeEmail: true, bankConvenio: true, bankAgency: true, bankAgencyDv: true, bankAccount: true, bankAccountDv: true, defaultCommissionBps: true, defaultDiscountBps: true },
+  const before = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true, primaryColor: true, nfTakerDocument: true, legalName: true, storeUrl: true, nfServiceCode: true, nfServiceDescription: true, nfInstructions: true, whatsappInstance: true, approvalSuggestion: true, shopDiscountBps: true, financeEmail: true, bankConvenio: true, bankAgency: true, bankAgencyDv: true, bankAccount: true, bankAccountDv: true, shipFrom: true, defaultCommissionBps: true, defaultDiscountBps: true },
   });
   if (!before) throw new BrandError("Marca não encontrada.");
   const data = clean(input);
   await prisma.$transaction(async (tx) => {
     await tx.brand.update({ where: { id: brandId }, data });
-    await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.update", entity: "Brand", entityId: brandId, before, after: data } });
+    await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.update", entity: "Brand", entityId: brandId, before, after: forAudit(data) } });
     if (input.kitOptions) {
       const ids = input.kitOptions;
       await tx.product.updateMany({ where: { brandId, id: { in: ids } }, data: { kitOption: true } });
@@ -203,6 +223,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       bankAgencyDv: true,
       bankAccount: true,
       bankAccountDv: true,
+      shipFrom: true,
       products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
       storeUrl: true,
       defaultCommissionBps: true,

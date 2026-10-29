@@ -1,4 +1,4 @@
-import { ExternalLink, IdCard, MapPin } from "lucide-react";
+import { ExternalLink, IdCard, MapPin, Printer } from "lucide-react";
 import Link from "next/link";
 import { HelpTip } from "@/components/ui/tour";
 import { badge, ui } from "@/components/ui/styles";
@@ -108,6 +108,12 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* D-LABEL: etiqueta e declaração de conteúdo deste envio. */}
+                  {s.address && (
+                    <a href={`/imprimir/envios?ids=${s.id}`} target="_blank" rel="noopener noreferrer" className={`${ui.ghostSm} inline-flex items-center gap-1.5`}>
+                      <Printer className="size-3.5" /> Etiqueta e declaração
+                    </a>
+                  )}
                   {s.status === "SHIPPED" && <DeliveredForm shipmentId={s.id} />}
                   <CancelForm shipmentId={s.id} />
                 </div>
