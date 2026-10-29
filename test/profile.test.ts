@@ -14,7 +14,7 @@ describe("perfil opcional (M4.3, D-PROFILEFIELDS)", () => {
 
   it("no cadastro do site: tudo opcional; vai para a conta e para as respostas que a Ana lê", () => {
     const base = {
-      fullName: "Maria", cpf: "529.982.247-25", email: "m@x.com", phone: "(11) 91234-5678", instagram: "maria", coupon: "MARIA",
+      fullName: "Maria", cpf: "529.982.247-25", email: "m@x.com", phone: "(11) 91234-5678", instagram: "maria", coupon: "MARIA", payoutAs: "Pessoa física (CPF)", welcome: "1 produto",
       addrZip: "01310-100", addrStreet: "Av", addrNumber: "1", addrDistrict: "B", addrCity: "São Paulo", addrState: "SP",
     };
     expect(validateSignup(base).ok).toBe(true);
@@ -30,7 +30,7 @@ describe("TikTok Shop no cadastro (pedido da Vanessa)", () => {
   it("Sim/Não opcional; vira sim, não ou vazio na conta e entra nas respostas", async () => {
     const { validateSignup } = await import("@/domain");
     const base = {
-      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(11) 91234-5678", instagram: "maria", coupon: "MARIA",
+      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(11) 91234-5678", instagram: "maria", coupon: "MARIA", payoutAs: "Pessoa física (CPF)", welcome: "1 produto",
       addrZip: "01310-100", addrStreet: "Av. Paulista", addrNumber: "1000", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
     };
     const yes = validateSignup({ ...base, tiktok: "maria.tt", tiktokShop: "Sim" });

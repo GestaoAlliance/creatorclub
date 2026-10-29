@@ -4,7 +4,7 @@ import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onbo
 
 const full: Record<string, string> = {
   fullName: "  Maria   Exemplo ", cpf: "529.982.247-25", cnpj: "", email: "Maria@Example.com", phone: "(11) 91234-5678",
-  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria10",
+  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria10", payoutAs: "Pessoa física (CPF)", welcome: "1 produto",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp",
 };
 const ADDRESS = "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
@@ -23,7 +23,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.answers["@ do seu TikTok:"]).toBe("@maria.tt");
     expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
     expect(r.account).toEqual({
-      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: null, coupon: "MARIA10",
+      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: null, coupon: "MARIA10", receivesAsIndividual: true, welcomeWithVideos: false,
       profile: { professionalId: null, niches: [], youtube: null, kwai: null, allergies: null, mediaKitUrl: null },
       address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
     });
@@ -35,7 +35,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
   });
 
   it("obrigatórios, e-mail, telefone, CPF, CNPJ, @ e endereço com erro em cada campo", () => {
-    const r = validateSignup({ ...full, fullName: "", email: "x@", phone: "1234", cpf: "111.111.111-11", cnpj: "123", instagram: "@", tiktok: "", addrZip: "0131", addrNumber: " " });
+    const r = validateSignup({ ...full, payoutAs: "Empresa (CNPJ)", fullName: "", email: "x@", phone: "1234", cpf: "111.111.111-11", cnpj: "123", instagram: "@", tiktok: "", addrZip: "0131", addrNumber: " " });
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.errors).toEqual({
@@ -51,6 +51,18 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(validateSignup({ ...full, birthDate: "2027-01-01" }, "2026-10-23")).toMatchObject({ ok: false, errors: { birthDate: "Data de nascimento inválida." } });
     expect(validateSignup({ ...full, tiktok: "", addrComplement: "" }).ok).toBe(true);
     expect(signupAddress({ ...full, addrComplement: "" }).text).toBe("Avenida Paulista, 1000, Bela Vista, São Paulo/SP, CEP 01310-100");
+  });
+
+  it("D-CONTRACTFLOW: vai receber como (pessoa física ou empresa) e envio inicial (1 ou 2 produtos + 3 vídeos)", () => {
+    expect(validateSignup({ ...full, payoutAs: "", welcome: "" })).toMatchObject({ ok: false, errors: { payoutAs: "Preencha este campo.", welcome: "Preencha este campo." } });
+    expect(validateSignup({ ...full, welcome: "3 produtos" })).toMatchObject({ ok: false, errors: { welcome: "Escolha uma das opções." } });
+    expect(validateSignup({ ...full, payoutAs: "Empresa (CNPJ)" })).toMatchObject({ ok: false, errors: { cnpj: "Informe o CNPJ da empresa." } });
+    const pj = validateSignup({ ...full, payoutAs: "Empresa (CNPJ)", cnpj: "11.222.333/0001-81", taxRegime: "MEI", welcome: "2 produtos + 3 vídeos para a marca" });
+    expect(pj.ok && pj.account).toMatchObject({ cnpj: "11222333000181", receivesAsIndividual: false, welcomeWithVideos: true });
+    expect(pj.ok && parseHunterAnswers(pj.answers)).toMatchObject({ payoutAnswer: "Empresa (CNPJ)", welcomeAnswer: "2 produtos + 3 vídeos para a marca" });
+    // Pessoa física: o CNPJ digitado antes de trocar a escolha não vai para a conta.
+    const pf = validateSignup({ ...full, cnpj: "11.222.333/0001-81", taxRegime: "MEI" });
+    expect(pf.ok && pf.account).toMatchObject({ cnpj: null, taxRegime: null, receivesAsIndividual: true });
   });
 
   it("cupom: letras e números, de 3 a 20; acento cai; grava em maiúsculas", () => {

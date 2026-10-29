@@ -315,6 +315,24 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-231 — 2026-10-29 — Contrato depois da aprovação, nos 4 modelos (D-CONTRACTFLOW)
+- **Feito:** cadastro do site com "Vai receber como" (pessoa física ou empresa; CNPJ só para empresa) e "Seu primeiro
+  envio" (1 produto ou 2 produtos + 3 vídeos), gravados na candidatura (`payoutAnswer`, `welcomeAnswer`) e já
+  marcados na aprovação. Nas marcas com Autentique, aprovar cria a creator esperando o contrato
+  (`Creator.awaitingContractAt`), com o cupom só reservado (`pendingCouponCode`/`pendingDiscountBps`, travas
+  `Creator_pending_coupon` e `Creator_pending_coupon_once`), sem cupom na Shopify nem kit; a tarefa
+  `autentique.creator_contract` (gravada na aprovação) manda o contrato no modelo certo: Influencer em 4 textos novos
+  em Contratos (`INFLUENCER_PF_1/PF_2/PJ_1/PJ_2`, trava `ContractDocument_valid` ampliada), Prescritor e UGC no texto do
+  tipo. Portal travado com "Sua parceria foi aprovada: assine o contrato" (link). Assinou: contrato vale da assinatura,
+  e a ativação cria o cupom na Shopify (tenta de novo se falhar), libera o kit de boas-vindas (1 ou 2), destrava o portal
+  e manda a mensagem de aprovação ("parceria ativa", aviso `PARTNERSHIP_ACTIVE`) no portal, WhatsApp e e-mail.
+  Candidatas: aprovar não espera mais a assinatura (D-AUTENTIQUE2 substituída); o quadro do contrato fica na aba
+  Aprovadas (conferir, reenviar). Migração `20261105090000_contract_flow`. Teste:
+  `test/integration/autentique-application.test.ts`.
+- **Pendente do responsável:** os 4 textos de contrato da Influencer (publicar em Contratos); chave do Autentique da
+  Botanika, VermeFree e Revita em Integrações.
+- **Próxima:** 5) rastreio clicável e aviso "kit enviado" para a creator.
+
 ### CP-230 — 2026-10-29 — WhatsApp de quem é Envio: envios novos e parados (D-SHIPALERT)
 - **Feito:** `src/lib/notifications/shipping.ts` (worker a cada minuto): das 9h às 20h, um resumo por hora dos envios que
   entraram em "Preparando" (`Shipment.staffNotifiedAt`, migração `20261104090000_shipment_staff_alert`, os que já

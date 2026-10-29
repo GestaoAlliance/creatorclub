@@ -3,7 +3,7 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { formatBrPhone, HEARD_FROM_OPTIONS, mustShipToCnpj, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
+import { formatBrPhone, HEARD_FROM_OPTIONS, mustShipToCnpj, PAYOUT_PJ, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, cnpjAddressAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
@@ -92,6 +92,22 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
   const numberRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const set = (k: string, value: string) => setV((cur) => ({ ...cur, [k]: value }));
+  /** D-CONTRACTFLOW: escolha de uma opção em botões (como no TikTok Shop). */
+  const chips = (key: string) => (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="mb-1 text-sm font-medium text-stone-900 dark:text-stone-100">{q(key).label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {(q(key).options ?? []).map((o) => (
+          <label key={o} className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm transition ${v[key] === o ? "border-[var(--b)] bg-[color-mix(in_srgb,var(--b)_10%,transparent)] font-medium" : "border-stone-300 dark:border-white/15"}`}>
+            <input type="radio" name={key} value={o} checked={v[key] === o} onChange={() => set(key, o)} required className="sr-only" />
+            {o}
+          </label>
+        ))}
+      </div>
+      {q(key).hint && <p className="text-xs text-stone-500">{q(key).hint}</p>}
+      {errors[key] && <p className="text-xs text-red-700 dark:text-red-400">{errors[key]}</p>}
+    </fieldset>
+  );
 
   // Depois de um envio com erro: volta o que foi digitado e leva ao primeiro campo marcado.
   useEffect(() => {
@@ -113,7 +129,7 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
     return () => clearTimeout(t);
   }, [v.coupon, brand.slug]);
 
-  const cnpjDigits = (v.cnpj ?? "").replace(/\D/g, "");
+  const cnpjDigits = v.payoutAs === PAYOUT_PJ ? (v.cnpj ?? "").replace(/\D/g, "") : "";
   const needsCnpjAddr = mustShipToCnpj(cnpjDigits, v.taxRegime);
   useEffect(() => {
     if (!needsCnpjAddr) return setCnpjAddr(null);
@@ -195,11 +211,12 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
 
       <Block title={sec("dados").title}>
         <Field label={q("fullName").label} error={errors.fullName}>{text("fullName", { required: true, autoComplete: "name" })}</Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={q("cpf").label} error={errors.cpf}>{text("cpf", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
-          <Field label={q("cnpj").label} optional hint={q("cnpj").hint} error={errors.cnpj}>{text("cnpj", { inputMode: "numeric", autoComplete: "off" })}</Field>
-        </div>
-        {cnpjDigits.length > 0 && (
+        <Field label={q("cpf").label} error={errors.cpf} className="sm:max-w-[calc(50%-0.5rem)]">{text("cpf", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
+        {chips("payoutAs")}
+        {v.payoutAs === PAYOUT_PJ && (
+          <Field label={q("cnpj").label} hint={q("cnpj").hint} error={errors.cnpj} className="sm:max-w-[calc(50%-0.5rem)]">{text("cnpj", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
+        )}
+        {v.payoutAs === PAYOUT_PJ && cnpjDigits.length > 0 && (
           <Field label={q("taxRegime").label} error={errors.taxRegime} className="sm:max-w-[calc(50%-0.5rem)]" hint="MEI pode receber os produtos em outro endereço; empresa no Simples ou outro regime recebe no endereço do CNPJ.">
             <select name="taxRegime" value={v.taxRegime ?? ""} onChange={(e) => set("taxRegime", e.target.value)} required aria-invalid={errors.taxRegime ? true : undefined} className={input}>
               <option value="" disabled>Escolha</option>
@@ -311,6 +328,10 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
             onChange: (e: React.ChangeEvent<HTMLInputElement>) => set("coupon", signupCouponPreview(e.target.value)),
           })}
         </Field>
+      </Block>
+
+      <Block title={sec("envio").title} hint={sec("envio").hint}>
+        {chips("welcome")}
       </Block>
 
       <Block title={sec("endereco").title} hint={sec("endereco").hint}>

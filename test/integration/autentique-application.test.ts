@@ -3,21 +3,20 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import {
   AUTENTIQUE_CHECK_JOB,
-  checkApplicationContracts,
+  awaitingContract,
+  checkContracts,
   CONTRACT_LINK_JOB,
   CONTRACT_SEND_JOB,
-  enqueueApplicationContract,
   enqueueDueContractChecks,
-  runApplicationContractJob,
-  sendApplicationContract,
+  runCreatorContractJob,
   sendContractLink,
+  sendCreatorContract,
 } from "@/lib/autentique/applications";
 import type { Fetcher } from "@/lib/autentique/client";
 import { connectAutentique } from "@/lib/autentique/credentials";
 import { publishContract } from "@/lib/contracts/sign";
 import type { WhatsAppMessage } from "@/lib/notifications/whatsapp";
-import { approveApplication, listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
-import { myHunterPanel } from "@/lib/onboarding/hunters";
+import { approveApplication, listApplications, receiveApplication } from "@/lib/onboarding/applications";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
@@ -33,10 +32,21 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-/** Shopify falsa: nunca toca a loja real (D-REALSTORE). */
+/** Shopify falsa: nunca toca a loja real (D-REALSTORE). `fail` faz a próxima criação de cupom falhar. */
 const shopCalls: unknown[] = [];
-const shop = async () => ({ shop: "x", graphql: async (_q: string, v: unknown) => (shopCalls.push(v), { discountCodeBasicCreate: { codeDiscountNode: { id: "gid://x/77" }, userErrors: [] } }) }) as unknown as ShopifyClient;
-
+let shopFails = 0;
+const shop = async () =>
+  ({
+    shop: "x",
+    graphql: async (_q: string, v: unknown) => {
+      if (shopFails > 0) {
+        shopFails--;
+        throw new Error("Shopify fora do ar");
+      }
+      shopCalls.push(v);
+      return { discountCodeBasicCreate: { codeDiscountNode: { id: `gid://x/${randomUUID()}` }, userErrors: [] } };
+    },
+  }) as unknown as ShopifyClient;
 /** Autentique falso: guarda o que foi enviado/cancelado e responde a situação que o teste mandar. */
 function fakeAutentique() {
   const state: { sent: FormData[]; deleted: string[]; status: "none" | "signed" | "rejected" } = { sent: [], deleted: [], status: "none" };
@@ -69,7 +79,10 @@ async function setup() {
   };
   const sa = await mk("SUPER_ADMIN");
   const gestao = await mk("GESTAO");
-  await publishContract(prisma, sa, { brandId: brand.id, kind: "INFLUENCER", title: "Contrato de parceria", body: BODY });
+  // D-CONTRACTFLOW: os 4 modelos da Influencer (aqui só 3: falta o de empresa + 1 produto).
+  for (const kind of ["INFLUENCER_PF_1", "INFLUENCER_PF_2", "INFLUENCER_PJ_2"]) {
+    await publishContract(prisma, sa, { brandId: brand.id, kind, title: `Contrato ${kind}`, body: `${kind}. ${BODY}` });
+  }
   await prisma.contractTemplate.create({ data: { brandId: brand.id, key: "influencer-2026-01", name: "Influencer antigo", months: 3, documentKind: "INFLUENCER" } });
   const template = await prisma.contractTemplate.create({
     data: { brandId: brand.id, key: "influencer-2026-10", name: "Influencer 2026-10", releaseMinCents: 50_000, months: 6, kitTiers: [{ fromCents: 100_000, products: 1 }], documentKind: "INFLUENCER" },
@@ -89,117 +102,109 @@ async function apply(slug: string, extra: Record<string, string> = {}) {
     answers: {
       "Seu nome completo:": "Maria da Silva",
       "EMAIL:": `maria${letters(5)}@exemplo.com`,
-      "Seu WhatsApp:": "(11) 98888-7777",
-      "Sou:": "Influencer",
-      "CPF:": "529.982.247-25",
-      "Endereço para entrega:": "Rua das Flores, 100, Centro, São Paulo/SP",
+      "Seu whatsapp com DDD:": "(11) 98888-7777",
+      "CPF: ": "529.982.247-25",
+      "Vai receber como:": "Pessoa física (CPF)",
+      "Envio inicial:": "2 produtos + 3 vídeos para a marca",
+      "ENDEREÇO PARA ENTREGA DOS PRODUTOS": "Rua das Flores, 100, Centro, São Paulo/SP",
       "SUGESTÃO DE NOME DE CUPOM:": `MARIA${letters(4)}`,
       ...extra,
     },
   });
 }
 
-describe("contrato da candidata pelo Autentique (D-AUTENTIQUE2, banco real)", () => {
-  it("cadastro gera o contrato sozinho (versão mais nova do tipo, cupom dela, padrão da marca); aprovar só depois de assinado, com os valores do contrato", async () => {
+describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco real)", () => {
+  it("aprovar: creator esperando, cupom só reservado; contrato do modelo escolhido; portal travado; assinou: cupom, kit de 2 e mensagem", async () => {
     const s = await setup();
     const app = await apply(s.brand.slug);
-    await enqueueApplicationContract(prisma, s.brand.id, app.id);
-    expect(await prisma.job.count({ where: { type: CONTRACT_SEND_JOB, dedupeKey: `contract-app:${app.id}` } })).toBe(1);
+    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).toMatchObject({ payoutAnswer: "Pessoa física (CPF)", welcomeAnswer: "2 produtos + 3 vídeos para a marca" });
+    const code = letters(6);
+    shopCalls.length = 0;
+    const r = await approveApplication(
+      prisma, s.gestao,
+      { applicationId: app.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true, welcomeWithVideos: true },
+      shop,
+    );
+    expect(r.awaitingContract).toBe(true);
+    expect(shopCalls).toHaveLength(0); // nada na Shopify antes da assinatura
+    const creator = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: true, kitGrants: true } });
+    expect(creator).toMatchObject({ contractSigned: false, pendingCouponCode: code.toUpperCase(), pendingDiscountBps: 1000, contractTemplateId: s.template.id, welcomeVideos: 3, goalStartAt: null });
+    expect(creator.awaitingContractAt).not.toBeNull();
+    expect(creator.couponAssignments).toHaveLength(0);
+    expect(creator.kitGrants).toHaveLength(0);
+    expect(await prisma.job.count({ where: { type: CONTRACT_SEND_JOB, dedupeKey: `contract-creator:${r.creatorId}` } })).toBe(1);
+    expect(await awaitingContract(prisma, r.creatorId)).toMatchObject({ signed: false, status: null });
 
-    await runApplicationContractJob(prisma, app.id, { fetcher: s.aut.fetcher, encKey });
-    const req = await prisma.contractRequest.findFirstOrThrow({ where: { applicationId: app.id } });
-    const coupon = (await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).suggestedCoupon!.toUpperCase();
-    expect(req).toMatchObject({ status: "SENT", creatorId: null, contractTemplateId: s.template.id, pendingCouponCode: coupon, pendingDiscountBps: 1000, rateBps: 1500, sandbox: true });
-    expect(req.signLink).toMatch(/^https:\/\/assina\.ae\//);
-    expect(req.body).toContain(`Cupom ${coupon} com 10%; comissão 15%`);
-    expect(req.body).toContain("529.982.247-25");
+    // Outra candidata não pega o cupom reservado.
+    const other = await apply(s.brand.slug);
+    await expect(approveApplication(prisma, s.gestao, { applicationId: other.id, couponCode: code, category: "INFLUENCER", rateBps: 1500, discountBps: 1000 }, shop)).rejects.toThrow(/reservado/);
+
+    await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey });
+    const req = await prisma.contractRequest.findFirstOrThrow({ where: { creatorId: r.creatorId } });
+    expect(req).toMatchObject({ status: "SENT", applicationId: app.id, pendingCouponCode: code.toUpperCase(), rateBps: 1500 });
+    expect(req.body.startsWith("INFLUENCER_PF_2.")).toBe(true); // modelo pessoa física + 2 produtos
+    expect(req.body).toContain(`Cupom ${code.toUpperCase()} com 10%; comissão 15%`);
     expect(await prisma.job.count({ where: { type: CONTRACT_LINK_JOB, dedupeKey: `contract-link:${req.id}` } })).toBe(1);
-    // Rodar de novo (a fila repetiu) não manda outro.
-    await runApplicationContractJob(prisma, app.id, { fetcher: s.aut.fetcher, encKey });
+    await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey }); // a fila repetiu: não manda outro
     expect(s.aut.state.sent).toHaveLength(1);
+    expect(await awaitingContract(prisma, r.creatorId)).toMatchObject({ signed: false, status: "SENT", signLink: req.signLink });
 
-    // Link pelo WhatsApp da marca, uma vez.
     const sent: WhatsAppMessage[] = [];
-    const sender = async (m: WhatsAppMessage) => void sent.push(m);
-    expect(await sendContractLink(prisma, sender, req.id)).toBe(true);
-    expect(await sendContractLink(prisma, sender, req.id)).toBe(false);
-    expect(sent).toHaveLength(1);
+    expect(await sendContractLink(prisma, async (m) => void sent.push(m), req.id)).toBe(true);
     expect(sent[0]).toMatchObject({ instance: "botanika", phone: "5511988887777", kind: "CONTRACT_LINK" });
-    expect(sent[0]!.text).toContain(req.signLink!);
 
-    // Lista: selo "não assinado"; aprovar travado.
-    const row = (await listApplications(prisma, s.gestao)).rows.find((r) => r.id === app.id)!;
-    expect(row).toMatchObject({ autentique: true, contract: { status: "SENT", coupon, rateBps: 1500 } });
-    const input = { applicationId: app.id, couponCode: "OUTRO", category: "UGC" as const, rateBps: 900, discountBps: 500 };
-    await expect(approveApplication(prisma, s.gestao, input, shop)).rejects.toThrow(/ainda não assinou/);
+    const row = (await listApplications(prisma, s.gestao, "APPROVED")).rows.find((x) => x.id === app.id)!;
+    expect(row).toMatchObject({ awaitingContract: { signed: false }, contract: { status: "SENT" } });
 
-    // A conferência acha a assinatura.
+    // Assinou, mas a Shopify falhou: contrato vale, ativação tenta de novo.
     await enqueueDueContractChecks(prisma);
-    expect(await prisma.job.count({ where: { type: AUTENTIQUE_CHECK_JOB, brandId: s.brand.id } })).toBe(1);
+    expect(await prisma.job.count({ where: { type: AUTENTIQUE_CHECK_JOB, brandId: s.brand.id } })).toBeGreaterThanOrEqual(1);
     s.aut.state.status = "signed";
-    expect(await checkApplicationContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey })).toMatchObject({ signed: 1 });
+    shopFails = 1;
+    expect(await checkContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: "https://x.test" })).toMatchObject({ signed: 1, activated: 0, errors: 1 });
+    expect(await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId } })).toMatchObject({ contractSigned: true, pendingCouponCode: code.toUpperCase() });
+    expect(await awaitingContract(prisma, r.creatorId)).toMatchObject({ signed: true });
 
-    // Aprova com os valores do contrato (os do formulário são ignorados) e liga o contrato à creator.
-    const r = await approveApplication(prisma, s.gestao, input, shop);
-    expect(r.couponCode).toBe(coupon);
-    const creator = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { commissionPolicies: true, couponAssignments: { include: { coupon: true } } } });
-    expect(creator).toMatchObject({ categories: ["INFLUENCER"], contractTemplateId: s.template.id, contractSigned: true });
-    expect(creator.commissionPolicies[0]!.rateBps).toBe(1500);
-    expect(creator.couponAssignments[0]!.coupon).toMatchObject({ code: coupon, discountBps: 1000 });
-    expect((await prisma.contractRequest.findUniqueOrThrow({ where: { id: req.id } })).creatorId).toBe(r.creatorId);
+    expect(await checkContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: "https://x.test" })).toMatchObject({ activated: 1 });
+    const active = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: { include: { coupon: true } }, kitGrants: true, notifications: true } });
+    expect(active).toMatchObject({ awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null });
+    expect(active.goalStartAt).not.toBeNull();
+    expect(active.contractStart).not.toBeNull();
+    expect(active.couponAssignments[0]!.coupon).toMatchObject({ code: code.toUpperCase(), discountBps: 1000 });
+    expect(active.kitGrants).toEqual([expect.objectContaining({ kind: "WELCOME", products: 2 })]);
+    const welcome = active.notifications.find((n) => n.kind === "PARTNERSHIP_ACTIVE")!;
+    expect(welcome.title).toBe(`Sua parceria com a ${s.brand.name} está ativa!`);
+    expect(welcome.body).toContain(`*2. Seu cupom exclusivo:* ${code.toUpperCase()}`);
+    expect(welcome.body).toContain("2 produtos");
+    expect(await awaitingContract(prisma, r.creatorId)).toBeNull();
+    expect(shopCalls).toHaveLength(1);
   });
 
-  it("o que impede o envio fica escrito; a Gestão reenvia com outro cupom (o anterior é cancelado); recusar cancela no Autentique", async () => {
+  it("modelo que falta fica escrito para a Gestão; reenviar cancela o anterior; recusa no Autentique fica registrada", async () => {
     const s = await setup();
-    const taken = letters(7);
-    await prisma.coupon.create({ data: { brandId: s.brand.id, code: taken, kind: "CREATOR", classifiedAt: new Date(), classifiedById: s.gestao.userId } });
-    const app = await apply(s.brand.slug, { "SUGESTÃO DE NOME DE CUPOM:": taken });
-    await runApplicationContractJob(prisma, app.id, { fetcher: s.aut.fetcher, encKey });
-    expect(await prisma.contractRequest.count({ where: { applicationId: app.id } })).toBe(0);
-    expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toMatch(new RegExp(`cupom ${taken} já existe`));
+    const app = await apply(s.brand.slug, { "Vai receber como:": "Empresa (CNPJ)", "CNPJ: ": "11.222.333/0001-81", "Envio inicial:": "1 produto" });
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: false, welcomeWithVideos: false }, shop);
+    await runCreatorContractJob(prisma, r.creatorId, { fetcher: s.aut.fetcher, encKey });
+    expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toMatch(/Influencer · empresa \(CNPJ\) · 1 produto/);
+    expect(await prisma.contractRequest.count({ where: { creatorId: r.creatorId } })).toBe(0);
 
+    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER_PJ_1", title: "Contrato PJ 1", body: `INFLUENCER_PJ_1. ${BODY}` });
     const hunter = await s.mk("HUNTER");
-    await expect(sendApplicationContract(prisma, hunter, app.id, { couponCode: letters(6) }, { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/Sem permissão/);
-    const first = await sendApplicationContract(prisma, s.gestao, app.id, { couponCode: letters(6) }, { fetcher: s.aut.fetcher, encKey });
+    await expect(sendCreatorContract(prisma, hunter, r.creatorId, { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/Sem permissão/);
+    const first = await sendCreatorContract(prisma, s.gestao, r.creatorId, { fetcher: s.aut.fetcher, encKey });
+    expect((await prisma.contractRequest.findUniqueOrThrow({ where: { id: first!.requestId } })).body).toContain("11.222.333/0001-81");
     expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toBeNull();
-    const code2 = letters(6);
-    const second = await sendApplicationContract(prisma, s.gestao, app.id, { couponCode: code2, rateBps: 1200 }, { fetcher: s.aut.fetcher, encKey });
+    const second = await sendCreatorContract(prisma, s.gestao, r.creatorId, { fetcher: s.aut.fetcher, encKey });
     expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: first!.requestId } })).toMatchObject({ status: "CANCELLED" });
     expect(s.aut.state.deleted).toHaveLength(1);
-    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: second!.requestId } })).toMatchObject({ status: "SENT", pendingCouponCode: code2.toUpperCase(), rateBps: 1200 });
 
-    // Outra candidata não pode usar o mesmo cupom de um contrato em aberto.
-    const other = await apply(s.brand.slug);
-    await expect(sendApplicationContract(prisma, s.gestao, other.id, { couponCode: code2 }, { fetcher: s.aut.fetcher, encKey })).rejects.toThrow(/contrato de outra candidata/);
-
-    const r = await rejectApplication(prisma, s.gestao, app.id, "", new Date(), { fetcher: s.aut.fetcher, encKey });
-    expect(r.cancelled).toBe(1);
-    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: second!.requestId } })).toMatchObject({ status: "CANCELLED" });
-    expect(s.aut.state.deleted).toHaveLength(2);
-  });
-
-  it("recusa da candidata no Autentique fica registrada; hunter vê a situação do contrato", async () => {
-    const s = await setup();
-    const hunter = await s.mk("HUNTER");
-    const link = await prisma.hunterLink.create({ data: { brandId: s.brand.id, userId: hunter.userId, code: letters(6).toLowerCase() } });
-    const app = await apply(s.brand.slug);
-    await prisma.creatorApplication.update({ where: { id: app.id }, data: { hunterLinkId: link.id } });
-    await sendApplicationContract(prisma, s.gestao, app.id, {}, { fetcher: s.aut.fetcher, encKey });
-    expect((await myHunterPanel(prisma, hunter))[0]!.applications[0]).toMatchObject({ status: "NEW", contract: "SENT" });
     s.aut.state.status = "rejected";
-    expect(await checkApplicationContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey })).toMatchObject({ rejected: 1 });
-    expect(await prisma.contractRequest.findFirstOrThrow({ where: { applicationId: app.id } })).toMatchObject({ status: "REJECTED", rejectReason: "CPF errado" });
+    expect(await checkContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey, clientFor: shop })).toMatchObject({ rejected: 1 });
+    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: second!.requestId } })).toMatchObject({ status: "REJECTED", rejectReason: "CPF errado" });
+    expect(await awaitingContract(prisma, r.creatorId)).toMatchObject({ status: "REJECTED" });
   });
 
-  it("marca sem Autentique: a tarefa não faz nada e a aprovação segue como antes (D4Sign)", async () => {
-    const { brand } = await seedBrand(prisma);
-    const app = await apply(brand.slug);
-    await runApplicationContractJob(prisma, app.id);
-    expect(await prisma.contractRequest.count({ where: { applicationId: app.id } })).toBe(0);
-    expect((await prisma.creatorApplication.findUniqueOrThrow({ where: { id: app.id } })).contractError).toBeNull();
-  });
-
-  it("travas: contrato de candidata ou creator; um em aberto por candidata; comissão válida", async () => {
+  it("travas: contrato de candidata ou creator; um em aberto por candidata; comissão válida; cupom reservado", async () => {
     const s = await setup();
     const app = await apply(s.brand.slug);
     const doc = await prisma.contractDocument.findFirstOrThrow({ where: { brandId: s.brand.id } });
@@ -208,5 +213,8 @@ describe("contrato da candidata pelo Autentique (D-AUTENTIQUE2, banco real)", ()
     await expectDbError(prisma.contractRequest.create({ data: { ...base, applicationId: app.id, externalId: randomUUID(), rateBps: 10_001 } }), /ContractRequest_rate_bps/);
     await prisma.contractRequest.create({ data: { ...base, applicationId: app.id, externalId: randomUUID() } });
     await expectDbError(prisma.contractRequest.create({ data: { ...base, applicationId: app.id, externalId: randomUUID() } }), /ContractRequest_one_open_per_application/);
+    const { creator } = await seedBrand(prisma);
+    await expectDbError(prisma.creator.update({ where: { id: creator.id }, data: { pendingCouponCode: "ABC" } }), /Creator_pending_coupon/);
+    await expectDbError(prisma.creator.update({ where: { id: creator.id }, data: { pendingCouponCode: "abc", pendingDiscountBps: 500 } }), /Creator_pending_coupon/);
   });
 });

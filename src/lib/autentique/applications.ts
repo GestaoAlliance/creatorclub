@@ -1,44 +1,64 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, contractLinkMessage, dayKey, isContractKind, longDate, parseKitTiers, renderContract, UGC_DEFAULT_VIDEO_GOAL, validateNewCouponCode, whatsappChatUrl, type ContractKind } from "@/domain";
+import {
+  addMonthsToDay,
+  approvalMessage,
+  contractLinkMessage,
+  CONTRACT_TEXT_LABEL,
+  contractTextKind,
+  dayKey,
+  isContractKind,
+  longDate,
+  notices,
+  parseKitTiers,
+  renderContract,
+  UGC_DEFAULT_VIDEO_GOAL,
+  WELCOME_PRODUCTS,
+  WELCOME_VIDEO_PRODUCTS,
+  whatsappChatUrl,
+} from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
-import { normalizeEmail } from "@/lib/auth/rules";
 import { currentContract } from "@/lib/contracts/sign";
-import { validCouponDiscount } from "@/lib/coupons/create";
+import { CouponCreateError, createDiscountInShopify } from "@/lib/coupons/create";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
 import { enqueueJob } from "@/lib/jobs/queue";
+import { notify } from "@/lib/notifications/notify";
+import { siteOrigin } from "@/lib/notifications/scheduled";
 import { configuredWhatsApp, inWhatsAppHours, type WhatsAppSender } from "@/lib/notifications/whatsapp";
-import { categoryFromAnswer, couponFromSuggestion, type Category } from "@/lib/onboarding/applications";
+import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { isValidCpf } from "@/lib/terms/terms";
 import { createAutentiqueDocument, deleteAutentiqueDocument, getAutentiqueDocument, type Fetcher } from "./client";
-import { hasAutentique, loadAutentique } from "./credentials";
+import { loadAutentique } from "./credentials";
 import { contractPdf } from "./pdf";
 
 /**
- * Contrato da candidata pelo Autentique (D-AUTENTIQUE2), nas marcas com o Autentique conectado (Botanika e VermeFree).
- * O cadastro do site gera o contrato sozinho (uma tarefa da fila, gravada junto com a candidatura): o texto do tipo
- * que ela escolheu (Influencer, Prescritor ou UGC, na versão de contrato mais nova desse tipo) é preenchido com os dados
- * dela, o cupom que ela sugeriu e a comissão e o desconto padrão da marca; vira PDF e vai para o e-mail dela pelo
- * Autentique. O link de assinatura também vai pelo WhatsApp da marca (das 9h às 20h). A cada 5 minutos o sistema
- * confere no Autentique quem assinou. A Gestão só aprova depois de assinado, com os valores do contrato; para mudar
- * algum valor, reenvia o contrato (o anterior é cancelado). Candidatas dos formulários antigos recebem pelo botão.
+ * Contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, substitui D-AUTENTIQUE2), nas marcas com o Autentique
+ * conectado. A Gestão aprova em Candidatas: a creator nasce esperando o contrato (`awaitingContractAt`), com o cupom só
+ * reservado (`pendingCouponCode`) e o portal travado. Uma tarefa da fila (gravada na aprovação) gera o contrato pelo que
+ * ela escolheu no cadastro: Influencer usa um dos 4 modelos (pessoa física ou empresa × 1 produto ou 2 produtos + 3
+ * vídeos); Prescritor e UGC, o texto do tipo. Vai para o e-mail dela pelo Autentique e o link de assinatura pelo WhatsApp
+ * da marca (9h às 20h). A cada 5 minutos o sistema confere: assinado, o contrato passa a valer e a ativação cria o cupom
+ * na Shopify, libera o kit de boas-vindas (1 ou 2 produtos), destrava o portal e manda a mensagem "parceria ativa"
+ * (cupom e primeiro pedido) pelo portal, WhatsApp e e-mail. Se a Shopify recusar o cupom, tenta de novo a cada rodada.
  */
 
 export class ContractSendError extends Error {}
 
-export const CONTRACT_SEND_JOB = "autentique.application_contract";
+export const CONTRACT_SEND_JOB = "autentique.creator_contract";
+/** D-AUTENTIQUE2 (fluxo antigo, contrato antes da aprovação): tarefas que ficaram na fila não fazem mais nada. */
+const OLD_SEND_JOB = "autentique.application_contract";
 export const CONTRACT_LINK_JOB = "autentique.contract_link";
 export const AUTENTIQUE_CHECK_JOB = "autentique.check";
 const SYSTEM = "system:autentique";
 
-type Deps = { fetcher?: Fetcher; encKey?: Buffer; now?: Date };
-export type ContractOptions = { couponCode?: string; category?: Category; rateBps?: number; discountBps?: number };
+type Deps = { fetcher?: Fetcher; encKey?: Buffer; now?: Date; clientFor?: ClientFactory; origin?: string | null };
 
 const fold = (s: string | null | undefined) => (s ?? "").trim().replace(/\s+/g, " ");
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
+const slot = (d: Date) => Math.floor(d.getTime() / (5 * 60_000));
 
-/** Próximo horário de mandar WhatsApp (9h às 20h de São Paulo): agora, ou às 9h do próximo dia útil do relógio. */
+/** Próximo horário de mandar WhatsApp (9h às 20h de São Paulo): agora, ou às 9h seguintes. */
 export function nextWhatsAppTime(now: Date): Date {
   if (inWhatsAppHours(now)) return now;
   // São Paulo está em UTC-3 o ano todo: 9h de lá = 12h UTC.
@@ -46,102 +66,103 @@ export function nextWhatsAppTime(now: Date): Date {
   return today.getTime() > now.getTime() ? today : new Date(today.getTime() + 86_400_000);
 }
 
-/** Tarefa do cadastro do site: grava junto com a candidatura (mesma transação). */
-export function enqueueApplicationContract(tx: Parameters<typeof enqueueJob>[0], brandId: string, applicationId: string, now = new Date()) {
-  return enqueueJob(tx, { type: CONTRACT_SEND_JOB, brandId, payload: { applicationId }, dedupeKey: `contract-app:${applicationId}`, runAt: now, maxAttempts: 3 });
+/** Tarefa da aprovação: grava junto com a creator (mesma transação). */
+export function enqueueCreatorContract(tx: Parameters<typeof enqueueJob>[0], brandId: string, creatorId: string, now = new Date()) {
+  return enqueueJob(tx, { type: CONTRACT_SEND_JOB, brandId, payload: { creatorId }, dedupeKey: `contract-creator:${creatorId}`, runAt: now, maxAttempts: 3 });
 }
 
 /**
- * Gera e envia o contrato da candidata. `actor` null = envio automático do cadastro (não reenvia se já há contrato
- * em aberto). Pela equipe (botão), um contrato ainda não assinado é cancelado e trocado pelo novo.
+ * Gera e envia o contrato da creator aprovada. `actor` null = envio automático da aprovação (não reenvia se já há
+ * contrato em aberto). Pela equipe (botão), um contrato ainda não assinado é cancelado e trocado pelo novo.
  */
-export async function sendApplicationContract(
+export async function sendCreatorContract(
   prisma: PrismaClient,
   actor: Actor | null,
-  applicationId: string,
-  opts: ContractOptions = {},
+  creatorId: string,
   deps: Deps = {},
 ): Promise<{ requestId: string; email: string; sandbox: boolean; signLink: string | null } | null> {
   const now = deps.now ?? new Date();
-  const app = await prisma.creatorApplication.findUnique({
-    where: { id: applicationId },
-    include: {
-      brand: { select: { name: true, slug: true, defaultCommissionBps: true, defaultDiscountBps: true } },
+  const c = await prisma.creator.findUnique({
+    where: { id: creatorId },
+    select: {
+      brandId: true,
+      status: true,
+      categories: true,
+      contractSigned: true,
+      awaitingContractAt: true,
+      receivesAsIndividual: true,
+      welcomeVideos: true,
+      ugcVideoGoal: true,
+      pendingCouponCode: true,
+      pendingDiscountBps: true,
+      brand: { select: { name: true, slug: true } },
+      contractTemplate: { select: { id: true, documentKind: true, months: true, releaseMinCents: true, kitTiers: true } },
+      commissionPolicies: { where: { validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }] }, orderBy: { validFrom: "desc" }, take: 1, select: { rateBps: true } },
       account: { select: { name: true, email: true, cpf: true, cnpj: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
     },
   });
-  if (!app) throw new ContractSendError("Candidata não encontrada.");
-  if (actor && !can(actor.grants, "creators.edit", app.brandId)) throw new ContractSendError("Sem permissão.");
-  if (app.status !== "NEW") throw new ContractSendError("Esta candidata já foi decidida.");
-  const open = await prisma.contractRequest.findFirst({ where: { applicationId, status: { in: ["SENT", "SIGNED"] } }, select: { id: true, brandId: true, status: true, externalId: true } });
+  if (!c) throw new ContractSendError("Creator não encontrada.");
+  if (actor && !can(actor.grants, "creators.edit", c.brandId)) throw new ContractSendError("Sem permissão.");
+  if (!c.awaitingContractAt || c.contractSigned) throw new ContractSendError("Esta creator não está esperando contrato.");
+  if (c.status === "DEACTIVATED") throw new ContractSendError("Creator desligada.");
+  const open = await prisma.contractRequest.findFirst({ where: { creatorId, status: { in: ["SENT", "SIGNED"] } }, select: { id: true, brandId: true, status: true, externalId: true } });
   if (open && !actor) return null; // automático: já saiu
-  if (open?.status === "SIGNED") throw new ContractSendError("Ela já assinou este contrato: a aprovação usa os valores dele.");
-  const conn = await loadAutentique(prisma, app.brandId, deps.encKey);
+  if (open?.status === "SIGNED") throw new ContractSendError("Ela já assinou o contrato.");
+  const conn = await loadAutentique(prisma, c.brandId, deps.encKey);
   if (!conn) throw new ContractSendError("O Autentique desta marca não está conectado (Integrações → Autentique).");
 
-  const email = normalizeEmail(app.account?.email ?? app.email ?? "") ?? "";
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ContractSendError("A candidata não tem um e-mail válido para receber o contrato.");
-  const category: ContractKind = opts.category ?? categoryFromAnswer(app.kindAnswer);
-  if (!isContractKind(category)) throw new ContractSendError("Tipo inválido.");
-  const templates = await prisma.contractTemplate.findMany({ where: { brandId: app.brandId, documentKind: category }, select: { id: true, key: true, name: true, months: true, releaseMinCents: true, kitTiers: true } });
-  const template = templates.sort((a, b) => b.key.localeCompare(a.key))[0];
-  if (!template) throw new ContractSendError(`Não há versão de contrato do tipo ${category} nesta marca (Contratos).`);
-  const doc = await currentContract(prisma, app.brandId, category);
-  if (!doc) throw new ContractSendError(`Não há texto de contrato publicado para o tipo ${category} (Contratos).`);
+  const a = c.account;
+  const email = a.email.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ContractSendError("A creator não tem um e-mail válido para receber o contrato.");
+  const category = c.contractTemplate?.documentKind ?? c.categories[0] ?? "INFLUENCER";
+  if (!c.contractTemplate || !isContractKind(category)) throw new ContractSendError("Falta a versão do contrato na ficha.");
+  const withVideos = c.welcomeVideos > 0;
+  const kind = contractTextKind(category, c.receivesAsIndividual, withVideos);
+  const doc = await currentContract(prisma, c.brandId, kind);
+  if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kind]}" (Contratos).`);
+  if (!c.pendingCouponCode || c.pendingDiscountBps === null) throw new ContractSendError("Falta o cupom reservado na aprovação.");
+  const rateBps = c.commissionPolicies[0]?.rateBps ?? null;
 
-  const coupon = validateNewCouponCode(opts.couponCode ?? couponFromSuggestion(app.suggestedCoupon));
-  if (!coupon.ok) throw new ContractSendError("Cupom sugerido inválido: escolha um cupom (letras e números, até 20) e envie o contrato pelo botão.");
-  if (await prisma.coupon.findUnique({ where: { brandId_code: { brandId: app.brandId, code: coupon.code } }, select: { id: true } }))
-    throw new ContractSendError(`O cupom ${coupon.code} já existe nesta marca: escolha outro e envie o contrato pelo botão.`);
-  const reserved = await prisma.contractRequest.findFirst({
-    where: { brandId: app.brandId, pendingCouponCode: coupon.code, status: { in: ["SENT", "SIGNED"] }, NOT: { applicationId } },
-    select: { id: true },
-  });
-  if (reserved) throw new ContractSendError(`O cupom ${coupon.code} já está no contrato de outra candidata: escolha outro.`);
-  const rateBps = opts.rateBps ?? app.brand.defaultCommissionBps;
-  const discountBps = opts.discountBps ?? app.brand.defaultDiscountBps;
-  try {
-    assertBps(rateBps);
-    assertBps(discountBps);
-  } catch {
-    throw new ContractSendError("Comissão ou desconto inválido.");
-  }
-  if (!validCouponDiscount(discountBps)) throw new ContractSendError("O desconto precisa ficar entre 0,01% e 50%.");
-
-  const a = app.account;
-  const structured = a?.addrStreet
+  const address = a.addrStreet
     ? [`${a.addrStreet}, ${a.addrNumber ?? "s/n"}${a.addrComplement ? ` - ${a.addrComplement}` : ""}`, a.addrDistrict, a.addrCity && a.addrState ? `${a.addrCity}/${a.addrState}` : a.addrCity, a.addrZip ? `CEP ${a.addrZip}` : null]
         .filter(Boolean)
         .join(", ")
-    : null;
-  const address = structured ?? fold((app.address ?? "").replace(/\s*\n+\s*/g, ", ")).replace(/,\s*,/g, ",");
-  const cpf = (a?.cpf ?? app.cpf ?? "").replace(/\D/g, "");
-  const cnpj = (a?.cnpj ?? app.cnpj ?? "").replace(/\D/g, "");
-  const fullName = fold(a?.name ?? app.fullName);
-  if (!isValidCpf(cpf)) throw new ContractSendError("A candidata não informou um CPF válido: o contrato precisa dele.");
-  if (address.length < 10) throw new ContractSendError("A candidata não informou o endereço: o contrato precisa dele.");
+    : "";
+  const app = await prisma.creatorApplication.findFirst({ where: { creatorId }, orderBy: { submittedAt: "desc" }, select: { id: true, address: true, companyName: true } });
+  const fullAddress = address || fold((app?.address ?? "").replace(/\s*\n+\s*/g, ", ")).replace(/,\s*,/g, ",");
+  const cpf = (a.cpf ?? "").replace(/\D/g, "");
+  const cnpj = (a.cnpj ?? "").replace(/\D/g, "");
+  const fullName = fold(a.name);
+  if (!isValidCpf(cpf)) throw new ContractSendError("A creator não tem um CPF válido no cadastro: o contrato precisa dele.");
+  if (fullAddress.length < 10) throw new ContractSendError("A creator não tem o endereço no cadastro: o contrato precisa dele.");
+  if (!c.receivesAsIndividual && cnpj.length !== 14) throw new ContractSendError("Ela recebe como empresa, mas não tem CNPJ no cadastro.");
 
   const body = renderContract(doc.body, {
     fullName,
     cpf,
-    address,
-    cnpj: cnpj.length === 14 ? cnpj : null,
-    companyName: cnpj.length === 14 ? fold(app.companyName) || null : null,
-    coupon: coupon.code,
-    discountBps,
+    address: fullAddress,
+    cnpj: !c.receivesAsIndividual && cnpj.length === 14 ? cnpj : null,
+    companyName: !c.receivesAsIndividual ? fold(app?.companyName) || null : null,
+    coupon: c.pendingCouponCode,
+    discountBps: c.pendingDiscountBps,
     rateBps,
-    releaseMinCents: template.releaseMinCents,
-    kitTiers: parseKitTiers(template.kitTiers),
-    brandSlug: app.brand.slug,
-    months: template.months,
-    videoGoal: UGC_DEFAULT_VIDEO_GOAL,
+    releaseMinCents: c.contractTemplate.releaseMinCents,
+    kitTiers: parseKitTiers(c.contractTemplate.kitTiers),
+    brandSlug: c.brand.slug,
+    months: c.contractTemplate.months,
+    videoGoal: c.ugcVideoGoal ?? UGC_DEFAULT_VIDEO_GOAL,
     signedAt: now,
   });
   const bodySha256 = createHash("sha256").update(body, "utf8").digest("hex");
   const pdf = await contractPdf(doc.title, body);
 
-  // Reenvio pela equipe: o contrato anterior (não assinado) sai do Autentique antes de mandar o novo.
+  // Reenvio pela equipe: o contrato anterior (não assinado) sai do Autentique antes de mandar o novo. Contrato do fluxo
+  // antigo (D-AUTENTIQUE2, antes da aprovação) também é cancelado.
   if (open) await cancelRequest(prisma, open, conn.token, actor?.userId ?? SYSTEM, "reenviado", deps);
+  if (app) {
+    const old = await prisma.contractRequest.findMany({ where: { applicationId: app.id, creatorId: null, status: { in: ["SENT", "SIGNED"] } }, select: { id: true, brandId: true, externalId: true, status: true } });
+    for (const o of old) await cancelRequest(prisma, o, o.status === "SENT" ? conn.token : null, SYSTEM, "fluxo novo: contrato depois da aprovação", deps, true);
+  }
 
   let created: { id: string; signLink: string | null };
   try {
@@ -149,9 +170,9 @@ export async function sendApplicationContract(
       conn.token,
       {
         name: `${doc.title} - ${fullName}`.slice(0, 180),
-        message: `Olá, ${firstName(fullName)}! Este é o contrato da sua parceria com a ${app.brand.name} (data: ${longDate(now)}). Confira os seus dados e assine.`,
+        message: `Olá, ${firstName(fullName)}! Sua parceria com a ${c.brand.name} foi aprovada. Este é o seu contrato (data: ${longDate(now)}): confira os seus dados e assine.`,
         pdf,
-        fileName: `contrato-${app.brand.slug}.pdf`,
+        fileName: `contrato-${c.brand.slug}.pdf`,
         signers: [{ name: fullName, email }],
         sandbox: conn.sandbox,
       },
@@ -164,44 +185,53 @@ export async function sendApplicationContract(
   const req = await prisma.$transaction(async (tx) => {
     const r = await tx.contractRequest.create({
       data: {
-        brandId: app.brandId,
-        applicationId,
+        brandId: c.brandId,
+        creatorId,
+        applicationId: app?.id ?? null,
         contractDocumentId: doc.id,
-        contractTemplateId: template.id,
+        contractTemplateId: c.contractTemplate!.id,
         externalId: created.id,
         sandbox: conn.sandbox,
         signerName: fullName,
         signerEmail: email,
         body,
         bodySha256,
-        pendingCouponCode: coupon.code,
-        pendingDiscountBps: discountBps,
+        pendingCouponCode: c.pendingCouponCode,
+        pendingDiscountBps: c.pendingDiscountBps,
         rateBps,
         signLink: created.signLink,
         createdById: actorId,
         sentAt: now,
       },
     });
-    await tx.creatorApplication.update({ where: { id: applicationId }, data: { contractError: null } });
+    if (app) await tx.creatorApplication.update({ where: { id: app.id }, data: { contractError: null } });
     await tx.auditLog.create({
       data: {
-        brandId: app.brandId,
+        brandId: c.brandId,
         actorType: actor ? "USER" : "SYSTEM",
         actorId,
         action: "contract.sent",
         entity: "ContractRequest",
         entityId: r.id,
-        after: { applicationId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, coupon: coupon.code, discountBps, rateBps, templateId: template.id },
+        after: { creatorId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, kind, coupon: c.pendingCouponCode, templateId: c.contractTemplate!.id },
       },
     });
-    if (created.signLink) await enqueueJob(tx, { type: CONTRACT_LINK_JOB, brandId: app.brandId, payload: { requestId: r.id }, dedupeKey: `contract-link:${r.id}`, runAt: nextWhatsAppTime(now), maxAttempts: 5 });
+    if (created.signLink) await enqueueJob(tx, { type: CONTRACT_LINK_JOB, brandId: c.brandId, payload: { requestId: r.id }, dedupeKey: `contract-link:${r.id}`, runAt: nextWhatsAppTime(now), maxAttempts: 5 });
     return r;
   });
-  await enqueueJob(prisma, { type: AUTENTIQUE_CHECK_JOB, brandId: app.brandId, dedupeKey: `autentique:${app.brandId}:${slot(now)}`, runAt: new Date(now.getTime() + 5 * 60_000) });
+  await enqueueJob(prisma, { type: AUTENTIQUE_CHECK_JOB, brandId: c.brandId, dedupeKey: `autentique:${c.brandId}:${slot(now)}`, runAt: new Date(now.getTime() + 5 * 60_000) });
   return { requestId: req.id, email, sandbox: conn.sandbox, signLink: created.signLink };
 }
 
-async function cancelRequest(prisma: PrismaClient, req: { id: string; brandId: string; externalId: string }, token: string | null, actorId: string, reason: string, deps: Deps) {
+async function cancelRequest(
+  prisma: PrismaClient,
+  req: { id: string; brandId: string; externalId: string },
+  token: string | null,
+  actorId: string,
+  reason: string,
+  deps: Deps,
+  anyOpen = false,
+) {
   let remoteError: string | null = null;
   if (token) {
     try {
@@ -211,12 +241,12 @@ async function cancelRequest(prisma: PrismaClient, req: { id: string; brandId: s
     }
   }
   await prisma.$transaction([
-    prisma.contractRequest.updateMany({ where: { id: req.id, status: "SENT" }, data: { status: "CANCELLED", lastError: remoteError } }),
+    prisma.contractRequest.updateMany({ where: { id: req.id, status: anyOpen ? { in: ["SENT", "SIGNED"] } : "SENT" }, data: { status: "CANCELLED", lastError: remoteError } }),
     prisma.auditLog.create({ data: { brandId: req.brandId, actorType: actorId === SYSTEM ? "SYSTEM" : "USER", actorId, action: "contract.cancelled", entity: "ContractRequest", entityId: req.id, after: { reason, remoteError } } }),
   ]);
 }
 
-/** Recusa da candidata: os contratos dela esperando assinatura são cancelados no Autentique. */
+/** Recusa da candidata: contrato do fluxo antigo (antes da aprovação) esperando assinatura é cancelado no Autentique. */
 export async function cancelApplicationContracts(prisma: PrismaClient, applicationIds: readonly string[], actorId: string, deps: Deps = {}) {
   const open = await prisma.contractRequest.findMany({ where: { applicationId: { in: [...applicationIds] }, status: "SENT" }, select: { id: true, brandId: true, externalId: true } });
   const tokens = new Map<string, string | null>();
@@ -227,15 +257,14 @@ export async function cancelApplicationContracts(prisma: PrismaClient, applicati
   return open.length;
 }
 
-/** Handler do cadastro do site: envia o contrato; o que impede o envio fica escrito na candidata para a Gestão. */
-export async function runApplicationContractJob(prisma: PrismaClient, applicationId: string, deps: Deps = {}) {
-  const app = await prisma.creatorApplication.findUnique({ where: { id: applicationId }, select: { brandId: true, status: true } });
-  if (!app || app.status !== "NEW" || !(await hasAutentique(prisma, app.brandId))) return;
+/** Handler da aprovação: envia o contrato; o que impede o envio fica escrito na candidatura para a Gestão. */
+export async function runCreatorContractJob(prisma: PrismaClient, creatorId: string, deps: Deps = {}) {
   try {
-    await sendApplicationContract(prisma, null, applicationId, {}, deps);
+    await sendCreatorContract(prisma, null, creatorId, deps);
   } catch (error) {
     if (!(error instanceof ContractSendError)) throw error;
-    await prisma.creatorApplication.update({ where: { id: applicationId }, data: { contractError: error.message.slice(0, 300) } });
+    const app = await prisma.creatorApplication.findFirst({ where: { creatorId }, orderBy: { submittedAt: "desc" }, select: { id: true } });
+    if (app) await prisma.creatorApplication.update({ where: { id: app.id }, data: { contractError: error.message.slice(0, 300) } });
   }
 }
 
@@ -243,10 +272,15 @@ export async function runApplicationContractJob(prisma: PrismaClient, applicatio
 export async function sendContractLink(prisma: PrismaClient, sender: WhatsAppSender | null, requestId: string, now = new Date()) {
   const r = await prisma.contractRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, status: true, signLink: true, linkSentAt: true, signerName: true, application: { select: { phone: true } }, brand: { select: { name: true, whatsappInstance: true } } },
+    select: {
+      id: true, status: true, signLink: true, linkSentAt: true, signerName: true,
+      creator: { select: { account: { select: { phone: true } } } },
+      application: { select: { phone: true } },
+      brand: { select: { name: true, whatsappInstance: true } },
+    },
   });
   if (!r || r.status !== "SENT" || !r.signLink || r.linkSentAt || !sender || !r.brand.whatsappInstance) return false;
-  const chat = whatsappChatUrl(r.application?.phone ?? null);
+  const chat = whatsappChatUrl(r.creator?.account.phone ?? r.application?.phone ?? null);
   if (!chat) return false;
   // Falha do n8n (WhatsAppError) sobe: a fila tenta de novo.
   await sender({ instance: r.brand.whatsappInstance, phone: chat.replace("https://wa.me/", ""), text: contractLinkMessage({ name: r.signerName, brand: r.brand.name, link: r.signLink }), notificationId: r.id, kind: "CONTRACT_LINK", brand: r.brand.name });
@@ -254,22 +288,25 @@ export async function sendContractLink(prisma: PrismaClient, sender: WhatsAppSen
   return true;
 }
 
-const slot = (d: Date) => Math.floor(d.getTime() / (5 * 60_000));
-
-/** Agenda a conferência das marcas com contrato de candidata esperando assinatura (uma por marca a cada 5 min). */
+/** Agenda a conferência das marcas com contrato esperando assinatura ou creator esperando a ativação. */
 export async function enqueueDueContractChecks(prisma: PrismaClient, now = new Date()): Promise<number> {
-  const brands = await prisma.contractRequest.findMany({ where: { status: "SENT", applicationId: { not: null } }, distinct: ["brandId"], select: { brandId: true } });
+  const [sent, activating] = await Promise.all([
+    prisma.contractRequest.findMany({ where: { status: "SENT" }, distinct: ["brandId"], select: { brandId: true } }),
+    prisma.creator.findMany({ where: { awaitingContractAt: { not: null }, contractSigned: true }, distinct: ["brandId"], select: { brandId: true } }),
+  ]);
   let n = 0;
-  for (const { brandId } of brands) if (await enqueueJob(prisma, { type: AUTENTIQUE_CHECK_JOB, brandId, dedupeKey: `autentique:${brandId}:${slot(now)}`, runAt: now })) n++;
+  for (const brandId of new Set([...sent, ...activating].map((b) => b.brandId))) {
+    if (await enqueueJob(prisma, { type: AUTENTIQUE_CHECK_JOB, brandId, dedupeKey: `autentique:${brandId}:${slot(now)}`, runAt: now })) n++;
+  }
   return n;
 }
 
-/** Confere no Autentique os contratos de candidatas da marca esperando assinatura. */
-export async function checkApplicationContracts(prisma: PrismaClient, brandId: string, deps: Deps & { applicationId?: string } = {}) {
+/** Confere no Autentique os contratos da marca esperando assinatura e ativa quem já assinou. */
+export async function checkContracts(prisma: PrismaClient, brandId: string, deps: Deps & { creatorId?: string } = {}) {
   const now = deps.now ?? new Date();
-  const out = { signed: 0, rejected: 0, errors: 0 };
+  const out = { signed: 0, rejected: 0, activated: 0, errors: 0 };
   const open = await prisma.contractRequest.findMany({
-    where: { brandId, status: "SENT", applicationId: deps.applicationId ?? { not: null } },
+    where: { brandId, status: "SENT", ...(deps.creatorId ? { creatorId: deps.creatorId } : {}) },
     orderBy: { sentAt: "asc" },
     take: 50,
   });
@@ -286,11 +323,7 @@ export async function checkApplicationContracts(prisma: PrismaClient, brandId: s
         ]);
         out.rejected++;
       } else if (mine?.signedAt) {
-        await prisma.$transaction([
-          prisma.contractRequest.updateMany({ where: { id: req.id, status: "SENT" }, data: { status: "SIGNED", signedAt: now, lastCheckedAt: now, lastError: null } }),
-          prisma.auditLog.create({ data: { brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "contract.signed", entity: "ContractRequest", entityId: req.id, after: { externalId: req.externalId, applicationId: req.applicationId } } }),
-        ]);
-        out.signed++;
+        if (await markSigned(prisma, req.id, now)) out.signed++;
       } else {
         await prisma.contractRequest.update({ where: { id: req.id }, data: { lastCheckedAt: now, lastError: null } });
       }
@@ -299,30 +332,110 @@ export async function checkApplicationContracts(prisma: PrismaClient, brandId: s
       await prisma.contractRequest.update({ where: { id: req.id }, data: { lastCheckedAt: now, lastError: String(error instanceof Error ? error.message : error).slice(0, 300) } });
     }
   }
+  // Ativação (cupom na Shopify, kit, portal e mensagem): tenta de novo a cada rodada se a Shopify falhar.
+  const due = await prisma.creator.findMany({ where: { brandId, awaitingContractAt: { not: null }, contractSigned: true, ...(deps.creatorId ? { id: deps.creatorId } : {}) }, select: { id: true } });
+  for (const c of due) {
+    try {
+      await activateCreator(prisma, c.id, deps.clientFor ?? defaultClientFactory, deps.origin === undefined ? siteOrigin() : deps.origin, now);
+      out.activated++;
+    } catch (error) {
+      out.errors++;
+      const msg = error instanceof CouponCreateError ? `Cupom: ${error.message}` : String(error instanceof Error ? error.message : error);
+      await prisma.contractRequest.updateMany({ where: { creatorId: c.id, status: "SIGNED" }, data: { lastError: msg.slice(0, 300) } });
+    }
+  }
   return out;
 }
 
-/** "Conferir agora" em Candidatas. */
-export async function checkApplicationNow(prisma: PrismaClient, actor: Actor | null, applicationId: string, deps: Deps = {}) {
-  const app = await prisma.creatorApplication.findUnique({ where: { id: applicationId }, select: { brandId: true } });
-  if (!app || !actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ContractSendError("Sem permissão.");
-  return checkApplicationContracts(prisma, app.brandId, { ...deps, applicationId });
+/** Assinado: o contrato passa a valer (início na assinatura, fim pelos meses da versão). */
+async function markSigned(prisma: PrismaClient, requestId: string, now: Date): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.contractRequest.updateMany({ where: { id: requestId, status: "SENT" }, data: { status: "SIGNED", signedAt: now, lastCheckedAt: now, lastError: null } });
+    if (count === 0) return false; // outra rodada já marcou
+    const req = await tx.contractRequest.findUniqueOrThrow({ where: { id: requestId } });
+    if (req.creatorId) {
+      const c = await tx.creator.findUniqueOrThrow({ where: { id: req.creatorId }, select: { contractTemplate: { select: { months: true } } } });
+      const start = dayKey(now);
+      await tx.creator.update({
+        where: { id: req.creatorId },
+        data: {
+          contractSigned: true,
+          contractRequiredAt: null,
+          contractStart: new Date(`${start}T00:00:00Z`),
+          contractEnd: new Date(`${addMonthsToDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`),
+          // D-GOALKIT: as janelas da meta de vendas começam com a parceria valendo.
+          goalStartAt: new Date(`${start}T00:00:00Z`),
+        },
+      });
+    }
+    await tx.auditLog.create({ data: { brandId: req.brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "contract.signed", entity: "ContractRequest", entityId: req.id, after: { externalId: req.externalId, creatorId: req.creatorId } } });
+    return true;
+  });
+}
+
+/** Ativação depois da assinatura: cupom na Shopify, kit de boas-vindas, portal liberado e a mensagem "parceria ativa". */
+async function activateCreator(prisma: PrismaClient, creatorId: string, clientFor: ClientFactory, origin: string | null, now: Date) {
+  const c = await prisma.creator.findUniqueOrThrow({
+    where: { id: creatorId },
+    select: { brandId: true, pendingCouponCode: true, pendingDiscountBps: true, welcomeVideos: true, reviewedById: true, account: { select: { userId: true } }, brand: { select: { name: true, slug: true, approvalSuggestion: true } } },
+  });
+  if (!c.pendingCouponCode || c.pendingDiscountBps === null) return;
+  const code = c.pendingCouponCode;
+  const discountBps = c.pendingDiscountBps;
+  const actorId = c.reviewedById ?? SYSTEM;
+  const existing = await prisma.coupon.findUnique({ where: { brandId_code: { brandId: c.brandId, code } }, select: { id: true, assignments: { select: { creatorId: true } } } });
+  if (existing && !existing.assignments.some((x) => x.creatorId === creatorId)) throw new CouponCreateError(`o cupom ${code} já existe nesta marca; escolha outro na ficha.`);
+  const shopifyId = existing ? null : await createDiscountInShopify(prisma, c.brandId, code, discountBps, clientFor, now);
+  const withVideos = c.welcomeVideos > 0;
+  const products = withVideos ? WELCOME_VIDEO_PRODUCTS : WELCOME_PRODUCTS;
+  const loginUrl = origin ? `${origin}/entrar?marca=${c.brand.slug}` : null;
+  const message = approvalMessage({ brand: c.brand.name, coupon: code, discountBps, suggestion: c.brand.approvalSuggestion, withVideos, loginUrl: c.account.userId ? loginUrl : null });
+  await prisma.$transaction(async (tx) => {
+    const coupon = existing ?? (await tx.coupon.create({ data: { brandId: c.brandId, code, kind: "CREATOR", classifiedAt: now, classifiedById: actorId, discountBps, shopifyId } }));
+    if (!existing) {
+      await tx.couponAssignment.create({ data: { brandId: c.brandId, couponId: coupon.id, creatorId, validFrom: now, createdById: actorId, confirmedAt: now, confirmedById: actorId } });
+    }
+    const month = dayKey(now).slice(0, 7);
+    if (!(await tx.kitGrant.findFirst({ where: { creatorId, kind: "WELCOME" }, select: { id: true } }))) {
+      await tx.kitGrant.create({ data: { brandId: c.brandId, creatorId, kind: "WELCOME", month, salesCents: 0, products } });
+    }
+    await tx.creator.update({ where: { id: creatorId }, data: { awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null } });
+    await tx.contractRequest.updateMany({ where: { creatorId, status: "SIGNED", couponCreatedAt: null }, data: { couponCreatedAt: now, lastError: null } });
+    await notify(tx, [{ brandId: c.brandId, creatorId, notice: notices.partnershipActive(c.brand.name, message) }]);
+    await tx.auditLog.create({ data: { brandId: c.brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "creator.activated", entity: "Creator", entityId: creatorId, after: { coupon: code, discountBps, shopifyId, welcomeProducts: products } } });
+  });
+}
+
+/** "Conferir agora" (Candidatas e ficha). */
+export async function checkCreatorNow(prisma: PrismaClient, actor: Actor | null, creatorId: string, deps: Deps = {}) {
+  const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { brandId: true } });
+  if (!c || !actor || !can(actor.grants, "creators.edit", c.brandId)) throw new ContractSendError("Sem permissão.");
+  return checkContracts(prisma, c.brandId, { ...deps, creatorId });
+}
+
+/** Portal travado (D-CONTRACTFLOW): o que a creator aprovada vê até a parceria ficar ativa. */
+export async function awaitingContract(prisma: PrismaClient, creatorId: string) {
+  const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { awaitingContractAt: true, contractSigned: true } });
+  if (!c?.awaitingContractAt) return null;
+  const req = await prisma.contractRequest.findFirst({ where: { creatorId }, orderBy: { sentAt: "desc" }, select: { status: true, signLink: true, signerEmail: true } });
+  return { signed: c.contractSigned === true, status: req?.status ?? null, signLink: req?.status === "SENT" ? req.signLink : null, email: req?.signerEmail ?? null };
 }
 
 /** Tarefas da fila do Autentique. */
 export function autentiqueHandlers(prisma: PrismaClient) {
   return {
     [CONTRACT_SEND_JOB]: async (job: { payload: unknown }) => {
-      const id = (job.payload as { applicationId?: string } | null)?.applicationId;
-      if (id) await runApplicationContractJob(prisma, id);
+      const id = (job.payload as { creatorId?: string } | null)?.creatorId;
+      if (id) await runCreatorContractJob(prisma, id);
     },
+    [OLD_SEND_JOB]: async () => {},
     [CONTRACT_LINK_JOB]: async (job: { payload: unknown }) => {
       const id = (job.payload as { requestId?: string } | null)?.requestId;
       if (id) await sendContractLink(prisma, configuredWhatsApp(), id);
     },
     [AUTENTIQUE_CHECK_JOB]: async (job: { brandId: string | null }) => {
       if (!job.brandId) throw new Error("Tarefa sem marca.");
-      await checkApplicationContracts(prisma, job.brandId);
+      await checkContracts(prisma, job.brandId);
     },
   };
 }

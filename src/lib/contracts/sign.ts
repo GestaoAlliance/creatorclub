@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   addMonthsToDay,
-  CONTRACT_KINDS,
+  CONTRACT_TEXT_KINDS,
+  isContractTextKind,
+  type ContractTextKind,
   dayKey,
   isContractKind,
   notices,
@@ -30,7 +32,7 @@ import { isValidCpf, maskCpf } from "@/lib/terms/terms";
 
 export class ContractSignError extends Error {}
 
-export async function currentContract(prisma: PrismaClient, brandId: string, kind: ContractKind) {
+export async function currentContract(prisma: PrismaClient, brandId: string, kind: ContractKind | ContractTextKind) {
   return prisma.contractDocument.findFirst({
     where: { brandId, kind },
     orderBy: { version: "desc" },
@@ -237,7 +239,7 @@ export async function signContract(
 
 export async function publishContract(prisma: PrismaClient, actor: Actor | null, input: { brandId: string; kind: string; title: string; body: string }) {
   if (!actor || !can(actor.grants, "staff.manage", input.brandId)) throw new ContractSignError("Só super admin publica o contrato.");
-  if (!isContractKind(input.kind)) throw new ContractSignError("Tipo de contrato inválido.");
+  if (!isContractTextKind(input.kind)) throw new ContractSignError("Tipo de contrato inválido.");
   const title = fold(input.title).slice(0, 200);
   const body = input.body.replace(/\r\n/g, "\n").trim();
   if (!title || body.length < 200) throw new ContractSignError("Informe o título e o texto completo do contrato.");
@@ -264,7 +266,7 @@ export async function publishContract(prisma: PrismaClient, actor: Actor | null,
 export async function contractsOverview(prisma: PrismaClient, actor: Actor | null, brandId: string) {
   if (!actor || !can(actor.grants, "staff.manage", brandId)) throw new ContractSignError("Só super admin.");
   const kinds = await Promise.all(
-    CONTRACT_KINDS.map(async (kind) => {
+    CONTRACT_TEXT_KINDS.map(async (kind) => {
       const current = await currentContract(prisma, brandId, kind);
       const versions = await prisma.contractDocument.findMany({
         where: { brandId, kind },

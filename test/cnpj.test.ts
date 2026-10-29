@@ -47,7 +47,7 @@ describe("cadastro PJ (D-PJADDR)", () => {
 
   it("no cadastro, CNPJ pede o regime; sem CNPJ o regime é ignorado", () => {
     const base = {
-      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(31) 99211-3232", instagram: "maria", coupon: "MARIA",
+      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(31) 99211-3232", instagram: "maria", coupon: "MARIA", payoutAs: "Empresa (CNPJ)", welcome: "1 produto",
       addrZip: "30140-071", addrStreet: "Rua X", addrNumber: "120", addrDistrict: "Savassi", addrCity: "Belo Horizonte", addrState: "MG",
     };
     const semRegime = validateSignup({ ...base, cnpj: "11.222.333/0001-81" });
@@ -55,7 +55,7 @@ describe("cadastro PJ (D-PJADDR)", () => {
     const ok = validateSignup({ ...base, cnpj: "11.222.333/0001-81", taxRegime: "SIMPLES" });
     expect(ok.ok && ok.account.taxRegime).toBe("SIMPLES");
     expect(ok.ok && ok.answers["Regime tributário do CNPJ:"]).toBe("Simples Nacional (ME/EPP)");
-    const pf = validateSignup({ ...base, cnpj: "", taxRegime: "SIMPLES" });
+    const pf = validateSignup({ ...base, payoutAs: "Pessoa física (CPF)", cnpj: "", taxRegime: "SIMPLES" });
     expect(pf.ok && pf.account.taxRegime).toBeNull();
   });
 });

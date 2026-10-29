@@ -18,7 +18,8 @@ export type NoticeKind =
   | "NEAR_MINIMUM"
   | "CONTRACT_ENDING"
   | "IDLE"
-  | "WITHDRAWAL_BANK_REJECTED";
+  | "WITHDRAWAL_BANK_REJECTED"
+  | "PARTNERSHIP_ACTIVE";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -28,6 +29,17 @@ const brl = (c: number) => formatBRL(c).replace(/ /g, " ");
 const items = (n: number, brandSlug: string) => `${n} ${kitNoun(brandSlug, n)}`;
 
 export const notices = {
+  /**
+   * D-CONTRACTFLOW: contrato assinado e cupom criado: a plataforma está ativa. O texto é a mensagem de aprovação (cupom,
+   * primeiro pedido na aba Pedidos, acesso); sai no portal, no WhatsApp e no e-mail (mesmo com o WhatsApp ligado).
+   */
+  partnershipActive: (brandName: string, message: string): Notice => ({
+    kind: "PARTNERSHIP_ACTIVE",
+    dedupeKey: "partnership:active",
+    title: `Sua parceria com a ${brandName} está ativa!`,
+    body: message,
+    path: "/envios",
+  }),
   /**
    * D-IDLE45 (reunião de 2026-10-27; texto escolhido pelo responsável, sem falar em encerrar até o parecer jurídico):
    * N dias sem venda com o cupom. Uma vez por período parado (`since` = última venda ou início; `step` = 1º, 2º… período).

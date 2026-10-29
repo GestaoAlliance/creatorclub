@@ -64,8 +64,8 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     canDecide: status === "NEW" && a.canDecide,
     brandName: a.brandName,
     // D-AUTENTIQUE2: selo do contrato e aprovar só depois de assinado (marcas com Autentique).
-    contract: a.autentique ? contractBadge(a.contract, a.contractError) : null,
-    approvable: !a.autentique || a.contract?.status === "SIGNED",
+    contract: a.awaitingContract ? (a.awaitingContract.signed ? { label: "assinado: ativando", tone: "amber" } : contractBadge(a.contract, a.contractError)) : null,
+    approvable: true,
     creatorId: status === "APPROVED" ? a.creatorId : null,
     detail: <ApplicationDetail a={a} status={status} templates={templates} />,
   };
