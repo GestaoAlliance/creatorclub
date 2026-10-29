@@ -7,8 +7,10 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** conferir com o responsável a primeira leitura real do Instagram em produção (Botanika e Revita);
-  VermeFree quando o Instagram dela voltar.
+- **Próxima tarefa:** telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
+  2) etiqueta e declaração de conteúdo (remetente por marca em Marcas); 3) planilha dos envios; 4) WhatsApp do Álvaro
+  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
+  enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -312,6 +314,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-223 — 2026-10-29 — "Precisa de você" por função (D-NEEDSROLE)
+- **Feito:** revisão das telas do Álvaro (Envio), Juci (Pagamento) e Leitura com os usuários de teste. O "Precisa de
+  você" do Início passa a mostrar só o que a pessoa resolve (`src/lib/staff/needs.ts`): Pagamento vê saques aprovados e
+  aberturas; Envio, envios; Gestão, tudo o que já via. Quem só lê vê "Pendências da equipe".
+- **Testes:** `test/staff-needs.test.ts`.
+- **Próxima:** etiqueta e declaração de conteúdo.
 
 ### CP-222 — 2026-10-29 — Instagram da Revita ligado (D-INSTAGRAM)
 - **Feito:** com o responsável na Meta: a Revita compartilhou a página e o @revitaderma.br com o portfólio Smarter
