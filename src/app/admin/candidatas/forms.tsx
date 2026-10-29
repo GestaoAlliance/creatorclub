@@ -22,7 +22,7 @@ const defaultTemplate = (templates: readonly TemplateOption[], category: string)
   [...templates].filter((t) => t.documentKind === category).sort((a, b) => b.key.localeCompare(a.key))[0]?.id ?? templates[0]?.id ?? "";
 
 /** Abre o WhatsApp da pessoa com a mensagem pronta; sem número reconhecido, copia a mensagem. */
-function WhatsAppButton({ phone, text, label }: { phone: string | null; text: string; label: string }) {
+export function WhatsAppButton({ phone, text, label }: { phone: string | null; text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const href = whatsappLink(phone, text);
   if (href)
@@ -41,7 +41,7 @@ function WhatsAppButton({ phone, text, label }: { phone: string | null; text: st
   );
 }
 
-function Done({ children }: { children: React.ReactNode }) {
+export function Done({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-emerald-400/50 bg-emerald-100/70 p-4 text-sm text-emerald-950 dark:bg-emerald-900/30 dark:text-emerald-100">

@@ -1,11 +1,12 @@
 "use client";
 
 import { FileSignature, RefreshCw } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
-import { contractBadge } from "@/domain";
-import { checkContractAction, sendContractAction, signedOutsideAction } from "./actions";
+import { contractBadge, rejectionMessage } from "@/domain";
+import { checkContractAction, sendContractAction, signedOutsideAction, undoApprovalAction } from "./actions";
+import { Done, WhatsAppButton } from "./forms";
 
 const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const pct = (bps: number) => (bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -32,7 +33,14 @@ export type ContractInfo = {
  * Contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW): situação, link de assinatura, conferir agora e
  * reenviar (cancela o contrato ainda não assinado e manda de novo, com os valores da aprovação).
  */
-export function ContractBox(p: { creatorId: string; contract: ContractInfo | null; error: string | null; awaiting: { signed: boolean } | null; canManage: boolean }) {
+export function ContractBox(p: {
+  creatorId: string;
+  contract: ContractInfo | null;
+  error: string | null;
+  awaiting: { signed: boolean } | null;
+  canManage: boolean;
+  person: { name: string; phone: string | null; brand: string };
+}) {
   const c = p.contract;
   const b = p.awaiting?.signed && c?.status === "SIGNED" ? { label: "assinado: ativando a parceria", tone: "amber" as const } : !p.awaiting && c?.status === "SIGNED" ? { label: "parceria ativa", tone: "green" as const } : contractBadge(c, p.error);
   const [check, checkAction, checking] = useActionState(checkContractAction, undefined);
@@ -94,9 +102,41 @@ export function ContractBox(p: { creatorId: string; contract: ContractInfo | nul
           )}
         </div>
       )}
+      {canSend && <UndoApproval creatorId={p.creatorId} person={p.person} />}
       <Msg state={check} />
       <Msg state={send} />
       <Msg state={outside} />
     </section>
+  );
+}
+
+/** D-UNDOAPPROVAL: não assinou → desfaz (contrato cancelado, cupom liberado, Desligada, Recusadas) e abre a recusa no WhatsApp. */
+function UndoApproval(p: { creatorId: string; person: { name: string; phone: string | null; brand: string } }) {
+  const [state, action, pending] = useActionState(undoApprovalAction, undefined);
+  const [open, setOpen] = useState(false);
+  if (state?.ok)
+    return (
+      <Done>
+        <p>{p.person.name}: {state.ok}</p>
+        <WhatsAppButton phone={p.person.phone} label="Abrir WhatsApp com a recusa" text={rejectionMessage({ name: p.person.name, brand: p.person.brand })} />
+      </Done>
+    );
+  if (!open)
+    return (
+      <button type="button" className={`${ui.ghostSm} self-start text-red-800 dark:text-red-300`} onClick={() => setOpen(true)}>
+        Desfazer aprovação (não assinou)
+      </button>
+    );
+  return (
+    <form action={action} className="flex flex-col gap-1.5">
+      <input type="hidden" name="creatorId" value={p.creatorId} />
+      <p className={ui.hint}>O contrato é cancelado no Autentique, o cupom reservado fica livre, ela fica Desligada (nada é apagado) e a candidatura vai para Recusadas.</p>
+      <div className="flex flex-wrap gap-2">
+        <input name="note" required maxLength={300} placeholder="Motivo (só a equipe vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
+        <button className={ui.dangerSm} disabled={pending}>{pending ? "Desfazendo…" : "Desfazer aprovação"}</button>
+        <button type="button" className={ui.ghostSm} onClick={() => setOpen(false)}>Voltar</button>
+      </div>
+      <Msg state={state} />
+    </form>
   );
 }

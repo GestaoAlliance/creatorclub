@@ -6,7 +6,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import type { PortalContext } from "@/lib/portal/context";
 import { PICKER_SELECT, pickerDetail } from "@/lib/creators/picker";
-import { addressColumns, addressOf, normalizeAddress, partialAddressText, type Address, type AddressInput } from "./address";
+import { AddressError, addressColumns, addressOf, normalizeAddress, partialAddressText, type Address, type AddressInput } from "./address";
 
 /**
  * Envios de produtos à creator (E7.8, D-SHIPMENTS). A equipe com `shipping.manage` (Envio, Gestão, super admin)
@@ -58,14 +58,25 @@ export async function updateMyAddress(prisma: PrismaClient, ctx: PortalContext, 
 export async function createShipment(
   prisma: PrismaClient,
   actor: Actor | null,
-  input: { creatorId: string; items: { productId: string; quantity: number }[]; note?: string },
+  input: { creatorId: string; items: { productId: string; quantity: number }[]; note?: string; address?: AddressInput | undefined },
 ): Promise<string> {
   const creator = await prisma.creator.findUnique({ where: { id: input.creatorId }, include: { account: true } });
   if (!creator) throw new ShipmentError("Creator não encontrada.");
   assertManage(actor, creator.brandId);
   if (creator.status === "DEACTIVATED") throw new ShipmentError("Creator desligada não recebe envio.");
-  const address = addressOf(creator.account);
-  if (!address) throw new ShipmentError("A creator ainda não cadastrou o endereço completo no portal.");
+  // D-SHIPANYONE: sem endereço no portal, a equipe digita no envio e ele fica salvo na conta.
+  const saved = addressOf(creator.account);
+  let typed: Address | null = null;
+  if (!saved) {
+    if (!input.address) throw new ShipmentError("A creator ainda não tem endereço: preencha o endereço de entrega.");
+    try {
+      typed = normalizeAddress(input.address);
+    } catch (error) {
+      if (error instanceof AddressError) throw new ShipmentError(error.message);
+      throw error;
+    }
+  }
+  const address = saved ?? typed!;
   const items = input.items.filter((i) => i.quantity > 0);
   if (items.length === 0) throw new ShipmentError("Escolha ao menos um produto.");
   if (items.some((i) => !Number.isInteger(i.quantity) || i.quantity > 99)) throw new ShipmentError("Quantidade inválida.");
@@ -74,6 +85,12 @@ export async function createShipment(
   const title = new Map(products.map((p) => [p.id, p.title]));
 
   return prisma.$transaction(async (tx) => {
+    if (typed) {
+      await tx.creatorAccount.update({
+        where: { id: creator.accountId },
+        data: addressColumns(typed),
+      });
+    }
     const shipment = await tx.shipment.create({
       data: {
         brandId: creator.brandId,

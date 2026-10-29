@@ -85,6 +85,24 @@ export function contractLinkMessage(p: { name: string; brand: string; link: stri
   ].join("\n\n");
 }
 
+/** D-CONTRACTREMIND: lembrete do contrato sem assinar (dia 3 e dia 7), com o mesmo link. */
+export function contractReminderMessage(p: { name: string; brand: string; link: string }): string {
+  return [
+    `Oi, ${firstName(p.name)}! Passando para lembrar que seu contrato de parceria com a ${p.brand} ainda está esperando a sua assinatura 💖`,
+    `🔗 ${p.link}`,
+    "É rapidinho: assim que você assinar, a gente libera seu cupom e a plataforma. Qualquer dúvida, é só responder aqui!",
+  ].join("\n\n");
+}
+
+/** D-FIRSTKITNOTICE: aviso a quem ganhou o 1º produto (D-FIRSTKIT); sai só quando o super admin clica. */
+export function firstKitMessage(p: { name: string; brand: string; link: string }): string {
+  return [
+    `Oi, ${firstName(p.name)}! Novidade da ${p.brand} 💖 Você ganhou 1 produto para pedir pelo Creator Club!`,
+    `É só entrar no portal, ir na aba Pedidos e escolher o seu: ${p.link}`,
+    "A gente prepara e te avisa por aqui quando sair para entrega.",
+  ].join("\n\n");
+}
+
 /** Recusa da candidata (D-AUTENTIQUE2, texto aprovado em 2026-10-29): a equipe abre o WhatsApp com o texto pronto. */
 export function rejectionMessage(p: { name: string; brand: string }): string {
   return `Oi, ${firstName(p.name)}! Obrigada pelo interesse em ser parceira da ${p.brand} 💖 Neste momento não vamos seguir com a parceria, mas seu cadastro fica com a gente e podemos te chamar em uma próxima oportunidade. Um abraço!`;

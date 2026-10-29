@@ -3,7 +3,7 @@
  * mensagem pronta para mandar pelo WhatsApp. Regra pura (testada): quem decide o que entra é `src/lib/actions/queue.ts`.
  */
 
-export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS";
+export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS" | "UNSIGNED";
 
 /** Quem cuida de cada tipo (decisão 3 do plano): por enquanto a Gestão (Ana) da marca; envio parado é de quem envia. */
 export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
@@ -15,6 +15,7 @@ export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
   BIRTHDAY: "GESTAO",
   NO_POST: "GESTAO",
   ACCESS: "GESTAO",
+  UNSIGNED: "GESTAO",
 };
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -26,11 +27,14 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   BIRTHDAY: "Aniversário",
   NO_POST: "Sem post",
   ACCESS: "Pediu acesso",
+  UNSIGNED: "Contrato sem assinar",
 };
 
 /** Prazos do kit parado (pedido do responsável em 2026-10-22). */
 export const KIT_PENDING_DAYS = 7;
 export const SHIP_STUCK_DAYS = 3;
+/** D-CONTRACTREMIND: a Gestão vê o contrato sem assinar a partir do 7º dia (o WhatsApp já lembrou no 3º e no 7º). */
+export const UNSIGNED_DAYS = 7;
 
 const first = (name: string) => name.trim().split(/\s+/)[0] || name.trim();
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -44,7 +48,8 @@ export type ActionFacts =
   | { kind: "SHIP_STUCK"; days: number }
   | { kind: "BIRTHDAY"; day: string; days: number }
   | { kind: "NO_POST"; days: number; never: boolean }
-  | { kind: "ACCESS"; day: string };
+  | { kind: "ACCESS"; day: string }
+  | { kind: "UNSIGNED"; days: number; link: string | null };
 
 /** O motivo curto que a equipe lê na fila. */
 export function actionDetail(f: ActionFacts): string {
@@ -61,6 +66,8 @@ export function actionDetail(f: ActionFacts): string {
       return `envio em preparação há ${f.days} dias`;
     case "NO_POST":
       return f.never ? `nenhum post registrado há ${f.days} dias` : `último post registrado há ${f.days} dias`;
+    case "UNSIGNED":
+      return `contrato sem assinar há ${f.days} dias: ligue para ela ou desfaça a aprovação em Candidatas`;
     case "ACCESS":
       return `pediu o link de acesso ao portal em ${br(f.day)} (já tinha cadastro): gere o convite na ficha`;
     case "BIRTHDAY":
@@ -85,6 +92,8 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
     case "SHIP_STUCK":
     case "ACCESS":
       return null;
+    case "UNSIGNED":
+      return `${oi} Seu contrato de parceria ainda está esperando a sua assinatura${f.link ? `: ${f.link}` : "."} Ficou alguma dúvida? Me conta que eu te ajudo!`;
     case "NO_POST":
       return `${oi} Faz ${f.days} dias que não vemos um post seu registrado no portal. Postou e esqueceu de registrar? É só colar o link em "Meus posts". Se precisar de ideia de conteúdo, me chama!`;
     case "BIRTHDAY":

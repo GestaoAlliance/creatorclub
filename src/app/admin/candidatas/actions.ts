@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { configuredSender } from "@/lib/email/sender";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
-import { checkCreatorNow, confirmSignedOutside, ContractSendError, sendCreatorContract } from "@/lib/autentique/applications";
+import { checkCreatorNow, confirmSignedOutside, undoApproval, ContractSendError, sendCreatorContract } from "@/lib/autentique/applications";
 
 export type ApproveState =
   | {
@@ -171,6 +171,17 @@ export async function checkContractAction(_prev: ContractState, form: FormData):
 }
 
 /** D-CONTRACTLOCK: "Contrato assinado" (assinou fora do Autentique): libera cupom, kit, portal e a mensagem. */
+/** D-UNDOAPPROVAL: desfaz a aprovação de quem não assinou (a tela atualiza no "Concluir", depois do WhatsApp). */
+export async function undoApprovalAction(_prev: ContractState, form: FormData): Promise<ContractState> {
+  try {
+    const r = await undoApproval(db(), await currentActor(), String(form.get("creatorId") ?? ""), String(form.get("note") ?? ""));
+    return { ok: r.cancelled ? "Aprovação desfeita: contrato cancelado no Autentique, cupom liberado e candidata em Recusadas." : "Aprovação desfeita: cupom liberado e candidata em Recusadas." };
+  } catch (error) {
+    if (error instanceof ContractSendError) return { error: error.message };
+    throw error;
+  }
+}
+
 export async function signedOutsideAction(_prev: ContractState, form: FormData): Promise<ContractState> {
   try {
     const r = await confirmSignedOutside(db(), await currentActor(), String(form.get("creatorId") ?? ""));

@@ -15,7 +15,7 @@ import { isAuthorizedBearer } from "@/lib/jobs/secret";
 import { enqueueDueProductSyncs } from "@/lib/shopify/products";
 import { enqueueDueReconciles } from "@/lib/shopify/reconcile";
 import { enqueueDueInstagram } from "@/lib/instagram/sync";
-import { enqueueDueContractChecks } from "@/lib/autentique/applications";
+import { enqueueDueContractChecks, remindUnsignedContracts } from "@/lib/autentique/applications";
 import { enqueueDueOlistStock, runStockAlerts } from "@/lib/olist/stock";
 
 // Worker da fila: chamado a cada minuto pelo pg_cron do Supabase (D-CRON), com o segredo JOBS_SECRET.
@@ -52,8 +52,10 @@ export async function POST(request: Request): Promise<Response> {
     const withdrawalReminders = await runWithdrawalReminders(prisma, whatsapp, siteOrigin());
     // D-OLIST: estoque baixo no Olist (Envio e Gestão, uma vez por dia).
     const stockAlerts = await runStockAlerts(prisma, whatsapp, siteOrigin());
+    // D-CONTRACTREMIND: contrato sem assinar há 3 e há 7 dias (WhatsApp da marca para a creator, com o link).
+    const contractReminders = await remindUnsignedContracts(prisma, whatsapp);
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, stockAlerts, receipts, goalKits, tierKits, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, contractReminders, stockAlerts, receipts, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

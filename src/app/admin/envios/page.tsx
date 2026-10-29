@@ -11,7 +11,8 @@ import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import type { ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, type ShipmentStatusValue } from "@/lib/shipments/shipments";
-import { NewShipmentForm } from "./forms";
+import { FirstKitNotice, NewShipmentForm } from "./forms";
+import { firstKitAudience, firstKitPreview } from "@/lib/shipments/first-kit-notice";
 import { RECEIPT_CHECK_DAYS } from "@/lib/shipments/reminders";
 import { ShipmentsTable } from "./table";
 
@@ -43,6 +44,8 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   const brandId = (await staffContext(actor)).brand?.id;
   const preparingCount = brandId ? await db().shipment.count({ where: { brandId, status: "PREPARING" } }) : 0;
   const staleCount = brandId ? await db().shipment.count({ where: { brandId, status: "SHIPPED", shippedAt: { lte: staleBefore } } }) : 0;
+  // D-FIRSTKITNOTICE: aviso do 1º produto, pronto e esperando o clique do super admin.
+  const firstKit = brandId && brandsWith(actor.grants, "staff.manage") === "ALL" ? await firstKitAudience(db(), brandId) : null;
   const canPrint = Boolean(brandId && can(actor.grants, "shipping.view", brandId) && can(actor.grants, "personal.address", brandId));
   return (
     <>
@@ -67,6 +70,9 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
             <NewShipmentForm creators={form.creators} products={form.products} />
           </div>
         </details>
+      )}
+      {firstKit && firstKit.grantIds.length > 0 && (
+        <FirstKitNotice count={firstKit.grantIds.length} names={firstKit.names} text={firstKitPreview(firstKit.brand)} hasWhatsApp={Boolean(firstKit.brand.whatsappInstance)} />
       )}
       {/* D-LABEL: etiquetas (4 por A4) e declarações de todos os envios em "Preparando". */}
       {preparingCount > 0 && canPrint && (

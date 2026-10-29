@@ -15,7 +15,9 @@ describe("fila de ações (M2.1, D-ACTIONS)", () => {
   });
 
   it("quem cuida: Gestão; envio parado é de quem envia", () => {
-    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO", NO_POST: "GESTAO", ACCESS: "GESTAO" });
+    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO", NO_POST: "GESTAO", ACCESS: "GESTAO", UNSIGNED: "GESTAO" });
+    // D-CONTRACTREMIND: a mensagem leva o link de assinatura.
+    expect(actionMessage({ kind: "UNSIGNED", days: 8, link: "https://assina.ae/x" }, "Maria Clara", "Botanika")).toContain("https://assina.ae/x");
   });
 
   it("link do WhatsApp com o texto codificado", () => {

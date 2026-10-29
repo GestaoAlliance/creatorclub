@@ -4,6 +4,7 @@ import {
   addMonthsToDay,
   approvalMessage,
   contractLinkMessage,
+  contractReminderMessage,
   CONTRACT_TEXT_LABEL,
   contractTextKind,
   dayKey,
@@ -273,6 +274,54 @@ export async function runCreatorContractJob(prisma: PrismaClient, creatorId: str
   }
 }
 
+export const REMIND_DAYS = [3, 7] as const;
+const DAY_MS = 86_400_000;
+
+/**
+ * D-CONTRACTREMIND: contrato sem assinar há 3 e há 7 dias (contados do envio) ganha um lembrete no WhatsApp da marca,
+ * com o link de assinatura; cada um sai uma vez, das 9h às 20h. Quem já passou dos 7 sem o de 3 recebe só o de 7.
+ */
+export async function remindUnsignedContracts(prisma: PrismaClient, sender: WhatsAppSender | null, now = new Date()) {
+  if (!sender || !inWhatsAppHours(now)) return { sent: 0 };
+  const due3 = new Date(now.getTime() - 3 * DAY_MS);
+  const due7 = new Date(now.getTime() - 7 * DAY_MS);
+  const rows = await prisma.contractRequest.findMany({
+    where: {
+      status: "SENT",
+      signLink: { not: null },
+      creator: { awaitingContractAt: { not: null }, contractSigned: false },
+      OR: [{ sentAt: { lte: due3 }, reminder3At: null }, { sentAt: { lte: due7 }, reminder7At: null }],
+    },
+    select: {
+      id: true, sentAt: true, signLink: true, signerName: true, reminder7At: true,
+      creator: { select: { account: { select: { phone: true } } } },
+      brand: { select: { name: true, whatsappInstance: true } },
+    },
+  });
+  let sent = 0;
+  for (const r of rows) {
+    const chat = whatsappChatUrl(r.creator?.account.phone ?? null);
+    if (!chat || !r.brand.whatsappInstance || !r.signLink) continue;
+    const seventh = r.sentAt <= due7 && !r.reminder7At;
+    // Marca antes de mandar: dois workers ao mesmo tempo não mandam duas vezes (falha do n8n: perde-se só este lembrete).
+    const { count } = await prisma.contractRequest.updateMany({
+      where: { id: r.id, ...(seventh ? { reminder7At: null } : { reminder3At: null }) },
+      data: seventh ? { reminder7At: now, reminder3At: now } : { reminder3At: now },
+    });
+    if (count === 0) continue;
+    try {
+      await sender({
+        instance: r.brand.whatsappInstance, phone: chat.replace("https://wa.me/", ""), text: contractReminderMessage({ name: r.signerName, brand: r.brand.name, link: r.signLink }),
+        notificationId: `${r.id}:${seventh ? 7 : 3}`, kind: "CONTRACT_REMINDER", brand: r.brand.name,
+      });
+      sent += 1;
+    } catch {
+      // n8n fora: o lembrete não volta (a Gestão vê no dia 7 em Ações).
+    }
+  }
+  return { sent };
+}
+
 /** Manda o link de assinatura pelo WhatsApp da marca (uma vez). Sem n8n, instância ou celular: fica só o e-mail. */
 export async function sendContractLink(prisma: PrismaClient, sender: WhatsAppSender | null, requestId: string, now = new Date()) {
   const r = await prisma.contractRequest.findUnique({
@@ -463,6 +512,51 @@ export function autentiqueHandlers(prisma: PrismaClient) {
  * ainda não tem Autentique. O contrato passa a valer hoje e a ativação (cupom, kit, portal e mensagem) roda na hora; se a
  * Shopify falhar, a conferência de 5 em 5 minutos tenta de novo. Contrato do Autentique ainda aberto é cancelado.
  */
+/**
+ * D-UNDOAPPROVAL: a Gestão desfaz a aprovação de quem não assinou. O contrato é cancelado no Autentique, o cupom
+ * reservado é liberado, a creator fica Desligada (nada é apagado) e a candidatura volta para Recusadas com o motivo.
+ */
+export async function undoApproval(prisma: PrismaClient, actor: Actor | null, creatorId: string, note: string, deps: Deps = {}) {
+  const now = deps.now ?? new Date();
+  const c = await prisma.creator.findUnique({
+    where: { id: creatorId },
+    select: {
+      brandId: true, status: true, awaitingContractAt: true, contractSigned: true, pendingCouponCode: true,
+      couponAssignments: { where: { validTo: null, coupon: { kind: "CREATOR", active: true } }, select: { id: true } },
+    },
+  });
+  if (!c || !actor || !can(actor.grants, "creators.edit", c.brandId)) throw new ContractSendError("Sem permissão.");
+  if (!c.awaitingContractAt || c.contractSigned) throw new ContractSendError("Só dá para desfazer a aprovação de quem ainda não assinou o contrato.");
+  if (c.couponAssignments.length) throw new ContractSendError("Ela já tem cupom ativo na loja: use \"Arquivar creator\" na ficha.");
+  const decisionNote = note.trim().replace(/\s+/g, " ").slice(0, 300);
+  if (!decisionNote) throw new ContractSendError("Escreva o motivo.");
+
+  const open = await prisma.contractRequest.findMany({ where: { creatorId, status: "SENT" }, select: { id: true, brandId: true, externalId: true } });
+  if (open.length) {
+    const token = (await loadAutentique(prisma, c.brandId, deps.encKey).catch(() => null))?.token ?? null;
+    for (const r of open) await cancelRequest(prisma, r, token, actor.userId, "aprovação desfeita", deps);
+  }
+  const applicationIds = await prisma.$transaction(async (tx) => {
+    const apps = await tx.creatorApplication.findMany({ where: { creatorId, status: "APPROVED" }, select: { id: true } });
+    await tx.creatorApplication.updateMany({
+      where: { id: { in: apps.map((a) => a.id) } },
+      data: { status: "REJECTED", creatorId: null, decidedAt: now, decidedById: actor.userId, decisionNote },
+    });
+    await tx.creator.update({
+      where: { id: creatorId },
+      data: { status: "DEACTIVATED", deactivatedAt: now, awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null },
+    });
+    await tx.auditLog.create({
+      data: {
+        brandId: c.brandId, actorType: "USER", actorId: actor.userId, action: "application.approval_undone", entity: "Creator", entityId: creatorId,
+        before: { status: c.status, pendingCoupon: c.pendingCouponCode }, after: { status: "DEACTIVATED", note: decisionNote, applications: apps.map((a) => a.id) },
+      },
+    });
+    return apps.map((a) => a.id);
+  });
+  return { cancelled: open.length, applicationIds };
+}
+
 export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | null, creatorId: string, deps: Deps = {}) {
   const now = deps.now ?? new Date();
   const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { brandId: true, awaitingContractAt: true, contractSigned: true, contractTemplate: { select: { months: true } } } });

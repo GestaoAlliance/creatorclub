@@ -22,6 +22,8 @@ export function Picker(props: {
   required?: boolean;
   /** Versão compacta, para linhas de tabela. */
   small?: boolean;
+  /** Avisa a tela quando a escolha muda (ex.: abrir campos que dependem dela). */
+  onChange?: (id: string) => void;
 }) {
   const [value, setValue] = useState(props.defaultValue ?? "");
   const [open, setOpen] = useState(false);
@@ -43,6 +45,7 @@ export function Picker(props: {
   const choose = (o: PickerOption | undefined) => {
     if (!o || o.disabled) return;
     setValue(o.id);
+    props.onChange?.(o.id);
     setOpen(false);
     setQ("");
   };

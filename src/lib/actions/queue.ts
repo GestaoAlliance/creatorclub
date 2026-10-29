@@ -15,6 +15,7 @@ import {
   nextBirthday,
   releaseMinFor,
   SHIP_STUCK_DAYS,
+  UNSIGNED_DAYS,
   whatsappChatUrl,
   whatsappWithText,
   type ActionFacts,
@@ -36,6 +37,7 @@ import { lastPostDays } from "@/lib/posts/posts";
  * - envio parado: em preparação há 3 dias ou mais (tarefa de quem envia);
  * - aniversário: de 3 dias antes até o dia (M4.2, D-TAGS), com a mensagem de parabéns;
  * - sem post: parceira ativa sem post registrado há 15 dias (M4.6, D-POSTS; conta desde o início dos registros);
+ * - contrato sem assinar: aprovada esperando o contrato do Autentique enviado há 7 dias ou mais (D-CONTRACTREMIND);
  * - pediu acesso: já tinha cadastro sem senha e pediu o link pelo site (D-ACCESSREQ); sai quando ela ganha o login ou
  *   a equipe gera um convite depois do pedido.
  * Resolvido o motivo, a tarefa some sozinha. "Feito" grava a ocorrência em `ActionDone` e ela sai da fila; uma
@@ -68,7 +70,7 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   const today = Date.parse(`${dayKey(now, tz)}T00:00:00Z`);
   const month = monthKey(now, tz);
 
-  const [creators, kits, ships, done] = await Promise.all([
+  const [creators, kits, ships, done, unsigned] = await Promise.all([
     prisma.creator.findMany({
       where: { brandId, status: { not: "DEACTIVATED" } },
       select: {
@@ -84,6 +86,10 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
       select: { id: true, creatorId: true, createdAt: true, approvedAt: true },
     }),
     prisma.actionDone.findMany({ where: { brandId }, select: { key: true } }),
+    prisma.contractRequest.findMany({
+      where: { brandId, status: "SENT", sentAt: { lte: new Date(now.getTime() - UNSIGNED_DAYS * DAY) }, creator: { awaitingContractAt: { not: null }, contractSigned: false } },
+      select: { id: true, creatorId: true, sentAt: true, signLink: true },
+    }),
   ]);
   const byId = new Map(creators.map((c) => [c.id, c]));
   const skip = new Set(done.map((d) => d.key));
@@ -156,6 +162,7 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   }
 
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });
+  for (const u of unsigned) if (u.creatorId) push(u.creatorId, `UNSIGNED:${u.id}`, { kind: "UNSIGNED", days: days(u.sentAt), link: u.signLink });
   for (const s of ships) push(s.creatorId, `SHIP_STUCK:${s.id}`, { kind: "SHIP_STUCK", days: days(s.approvedAt ?? s.createdAt) });
 
   return out;
