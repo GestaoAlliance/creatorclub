@@ -16,7 +16,7 @@ const hourKey = (now: Date) => `${dayKey(now, TZ)}T${new Intl.DateTimeFormat("en
 
 const ITEMS = { creator: { select: { account: { select: { name: true } } } }, items: { orderBy: { title: "asc" as const }, select: { title: true, quantity: true } } };
 
-async function deliver(
+export async function deliver(
   prisma: PrismaClient,
   sender: WhatsAppSender,
   brand: { id: string; name: string; whatsappInstance: string },
