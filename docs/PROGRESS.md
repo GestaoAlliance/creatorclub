@@ -8,8 +8,8 @@
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
 - **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
-  ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; 4) WhatsApp do Álvaro
-  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias; 5) rastreio clicável e aviso "kit
+  ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; ~~4) WhatsApp do Álvaro
+  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias~~; 5) rastreio clicável e aviso "kit
   enviado" para a creator; 6) lembrete da Juci no dia 15 com saques aprovados sem pagar. Olist depois do contrato.
   Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
@@ -314,6 +314,16 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-230 — 2026-10-29 — WhatsApp de quem é Envio: envios novos e parados (D-SHIPALERT)
+- **Feito:** `src/lib/notifications/shipping.ts` (worker a cada minuto): das 9h às 20h, um resumo por hora dos envios que
+  entraram em "Preparando" (`Shipment.staffNotifiedAt`, migração `20261104090000_shipment_staff_alert`, os que já
+  existiam ficam marcados) e, todo dia a partir das 9h, a lista dos parados em "Preparando" há 3 dias corridos ou mais
+  (desde a aprovação do pedido ou o registro). Só para quem tem a função Envio na marca, com o WhatsApp cadastrado em
+  Equipe; marca com WhatsApp ligado. `SummaryRun` evita repetir; falha do n8n tenta de novo. Textos em
+  `src/domain/shipping-alert.ts`. Teste: `test/integration/shipping-alerts.test.ts`.
+- **Pendente do responsável:** WhatsApp do Álvaro cadastrado em Equipe (sem ele, nada é enviado).
+- **Próxima:** 5) rastreio clicável e aviso "kit enviado" para a creator.
 
 ### CP-229 — 2026-10-29 — Planilha dos envios (D-SHIPCSV)
 - **Feito:** "Baixar planilha" em Envios (`/admin/envios/csv`): a situação escolhida na tela e o período opcional pela
