@@ -53,9 +53,33 @@ export async function connectAutentique(
 }
 
 /** Conta do Autentique da marca, com a chave aberta; `null` se a marca não tem Autentique ligado. */
+/**
+ * D-AUTENTIQUEENV (2026-10-29): chave da marca também pela variável segura `AUTENTIQUE_TOKENS` da Vercel (JSON
+ * `{ "<slug da marca>": "<chave>" }`, só produção), quando não há conexão salva em Integrações. A salva em Integrações
+ * vale primeiro. Nunca no código nem no repositório.
+ */
+export function envAutentiqueToken(slug: string, env: Record<string, string | undefined> = process.env): string | null {
+  const raw = env.AUTENTIQUE_TOKENS?.trim();
+  if (!raw) return null;
+  try {
+    const map = JSON.parse(raw) as Record<string, unknown>;
+    const t = map[slug];
+    return typeof t === "string" && /^[A-Za-z0-9._-]{20,200}$/.test(t.trim()) ? t.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function envConnection(prisma: PrismaClient, brandId: string): Promise<AutentiqueConnection | null> {
+  if (!process.env.AUTENTIQUE_TOKENS) return null;
+  const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { slug: true } });
+  const token = brand ? envAutentiqueToken(brand.slug) : null;
+  return token ? { brandId, token, sandbox: false, account: "variável segura da Vercel" } : null;
+}
+
 export async function loadAutentique(prisma: PrismaClient, brandId: string, encKey?: Buffer): Promise<AutentiqueConnection | null> {
   const row = await prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } } });
-  if (!row || row.status !== "CONNECTED" || !row.secretEncrypted) return null;
+  if (!row || row.status !== "CONNECTED" || !row.secretEncrypted) return envConnection(prisma, brandId);
   const s = JSON.parse(decryptSecret(row.secretEncrypted, encKey ?? key(), context(brandId))) as { token: string; sandbox?: boolean };
   return { brandId, token: s.token, sandbox: s.sandbox === true, account: row.externalId };
 }
@@ -63,5 +87,6 @@ export async function loadAutentique(prisma: PrismaClient, brandId: string, encK
 /** A marca assina contratos pelo Autentique? (sem abrir a chave) */
 export async function hasAutentique(prisma: PrismaClient, brandId: string): Promise<boolean> {
   const row = await prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } }, select: { status: true, secretEncrypted: true } });
-  return row?.status === "CONNECTED" && !!row.secretEncrypted;
+  if (row?.status === "CONNECTED" && !!row.secretEncrypted) return true;
+  return (await envConnection(prisma, brandId)) !== null;
 }

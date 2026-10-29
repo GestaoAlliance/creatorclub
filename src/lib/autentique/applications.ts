@@ -118,7 +118,8 @@ export async function sendCreatorContract(
   const category = c.contractTemplate?.documentKind ?? c.categories[0] ?? "INFLUENCER";
   if (!c.contractTemplate || !isContractKind(category)) throw new ContractSendError("Falta a versão do contrato na ficha.");
   const kind = contractTextKind(category, c.receivesAsIndividual);
-  const doc = await currentContract(prisma, c.brandId, kind);
+  // Sem o modelo de pessoa física/empresa publicado, vale o texto do tipo (decisão do responsável em 2026-10-29).
+  const doc = (await currentContract(prisma, c.brandId, kind)) ?? (kind !== category ? await currentContract(prisma, c.brandId, category) : null);
   if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kind]}" (Contratos).`);
   // Cupom reservado na aprovação ou, para quem já tinha cupom (D-CONTRACTLOCK), o cupom dela.
   const current = c.couponAssignments[0]?.coupon ?? null;
@@ -292,13 +293,22 @@ export async function sendContractLink(prisma: PrismaClient, sender: WhatsAppSen
   return true;
 }
 
-/** Agenda a conferência das marcas com contrato esperando assinatura ou creator esperando a ativação. */
+/**
+ * Agenda a conferência das marcas com contrato esperando assinatura ou creator esperando a ativação. E, de hora em hora,
+ * tenta de novo o envio para quem espera o contrato e ainda não tem nenhum (ex.: Autentique conectado depois).
+ */
 export async function enqueueDueContractChecks(prisma: PrismaClient, now = new Date()): Promise<number> {
+  const hour = Math.floor(now.getTime() / 3_600_000);
+  const unsent = await prisma.creator.findMany({ where: { awaitingContractAt: { not: null }, contractSigned: { not: true }, contractRequests: { none: {} } }, select: { id: true, brandId: true }, take: 200 });
+  let retries = 0;
+  for (const c of unsent) {
+    if (await enqueueJob(prisma, { type: CONTRACT_SEND_JOB, brandId: c.brandId, payload: { creatorId: c.id }, dedupeKey: `contract-creator:${c.id}:${hour}`, runAt: now, maxAttempts: 1 })) retries++;
+  }
   const [sent, activating] = await Promise.all([
     prisma.contractRequest.findMany({ where: { status: "SENT" }, distinct: ["brandId"], select: { brandId: true } }),
     prisma.creator.findMany({ where: { awaitingContractAt: { not: null }, contractSigned: true }, distinct: ["brandId"], select: { brandId: true } }),
   ]);
-  let n = 0;
+  let n = retries;
   for (const brandId of new Set([...sent, ...activating].map((b) => b.brandId))) {
     if (await enqueueJob(prisma, { type: AUTENTIQUE_CHECK_JOB, brandId, dedupeKey: `autentique:${brandId}:${slot(now)}`, runAt: now })) n++;
   }

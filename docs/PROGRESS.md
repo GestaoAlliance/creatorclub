@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-239 — 2026-10-29 — Autentique pela variável segura da Vercel (D-AUTENTIQUEENV)
+- **Feito:** a chave do Autentique de cada marca também é lida da variável `AUTENTIQUE_TOKENS` (Vercel, só produção,
+  tipo secreto; JSON por slug), quando não há conexão salva em Integrações (que continua valendo primeiro). Gravadas as
+  chaves da Botanika e da VermeFree (enviadas pelo responsável); nada no repositório. Integrações mostra "Conectado
+  pela chave guardada na Vercel". Sem o modelo de pessoa física/empresa publicado, o contrato usa o texto do tipo
+  (Influencer). De hora em hora, quem espera o contrato e ainda não tem nenhum enviado é tentado de novo (as travadas
+  pelo CP-238 recebem o contrato sozinhas). Testes em `test/autentique.test.ts` e
+  `test/integration/autentique-application.test.ts`.
+- **Próxima:** conferir no ar o primeiro contrato enviado; textos dos 2 modelos da Influencer.
+
 ### CP-238 — 2026-10-29 — Aprovar sempre trava até o contrato; cupom só com letras (D-CONTRACTLOCK, D-COUPONLETTERS)
 - **Feito (pedidos da Vanessa e do responsável):** aprovar em Candidatas sempre deixa a creator esperando o contrato
   (portal, cupom e pedido travados), com ou sem Autentique. Libera quando ela assina no Autentique ou quando a Gestão
