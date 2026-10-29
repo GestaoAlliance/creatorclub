@@ -53,6 +53,8 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     kindTone: a.categoryProposal === "PRESCRITOR" ? "sky" : a.categoryProposal === "UGC" ? "amber" : "neutral",
     origin: a.source === "site_form" && a.hasLogin ? "Site (com login)" : (ORIGIN[a.source] ?? a.source),
     hunter: a.hunter?.name ?? null,
+    hunterCode: a.hunterCode,
+    viaHunterForm: a.source === "hunter_form",
     brands: a.brands,
     duplicate: a.duplicates.length > 0,
     priority: { level: a.priority.level, label: PRIORITY_LABEL[a.priority.level], reasons: (a.priority.level === "REPETIDA" ? ["resolver por último"] : a.priority.reasons).join(" · ") },

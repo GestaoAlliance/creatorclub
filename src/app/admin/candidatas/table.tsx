@@ -22,6 +22,9 @@ export type CandidateRow = {
   kindTone: "neutral" | "sky" | "amber";
   origin: string;
   hunter: string | null;
+  /** D-ORIGIN: código digitado sem link correspondente, e se veio do formulário de hunter. */
+  hunterCode: string | null;
+  viaHunterForm: boolean;
   brands: string[];
   duplicate: boolean;
   /** M2.3 (D-PRIORITY): selo e os motivos (aparecem ao passar o mouse e no celular). */
@@ -173,6 +176,25 @@ function Who({ c }: { c: CandidateRow }) {
  * linha. Aprovar abre o formulário já preenchido (cupom, tipo, comissão, desconto) para confirmar, porque cria o cupom
  * na Shopify; recusar pede só o motivo opcional. Clicar na linha mostra tudo o que ela respondeu.
  */
+/** D-ORIGIN: de onde a candidata veio, em destaque (a Gestão decide sabendo qual hunter trouxe). */
+function CameFrom({ c }: { c: CandidateRow }) {
+  if (c.hunter)
+    return (
+      <span className="flex flex-col items-start gap-0.5">
+        <span className="rounded-xl bg-brand px-2.5 py-1 text-xs font-semibold leading-tight text-white dark:bg-brand-2">Hunter: {c.hunter}</span>
+        <span className="text-[11px] text-stone-500">{c.origin}</span>
+      </span>
+    );
+  if (c.hunterCode || c.viaHunterForm)
+    return (
+      <span className="flex flex-col items-start gap-0.5">
+        <span className="rounded-xl bg-amber-500/15 px-2.5 py-1 text-xs font-medium leading-tight text-amber-800 dark:text-amber-300">{c.hunterCode ? `Hunter: código "${c.hunterCode}" não encontrado` : "Hunter não informado"}</span>
+        <span className="text-[11px] text-stone-500">{c.origin}</span>
+      </span>
+    );
+  return <span className="text-xs">{c.origin}</span>;
+}
+
 export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pending: boolean }) {
   const [open, setOpen] = useState<Open>(null);
   const [chip, setChip] = useState<Chip>("");
@@ -181,7 +203,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
   const clear = useCallback(() => setPicked(new Set()), []);
   const chips: { id: Chip; label: string; test: (c: CandidateRow) => boolean }[] = [
     { id: "old", label: "esperando há mais de 7 dias", test: (c) => pending && c.days > 7 },
-    { id: "hunter", label: "trazidas por hunter", test: (c) => c.hunter !== null },
+    { id: "hunter", label: "trazidas por hunter", test: (c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm },
     { id: "dup", label: "podem ser repetidas", test: (c) => c.duplicate },
   ];
   const active = chips.find((x) => x.id === chip);
@@ -237,7 +259,10 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                 <div className="flex flex-wrap items-center gap-1.5 pl-12">
                   <PriorityBadge c={c} />
                   <span className={badge[c.kindTone]}>{c.kind}</span>
-                  <span className={ui.hint}>{c.origin}{c.hunter && ` · ${c.hunter}`} · {ago(c.days)}</span>
+                  <span className={ui.hint}>{ago(c.days)}</span>
+                </div>
+                <div className="pl-12">
+                  <CameFrom c={c} />
                 </div>
                 <div className="pl-12">
                   <Actions c={c} onApprove={() => approve(c.id)} onReject={() => toggle(c.id, "reject")} />
@@ -259,7 +284,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                   <th>Candidata</th>
                   <th>Redes</th>
                   <th>Tipo</th>
-                  <th>Origem</th>
+                  <th>Veio de</th>
                   <th>Chegou</th>
                   <th className="!text-right">{pending ? "Decidir" : ""}</th>
                 </tr>
@@ -276,10 +301,7 @@ export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pendin
                       <td className="max-w-72"><Who c={c} /></td>
                       <td><Socials c={c} /></td>
                       <td><span className={badge[c.kindTone]}>{c.kind}</span></td>
-                      <td className="text-xs">
-                        {c.origin}
-                        {c.hunter && <span className="block text-stone-500">hunter: {c.hunter}</span>}
-                      </td>
+                      <td className="min-w-40 max-w-52"><CameFrom c={c} /></td>
                       <td className={`whitespace-nowrap text-xs ${pending && c.days > 7 ? "font-medium text-amber-700 dark:text-amber-300" : "text-stone-500"}`}>{ago(c.days)}</td>
                       <td>
                         <span className="flex items-center justify-end gap-2">
