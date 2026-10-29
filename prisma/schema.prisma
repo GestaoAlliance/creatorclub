@@ -990,6 +990,9 @@ model CreatorApplication {
   note            String? // observação da equipe (ex.: status da planilha antiga)
   hunterCode      String? // D-HUNTERLINK: "Código de quem te convidou" (vem pré-preenchido pelo link do hunter)
   hunterLinkId    String?
+  /// D-ORIGIN: etiqueta de campanha do link do cadastro (`?origem=`) e "Como conheceu a marca?" (opcional).
+  campaignTag     String?
+  heardFrom       String?
   tiktok          String? // D-SIGNUPACCOUNT
   /// M4.2 (D-TAGS): data de nascimento informada na candidatura (vai para a conta na aprovação).
   birthDate       DateTime?         @db.Date

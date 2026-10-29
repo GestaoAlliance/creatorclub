@@ -37,6 +37,13 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
           {a.hunterCode ? <>Diz que foi convidada pelo código <span className="font-semibold">&quot;{a.hunterCode}&quot;</span>, mas nenhum hunter tem esse código. Confira com a equipe.</> : "Veio pelo formulário de hunter, mas sem o código de quem convidou."}
         </p>
       ) : null}
+      {(a.campaignTag || a.heardFrom) && (
+        <p className={ui.hint}>
+          {a.campaignTag && <>Campanha do link: <span className="font-medium">{a.campaignTag}</span></>}
+          {a.campaignTag && a.heardFrom && " · "}
+          {a.heardFrom && <>Conheceu a marca por: <span className="font-medium">{a.heardFrom}</span></>}
+        </p>
+      )}
       {a.note && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{a.note}</p>}
       <div className="grid gap-1.5 text-sm sm:grid-cols-2">
         {a.instagram && <p><InstagramLink handle={a.instagram} /></p>}

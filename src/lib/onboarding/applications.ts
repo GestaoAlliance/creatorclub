@@ -259,6 +259,8 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         hunter: r.hunterLink ? { name: r.hunterLink.user.name, code: r.hunterLink.code } : null,
         // D-ORIGIN: código de hunter digitado que não bate com nenhum link (a Gestão vê para decidir).
         hunterCode: r.hunterLink ? null : r.hunterCode?.trim() || null,
+        campaignTag: r.campaignTag,
+        heardFrom: r.heardFrom,
         followersCount: parseFollowers(r.followers),
         duplicates: findDuplicates(r, pool(r.brandId)).filter((d) => !(d.kind === "creator" && d.id === r.creatorId)),
       };

@@ -37,6 +37,7 @@ export function OriginTab({ rows, monthLabel }: { rows: OriginSummaryRow[]; mont
                       {ORIGIN_LABEL[r.origin.kind]}
                     </Link>
                     {r.origin.hunter && <span className="block text-xs text-stone-500">{r.origin.hunter.name}</span>}
+                    {r.origin.campaign && <span className="block text-xs text-stone-500">campanha {r.origin.campaign}</span>}
                     {r.origin.kind === "HUNTER" && !r.origin.hunter && <span className="block text-xs text-stone-500">hunter não identificado (sem código)</span>}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">{r.applications || "—"}</td>

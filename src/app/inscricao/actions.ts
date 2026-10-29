@@ -35,6 +35,9 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
     ...SIGNUP_ADDRESS_PARTS.map((k) => [k, String(form.get(k) ?? "")]),
     // M4.3 (D-PROFILEFIELDS): perfil opcional; nichos chegam marcados um a um.
     ...PROFILE_KEYS.map((k) => [k, k === "niches" ? form.getAll(k).map(String).join("|") : String(form.get(k) ?? "")]),
+    // D-ORIGIN: "Como conheceu a marca?" (opcional).
+    ["heardFrom", String(form.get("heardFrom") ?? "")],
+    ["heardFromOther", String(form.get("heardFromOther") ?? "")],
   ]);
   const password = String(form.get("password") ?? "");
   let email: string | null;
@@ -47,6 +50,7 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
         password,
         honeypot: String(form.get("site") ?? ""),
         hunterCode: String(form.get("h") ?? "") || null,
+        campaignTag: String(form.get("origem") ?? "") || null,
         ip: (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
       },
       supabaseSignupAuth,

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { cnpjAddressLine, mustShipToCnpj, normalizeHunterCode, sameShipAddress, signupBrandFor, signupConsentText, validateSignup } from "@/domain";
+import { cnpjAddressLine, heardFromValue, mustShipToCnpj, normalizeCampaignTag, normalizeHunterCode, sameShipAddress, signupBrandFor, signupConsentText, validateSignup } from "@/domain";
 import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
 import { passwordProblem } from "@/lib/auth/rules";
 import { hashIp } from "@/lib/links/tracked";
@@ -40,7 +40,7 @@ export async function signupCouponTaken(prisma: PrismaClient, brandId: string, c
 
 export async function submitSignup(
   prisma: PrismaClient,
-  input: { brandSlug: string; values: Record<string, string | undefined>; password: string; honeypot: string; hunterCode: string | null; ip: string | null },
+  input: { brandSlug: string; values: Record<string, string | undefined>; password: string; honeypot: string; hunterCode: string | null; ip: string | null; campaignTag?: string | null },
   auth: SignupAuth,
   now = new Date(),
   cnpjLookup: CnpjLookup = lookupCnpj,
@@ -98,7 +98,12 @@ export async function submitSignup(
   }
 
   const code = normalizeHunterCode(input.hunterCode);
+  // D-ORIGIN: etiqueta de campanha do link e "Como conheceu a marca?" (opcional).
+  const campaignTag = normalizeCampaignTag(input.campaignTag);
+  const heardFrom = heardFromValue(input.values.heardFrom, input.values.heardFromOther);
   const answers: Record<string, string> = {
+    ...(heardFrom ? { "Como conheceu a marca?": heardFrom } : {}),
+    ...(campaignTag ? { "Campanha do link:": campaignTag } : {}),
     ...checked.answers,
     [BRANDS_QUESTION]: brandName,
     ...(code ? { [HUNTER_QUESTION]: code } : {}),
@@ -142,6 +147,7 @@ export async function submitSignup(
         ipHash,
         accountId: account.id,
       });
+      if (campaignTag || heardFrom) await tx.creatorApplication.update({ where: { id: app.id }, data: { campaignTag, heardFrom } });
       await tx.auditLog.create({
         data: { brandId: brand.id, actorType: "USER", actorId: login.userId, action: "signup.account", entity: "CreatorApplication", entityId: app.id, after: { accountId: account.id, coupon: acc.coupon } },
       });

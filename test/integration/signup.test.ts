@@ -68,13 +68,16 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     const now = new Date("2026-10-22T15:00:00Z");
     const email = `${randomUUID()}@Example.com`;
     const code = `MARIA${seq % 1000}`;
-    expect(await submitSignup(prisma, { ...base(brand.slug, email, "1.1.1.1", code.toLowerCase()), hunterCode: "maria" }, auth, now)).toEqual({ ok: true, email: email.toLowerCase() });
+    const withOrigin = base(brand.slug, email, "1.1.1.1", code.toLowerCase());
+    expect(
+      await submitSignup(prisma, { ...withOrigin, values: { ...withOrigin.values, heardFrom: "Outro", heardFromOther: "feira" }, hunterCode: "maria", campaignTag: "Stories Outubro" }, auth, now),
+    ).toEqual({ ok: true, email: email.toLowerCase() });
     expect(users.size).toBe(1);
     const [userId] = [...users.keys()];
     const account = await prisma.creatorAccount.findUniqueOrThrow({ where: { email: email.toLowerCase() }, include: { applications: true } });
     expect(account).toMatchObject({ userId, name: "Maria Exemplo", instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: true, addrZip: "01310100", addrStreet: "Avenida Paulista", addrState: "SP", pixKey: null });
     expect(account.applications).toHaveLength(1);
-    expect(account.applications[0]).toMatchObject({ brandId: brand.id, status: "NEW", source: "site_form", suggestedCoupon: code, tiktok: "@maria.tt", hunterCode: "maria", consentAt: now, brandsWanted: brand.name });
+    expect(account.applications[0]).toMatchObject({ brandId: brand.id, status: "NEW", source: "site_form", suggestedCoupon: code, tiktok: "@maria.tt", hunterCode: "maria", consentAt: now, brandsWanted: brand.name, campaignTag: "stories-outubro", heardFrom: "Outro: feira" });
     expect(account.applications[0]!.hunterLinkId).not.toBeNull();
     expect(JSON.stringify(account.applications[0]!.raw)).toContain(`dados pessoais pela ${brand.name}`);
     expect(JSON.stringify(account.applications[0]!.raw)).not.toContain(PASSWORD);
