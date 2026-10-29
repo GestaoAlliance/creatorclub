@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-236 — 2026-10-29 — Pedidos (prêmios) e Loja em abas separadas (D-SHOPTAB)
+- **Feito:** aba nova **Loja** (`/portal/[marca]/loja`): comprar com o saldo (mesmo `ShopPicker`), aviso quando o saldo
+  é R$ 0 (produtos e preços ficam visíveis) e "Minhas compras". Aba **Pedidos** reorganizada: "Liberado para você pedir"
+  no topo (sempre aberto), "Seu próximo produto" sempre que houver progresso, "Seus prêmios" (histórico dos kits com a
+  situação: liberado, em aprovação, enviado…), endereço e "Meus envios" com etiqueta (1º pedido, Prêmio, Loja, Envio da
+  equipe). No celular a Loja fica em "Mais". Sem mudança no banco.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-235 — 2026-10-29 — Primeiro envio para quem nunca recebeu e "Seu próximo produto" (D-FIRSTKIT, D-KITPROGRESS)
 - **Diagnóstico:** o pedido só aparece com um kit liberado (`KitGrant`). Creators que vieram das planilhas e nunca
   receberam produto não tinham kit de boas-vindas (ele nasce só na aprovação/assinatura) e, sem início da meta

@@ -66,6 +66,8 @@ export const PORTAL_ITEMS: NavItem[] = [
   { href: "/vendas", label: "Vendas", icon: "sales" },
   { href: "/saque", label: "Saque", icon: "wallet" },
   { href: "/envios", label: "Pedidos", icon: "package" },
+  // D-SHOPTAB: comprar com o saldo em aba própria.
+  { href: "/loja", label: "Loja", icon: "store" },
   // D-INSTALLAPP: some quando o portal já está aberto pelo ícone (como app).
   { href: "/app", label: "Instalar", icon: "phone" },
 ];

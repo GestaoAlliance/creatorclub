@@ -185,3 +185,13 @@ export async function kitProgress(prisma: PrismaClient, ctx: PortalContext, now 
   ]);
   return { kind: "GOAL", from: w.from, to: addDaysKey(w.to, -1), salesCents: rows.reduce((s, r) => s + Math.max(0, r.order.subtotalCents), 0), goalCents: GOAL_SALES_CENTS, granted: granted > 0 };
 }
+
+/** D-SHOPTAB: histórico dos produtos que ela ganhou (1º pedido, metas, meses), com a situação de cada um. */
+export async function myKitHistory(prisma: PrismaClient, ctx: PortalContext) {
+  return prisma.kitGrant.findMany({
+    where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: { id: true, kind: true, month: true, products: true, status: true, createdAt: true, shipment: { select: { status: true } } },
+  });
+}
