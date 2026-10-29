@@ -28,7 +28,7 @@ type Values = {
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
-export function BrandForm({ initial, create = false, products = [] }: { initial: Values; create?: boolean; products?: readonly { id: string; title: string; kitOption: boolean }[] }) {
+export function BrandForm({ initial, create = false, products = [] }: { initial: Values; create?: boolean; products?: readonly { id: string; title: string; kitOption: boolean; sku?: string | null; stockQty?: number | null; stockError?: string | null }[] }) {
   const titles = products.map((p) => p.title);
   const [state, action, pending] = useActionState(create ? createBrandAction : updateBrandAction, undefined);
   const [color, setColor] = useState(initial.primaryColor);
@@ -146,7 +146,14 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
               {products.map((p) => (
                 <label key={p.id} className="flex items-start gap-2 text-sm">
                   <input type="checkbox" name="kitOption" value={p.id} defaultChecked={p.kitOption} className="mt-0.5 size-4 shrink-0 accent-current" />
-                  <span>{p.title}</span>
+                  <span>
+                    {p.title}
+                    {/* D-OLIST: código e estoque lido do Olist, para conferir o casamento. */}
+                    <span className="block text-xs text-stone-500">
+                      {p.sku ? `SKU ${p.sku}` : "sem SKU na Shopify"}
+                      {p.stockQty !== null && p.stockQty !== undefined ? ` · Olist: ${p.stockQty} em estoque` : p.stockError ? ` · ${p.stockError}` : ""}
+                    </span>
+                  </span>
                 </label>
               ))}
             </div>

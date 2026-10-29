@@ -16,6 +16,7 @@ import { enqueueDueProductSyncs } from "@/lib/shopify/products";
 import { enqueueDueReconciles } from "@/lib/shopify/reconcile";
 import { enqueueDueInstagram } from "@/lib/instagram/sync";
 import { enqueueDueContractChecks } from "@/lib/autentique/applications";
+import { enqueueDueOlistStock, runStockAlerts } from "@/lib/olist/stock";
 
 // Worker da fila: chamado a cada minuto pelo pg_cron do Supabase (D-CRON), com o segredo JOBS_SECRET.
 // Também agenda a reconciliação de cada loja a cada 15 min, o catálogo de produtos uma vez por dia, roda o fechamento do mês no dia 1 (D-CONTRACT) e os avisos.
@@ -29,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const prisma = db();
     // D-INSTAGRAM: leitura diária do Instagram (a partir das 4h). D-AUTENTIQUE2: contratos das candidatas a cada 5 min.
-    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueInstagram(prisma)) + (await enqueueDueContractChecks(prisma));
+    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueInstagram(prisma)) + (await enqueueDueContractChecks(prisma)) + (await enqueueDueOlistStock(prisma));
     const released = await closeDueMonths(prisma);
     // D-GOALKIT: produto liberado assim que a creator bate R$ 1.000 na janela da meta.
     const goalKits = await grantGoalKits(prisma);
@@ -49,8 +50,10 @@ export async function POST(request: Request): Promise<Response> {
     const shipping = await runShippingAlerts(prisma, whatsapp, siteOrigin());
     // D-WDREMIND: saques aprovados sem pagar (Pagamento, dias 13, 15 e atrasados) e pedidos sem aprovar (Gestão, dia 11).
     const withdrawalReminders = await runWithdrawalReminders(prisma, whatsapp, siteOrigin());
+    // D-OLIST: estoque baixo no Olist (Envio e Gestão, uma vez por dia).
+    const stockAlerts = await runStockAlerts(prisma, whatsapp, siteOrigin());
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, receipts, goalKits, tierKits, ...result });
+    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, stockAlerts, receipts, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }

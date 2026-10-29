@@ -224,7 +224,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       bankAccount: true,
       bankAccountDv: true,
       shipFrom: true,
-      products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true } },
+      products: { where: { active: true }, orderBy: { title: "asc" }, select: { id: true, title: true, kitOption: true, sku: true, stockQty: true, stockError: true } },
       storeUrl: true,
       defaultCommissionBps: true,
       defaultDiscountBps: true,
