@@ -7,8 +7,8 @@
 
 - **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
   as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** **M5.3** Instagram, parte 2: ligar VermeFree e Revita (passo a passo com o responsável na
-  Meta) e conferir a primeira leitura real da Botanika em produção.
+- **Próxima tarefa:** conferir com o responsável a primeira leitura real do Instagram em produção (Botanika e Revita);
+  VermeFree quando o Instagram dela voltar.
   Pendentes do responsável: % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
   Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
@@ -88,8 +88,10 @@ Legenda: `[ ]` a fazer · `[~]` em andamento · `[x]` feito · `[!]` bloqueado �
   crescimento de seguidores, formato que mais engaja, alerta de queda (40%) e lista de perfis que não dá para ler.
   Feito: app "Creator Club" e usuário do sistema "CreatorClub" no portfólio Smarter ADS; token na Vercel
   (`META_SYSTEM_TOKEN`); leitura diária, aba Instagram no Desempenho, quadro na ficha, alerta no resumo semanal (CP-221).
-  *Falta:* ligar VermeFree e Revita (compartilhar o Instagram delas com o portfólio Smarter ADS e atribuir ao
-  CreatorClub) para os posts que marcam essas marcas.
+  Revita ligada em 2026-10-29 (página + Instagram compartilhados com o Smarter ADS e atribuídos ao CreatorClub).
+  *Falta:* VermeFree, quando o Instagram dela voltar (caiu por denúncia de concorrente; recurso feito). Mesmo caminho:
+  no portfólio VermeFree, Parceiros → Smarter ADS → compartilhar página e Instagram; no Smarter ADS, atribuir ao
+  CreatorClub (página e Instagram, controle total); depois uma migração com o `instagramUserId` 17841480684334514.
 
 ### E0 — Inventário (só leitura; nada muda em produção)
 - [x] **E0.1** Inventário do app antigo: o projeto Supabase `creator-hub` está **ativo** — levantar tabelas e
@@ -310,6 +312,13 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-222 — 2026-10-29 — Instagram da Revita ligado (D-INSTAGRAM)
+- **Feito:** com o responsável na Meta: a Revita compartilhou a página e o @revitaderma.br com o portfólio Smarter
+  ADS; atribuídos ao CreatorClub; testado (posts que marcam a marca aparecem). Migração
+  `20261101100000_instagram_revita`. Aprendizado: além do Instagram, o usuário do sistema precisa da página do
+  Facebook ligada a ele.
+- **Falta:** VermeFree (Instagram fora do ar por denúncia; recurso feito).
 
 ### CP-221 — 2026-10-28 — Instagram: leitura diária, aba no Desempenho e quadro na ficha (D-INSTAGRAM)
 - **Feito:** na Meta, com o responsável: app "Creator Club" (1512671070687204), usuário do sistema CreatorClub com a
