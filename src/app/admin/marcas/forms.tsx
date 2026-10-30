@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { NF_DEFAULT_SERVICE } from "@/domain";
-import { brandAssetAction, createBrandAction, updateBrandAction } from "./actions";
+import { brandAssetAction, createBrandAction, updateBrandAction, contractLockAction } from "./actions";
 
 type Values = {
   brandId?: string;
@@ -213,5 +213,27 @@ export function BrandImage({ brandId, slug, kind, label, hint, version }: { bran
       <p className={ui.hint}>{hint}</p>
       <Msg state={state} />
     </div>
+  );
+}
+
+/** D-CONTRACTSWITCH: trava do contrato na aprovação (por marca). */
+export function ContractLockForm({ brandId, on, waiting }: { brandId: string; on: boolean; waiting: number }) {
+  const [state, action, pending] = useActionState(contractLockAction, undefined);
+  const ask = on
+    ? `Desligar a trava? Aprovar vai criar o cupom e liberar a plataforma na hora.${waiting ? ` As ${waiting} que estão esperando o contrato serão liberadas agora (o contrato em aberto no Autentique é cancelado).` : ""}`
+    : "Ligar a trava? Aprovar volta a esperar o contrato assinado pelo Autentique.";
+  return (
+    <form action={action} onSubmit={(e) => { if (!confirm(ask)) e.preventDefault(); }} className="flex flex-col gap-2 text-sm">
+      <input type="hidden" name="brandId" value={brandId} />
+      <input type="hidden" name="on" value={on ? "0" : "1"} />
+      <p>
+        {on ? "Ligada: a creator aprovada espera assinar o contrato (Autentique) para ganhar o cupom e entrar na plataforma." : "Desligada: aprovar cria o cupom e libera a plataforma na hora (fluxo antigo)."}
+        {on && waiting > 0 && ` ${waiting} esperando o contrato agora.`}
+      </p>
+      <div className="flex items-center gap-3">
+        <button className={on ? ui.dangerSm : ui.btnSm} disabled={pending}>{pending ? "Salvando…" : on ? "Desligar a trava" : "Ligar a trava"}</button>
+        <Msg state={state} />
+      </div>
+    </form>
   );
 }

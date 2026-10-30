@@ -296,8 +296,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
       return { ...a, priority };
   });
   // D-AUTENTIQUE2: marcas com Autentique e o contrato mais recente de cada candidata.
-  const [autentique, requests] = await Promise.all([
-    prisma.brandIntegration.findMany({ where: { kind: "AUTENTIQUE", status: "CONNECTED", secretEncrypted: { not: null }, brandId: { in: brandIds } }, select: { brandId: true } }),
+  const [requests] = await Promise.all([
     prisma.contractRequest.findMany({
       where: { applicationId: { in: mapped.map((m) => m.id) } },
       orderBy: { sentAt: "desc" },
@@ -307,7 +306,8 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
       },
     }),
   ]);
-  const withAutentique = new Set(autentique.map((b) => b.brandId));
+  // D-CONTRACTSWITCH: "Aprovar e enviar o contrato" só nas marcas com a chave ligada.
+  const locked = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds }, contractLock: true }, select: { id: true } })).map((b) => b.id));
   // D-CONTRACTFLOW: aprovada esperando o contrato (portal travado até assinar e ativar).
   const awaiting = new Map(
     (await prisma.creator.findMany({ where: { id: { in: mapped.flatMap((m) => (m.creatorId ? [m.creatorId] : [])) }, awaitingContractAt: { not: null } }, select: { id: true, contractSigned: true } })).map((c) => [c.id, c]),
@@ -319,7 +319,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     const r = lastRequest.get(m.id);
     return {
       ...m,
-      autentique: withAutentique.has(m.brandId),
+      autentique: locked.has(m.brandId),
       awaitingContract: m.creatorId ? (awaiting.get(m.creatorId) ? { signed: awaiting.get(m.creatorId)!.contractSigned === true } : null) : null,
       contractError: contractError.get(m.id) ?? null,
       contract: r
@@ -358,7 +358,7 @@ export async function approveApplication(
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
 ): Promise<{ creatorId: string; accountId: string; couponCode: string; awaitingContract: boolean }> {
-  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true } } } });
+  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true, contractLock: true } } } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
@@ -367,7 +367,9 @@ export async function approveApplication(
   // sozinho; o cupom fica reservado e é criado na Shopify depois da assinatura.
   // D-CONTRACTLOCK (2026-10-29): aprovar sempre trava (com ou sem Autentique); libera na assinatura ou quando a Gestão
   // marca "Contrato assinado" (quem assinou fora, ex.: D4Sign).
-  const autentique = true;
+  // D-CONTRACTSWITCH (2026-10-30, pedido da Fátima): com a chave da marca desligada, volta o fluxo de antes (cupom na
+  // Shopify e plataforma liberada na aprovação) até o Autentique funcionar.
+  const autentique = brand.contractLock;
   const coupon = validateNewCouponCode(input.couponCode);
   if (!coupon.ok) throw new ApplicationError("Cupom inválido: só letras, até 20.");
   // D-COUPONLETTERS (pedido da Vanessa em 2026-10-29): cupom de creator nova só com letras.

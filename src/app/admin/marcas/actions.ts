@@ -6,6 +6,7 @@ import { BrandError, createBrand, updateBrand } from "@/lib/brands/manage";
 import { removeBrandAsset, setBrandAsset } from "@/lib/brands/assets";
 import type { BrandAssetKind } from "@/domain";
 import { db } from "@/lib/db";
+import { ContractSendError, setContractLock } from "@/lib/autentique/applications";
 
 export type BrandState = { error?: string; ok?: string } | undefined;
 
@@ -72,6 +73,22 @@ export async function brandAssetAction(_prev: BrandState, form: FormData): Promi
     return { ok: form.get("remove") ? "Imagem tirada." : "Imagem salva." };
   } catch (error) {
     if (error instanceof BrandError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-CONTRACTSWITCH: liga/desliga a trava do contrato na aprovação; desligar libera quem está esperando. */
+export async function contractLockAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  const on = form.get("on") === "1";
+  try {
+    const r = await setContractLock(db(), await currentActor(), String(form.get("brandId") ?? ""), on);
+    revalidatePath("/admin/marcas");
+    revalidatePath("/admin/candidatas");
+    if (on) return { ok: "Trava ligada: aprovar volta a esperar o contrato assinado." };
+    const failed = r.failed.length ? ` Não liberou (tenta de novo sozinho em 5 min): ${r.failed.join(", ")}.` : "";
+    return { ok: `Trava desligada: aprovar libera na hora. ${r.released} liberada(s) agora.${failed}` };
+  } catch (error) {
+    if (error instanceof ContractSendError) return { error: error.message };
     throw error;
   }
 }

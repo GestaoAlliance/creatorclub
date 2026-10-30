@@ -10,7 +10,7 @@ import { brandList } from "@/lib/brands/manage";
 import { db } from "@/lib/db";
 import { staffContext } from "@/lib/staff/context";
 import { ALL_BRANDS_PARAM } from "@/lib/staff/nav";
-import { BrandForm, BrandImage } from "./forms";
+import { BrandForm, BrandImage, ContractLockForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +70,13 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
               <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
               <div className="mt-3">
                 <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom) }} products={b.products} />
+              </div>
+            </details>
+            {/* D-CONTRACTSWITCH: trava do contrato na aprovação. */}
+            <details>
+              <summary className={`${ui.h2} cursor-pointer text-sm`}>Contrato na aprovação: {b.contractLock ? "trava ligada" : "trava desligada"}</summary>
+              <div className="mt-3">
+                <ContractLockForm brandId={b.id} on={b.contractLock} waiting={b.awaitingContract} />
               </div>
             </details>
             {/* M4.4a (D-BRANDLOGIN): a tela de entrar com a cara da marca. */}
