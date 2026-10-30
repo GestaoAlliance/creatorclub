@@ -23,6 +23,8 @@ datasource db {
 model Brand {
   id                        String              @id @default(uuid())
   slug                      String              @unique
+  /// D-CONTRACTSWITCH: aprovar trava até assinar o contrato (Autentique). Desligada: aprovar cria o cupom e libera na hora.
+  contractLock              Boolean             @default(true)
   name                      String
   enabled                   Boolean             @default(false)
   timezone                  String              @default("America/Sao_Paulo")

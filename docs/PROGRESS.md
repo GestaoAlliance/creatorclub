@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-244 — 2026-10-30 — Chave da trava do contrato por marca (D-CONTRACTSWITCH)
+- **Feito:** pedido da Fátima (áudio): enquanto o Autentique não funciona (falta a validação do contrato lá), as
+  aprovadas seguem o fluxo de antes. Em Marcas, cada marca tem "Contrato na aprovação" com a trava ligada (padrão) ou
+  desligada (`Brand.contractLock`, migração `20261113090000_contract_lock_switch`; só super admin; auditoria
+  `brand.contract_lock`). Desligada: aprovar cria o cupom na Shopify e libera a plataforma na hora; ao desligar, quem
+  está esperando o contrato é liberado (contrato em aberto cancelado no Autentique, cupom, plataforma e mensagem). Em
+  Candidatas o botão segue a chave. Teste em `test/integration/autentique-application.test.ts`.
+- **Pendente:** o responsável desligar a trava nas marcas (Marcas → Contrato na aprovação) e saber da Fátima o que falta
+  validar no Autentique; depois religar.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-243 — 2026-10-30 — Recusada volta para Pendentes (D-REOPENAPP)
 - **Feito:** caso do Paulo Regis (prescritor, Botanika): cadastrou-se pelo site em 23/10 (conta com login) e a inscrição
   foi recusada no mesmo dia; ao tentar de novo, o CPF travava ("já tem acesso ao portal"). A inscrição dele voltou para

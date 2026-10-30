@@ -215,6 +215,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfServiceDescription: true,
       nfInstructions: true,
       whatsappInstance: true,
+      contractLock: true,
       approvalSuggestion: true,
       shopDiscountBps: true,
       financeEmail: true,
@@ -236,5 +237,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
   });
   const active = await prisma.creator.groupBy({ by: ["brandId"], where: { status: "ACTIVE" }, _count: true });
   const activeBy = new Map(active.map((a) => [a.brandId, a._count]));
-  return brands.map((b) => ({ ...b, store: b.integrations[0] ?? null, activeCreators: activeBy.get(b.id) ?? 0 }));
+  const waiting = await prisma.creator.groupBy({ by: ["brandId"], where: { awaitingContractAt: { not: null } }, _count: true });
+  const waitingBy = new Map(waiting.map((a) => [a.brandId, a._count]));
+  return brands.map((b) => ({ ...b, store: b.integrations[0] ?? null, activeCreators: activeBy.get(b.id) ?? 0, awaitingContract: waitingBy.get(b.id) ?? 0 }));
 }

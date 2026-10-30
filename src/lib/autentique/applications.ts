@@ -19,7 +19,7 @@ import {
   whatsappChatUrl,
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
-import { can } from "@/lib/auth/permissions";
+import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentContract } from "@/lib/contracts/sign";
 import { CouponCreateError, createDiscountInShopify } from "@/lib/coupons/create";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
@@ -557,7 +557,7 @@ export async function undoApproval(prisma: PrismaClient, actor: Actor | null, cr
   return { cancelled: open.length, applicationIds };
 }
 
-export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | null, creatorId: string, deps: Deps = {}) {
+export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | null, creatorId: string, deps: Deps = {}, reason = "assinado fora do Autentique") {
   const now = deps.now ?? new Date();
   const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { brandId: true, awaitingContractAt: true, contractSigned: true, contractTemplate: { select: { months: true } } } });
   if (!c || !actor || !can(actor.grants, "creators.edit", c.brandId)) throw new ContractSendError("Sem permissão.");
@@ -566,7 +566,7 @@ export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | 
     const open = await prisma.contractRequest.findMany({ where: { creatorId, status: "SENT" }, select: { id: true, brandId: true, externalId: true } });
     if (open.length) {
       const token = (await loadAutentique(prisma, c.brandId, deps.encKey).catch(() => null))?.token ?? null;
-      for (const r of open) await cancelRequest(prisma, r, token, actor.userId, "assinado fora do Autentique", deps);
+      for (const r of open) await cancelRequest(prisma, r, token, actor.userId, reason, deps);
     }
     const start = dayKey(now);
     await prisma.$transaction([
@@ -580,7 +580,7 @@ export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | 
           goalStartAt: new Date(`${start}T00:00:00Z`),
         },
       }),
-      prisma.auditLog.create({ data: { brandId: c.brandId, actorType: "USER", actorId: actor.userId, action: "contract.signed_outside", entity: "Creator", entityId: creatorId, after: { start } } }),
+      prisma.auditLog.create({ data: { brandId: c.brandId, actorType: "USER", actorId: actor.userId, action: "contract.signed_outside", entity: "Creator", entityId: creatorId, after: { start, reason } } }),
     ]);
   }
   try {
@@ -590,4 +590,30 @@ export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | 
     const msg = error instanceof CouponCreateError ? `Cupom: ${error.message}` : String(error instanceof Error ? error.message : error);
     return { activated: false, error: msg.slice(0, 300) };
   }
+}
+
+/**
+ * D-CONTRACTSWITCH (pedido da Fátima em 2026-10-30): o super admin liga ou desliga, por marca, a trava do contrato na
+ * aprovação. Ao desligar, quem está esperando o contrato é liberado como no fluxo antigo (contrato em aberto cancelado
+ * no Autentique, cupom criado na Shopify, plataforma liberada e a mensagem de boas-vindas).
+ */
+export async function setContractLock(prisma: PrismaClient, actor: Actor | null, brandId: string, on: boolean, deps: Deps = {}) {
+  if (!actor || brandsWith(actor.grants, "staff.manage") !== "ALL") throw new ContractSendError("Só super admin.");
+  const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { contractLock: true } });
+  if (!brand) throw new ContractSendError("Marca não encontrada.");
+  if (brand.contractLock !== on) {
+    await prisma.$transaction([
+      prisma.brand.update({ where: { id: brandId }, data: { contractLock: on } }),
+      prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId: actor.userId, action: "brand.contract_lock", entity: "Brand", entityId: brandId, before: { contractLock: brand.contractLock }, after: { contractLock: on } } }),
+    ]);
+  }
+  const out = { released: 0, failed: [] as string[] };
+  if (on) return out;
+  const waiting = await prisma.creator.findMany({ where: { brandId, awaitingContractAt: { not: null } }, select: { id: true, account: { select: { name: true } } } });
+  for (const c of waiting) {
+    const r = await confirmSignedOutside(prisma, actor, c.id, deps, "trava do contrato desligada na marca");
+    if (r.activated) out.released++;
+    else out.failed.push(c.account.name);
+  }
+  return out;
 }

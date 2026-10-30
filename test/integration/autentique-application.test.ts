@@ -12,6 +12,7 @@ import {
   runCreatorContractJob,
   sendContractLink,
   sendCreatorContract,
+  setContractLock,
   undoApproval,
 } from "@/lib/autentique/applications";
 import type { Fetcher } from "@/lib/autentique/client";
@@ -292,5 +293,36 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     // Assinou: sai de Ações.
     await prisma.creator.update({ where: { id: r.creatorId }, data: { contractSigned: true } });
     expect((await actionQueue(prisma, s.brand.id, at("2026-11-09T17:00:00Z"))).some((t) => t.kind === "UNSIGNED")).toBe(false);
+  });
+
+  it("D-CONTRACTSWITCH: trava desligada libera quem espera e aprovar volta a criar o cupom na hora; só super admin", async () => {
+    const s = await setup();
+    const deps = { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: null };
+    const app = await apply(s.brand.slug);
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
+    const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, deps);
+    await expect(setContractLock(prisma, s.gestao, s.brand.id, false, deps)).rejects.toThrow(/super admin/);
+
+    shopCalls.length = 0;
+    expect(await setContractLock(prisma, s.sa, s.brand.id, false, deps)).toEqual({ released: 1, failed: [] });
+    expect(shopCalls).toHaveLength(1); // cupom criado na Shopify
+    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ status: "CANCELLED" });
+    const released = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: true } });
+    expect(released).toMatchObject({ awaitingContractAt: null, contractSigned: true, pendingCouponCode: null });
+    expect(released.couponAssignments).toHaveLength(1);
+
+    // Aprovar com a trava desligada: cupom na hora, sem esperar contrato.
+    const other = await apply(s.brand.slug);
+    expect((await listApplications(prisma, s.gestao)).rows.find((x) => x.id === other.id)?.autentique).toBe(false);
+    shopCalls.length = 0;
+    const r2 = await approveApplication(prisma, s.gestao, { applicationId: other.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true, contractTemplateId: s.template.id }, shop);
+    expect(r2.awaitingContract).toBe(false);
+    expect(shopCalls).toHaveLength(1);
+
+    // Ligar de novo: aprovar volta a travar.
+    await setContractLock(prisma, s.sa, s.brand.id, true, deps);
+    const third = await apply(s.brand.slug);
+    expect((await approveApplication(prisma, s.gestao, { applicationId: third.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop)).awaitingContract).toBe(true);
+    expect(await prisma.auditLog.count({ where: { entityId: s.brand.id, action: "brand.contract_lock" } })).toBe(2);
   });
 });
