@@ -6,7 +6,7 @@ import {
   contractLinkMessage,
   contractReminderMessage,
   CONTRACT_TEXT_LABEL,
-  contractTextKind,
+  contractTextKinds,
   dayKey,
   isContractKind,
   longDate,
@@ -16,6 +16,7 @@ import {
   UGC_DEFAULT_VIDEO_GOAL,
   WELCOME_PRODUCTS,
   WELCOME_VIDEO_PRODUCTS,
+  welcomePreset,
   whatsappChatUrl,
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
@@ -118,10 +119,12 @@ export async function sendCreatorContract(
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ContractSendError("A creator não tem um e-mail válido para receber o contrato.");
   const category = c.contractTemplate?.documentKind ?? c.categories[0] ?? "INFLUENCER";
   if (!c.contractTemplate || !isContractKind(category)) throw new ContractSendError("Falta a versão do contrato na ficha.");
-  const kind = contractTextKind(category, c.receivesAsIndividual);
-  // Sem o modelo de pessoa física/empresa publicado, vale o texto do tipo (decisão do responsável em 2026-10-29).
-  const doc = (await currentContract(prisma, c.brandId, kind)) ?? (kind !== category ? await currentContract(prisma, c.brandId, category) : null);
-  if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kind]}" (Contratos).`);
+  // D-WELCOMECHOICE: o modelo do envio inicial (1 produto ou 2 + 3 vídeos), senão o de pessoa física/empresa, senão o
+  // texto do tipo (decisão do responsável em 2026-10-29): vale o primeiro publicado.
+  const kinds = contractTextKinds(category, c.receivesAsIndividual, (c.welcomeVideos ?? 0) > 0);
+  let doc: Awaited<ReturnType<typeof currentContract>> = null;
+  for (const k of kinds) if (!doc) doc = await currentContract(prisma, c.brandId, k);
+  if (!doc) throw new ContractSendError(`Falta publicar o texto do contrato "${CONTRACT_TEXT_LABEL[kinds[1] ?? kinds[0]!]}" (Contratos).`);
   // Cupom reservado na aprovação ou, para quem já tinha cupom (D-CONTRACTLOCK), o cupom dela.
   const current = c.couponAssignments[0]?.coupon ?? null;
   const couponCode = c.pendingCouponCode ?? current?.code ?? null;
@@ -219,7 +222,7 @@ export async function sendCreatorContract(
         action: "contract.sent",
         entity: "ContractRequest",
         entityId: r.id,
-        after: { creatorId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, kind, coupon: couponCode, templateId: c.contractTemplate!.id },
+        after: { creatorId, externalId: created.id, email, sandbox: conn.sandbox, bodySha256, kind: doc.kind, coupon: couponCode, templateId: c.contractTemplate!.id },
       },
     });
     if (created.signLink) await enqueueJob(tx, { type: CONTRACT_LINK_JOB, brandId: c.brandId, payload: { requestId: r.id }, dedupeKey: `contract-link:${r.id}`, runAt: nextWhatsAppTime(now), maxAttempts: 5 });
@@ -441,7 +444,7 @@ async function activateCreator(prisma: PrismaClient, creatorId: string, clientFo
   const c = await prisma.creator.findUniqueOrThrow({
     where: { id: creatorId },
     select: {
-      brandId: true, pendingCouponCode: true, pendingDiscountBps: true, welcomeVideos: true, reviewedById: true, account: { select: { userId: true } }, brand: { select: { name: true, slug: true, approvalSuggestion: true } },
+      brandId: true, pendingCouponCode: true, pendingDiscountBps: true, welcomeVideos: true, reviewedById: true, account: { select: { userId: true } }, brand: { select: { name: true, slug: true, approvalSuggestion: true, welcomeOneIds: true, welcomeTwoIds: true } },
       couponAssignments: { where: { validTo: null, coupon: { kind: "CREATOR" } }, orderBy: { validFrom: "desc" }, take: 1, select: { coupon: { select: { code: true, discountBps: true } } } },
     },
   });
@@ -464,7 +467,7 @@ async function activateCreator(prisma: PrismaClient, creatorId: string, clientFo
     }
     const month = dayKey(now).slice(0, 7);
     if (!(await tx.kitGrant.findFirst({ where: { creatorId, kind: "WELCOME" }, select: { id: true } }))) {
-      await tx.kitGrant.create({ data: { brandId: c.brandId, creatorId, kind: "WELCOME", month, salesCents: 0, products } });
+      await tx.kitGrant.create({ data: { brandId: c.brandId, creatorId, kind: "WELCOME", month, salesCents: 0, products, presetProductIds: welcomePreset(c.brand, products) } });
     }
     await tx.creator.update({ where: { id: creatorId }, data: { awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null } });
     await tx.contractRequest.updateMany({ where: { creatorId, status: "SIGNED", couponCreatedAt: null }, data: { couponCreatedAt: now, lastError: null } });

@@ -150,3 +150,20 @@ export function nextTier(salesCents: number, trial: boolean): { fromCents: numbe
     .sort((a, b) => a.fromCents - b.fromCents)[0];
   return next ? { fromCents: next.fromCents, total: tierProducts(next.fromCents, trial) } : null;
 }
+
+/**
+ * D-WELCOMECHOICE: produtos já definidos do 1º pedido, pela opção dela (1 produto; 2 produtos + 3 vídeos) e pelo que a
+ * marca escolheu em Marcas. Opção não configurada (ou com outro número de produtos): vazio, ela escolhe no portal.
+ */
+export function welcomePreset(brand: { welcomeOneIds: readonly string[]; welcomeTwoIds: readonly string[] }, products: number): string[] {
+  const ids = products === 2 ? brand.welcomeTwoIds : products === 1 ? brand.welcomeOneIds : [];
+  return ids.length === products ? [...ids] : [];
+}
+
+/** D-WELCOMECHOICE: resposta "Envio inicial" do cadastro → opção da aprovação (null = não respondeu ou outro texto). */
+export function welcomeChoice(answer: string | null | undefined): "one" | "videos" | null {
+  const t = (answer ?? "").trim().toLowerCase();
+  if (t.startsWith("2 produtos") || t.includes("vídeos")) return "videos";
+  if (t.startsWith("1 produto")) return "one";
+  return null;
+}

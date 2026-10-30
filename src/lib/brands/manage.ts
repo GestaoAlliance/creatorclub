@@ -48,6 +48,8 @@ export type BrandInput = {
   shipFrom?: { zip: string; street: string; number: string; complement: string; district: string; city: string; state: string; phone: string };
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
+  /** D-WELCOMECHOICE: produtos do envio inicial (1 produto; 2 produtos + 3 vídeos); vazio = sem a opção. */
+  welcome?: { one: string; two: [string, string] };
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -188,6 +190,15 @@ export async function updateBrand(prisma: PrismaClient, actor: Actor | null, bra
   await prisma.$transaction(async (tx) => {
     await tx.brand.update({ where: { id: brandId }, data });
     await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.update", entity: "Brand", entityId: brandId, before, after: forAudit(data) } });
+    if (input.welcome) {
+      const one = input.welcome.one ? [input.welcome.one] : [];
+      const two = input.welcome.two.filter(Boolean);
+      if (two.length === 1 || (two.length === 2 && two[0] === two[1])) throw new BrandError("Envio inicial de 2 produtos: escolha 2 produtos diferentes (ou nenhum).");
+      const ids = [...new Set([...one, ...two])];
+      if ((await tx.product.count({ where: { brandId, id: { in: ids } } })) !== ids.length) throw new BrandError("Produto do envio inicial não é desta marca.");
+      await tx.brand.update({ where: { id: brandId }, data: { welcomeOneIds: one, welcomeTwoIds: two } });
+      await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.welcome_products", entity: "Brand", entityId: brandId, after: { one, two } } });
+    }
     if (input.kitOptions) {
       const ids = input.kitOptions;
       await tx.product.updateMany({ where: { brandId, id: { in: ids } }, data: { kitOption: true } });
@@ -216,6 +227,8 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfInstructions: true,
       whatsappInstance: true,
       contractLock: true,
+      welcomeOneIds: true,
+      welcomeTwoIds: true,
       approvalSuggestion: true,
       shopDiscountBps: true,
       financeEmail: true,

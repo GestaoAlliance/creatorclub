@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { kitText, renderContract, unknownContractFields, type ContractData } from "@/domain";
+import { contractTextKinds, kitText, renderContract, unknownContractFields, welcomeChoice, welcomePreset, type ContractData } from "@/domain";
 
 const base: ContractData = {
   fullName: "Maria Exemplo",
@@ -60,5 +60,28 @@ describe("faixas do kit com o produto de cada marca (D-WELCOMEKIT1)", () => {
     expect(kitText(tiers, "revita-derma")).toContain("02 (dois) produtos.");
     expect(kitText(tiers, "vermefree")).toContain("02 (dois) suplementos.");
     expect(kitText(tiers)).toContain("01 (um) suplemento;");
+  });
+});
+
+describe("D-WELCOMECHOICE: modelo pelo envio inicial e produtos do 1º pedido", () => {
+  it("modelo do envio inicial, senão pessoa física/empresa, senão o do tipo", () => {
+    expect(contractTextKinds("INFLUENCER", true, false)).toEqual(["INFLUENCER_PF_1", "INFLUENCER_PF", "INFLUENCER"]);
+    expect(contractTextKinds("INFLUENCER", false, true)).toEqual(["INFLUENCER_PJ_2", "INFLUENCER_PJ", "INFLUENCER"]);
+    expect(contractTextKinds("PRESCRITOR", true, true)).toEqual(["PRESCRITOR"]);
+  });
+  it("razão social e CNPJ da empresa (sem empresa: o nome)", () => {
+    const body = "{{RAZAO_SOCIAL}} / {{CNPJ}}";
+    expect(renderContract(body, { ...base, cnpj: "11222333000181", companyName: "Maria LTDA" })).toBe("Maria LTDA / 11.222.333/0001-81");
+    expect(renderContract(body, base)).toBe("Maria Exemplo / (sem CNPJ)");
+    expect(unknownContractFields(body)).toEqual([]);
+  });
+  it("produtos definidos só com a opção completa; resposta do cadastro vira a opção da aprovação", () => {
+    const brand = { welcomeOneIds: ["s"], welcomeTwoIds: ["s", "g"] };
+    expect(welcomePreset(brand, 1)).toEqual(["s"]);
+    expect(welcomePreset(brand, 2)).toEqual(["s", "g"]);
+    expect(welcomePreset({ welcomeOneIds: [], welcomeTwoIds: ["s"] }, 2)).toEqual([]);
+    expect(welcomeChoice("2 produtos + 3 vídeos para a marca: Sérum e Gel")).toBe("videos");
+    expect(welcomeChoice("1 produto: Sérum")).toBe("one");
+    expect(welcomeChoice(null)).toBeNull();
   });
 });

@@ -21,6 +21,9 @@ type Values = {
   defaultRate: string;
   defaultDiscount: string;
   approvalSuggestion?: string;
+  /** D-WELCOMECHOICE: produtos do envio inicial. */
+  welcomeOneIds?: string[];
+  welcomeTwoIds?: string[];
   shopDiscount?: string;
   financeEmail?: string;
   bank?: { convenio: string; agency: string; agencyDv: string; account: string; accountDv: string };
@@ -154,6 +157,32 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
                       {p.stockQty !== null && p.stockQty !== undefined ? ` · Olist: ${p.stockQty} em estoque` : p.stockError ? ` · ${p.stockError}` : ""}
                     </span>
                   </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* D-WELCOMECHOICE: com as duas opções, o cadastro pergunta e o 1º pedido já vem com estes produtos. */}
+        {!create && products.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <input type="hidden" name="welcomeSent" value="1" />
+            <p className="text-sm font-medium">Envio inicial (1º pedido depois do contrato)</p>
+            <p className={ui.hint}>Com as duas opções preenchidas, o cadastro do site pergunta qual ela quer, o contrato sai no modelo certo e o 1º pedido já vem com estes produtos. Vazio: ela escolhe no portal.</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className={ui.label}>
+                1 produto
+                <select name="welcomeOne" defaultValue={initial.welcomeOneIds?.[0] ?? ""} className={ui.input}>
+                  <option value="">—</option>
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </label>
+              {(["welcomeTwoA", "welcomeTwoB"] as const).map((name, i) => (
+                <label key={name} className={ui.label}>
+                  2 produtos + 3 vídeos ({i + 1}º)
+                  <select name={name} defaultValue={initial.welcomeTwoIds?.[i] ?? ""} className={ui.input}>
+                    <option value="">—</option>
+                    {products.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
                 </label>
               ))}
             </div>

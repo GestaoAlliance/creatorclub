@@ -1,18 +1,21 @@
 import { BadgeDollarSign, Gift, LayoutDashboard, Ticket } from "lucide-react";
 import { partnershipTerms, SIGNUP_BRANDS, signupBrandSlug, type PartnershipNumbers } from "@/domain";
 import { db } from "@/lib/db";
+import { signupWelcome } from "@/lib/onboarding/signup";
 import type { SignupBrand } from "./form";
 
 /** Cores de cada marca da inscrição, lidas do banco (D-BRANDCOLOR); sem banco, um cinza neutro. */
 export async function signupBrands(): Promise<(SignupBrand & { slug: string })[]> {
   const slugs = SIGNUP_BRANDS.map(signupBrandSlug);
   const rows = await db()
-    .brand.findMany({ where: { slug: { in: slugs }, archivedAt: null }, select: { slug: true, primaryColor: true, secondaryColor: true } })
+    .brand.findMany({ where: { slug: { in: slugs }, archivedAt: null }, select: { slug: true, primaryColor: true, secondaryColor: true, welcomeOneIds: true, welcomeTwoIds: true } })
     .catch(() => []);
   const by = new Map(rows.map((r) => [r.slug, r]));
+  // D-WELCOMECHOICE: as opções do envio inicial (só nas marcas que configuraram em Marcas).
+  const welcome = new Map(await Promise.all(rows.map(async (r) => [r.slug, await signupWelcome(db(), r).catch(() => null)] as const)));
   return SIGNUP_BRANDS.filter((name) => rows.length === 0 || by.has(signupBrandSlug(name))).map((name) => {
     const r = by.get(signupBrandSlug(name));
-    return { name, slug: signupBrandSlug(name), color: r?.primaryColor ?? "#78716c", accent: r?.secondaryColor ?? null };
+    return { name, slug: signupBrandSlug(name), color: r?.primaryColor ?? "#78716c", accent: r?.secondaryColor ?? null, welcome: welcome.get(signupBrandSlug(name)) ?? null };
   });
 }
 

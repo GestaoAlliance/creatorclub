@@ -15,7 +15,7 @@ type Person = { applicationId: string; name: string; phone: string | null; brand
 export type TemplateOption = { id: string; name: string; documentKind: string; key: string };
 /** D-AUTENTIQUE2: valores do contrato assinado no Autentique (a aprovação usa estes, sem editar). */
 /** D-CONTRACTFLOW: marca com Autentique (aprovar envia o contrato) e o que ela escolheu no cadastro. */
-export type ContractChoices = { autentique: boolean; payout: "cpf" | "cnpj" | null };
+export type ContractChoices = { autentique: boolean; payout: "cpf" | "cnpj" | null; /** D-WELCOMECHOICE: o que ela escolheu no cadastro. */ welcome?: "one" | "videos" | null };
 
 /** Versão de contrato sugerida pelo tipo: a mais nova (pela chave) do mesmo tipo de texto. */
 const defaultTemplate = (templates: readonly TemplateOption[], category: string) =>
@@ -63,7 +63,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
   const viaContract = p.choices.autentique;
   const [category, setCategory] = useState<string>(p.category);
   const [template, setTemplate] = useState(() => defaultTemplate(p.templates, p.category));
-  const [welcome, setWelcome] = useState<"one" | "videos">("one");
+  const [welcome, setWelcome] = useState<"one" | "videos">(p.choices.welcome ?? "one");
   if (state?.ok) {
     const o = state.ok;
     const pct = (o.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });

@@ -32,6 +32,10 @@ const input = (form: FormData) => ({
     ? { shipFrom: Object.fromEntries((["zip", "street", "number", "complement", "district", "city", "state", "phone"] as const).map((k) => [k, String(form.get(`shipFrom${k[0]!.toUpperCase()}${k.slice(1)}`) ?? "")])) as { zip: string; street: string; number: string; complement: string; district: string; city: string; state: string; phone: string } }
     : {}),
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
+  // D-WELCOMECHOICE: produtos do envio inicial.
+  ...(form.has("welcomeSent")
+    ? { welcome: { one: String(form.get("welcomeOne") ?? ""), two: [String(form.get("welcomeTwoA") ?? ""), String(form.get("welcomeTwoB") ?? "")] as [string, string] } }
+    : {}),
 });
 
 export async function createBrandAction(_prev: BrandState, form: FormData): Promise<BrandState> {

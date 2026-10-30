@@ -25,6 +25,9 @@ model Brand {
   slug                      String              @unique
   /// D-CONTRACTSWITCH: aprovar trava até assinar o contrato (Autentique). Desligada: aprovar cria o cupom e libera na hora.
   contractLock              Boolean             @default(true)
+  /// D-WELCOMECHOICE: produtos do envio inicial de cada opção (1 produto; 2 produtos + 3 vídeos).
+  welcomeOneIds             String[]            @default([])
+  welcomeTwoIds             String[]            @default([])
   name                      String
   enabled                   Boolean             @default(false)
   timezone                  String              @default("America/Sao_Paulo")
@@ -1136,22 +1139,24 @@ enum KitStatus {
 /// D-KIT: kit mensal do contrato. No fechamento do mês, a faixa de vendas do mês (contrato da creator) dá N
 /// suplementos; a creator escolhe os produtos no portal e o envio é criado "Preparando". Sem prazo.
 model KitGrant {
-  id         String    @id @default(uuid())
-  brandId    String
-  creatorId  String
+  id               String    @id @default(uuid())
+  brandId          String
+  creatorId        String
   /// MONTHLY = kit do mês pelas vendas (D-KIT, até 2026-10); WELCOME = kit de boas-vindas (D-WELCOMEKIT);
   /// GOAL = meta de R$ 1.000 numa janela de 45/30 dias (D-GOALKIT).
-  kind       String    @default("MONTHLY")
-  month      String // AAAA-MM das vendas (boas-vindas: mês da aprovação; meta: mês em que a janela começa)
+  kind             String    @default("MONTHLY")
+  month            String // AAAA-MM das vendas (boas-vindas: mês da aprovação; meta: mês em que a janela começa)
   /// D-GOALKIT: número da janela da meta (0 = primeiros 45 dias); D-TIERKIT (MONTHLY): total de produtos do mês
   /// até esta liberação (1 a 4); 0 nos outros tipos.
-  window     Int       @default(0)
-  salesCents Int
-  products   Int
-  status     KitStatus @default(PENDING)
-  shipmentId String?   @unique
-  chosenAt   DateTime?
-  createdAt  DateTime  @default(now())
+  window           Int       @default(0)
+  salesCents       Int
+  products         Int
+  /// D-WELCOMECHOICE: 1º pedido já com os produtos da opção dela (vazio = ela escolhe).
+  presetProductIds String[]  @default([])
+  status           KitStatus @default(PENDING)
+  shipmentId       String?   @unique
+  chosenAt         DateTime?
+  createdAt        DateTime  @default(now())
 
   brand    Brand     @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator  Creator   @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)

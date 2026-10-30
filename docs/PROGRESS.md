@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-247 — 2026-10-30 — Revita: 4 contratos, envio inicial no cadastro e 1º pedido com os produtos (D-WELCOMECHOICE)
+- **Feito:** os 4 contratos da Influencer da Revita (CPF/CNPJ × Sérum Pepti Code, 1 produto, ou Kit Revita, Sérum + Gel
+  em Creme com 3 vídeos) publicados pela migração `20261115090000_revita_contracts` (modelos `INFLUENCER_PF_1/_2`,
+  `INFLUENCER_PJ_1/_2`; campos novos `{{RAZAO_SOCIAL}}` e `{{CNPJ}}`); o envio escolhe o modelo do envio inicial, senão
+  o de CPF/CNPJ, senão o do tipo. Em Marcas, "Envio inicial" guarda os produtos de cada opção (`Brand.welcomeOneIds/
+  welcomeTwoIds`, migração `20261114090000_welcome_choice`; na Revita a migração já marca o Sérum e o Gel quando acha um
+  produto com cada nome). Com as duas opções, o cadastro do site pergunta "Seu envio inicial" (obrigatório), a
+  aprovação já vem com a escolha dela e, ao assinar, o 1º pedido nasce com esses produtos (`KitGrant.presetProductIds`;
+  ela só confere o endereço e envia). Corrigido: o botão da aprovação agora segue a trava da marca (D-CONTRACTSWITCH).
+  Testes: `contract-text`, `kits`, `autentique-application` e `signup` (integração).
+- **Pendente:** chave da API do Autentique da Revita (não a senha); conferir em Marcas → Revita os produtos do envio
+  inicial; ligar a trava da Revita quando a chave estiver guardada. Parte 2: regras da Revita pelo contrato.
+- **Próxima:** Revita parte 2 (saque do dia 5 ao 15, mínimo R$ 100, produto a cada R$ 1.000/2 com R$ 2.000, aviso de
+  2 meses sem venda).
+
 ### CP-246 — 2026-10-30 — Trava do contrato também pela Gestão da marca, em Candidatas
 - **Feito:** a chave "Contrato na aprovação" (D-CONTRACTSWITCH) passa a poder ser ligada/desligada pela Gestão da
   marca (ex.: a Fátima, só Revita) além do super admin, e aparece no topo de Candidatas para a marca escolhida (Marcas

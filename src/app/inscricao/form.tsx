@@ -8,7 +8,7 @@ import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, cnpjAddressAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
 
-export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null };
+export type SignupBrand = { name: string; slug: string; color: string; accent?: string | null; /** D-WELCOMECHOICE */ welcome?: { one: string; two: string } | null };
 
 const BY_KEY = new Map(SIGNUP_QUESTIONS.map((q) => [q.key, q]));
 
@@ -213,6 +213,21 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
         <Field label={q("fullName").label} error={errors.fullName}>{text("fullName", { required: true, autoComplete: "name" })}</Field>
         <Field label={q("cpf").label} error={errors.cpf} className="sm:max-w-[calc(50%-0.5rem)]">{text("cpf", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
         {chips("payoutAs")}
+        {/* D-WELCOMECHOICE: envio inicial, só nas marcas que configuraram as duas opções (o contrato segue a escolha). */}
+        {brand.welcome && (
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1 text-sm font-medium text-stone-900 dark:text-stone-100">Seu envio inicial</legend>
+            <div className="flex flex-col gap-2">
+              {([["1", brand.welcome.one], ["2", brand.welcome.two]] as const).map(([value, label]) => (
+                <label key={value} className={`cursor-pointer rounded-2xl border px-4 py-2 text-sm transition ${v.welcome === value ? "border-[var(--b)] bg-[color-mix(in_srgb,var(--b)_10%,transparent)] font-medium" : "border-stone-300 dark:border-white/15"}`}>
+                  <input type="radio" name="welcome" value={value} checked={v.welcome === value} onChange={() => set("welcome", value)} required className="sr-only" />
+                  {label}
+                </label>
+              ))}
+            </div>
+            {errors.welcome && <p className="text-xs text-red-700 dark:text-red-400">{errors.welcome}</p>}
+          </fieldset>
+        )}
         {v.payoutAs === PAYOUT_PJ && (
           <Field label={q("cnpj").label} hint={q("cnpj").hint} error={errors.cnpj} className="sm:max-w-[calc(50%-0.5rem)]">{text("cnpj", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
         )}
