@@ -633,6 +633,26 @@ export async function rejectApplications(prisma: PrismaClient, actor: Actor | nu
   return { rejected, skipped: ids.length - rejected };
 }
 
+/** D-REOPENAPP: a Gestão volta uma recusada para Pendentes (ex.: recusada por engano; quem tem login não consegue se cadastrar de novo). */
+export async function reopenApplication(prisma: PrismaClient, actor: Actor | null, applicationId: string) {
+  const app = await prisma.creatorApplication.findUnique({ where: { id: applicationId }, select: { id: true, brandId: true, status: true, decidedAt: true, decidedById: true, decisionNote: true } });
+  if (!app) throw new ApplicationError("Candidata não encontrada.");
+  if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.creatorApplication.updateMany({
+      where: { id: app.id, status: "REJECTED" },
+      data: { status: "NEW", decidedAt: null, decidedById: null, decisionNote: null },
+    });
+    if (count === 0) throw new ApplicationError("Só uma candidata recusada volta para Pendentes.");
+    await tx.auditLog.create({
+      data: {
+        brandId: app.brandId, actorType: "USER", actorId: actor.userId, action: "application.reopened", entity: "CreatorApplication", entityId: app.id,
+        before: { status: app.status, decidedAt: app.decidedAt?.toISOString() ?? null, decidedById: app.decidedById, note: app.decisionNote }, after: { status: "NEW" },
+      },
+    });
+  });
+}
+
 export async function rejectApplication(prisma: PrismaClient, actor: Actor | null, applicationId: string, note: string, now = new Date(), deps: { fetcher?: Fetcher; encKey?: Buffer } = {}) {
   const app = await prisma.creatorApplication.findUnique({ where: { id: applicationId }, select: { id: true, brandId: true, status: true } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");

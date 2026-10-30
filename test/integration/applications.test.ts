@@ -2,7 +2,7 @@ import { confirmSignedOutside } from "@/lib/autentique/applications";
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { approveApplication, listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
+import { approveApplication, listApplications, receiveApplication, rejectApplication, reopenApplication } from "@/lib/onboarding/applications";
 import { COUPON_CREATE_MUTATION } from "@/lib/coupons/create";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
@@ -145,6 +145,13 @@ describe("candidatas do formulário Hunter (banco real)", () => {
 
     await rejectApplication(prisma, gestao, a.id, "perfil fora do nicho");
     await expect(rejectApplication(prisma, gestao, a.id, "")).rejects.toThrow(/já foi decidida/);
+    // D-REOPENAPP: recusada por engano volta para Pendentes (só Gestão; só recusada).
+    await expect(reopenApplication(prisma, pagamento, a.id)).rejects.toThrow(/permissão/);
+    await reopenApplication(prisma, gestao, a.id);
+    expect(await prisma.creatorApplication.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ status: "NEW", decidedAt: null, decisionNote: null });
+    expect(await prisma.auditLog.count({ where: { entityId: a.id, action: "application.reopened" } })).toBe(1);
+    await expect(reopenApplication(prisma, gestao, a.id)).rejects.toThrow(/Só uma candidata recusada/);
+    await rejectApplication(prisma, gestao, a.id, "perfil fora do nicho");
 
     // Mesma pessoa (e-mail) em duas respostas: a segunda aprovação é recusada.
     const email = `${randomUUID()}@exemplo.com`;

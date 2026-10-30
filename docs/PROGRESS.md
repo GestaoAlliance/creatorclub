@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-243 — 2026-10-30 — Recusada volta para Pendentes (D-REOPENAPP)
+- **Feito:** caso do Paulo Regis (prescritor, Botanika): cadastrou-se pelo site em 23/10 (conta com login) e a inscrição
+  foi recusada no mesmo dia; ao tentar de novo, o CPF travava ("já tem acesso ao portal"). A inscrição dele voltou para
+  Pendentes direto no banco (auditoria `application.reopened`, ator `claude:reopen`). Para os próximos casos, em
+  Candidatas → Recusadas, a Gestão tem "Voltar para Pendentes" (só recusada; fica na auditoria). Teste em
+  `test/integration/applications.test.ts`.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-242 — 2026-10-29 — Novo envio para qualquer creator, desfazer aprovação, lembretes do contrato e aviso do 1º produto
 - **Feito:** (1) **D-SHIPANYONE**: em Envios → Novo envio, qualquer creator ativa pode ser escolhida (Gestão, Envio e
   super admin); sem endereço no portal, abrem os campos (CEP preenche o resto) e o endereço vai no envio e fica salvo

@@ -5,7 +5,7 @@ import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { PAYOUT_PF, PAYOUT_PJ } from "@/domain";
 import { ContractBox } from "./contract";
-import { DecisionForms, type TemplateOption } from "./forms";
+import { DecisionForms, ReopenButton, type TemplateOption } from "./forms";
 
 type Row = Awaited<ReturnType<typeof listApplications>>["rows"][number];
 
@@ -103,6 +103,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
       )}
       {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
       {status === "REJECTED" && a.decisionNote && <p className={ui.hint}>Motivo: {a.decisionNote}</p>}
+      {status === "REJECTED" && a.canDecide && <ReopenButton applicationId={a.id} />}
     </article>
   );
 }
