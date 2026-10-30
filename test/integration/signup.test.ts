@@ -31,7 +31,7 @@ function cpf(): string {
 }
 
 const values = (email: string, coupon = `C${randomUUID().replace(/[^a-f]/g, "").slice(0, 8)}`): Record<string, string> => ({
-  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon, payoutAs: "Pessoa física (CPF)",
+  fullName: "Maria Exemplo", cpf: cpf(), cnpj: "", email, phone: "(11) 91234-5678", instagram: "@maria.exemplo", tiktok: "maria.tt", tiktokShop: "Sim", coupon, payoutAs: "Pessoa física (CPF)", birthDate: "1995-03-15",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: "", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "SP",
 });
 

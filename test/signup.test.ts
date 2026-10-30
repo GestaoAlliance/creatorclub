@@ -4,7 +4,7 @@ import { categoryFromAnswer, extraAnswers, parseHunterAnswers } from "@/lib/onbo
 
 const full: Record<string, string> = {
   fullName: "  Maria   Exemplo ", cpf: "529.982.247-25", cnpj: "", email: "Maria@Example.com", phone: "(11) 91234-5678",
-  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria", payoutAs: "Pessoa física (CPF)",
+  instagram: "https://www.instagram.com/maria.exemplo/?hl=pt", tiktok: "@maria.tt", coupon: "maria", payoutAs: "Pessoa física (CPF)", birthDate: "1995-03-15",
   addrZip: "01310-100", addrStreet: "Avenida Paulista", addrNumber: "1000", addrComplement: " apto 12 ", addrDistrict: "Bela Vista", addrCity: "São Paulo", addrState: "sp",
 };
 const ADDRESS = "ENDEREÇO PARA ENTREGA DOS PRODUTOS (Endereço completo com: Rua/Av, bairro, número, cidade, Estado, CEP, ponto de referência)";
@@ -23,7 +23,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(r.answers["@ do seu TikTok:"]).toBe("@maria.tt");
     expect(r.answers[ADDRESS]).toBe("Avenida Paulista, 1000 — apto 12, Bela Vista, São Paulo/SP, CEP 01310-100");
     expect(r.account).toEqual({
-      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: null, coupon: "MARIA", receivesAsIndividual: true,
+      name: "Maria Exemplo", email: "maria@example.com", phone: "(11) 91234-5678", cpf: "52998224725", cnpj: null, taxRegime: null, instagram: "maria.exemplo", tiktok: "maria.tt", tiktokShop: null, birthDate: "1995-03-15", coupon: "MARIA", receivesAsIndividual: true,
       profile: { professionalId: null, niches: [], youtube: null, kwai: null, allergies: null, mediaKitUrl: null },
       address: { zip: "01310100", street: "Avenida Paulista", number: "1000", complement: "apto 12", district: "Bela Vista", city: "São Paulo", state: "SP" },
     });
@@ -31,7 +31,8 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
     expect(f).toMatchObject({ fullName: "Maria Exemplo", email: "maria@example.com", instagram: "@maria.exemplo", tiktok: "@maria.tt", suggestedCoupon: "MARIA", kindAnswer: null });
     // Sem a pergunta "Sou:", entra como Influencer; a Ana muda na aprovação.
     expect(categoryFromAnswer(f.kindAnswer)).toBe("INFLUENCER");
-    expect(extraAnswers(r.answers)).toEqual([]);
+    // D-BIRTHREQ: o nascimento (obrigatório) aparece para a Ana junto das outras respostas.
+    expect(extraAnswers(r.answers).map((x) => Object.values(x)[0])).toEqual(["Data de nascimento:"]);
   });
 
   it("obrigatórios, e-mail, telefone, CPF, CNPJ, @ e endereço com erro em cada campo", () => {
@@ -43,7 +44,7 @@ describe("cadastro de creator (D-SIGNUPACCOUNT)", () => {
       instagram: "Informe o seu @.", addrZip: "CEP precisa ter 8 números.", addrNumber: "Preencha este campo.",
     });
     // Opcionais: CNPJ, nascimento (M4.2), TikTok e complemento.
-    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "taxRegime", "birthDate", "tiktok", "tiktokShop"]);
+    expect(SIGNUP_QUESTIONS.filter((q) => !q.required).map((q) => q.key)).toEqual(["cnpj", "taxRegime", "tiktok", "tiktokShop"]);
     // M4.2 (D-TAGS): nascimento do campo de data; vai para a conta e, em texto, para as respostas.
     const b = validateSignup({ ...full, birthDate: "1995-03-15" }, "2026-10-23");
     expect(b.ok && b.account.birthDate).toBe("1995-03-15");

@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-245 — 2026-10-30 — Data de nascimento obrigatória no cadastro (D-BIRTHREQ)
+- **Feito:** no cadastro do site (`/inscricao/[marca]`, as 3 marcas), a data de nascimento deixou de ser opcional: sem
+  ela o envio não passa ("Preencha este campo."). Vai para a conta e para as respostas que a Ana lê. Testes atualizados
+  (`signup`, `cnpj`, `profile` e `test/integration/signup.test.ts`).
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-244 — 2026-10-30 — Chave da trava do contrato por marca (D-CONTRACTSWITCH)
 - **Feito:** pedido da Fátima (áudio): enquanto o Autentique não funciona (falta a validação do contrato lá), as
   aprovadas seguem o fluxo de antes. Em Marcas, cada marca tem "Contrato na aprovação" com a trava ligada (padrão) ou

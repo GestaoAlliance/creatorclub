@@ -49,7 +49,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   // D-PJADDR: regime tributário de quem informa CNPJ (MEI pode receber em outro endereço; os outros, no do CNPJ).
   { key: "taxRegime", title: "Regime tributário do CNPJ:", label: "Regime tributário", kind: "text", required: false },
   // M4.2 (D-TAGS): aniversário (opcional), para a equipe comemorar.
-  { key: "birthDate", title: "Data de nascimento:", label: "Data de nascimento", kind: "text", required: false },
+  { key: "birthDate", title: "Data de nascimento:", label: "Data de nascimento", kind: "text", required: true }, // D-BIRTHREQ
   { key: "email", title: "EMAIL:", label: "E-mail", kind: "email", required: true, hint: "É com ele que você entra no portal." },
   { key: "phone", title: "Seu whatsapp com DDD:", label: "Telefone (WhatsApp)", kind: "tel", required: true },
   { key: "instagram", title: "@ do seu Instagram:", label: "Instagram", kind: "text", required: true },
