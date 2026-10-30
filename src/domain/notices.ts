@@ -1,3 +1,4 @@
+import { DEFAULT_WITHDRAWAL_DAYS, requestDaysText, type WithdrawalDays } from "./withdrawal-days";
 import { kitNoun } from "./kit";
 import { formatBRL } from "./money";
 
@@ -54,11 +55,11 @@ export const notices = {
     path: null,
   }),
   /** Fechamento do mês (dia 1) liberou comissão (D-CONTRACT). */
-  commissionReleased: (month: string): Notice => ({
+  commissionReleased: (month: string, days: WithdrawalDays = DEFAULT_WITHDRAWAL_DAYS): Notice => ({
     kind: "COMMISSION_RELEASED",
     dedupeKey: `release:${month}`,
     title: "Sua comissão foi liberada",
-    body: `O acumulado até ${monthName(month)} chegou ao mínimo do contrato e a comissão ficou disponível. Peça o saque do dia 1 ao dia 10, com a nota fiscal do valor total.`,
+    body: `O acumulado até ${monthName(month)} chegou ao mínimo do contrato e a comissão ficou disponível. Peça o saque ${requestDaysText(days)}, com a nota fiscal do valor total.`,
     path: "/saque",
   }),
   /** Kit do mês (D-KIT), de boas-vindas (D-WELCOMEKIT) ou da meta de vendas (D-GOALKIT; `month` = dia em que a janela começou). */

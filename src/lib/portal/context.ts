@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
-import { isUgcOnly } from "@/domain";
+import { isUgcOnly, withdrawalDays, type WithdrawalDays } from "@/domain";
 
 /**
  * Acesso ao portal da creator (E7). A marca vem do endereço (`/portal/[marca]`); a creator só entra nas marcas em
@@ -27,9 +27,11 @@ export type PortalContext = {
   viewAs: { userId: string } | null;
   /** Só UGC (D-UGCPORTAL): portal só com vendas, cupom e envios; sem saldo, saque e termo. */
   ugcOnly: boolean;
+  /** D-REVITARULES: dias do pedido de saque e do pagamento da marca (textos do portal). */
+  withdrawalDays: WithdrawalDays;
 };
 
-const BRAND_SELECT = { id: true, slug: true, name: true, primaryColor: true, secondaryColor: true } as const;
+const BRAND_SELECT = { id: true, slug: true, name: true, primaryColor: true, secondaryColor: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, withdrawalPayFromDay: true, withdrawalPayByDay: true } as const;
 const INCLUDE = { brand: { select: BRAND_SELECT }, account: { select: { name: true } } } as const;
 
 async function participations(prisma: PrismaClient, actor: Actor) {
@@ -69,6 +71,7 @@ export async function portalContext(
         brands: [brandOf(viewed.brand)],
         viewAs: { userId: actor.userId },
         ugcOnly: isUgcOnly(viewed.categories),
+        withdrawalDays: withdrawalDays(viewed.brand),
       };
     }
   }
@@ -83,6 +86,7 @@ export async function portalContext(
     brands: list.map((c) => brandOf(c.brand)),
     viewAs: null,
     ugcOnly: isUgcOnly(current.categories),
+    withdrawalDays: withdrawalDays(current.brand),
   };
 }
 

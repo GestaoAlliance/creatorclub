@@ -1,5 +1,5 @@
 import { BadgeDollarSign, Gift, LayoutDashboard, Ticket } from "lucide-react";
-import { partnershipTerms, SIGNUP_BRANDS, signupBrandSlug, type PartnershipNumbers } from "@/domain";
+import { partnershipTerms, SIGNUP_BRANDS, withdrawalDays, signupBrandSlug, type PartnershipNumbers } from "@/domain";
 import { db } from "@/lib/db";
 import { signupWelcome } from "@/lib/onboarding/signup";
 import type { SignupBrand } from "./form";
@@ -33,7 +33,7 @@ export async function partnershipNumbers(slug: string): Promise<PartnershipNumbe
   const brand = await db()
     .brand.findUnique({
       where: { slug },
-      select: { defaultDiscountBps: true, defaultCommissionBps: true, releaseBasis: true, contractTemplates: { orderBy: { createdAt: "desc" }, select: { documentKind: true, releaseMinCents: true, months: true } } },
+      select: { defaultDiscountBps: true, defaultCommissionBps: true, releaseBasis: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, withdrawalPayFromDay: true, withdrawalPayByDay: true, contractTemplates: { orderBy: { createdAt: "desc" }, select: { documentKind: true, releaseMinCents: true, months: true } } },
     })
     .catch(() => null);
   const latest = (kind: string) => brand?.contractTemplates.find((t) => t.documentKind === kind);
@@ -45,6 +45,8 @@ export async function partnershipNumbers(slug: string): Promise<PartnershipNumbe
     months: latest("INFLUENCER")?.months ?? null,
     ugcMonths: latest("UGC")?.months ?? null,
     commissionBasis: brand?.releaseBasis === "COMMISSION",
+    ...(brand ? { days: withdrawalDays(brand) } : {}),
+    noTerm: slug === "revita-derma",
   };
 }
 

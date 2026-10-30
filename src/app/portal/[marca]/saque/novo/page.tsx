@@ -28,6 +28,7 @@ export default async function NewWithdrawal({ params }: { params: Promise<{ marc
     return (
       <ReceiptForm
         marca={ctx.brand.slug}
+        days={ctx.withdrawalDays}
         requestId={randomUUID()}
         availableCents={tab.balance.availableCents}
         pixKeyMasked={pixKeyMasked}

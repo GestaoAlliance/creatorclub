@@ -48,20 +48,20 @@ function wdLines(list: readonly WithdrawalAlertItem[]): string {
   return shown.join("\n");
 }
 
-export function withdrawalPayText(brand: string, list: readonly WithdrawalAlertItem[], dayOfMonth: number, link: string | null): string {
+export function withdrawalPayText(brand: string, list: readonly WithdrawalAlertItem[], dayOfMonth: number, link: string | null, payBy = 15): string {
   const n = list.length;
   const what = n === 1 ? "1 saque aprovado" : `${n} saques aprovados`;
   const head =
-    dayOfMonth === 13 ? `*${brand}: ${what} sem pagar. O prazo do Pix é o dia 15 (faltam 2 dias).*`
-    : dayOfMonth === 15 ? `*${brand}: ${what} sem pagar. O prazo do Pix vence hoje.*`
-    : `*${brand}: ${n === 1 ? "1 saque atrasado" : `${n} saques atrasados`} (o prazo era o dia 15).*`;
+    dayOfMonth === payBy - 2 ? `*${brand}: ${what} sem pagar. O prazo do Pix é o dia ${payBy} (faltam 2 dias).*`
+    : dayOfMonth === payBy ? `*${brand}: ${what} sem pagar. O prazo do Pix vence hoje.*`
+    : `*${brand}: ${n === 1 ? "1 saque atrasado" : `${n} saques atrasados`} (o prazo era o dia ${payBy}).*`;
   const total = list.reduce((s, w) => s + w.amountCents, 0);
   return [head, wdLines(list), `Total: ${brl(total)}`, link].filter(Boolean).join("\n\n");
 }
 
-export function withdrawalApproveText(brand: string, list: readonly WithdrawalAlertItem[], link: string | null): string {
+export function withdrawalApproveText(brand: string, list: readonly WithdrawalAlertItem[], link: string | null, payBy = 15): string {
   const n = list.length;
-  return [`*${brand}: ${n === 1 ? "1 saque pedido esperando" : `${n} saques pedidos esperando`} a sua aprovação.*`, wdLines(list), "Aprovados, eles vão para a Juci pagar até o dia 15.", link].filter(Boolean).join("\n\n");
+  return [`*${brand}: ${n === 1 ? "1 saque pedido esperando" : `${n} saques pedidos esperando`} a sua aprovação.*`, wdLines(list), `Aprovados, eles vão para a Juci pagar até o dia ${payBy}.`, link].filter(Boolean).join("\n\n");
 }
 
 /** D-OLIST: estoque baixo no Olist dos produtos que a creator pode escolher (Envio e Gestão, uma vez por dia). */

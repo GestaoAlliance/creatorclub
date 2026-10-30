@@ -1,3 +1,4 @@
+import { payDaysText, requestDaysText, type WithdrawalDays } from "./withdrawal-days";
 import { birthdayLabel, parseBirthDate } from "./birthday";
 import { cleanProfile, profileAnswers, type ProfileFields } from "./profile";
 import { dayKey } from "./time";
@@ -102,6 +103,9 @@ export type PartnershipNumbers = {
   ugcMonths: number | null;
   /** D-MIN100: o mínimo conta a comissão (Botanika) em vez das vendas. */
   commissionBasis?: boolean;
+  /** D-REVITARULES: dias do saque da marca e contrato sem prazo (encerra com 2 meses sem venda). */
+  days?: WithdrawalDays;
+  noTerm?: boolean;
 };
 
 const pctText = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
@@ -113,14 +117,14 @@ export function partnershipTerms(n: PartnershipNumbers): { title: string; text: 
     n.minInfluencerCents != null
       ? `quando ${n.commissionBasis ? "a sua comissão soma" : "as suas vendas somam"} pelo menos ${brl(n.minInfluencerCents)}${n.minPrescritorCents != null && n.minPrescritorCents !== n.minInfluencerCents ? ` (prescritor: ${brl(n.minPrescritorCents)})` : ""}`
       : "quando as suas vendas chegam ao mínimo do contrato";
-  const months = n.months != null ? `Contrato de ${n.months} meses${n.ugcMonths != null && n.ugcMonths !== n.months ? ` (UGC: ${n.ugcMonths} meses)` : ""}` : "Contrato";
+  const months = n.noTerm ? "Contrato sem prazo" : n.months != null ? `Contrato de ${n.months} meses${n.ugcMonths != null && n.ugcMonths !== n.months ? ` (UGC: ${n.ugcMonths} meses)` : ""}` : "Contrato";
   return [
     { title: "Cupom com o seu nome", text: n.discountBps != null ? `quem compra com ele ganha ${pctText(n.discountBps)} de desconto.` : "quem compra com ele ganha desconto." },
     { title: n.commissionBps != null ? `Comissão de ${pctText(n.commissionBps)}` : "Comissão", text: "sobre o valor dos produtos de cada venda com o seu cupom." },
     { title: "Fechamento todo dia 1", text: `a comissão do mês é liberada ${min}. Se não chegar, acumula para o mês seguinte.` },
-    { title: "Saque do dia 1 ao 10", text: "com nota fiscal do valor liberado; o pagamento sai até o dia 15." },
+    { title: `Saque ${requestDaysText(n.days)}`, text: `com nota fiscal do valor liberado; o pagamento sai ${payDaysText(n.days)}.` },
     { title: "Produtos em casa", text: "kit de boas-vindas ao começar e produtos todo mês conforme as suas vendas." },
-    { title: months, text: "assinado online." },
+    { title: months, text: n.noTerm ? "assinado online; encerra se ficar 2 meses sem nenhuma venda." : "assinado online." },
   ];
 }
 

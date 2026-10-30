@@ -15,13 +15,19 @@ export async function runWithdrawalReminders(prisma: PrismaClient, sender: Whats
   if (!sender || !inWhatsAppHours(now)) return 0;
   const today = dayKey(now, TZ);
   const day = Number(today.slice(8, 10));
-  const payDay = day === 13 || day >= 15;
-  const approveDay = day === 11;
-  if (!payDay && !approveDay) return 0;
   const link = origin ? `${origin}/admin/saques` : null;
-  const brands = await prisma.brand.findMany({ where: { archivedAt: null, whatsappInstance: { not: null } }, select: { id: true, name: true, slug: true, whatsappInstance: true } });
+  const brands = await prisma.brand.findMany({
+    where: { archivedAt: null, whatsappInstance: { not: null } },
+    select: { id: true, name: true, slug: true, whatsappInstance: true, withdrawalWindowEndDay: true, withdrawalPayByDay: true },
+  });
   let total = 0;
   for (const b of brands) {
+    // D-REVITARULES: dias de cada marca. Gestão no dia seguinte ao fim do pedido (Botanika 11, Revita 16); Pagamento 2
+    // dias antes do prazo do Pix, no dia do prazo e depois dele todo dia (Botanika 13 e 15; Revita 23 e 25).
+    const payBy = b.withdrawalPayByDay;
+    const payDay = day === payBy - 2 || day >= payBy;
+    const approveDay = day === b.withdrawalWindowEndDay + 1;
+    if (!payDay && !approveDay) continue;
     const brand = { ...b, whatsappInstance: b.whatsappInstance! };
     const list = async (status: "APPROVED" | "REQUESTED"): Promise<WithdrawalAlertItem[]> =>
       (await prisma.withdrawal.findMany({ where: { brandId: b.id, status }, orderBy: { requestedAt: "asc" }, select: { amountCents: true, creator: { select: { account: { select: { name: true } } } } } })).map((w) => ({
@@ -33,13 +39,13 @@ export async function runWithdrawalReminders(prisma: PrismaClient, sender: Whats
     if (payDay) {
       const approved = await list("APPROVED");
       if (approved.length) {
-        total += (await deliver(prisma, sender, brand, await people("PAGAMENTO"), (u) => `wd-pay:${b.slug}:${today}:${u}`, "WITHDRAWAL_PAY_REMINDER", withdrawalPayText(b.name, approved, day, link))).sent;
+        total += (await deliver(prisma, sender, brand, await people("PAGAMENTO"), (u) => `wd-pay:${b.slug}:${today}:${u}`, "WITHDRAWAL_PAY_REMINDER", withdrawalPayText(b.name, approved, day, link, payBy))).sent;
       }
     }
     if (approveDay) {
       const requested = await list("REQUESTED");
       if (requested.length) {
-        total += (await deliver(prisma, sender, brand, await people("GESTAO"), (u) => `wd-approve:${b.slug}:${today}:${u}`, "WITHDRAWAL_APPROVE_REMINDER", withdrawalApproveText(b.name, requested, link))).sent;
+        total += (await deliver(prisma, sender, brand, await people("GESTAO"), (u) => `wd-approve:${b.slug}:${today}:${u}`, "WITHDRAWAL_APPROVE_REMINDER", withdrawalApproveText(b.name, requested, link, payBy))).sent;
       }
     }
   }

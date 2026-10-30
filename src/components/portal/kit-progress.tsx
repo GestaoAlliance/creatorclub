@@ -1,5 +1,5 @@
 import { Target } from "lucide-react";
-import { formatBRL, kitNoun, TIER_REGULAR, TIER_TRIAL } from "@/domain";
+import { formatBRL, kitNoun, tierTables } from "@/domain";
 import type { KitProgress } from "@/lib/shipments/kits";
 import { monthLabel } from "@/lib/shipments/kits";
 
@@ -27,8 +27,8 @@ export function KitProgressCard({ progress, brandSlug }: { progress: KitProgress
           </p>
           {p.next && bar(p.salesCents, p.next.fromCents)}
           <ul className="grid gap-1 text-xs text-stone-600 sm:grid-cols-2 dark:text-stone-400">
-            {(p.trial ? TIER_TRIAL : []).map((t) => <li key={`t${t.fromCents}`}>{brl(t.fromCents)} no mês: {t.products} {kitNoun(brandSlug, t.products)} (seus 3 primeiros meses)</li>)}
-            {TIER_REGULAR.map((t) => <li key={t.fromCents}>{brl(t.fromCents)} no mês: {t.products} {kitNoun(brandSlug, t.products)}</li>)}
+            {(p.trial ? tierTables(brandSlug).trial : []).map((t) => <li key={`t${t.fromCents}`}>{brl(t.fromCents)} no mês: {t.products} {kitNoun(brandSlug, t.products)} (seus 3 primeiros meses)</li>)}
+            {tierTables(brandSlug).regular.map((t) => <li key={t.fromCents}>{brl(t.fromCents)} no mês: {t.products} {kitNoun(brandSlug, t.products)}</li>)}
           </ul>
         </>
       ) : p.granted ? (

@@ -15,7 +15,7 @@ export function PortalShell({
   endedAt = null,
   children,
 }: {
-  ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly">;
+  ctx: Pick<PortalContext, "creatorId" | "name" | "status" | "brand" | "brands" | "viewAs" | "ugcOnly" | "withdrawalDays">;
   /** U5: avisos não lidos (sininho). */
   unread?: number;
   /** M0.4: quando a participação foi encerrada (aviso com a data). */
@@ -90,7 +90,7 @@ export function PortalShell({
           </p>
         )}
         {/* D-TUTORIAL: passo a passo no primeiro acesso a cada tela (não abre sozinho para quem só visualiza, D-VIEWAS). */}
-        <TutorialProvider ugc={ctx.ugcOnly} auto={!ctx.viewAs}>
+        <TutorialProvider ugc={ctx.ugcOnly} auto={!ctx.viewAs} days={ctx.withdrawalDays}>
           <main className="flex-1">{children}</main>
         </TutorialProvider>
       </div>

@@ -66,4 +66,28 @@ describe("lembretes dos saques (D-WDREMIND, banco real)", () => {
     await runWithdrawalReminders(prisma, sender, "https://x.test", new Date("2026-11-18T02:00:00Z"));
     expect(mine().filter((m) => m.kind === "WITHDRAWAL_PAY_REMINDER")).toHaveLength(3);
   });
+
+  it("D-REVITARULES: marca com pedido do dia 5 ao 15 e Pix até o 25 avisa a Gestão no dia 16 e o Pagamento nos dias 23 e 25", async () => {
+    const s = await seedBrand(prisma);
+    await prisma.brand.update({ where: { id: s.brand.id }, data: { whatsappInstance: "revita", withdrawalWindowStartDay: 5, withdrawalWindowEndDay: 15, withdrawalPayFromDay: 20, withdrawalPayByDay: 25 } });
+    await user("PAGAMENTO", s.brand.id, "5531911117777");
+    await user("GESTAO", s.brand.id, "5531933338888");
+    await prisma.withdrawal.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, amountCents: 20_000, idempotencyKey: randomUUID() } });
+    const sent: WhatsAppMessage[] = [];
+    const sender = async (m: WhatsAppMessage) => void sent.push(m);
+    const mine = () => sent.filter((m) => m.brand === s.brand.name);
+    for (const d of [11, 13, 15]) await runWithdrawalReminders(prisma, sender, null, at(d));
+    expect(mine()).toHaveLength(0);
+    await runWithdrawalReminders(prisma, sender, null, at(16));
+    expect(mine().map((m) => m.kind)).toEqual(["WITHDRAWAL_APPROVE_REMINDER"]);
+    expect(mine()[0]!.text).toContain("pagar até o dia 25");
+    await prisma.withdrawal.updateMany({ where: { brandId: s.brand.id }, data: { status: "APPROVED", approvedAt: at(16), approvedById: "x" } });
+    await runWithdrawalReminders(prisma, sender, null, at(23));
+    await runWithdrawalReminders(prisma, sender, null, at(24));
+    await runWithdrawalReminders(prisma, sender, null, at(25));
+    expect(mine().filter((m) => m.kind === "WITHDRAWAL_PAY_REMINDER").map((m) => m.text.split("\n")[0])).toEqual([
+      `*${s.brand.name}: 1 saque aprovado sem pagar. O prazo do Pix é o dia 25 (faltam 2 dias).*`,
+      `*${s.brand.name}: 1 saque aprovado sem pagar. O prazo do Pix vence hoje.*`,
+    ]);
+  });
 });

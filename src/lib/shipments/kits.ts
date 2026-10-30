@@ -184,7 +184,7 @@ export async function kitProgress(prisma: PrismaClient, ctx: PortalContext, now 
     const salesCents = (await salesByMonth(prisma, [ctx.creatorId], brand.timezone)).get(ctx.creatorId)!.get(month) ?? 0;
     const entry = c.contractStart ? c.contractStart.toISOString().slice(0, 10) : c.activatedAt ? dayKey(c.activatedAt, brand.timezone) : (c.goalStartAt?.toISOString().slice(0, 10) ?? null);
     const trial = entry !== null && isTierTrialMonth(entry, month);
-    return { kind: "TIER", month, salesCents, total: tierProducts(salesCents, trial), next: nextTier(salesCents, trial), trial };
+    return { kind: "TIER", month, salesCents, total: tierProducts(salesCents, trial, ctx.brand.slug), next: nextTier(salesCents, trial, ctx.brand.slug), trial };
   }
   if (!c.goalStartAt) return null;
   const today = dayKey(now, brand.timezone);

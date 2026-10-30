@@ -40,6 +40,9 @@ model Brand {
   withdrawalMinCents        Int                 @default(1) // D-CONTRACT: sem mínimo por pedido (o mínimo é de vendas no mês)
   withdrawalWindowStartDay  Int                 @default(1) // D-CONTRACT: NF do dia 1 ao 10, pagamento até o dia 15
   withdrawalWindowEndDay    Int                 @default(10)
+  /// D-REVITARULES: dias do pagamento do saque nos textos (null = "até o dia" do fim).
+  withdrawalPayFromDay      Int?
+  withdrawalPayByDay        Int                 @default(15)
   commissionHoldDays        Int                 @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
   /// D-CONTRACT: mínimo acumulado para liberar a comissão no fechamento do mês (vendas ou comissão, por `releaseBasis`).
   releaseMinCents           Int                 @default(30000) // D-MIN300: R$ 300 em vendas; Botanika R$ 100 de comissão (D-MIN100)
