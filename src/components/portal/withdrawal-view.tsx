@@ -1,6 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight, Clock, FileText, Receipt, Wallet } from "lucide-react";
 import Link from "next/link";
-import { formatBRL } from "@/domain";
+import { formatBRL, payDaysText, type WithdrawalDays } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { NfDataList } from "./nf-data";
@@ -22,7 +22,7 @@ const STATUS_STYLE = {
 } as const;
 
 /** Aba Saque (D-WDTAB): saldo e botão, meus saques, movimentações por mês. Só exibe. */
-export function WithdrawalView({ tab, base, justRequested = false }: { tab: WithdrawalTab; base: string; justRequested?: boolean }) {
+export function WithdrawalView({ tab, base, justRequested = false, days }: { tab: WithdrawalTab; base: string; justRequested?: boolean; /** D-REVITARULES */ days?: WithdrawalDays }) {
   const { balance, policy } = tab;
   const block = ORDER.find((b) => tab.blocks.includes(b));
   const blockText = block
@@ -77,7 +77,7 @@ export function WithdrawalView({ tab, base, justRequested = false }: { tab: With
           {tab.release.minCents !== null &&
             `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
           Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
-          liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix até o dia 15.
+          liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix {payDaysText(days)}.
         </p>
       </section>
 

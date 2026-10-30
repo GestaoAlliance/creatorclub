@@ -4,11 +4,12 @@ import { CircleHelp, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import type { WithdrawalDays } from "@/domain/withdrawal-days";
 import { HELP, helpText, placeBalloon, tourScreenFor, tourSeenKey, tourSteps, type HelpId } from "@/domain/tutorial";
 
 /** Mini tutoriais do portal (D-TUTORIAL): "?" em cada cartão e passo a passo no primeiro acesso a cada tela. */
 
-const TutorialContext = createContext({ ugc: false });
+const TutorialContext = createContext<{ ugc: boolean; days?: WithdrawalDays | undefined }>({ ugc: false });
 const RESTART = "cc-tour:restart";
 const BALLOON =
   "fixed z-[60] w-80 max-w-[calc(100vw-2rem)] rounded-3xl border border-white/70 bg-white/95 p-4 text-sm text-stone-900 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-stone-900/95 dark:text-stone-100";
@@ -26,9 +27,9 @@ function findTarget(id: HelpId): HTMLElement | null {
 }
 
 /** Moldura: guarda se é só UGC (textos sem comissão) e roda o passo a passo da tela aberta. */
-export function TutorialProvider({ ugc, auto, children }: { ugc: boolean; auto: boolean; children: ReactNode }) {
+export function TutorialProvider({ ugc, auto, days, children }: { ugc: boolean; auto: boolean; /** D-REVITARULES: dias do saque da marca. */ days?: WithdrawalDays; children: ReactNode }) {
   return (
-    <TutorialContext.Provider value={{ ugc }}>
+    <TutorialContext.Provider value={{ ugc, days }}>
       {children}
       <PortalTour auto={auto} />
     </TutorialContext.Provider>
@@ -53,7 +54,7 @@ export function TourButton() {
 }
 
 function PortalTour({ auto }: { auto: boolean }) {
-  const { ugc } = useContext(TutorialContext);
+  const { ugc, days } = useContext(TutorialContext);
   const screen = tourScreenFor(usePathname());
   const [steps, setSteps] = useState<HelpId[]>([]);
   const [index, setIndex] = useState(0);
@@ -102,7 +103,7 @@ function PortalTour({ auto }: { auto: boolean }) {
     <TourStep
       key={id}
       id={id}
-      text={helpText(id, ugc)}
+      text={helpText(id, ugc, days)}
       position={`${index + 1} de ${steps.length}`}
       last={index === steps.length - 1}
       onNext={() => (index === steps.length - 1 ? finish() : setIndex(index + 1))}
@@ -194,7 +195,7 @@ function TourStep({ id, text, position, last, onNext, onSkip }: { id: HelpId; te
 
 /** "?" no canto de um cartão: abre o balão com a explicação daquele cartão. */
 export function HelpTip({ id, className = "" }: { id: HelpId; className?: string }) {
-  const { ugc } = useContext(TutorialContext);
+  const { ugc, days } = useContext(TutorialContext);
   const button = useRef<HTMLButtonElement>(null);
   const balloon = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -249,7 +250,7 @@ export function HelpTip({ id, className = "" }: { id: HelpId; className?: string
         createPortal(
           <div ref={balloon} role="tooltip" className={BALLOON} style={{ top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 }}>
             <p className="font-semibold">{HELP[id].title}</p>
-            <p className="mt-1 text-stone-700 dark:text-stone-300">{helpText(id, ugc)}</p>
+            <p className="mt-1 text-stone-700 dark:text-stone-300">{helpText(id, ugc, days)}</p>
           </div>,
           document.body,
         )}

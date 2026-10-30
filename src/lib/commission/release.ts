@@ -9,6 +9,7 @@ import { notices,
   planReleases,
   previousMonthKey,
   releaseMinFor,
+  withdrawalDays,
   type Balance,
   type LedgerEntry,
 } from "@/domain";
@@ -156,7 +157,7 @@ export function lastClosedMonth(now: Date, timeZone: string): string {
 export async function closeDueMonths(prisma: PrismaClient, now = new Date(), only?: { brandId: string }): Promise<number> {
   const brands = await prisma.brand.findMany({
     where: { archivedAt: null, ...(only ? { id: only.brandId } : {}) },
-    select: { id: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
+    select: { id: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, withdrawalPayFromDay: true, withdrawalPayByDay: true },
   });
   let total = 0;
   for (const brand of brands) {
@@ -169,7 +170,7 @@ export async function closeDueMonths(prisma: PrismaClient, now = new Date(), onl
 
 async function closeBrandMonth(
   prisma: PrismaClient,
-  brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis },
+  brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis; withdrawalWindowStartDay?: number; withdrawalWindowEndDay?: number; withdrawalPayFromDay?: number | null; withdrawalPayByDay?: number },
   month: string,
   now: Date,
 ): Promise<number> {
@@ -194,7 +195,7 @@ async function closeBrandMonth(
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });
       // D-GOALKIT (2026-10-27): o kit mensal por faixa saiu; o produto vem pela meta de R$ 1.000 (`grantGoalKits`).
       // U5 (D-NOTICES): avisa quem teve comissão liberada neste fechamento.
-      await notify(tx, [...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month) })));
+      await notify(tx, [...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month, brand.withdrawalWindowStartDay ? withdrawalDays({ withdrawalWindowStartDay: brand.withdrawalWindowStartDay, withdrawalWindowEndDay: brand.withdrawalWindowEndDay ?? 10, withdrawalPayFromDay: brand.withdrawalPayFromDay ?? null, withdrawalPayByDay: brand.withdrawalPayByDay ?? 15 }) : undefined) })));
       const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
       await tx.auditLog.create({
         data: {

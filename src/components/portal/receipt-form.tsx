@@ -3,12 +3,14 @@
 import { Loader2 } from "lucide-react";
 import { useActionState, useState } from "react";
 import { submitReceiptWithdrawal, type SubmitState } from "@/app/portal/[marca]/saque/actions";
-import { receiptText } from "@/domain";
+import { payDaysText, receiptText, type WithdrawalDays } from "@/domain";
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 type Props = {
   marca: string;
+  /** D-REVITARULES: dias do pagamento da marca. */
+  days?: WithdrawalDays;
   requestId: string;
   availableCents: number;
   pixKeyMasked: string | null;
@@ -56,7 +58,7 @@ export function ReceiptForm(p: Props) {
         <input type="checkbox" name="accept" required className="mt-0.5 size-4 accent-[var(--brand)]" />
         Conferi e aceito este recibo. Ele vale como quitação depois que o Pix for feito.
       </label>
-      <p className="text-xs text-stone-500">O valor fica "em saque" até o pagamento. A equipe confere e paga por Pix até o dia 15.</p>
+      <p className="text-xs text-stone-500">O valor fica "em saque" até o pagamento. A equipe confere e paga por Pix {payDaysText(p.days)}.</p>
       {state?.error && <p className="text-sm text-red-700 dark:text-red-400">{state.error}</p>}
       <div className="flex justify-end">
         <button className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={pending}>

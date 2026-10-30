@@ -133,22 +133,38 @@ export function isTierTrialMonth(entryDay: string, month: string): boolean {
   return my * 12 + (mm - 1) < end;
 }
 
+/**
+ * D-REVITARULES (contrato da Revita de 2026-10-30, 2.1): na Revita, 1 produto com R$ 1.000 em vendas no mês e 2 com
+ * R$ 2.000, sem tabela dos primeiros meses. As outras marcas com `monthlyKitFrom` usam a tabela da Botanika.
+ */
+export const REVITA_TIERS: readonly KitTier[] = [
+  { fromCents: 100_000, products: 1 },
+  { fromCents: 200_000, products: 2 },
+];
+
+/** Tabelas da marca: a normal e a dos primeiros meses (vazia = não tem). */
+export function tierTables(brandSlug = "botanika"): { regular: readonly KitTier[]; trial: readonly KitTier[] } {
+  return brandSlug === "revita-derma" ? { regular: REVITA_TIERS, trial: [] } : { regular: TIER_REGULAR, trial: TIER_TRIAL };
+}
+
 /** Total de produtos do mês pela tabela (0 = nenhuma faixa). Nos 3 primeiros meses vale a maior das duas tabelas. */
-export function tierProducts(salesCents: number, trial: boolean): number {
-  const regular = kitProductsFor(TIER_REGULAR, salesCents);
-  return trial ? Math.max(regular, kitProductsFor(TIER_TRIAL, salesCents)) : regular;
+export function tierProducts(salesCents: number, trial: boolean, brandSlug = "botanika"): number {
+  const t = tierTables(brandSlug);
+  const regular = kitProductsFor(t.regular, salesCents);
+  return trial ? Math.max(regular, kitProductsFor(t.trial, salesCents)) : regular;
 }
 
 /**
  * D-KITPROGRESS: próxima faixa da tabela mensal acima das vendas do mês (o total de produtos do mês que ela libera), ou
  * null se já está na faixa mais alta.
  */
-export function nextTier(salesCents: number, trial: boolean): { fromCents: number; total: number } | null {
-  const current = tierProducts(salesCents, trial);
-  const next = [...TIER_REGULAR, ...(trial ? TIER_TRIAL : [])]
-    .filter((t) => t.fromCents > salesCents && tierProducts(t.fromCents, trial) > current)
+export function nextTier(salesCents: number, trial: boolean, brandSlug = "botanika"): { fromCents: number; total: number } | null {
+  const t = tierTables(brandSlug);
+  const current = tierProducts(salesCents, trial, brandSlug);
+  const next = [...t.regular, ...(trial ? t.trial : [])]
+    .filter((x) => x.fromCents > salesCents && tierProducts(x.fromCents, trial, brandSlug) > current)
     .sort((a, b) => a.fromCents - b.fromCents)[0];
-  return next ? { fromCents: next.fromCents, total: tierProducts(next.fromCents, trial) } : null;
+  return next ? { fromCents: next.fromCents, total: tierProducts(next.fromCents, trial, brandSlug) } : null;
 }
 
 /**

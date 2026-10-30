@@ -28,7 +28,7 @@ export async function grantTierKits(prisma: PrismaClient, now = new Date()): Pro
       const entry = c.contractStart ? c.contractStart.toISOString().slice(0, 10) : c.activatedAt ? dayKey(c.activatedAt, brand.timezone) : (c.goalStartAt?.toISOString().slice(0, 10) ?? null);
       for (const month of months) {
         const salesCents = sales.get(c.id)!.get(month) ?? 0;
-        const target = tierProducts(salesCents, entry !== null && isTierTrialMonth(entry, month));
+        const target = tierProducts(salesCents, entry !== null && isTierTrialMonth(entry, month), brand.slug);
         const given = Math.max(0, ...c.kitGrants.filter((k) => k.month === month).map((k) => k.window));
         if (target <= given) continue;
         const ok = await prisma.$transaction(async (tx) => {

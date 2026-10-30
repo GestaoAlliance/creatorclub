@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-248 — 2026-10-30 — Revita: regras do contrato novo para todas (D-REVITARULES)
+- **Feito:** migração `20261116090000_revita_rules`: a Revita libera com **R$ 100 de comissão** acumulada (influencer e
+  prescritor; versões de contrato com comissão também), saque pedido **do dia 5 ao 15** e pagamento **do dia 20 ao 25**
+  (`Brand.withdrawalPayFromDay/withdrawalPayByDay`), produtos pelas vendas do mês a partir de **novembro**: R$ 1.000 → 1,
+  R$ 2.000 → 2 (`REVITA_TIERS`, `tierTables` por marca). Contrato sem prazo: na Revita não há aviso de "contrato
+  vencendo"; o "Parou de vender" (60 dias) diz que a parceria se encerra com 2 meses sem venda (a Gestão decide). Os
+  textos de saque (portal, tutorial, aviso de comissão liberada, inscrição) e os lembretes da equipe (Gestão no dia
+  seguinte ao fim do pedido; Pagamento 2 dias antes do prazo do Pix e no prazo) seguem os dias de cada marca. Testes:
+  `test/revita-rules.test.ts` e `test/integration/withdrawal-reminders.test.ts`.
+- **Pendente:** chave da API do Autentique da Revita; ligar a trava da Revita depois.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-247 — 2026-10-30 — Revita: 4 contratos, envio inicial no cadastro e 1º pedido com os produtos (D-WELCOMECHOICE)
 - **Feito:** os 4 contratos da Influencer da Revita (CPF/CNPJ × Sérum Pepti Code, 1 produto, ou Kit Revita, Sérum + Gel
   em Creme com 3 vídeos) publicados pela migração `20261115090000_revita_contracts` (modelos `INFLUENCER_PF_1/_2`,

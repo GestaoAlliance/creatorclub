@@ -1,3 +1,4 @@
+import { DEFAULT_WITHDRAWAL_DAYS, fillWithdrawalDays, type WithdrawalDays } from "./withdrawal-days";
 /**
  * Mini tutoriais do portal da creator e das telas da equipe (D-TUTORIAL): o mesmo texto aparece no balão do "?" de
  * cada cartão e no passo a passo do primeiro acesso a cada tela. Textos curtos, do dia a dia; o responsável revisa
@@ -26,7 +27,7 @@ export type HelpTopic = {
 export const HELP = {
   saldo: {
     title: "Disponível para saque",
-    text: "É o dinheiro que já é seu. Do dia 1 ao 10 de cada mês você pede o saque do valor total na aba Saque e recebe por Pix.",
+    text: "É o dinheiro que já é seu. {Pedido} de cada mês você pede o saque do valor total na aba Saque e recebe por Pix.",
   },
   aguardando: {
     title: "Aguardando pagamento",
@@ -93,7 +94,7 @@ export const HELP = {
   },
   "saque-saldo": {
     title: "Seu saque",
-    text: "O botão Solicitar saque abre do dia 1 ao 10. O pedido é sempre do valor total disponível, e o Pix cai até o dia 15.",
+    text: "O botão Solicitar saque abre {pedido}. O pedido é sempre do valor total disponível, e o Pix cai {pagamento}.",
   },
   "saque-nf": {
     title: "Nota fiscal",
@@ -315,9 +316,10 @@ const STAFF_SCREENS: Record<string, StaffScreen> = {
   desempenho: "equipe-desempenho",
 };
 
-export function helpText(id: HelpId, ugc = false): string {
+export function helpText(id: HelpId, ugc = false, days: WithdrawalDays = DEFAULT_WITHDRAWAL_DAYS): string {
   const topic: HelpTopic = HELP[id];
-  return ugc && topic.ugcText ? topic.ugcText : topic.text;
+  // D-REVITARULES: os dias do saque são os da marca.
+  return fillWithdrawalDays(ugc && topic.ugcText ? topic.ugcText : topic.text, days);
 }
 
 /** Tela do tutorial pela URL (`/portal/<marca>/<aba>` ou `/admin/<tela>`); fora das telas com tutorial, nenhuma. */

@@ -64,7 +64,7 @@ export type ActionTask = {
 export async function actionQueue(prisma: PrismaClient, brandId: string, now = new Date()): Promise<ActionTask[]> {
   const brand = await prisma.brand.findUniqueOrThrow({
     where: { id: brandId },
-    select: { name: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
+    select: { name: true, slug: true, timezone: true, releaseMinCents: true, releaseMinPrescriberCents: true, releaseBasis: true },
   });
   const tz = brand.timezone;
   const today = Date.parse(`${dayKey(now, tz)}T00:00:00Z`);
@@ -113,10 +113,10 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   const days = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY);
 
   // Parou de vender (só ativas com contrato de comissão; a regra está em `idleFor`).
-  for (const [id, s] of await idleFor(prisma, creators, tz, now)) if (s?.idle) push(id, `IDLE:${id}:${s.lastSaleDay ?? "nunca"}`, { kind: "IDLE", days: s.days });
+  for (const [id, s] of await idleFor(prisma, creators, tz, now)) if (s?.idle) push(id, `IDLE:${id}:${s.lastSaleDay ?? "nunca"}`, { kind: "IDLE", days: s.days, contractEnds: brand.slug === "revita-derma" });
 
-  // Contrato vencendo ou vencido.
-  for (const c of creators) {
+  // Contrato vencendo ou vencido. D-REVITARULES: na Revita o contrato é sem prazo (encerra com 2 meses sem venda).
+  for (const c of brand.slug === "revita-derma" ? [] : creators) {
     const endDay = dayOf(c.contractEnd);
     if (!endDay) continue;
     const left = (Date.parse(`${endDay}T00:00:00Z`) - today) / DAY;
