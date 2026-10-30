@@ -112,5 +112,8 @@ describe("chave pela variável segura da Vercel (D-AUTENTIQUEENV)", () => {
     expect(envAutentiqueToken("revita-derma", env)).toBeNull();
     expect(envAutentiqueToken("botanika", { AUTENTIQUE_TOKENS: "{quebrado" })).toBeNull();
     expect(envAutentiqueToken("botanika", {})).toBeNull();
+    // Variável de uma marca só (a Revita entrou assim, sem mexer nas outras).
+    expect(envAutentiqueToken("revita-derma", { ...env, AUTENTIQUE_TOKEN_REVITA_DERMA: "b".repeat(64) })).toBe("b".repeat(64));
+    expect(envAutentiqueToken("revita-derma", { AUTENTIQUE_TOKEN_REVITA_DERMA: "curta" })).toBeNull();
   });
 });

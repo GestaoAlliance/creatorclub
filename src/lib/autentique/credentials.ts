@@ -59,19 +59,20 @@ export async function connectAutentique(
  * vale primeiro. Nunca no código nem no repositório.
  */
 export function envAutentiqueToken(slug: string, env: Record<string, string | undefined> = process.env): string | null {
+  const valid = (t: unknown) => (typeof t === "string" && /^[A-Za-z0-9._-]{20,200}$/.test(t.trim()) ? t.trim() : null);
+  // Chave de uma marca só (ex.: AUTENTIQUE_TOKEN_REVITA_DERMA): soma uma marca sem mexer nas chaves já guardadas.
+  const own = valid(env[`AUTENTIQUE_TOKEN_${slug.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`]);
+  if (own) return own;
   const raw = env.AUTENTIQUE_TOKENS?.trim();
   if (!raw) return null;
   try {
-    const map = JSON.parse(raw) as Record<string, unknown>;
-    const t = map[slug];
-    return typeof t === "string" && /^[A-Za-z0-9._-]{20,200}$/.test(t.trim()) ? t.trim() : null;
+    return valid((JSON.parse(raw) as Record<string, unknown>)[slug]);
   } catch {
     return null;
   }
 }
 
 async function envConnection(prisma: PrismaClient, brandId: string): Promise<AutentiqueConnection | null> {
-  if (!process.env.AUTENTIQUE_TOKENS) return null;
   const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { slug: true } });
   const token = brand ? envAutentiqueToken(brand.slug) : null;
   return token ? { brandId, token, sandbox: false, account: "variável segura da Vercel" } : null;
