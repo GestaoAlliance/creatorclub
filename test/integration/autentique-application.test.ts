@@ -295,16 +295,17 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     expect((await actionQueue(prisma, s.brand.id, at("2026-11-09T17:00:00Z"))).some((t) => t.kind === "UNSIGNED")).toBe(false);
   });
 
-  it("D-CONTRACTSWITCH: trava desligada libera quem espera e aprovar volta a criar o cupom na hora; só super admin", async () => {
+  it("D-CONTRACTSWITCH: trava desligada libera quem espera e aprovar volta a criar o cupom na hora; Gestão da marca ou super admin", async () => {
     const s = await setup();
     const deps = { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: null };
     const app = await apply(s.brand.slug);
     const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
     const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, deps);
-    await expect(setContractLock(prisma, s.gestao, s.brand.id, false, deps)).rejects.toThrow(/super admin/);
+    await expect(setContractLock(prisma, await s.mk("HUNTER"), s.brand.id, false, deps)).rejects.toThrow(/Sem permissão/);
 
+    // A Gestão da marca também pode (pedido do responsável: a Fátima, na Revita).
     shopCalls.length = 0;
-    expect(await setContractLock(prisma, s.sa, s.brand.id, false, deps)).toEqual({ released: 1, failed: [] });
+    expect(await setContractLock(prisma, s.gestao, s.brand.id, false, deps)).toEqual({ released: 1, failed: [] });
     expect(shopCalls).toHaveLength(1); // cupom criado na Shopify
     expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ status: "CANCELLED" });
     const released = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: true } });
@@ -324,5 +325,22 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     const third = await apply(s.brand.slug);
     expect((await approveApplication(prisma, s.gestao, { applicationId: third.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop)).awaitingContract).toBe(true);
     expect(await prisma.auditLog.count({ where: { entityId: s.brand.id, action: "brand.contract_lock" } })).toBe(2);
+  });
+
+  it("D-WELCOMECHOICE: contrato no modelo do envio inicial e 1º pedido já com os produtos da opção", async () => {
+    const s = await setup();
+    const deps = { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: null };
+    await publishContract(prisma, s.sa, { brandId: s.brand.id, kind: "INFLUENCER_PF_2", title: "Kit", body: `INFLUENCER_PF_2. {{RAZAO_SOCIAL}} ${BODY}` });
+    const [serum, gel] = await Promise.all(["Sérum", "Gel em Creme"].map((title) => prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title, active: true } })));
+    await prisma.brand.update({ where: { id: s.brand.id }, data: { welcomeOneIds: [serum!.id], welcomeTwoIds: [serum!.id, gel!.id] } });
+    const app = await apply(s.brand.slug, { "Envio inicial:": "2 produtos + 3 vídeos para a marca: Sérum e Gel em Creme" });
+    expect((await listApplications(prisma, s.gestao)).rows.find((x) => x.id === app.id)?.welcomeAnswer).toContain("2 produtos");
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true, welcomeWithVideos: true }, shop);
+    await runCreatorContractJob(prisma, r.creatorId, deps);
+    const req = await prisma.contractRequest.findFirstOrThrow({ where: { creatorId: r.creatorId } });
+    expect(req.body.startsWith("INFLUENCER_PF_2. Maria da Silva")).toBe(true);
+    s.aut.state.status = "signed";
+    await checkContracts(prisma, s.brand.id, { ...deps, creatorId: r.creatorId });
+    expect(await prisma.kitGrant.findFirstOrThrow({ where: { creatorId: r.creatorId, kind: "WELCOME" } })).toMatchObject({ products: 2, presetProductIds: [serum!.id, gel!.id] });
   });
 });

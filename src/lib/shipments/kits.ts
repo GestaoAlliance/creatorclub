@@ -39,13 +39,25 @@ export async function kitProducts(prisma: PrismaClient, brandId: string) {
   return (marked.length ? marked : all).map(({ id, title, brand, stockQty }) => ({ id, title, photo: productPhoto(brand.slug, title), outOfStock: stockQty !== null && stockQty <= 0 }));
 }
 
+/**
+ * D-WELCOMECHOICE: os produtos já definidos do kit (1º pedido pela opção do cadastro). Algum fora da loja (inativo ou de
+ * outra marca): null, e ela escolhe como nos outros kits.
+ */
+async function presetProducts(prisma: PrismaClient, brandId: string, ids: readonly string[]) {
+  if (ids.length === 0) return null;
+  const rows = await prisma.product.findMany({ where: { brandId, active: true, id: { in: [...ids] } }, select: { id: true, title: true, stockQty: true, brand: { select: { slug: true } } } });
+  if (rows.length !== new Set(ids).size) return null;
+  return rows.map(({ id, title, brand, stockQty }) => ({ id, title, photo: productPhoto(brand.slug, title), outOfStock: stockQty !== null && stockQty <= 0 }));
+}
+
 /** Kits que a creator ainda precisa escolher, e os produtos que ela pode escolher. */
 export async function myPendingKits(prisma: PrismaClient, ctx: PortalContext) {
-  const kits = await prisma.kitGrant.findMany({
+  const rows = await prisma.kitGrant.findMany({
     where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" },
     orderBy: [{ kind: "desc" }, { month: "asc" }], // boas-vindas primeiro
-    select: { id: true, kind: true, month: true, products: true, salesCents: true },
+    select: { id: true, kind: true, month: true, products: true, salesCents: true, presetProductIds: true },
   });
+  const kits = await Promise.all(rows.map(async ({ presetProductIds, ...k }) => ({ ...k, preset: await presetProducts(prisma, ctx.brand.id, presetProductIds) })));
   const products = kits.length ? await kitProducts(prisma, ctx.brand.id) : [];
   return { kits, products };
 }
@@ -58,12 +70,14 @@ export async function chooseKit(
   items: { productId: string; quantity: number }[],
 ): Promise<string> {
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é escolhido em nome da creator.");
-  const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true } });
+  const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true } });
   if (!kit || kit.creatorId !== ctx.creatorId) throw new ShipmentError("Kit não encontrado.");
   if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
+  // D-WELCOMECHOICE: kit com produtos definidos vai com eles, seja o que for enviado pelo formulário.
+  const preset = await presetProducts(prisma, kit.brandId, kit.presetProductIds);
   let chosen: { productId: string; quantity: number }[];
   try {
-    chosen = validateKitChoice(items, kit.products, ctx.brand.slug);
+    chosen = preset ? preset.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, kit.products, ctx.brand.slug);
   } catch (e) {
     throw new ShipmentError((e as Error).message);
   }
@@ -71,7 +85,7 @@ export async function chooseKit(
   if (creator.status === "DEACTIVATED") throw new ShipmentError("Creator desligada não recebe envio.");
   const address = addressOf(creator.account);
   if (!address) throw new ShipmentError("Cadastre o endereço de entrega antes de escolher o kit.");
-  const allowed = await kitProducts(prisma, kit.brandId);
+  const allowed = preset ?? (await kitProducts(prisma, kit.brandId));
   const title = new Map(allowed.map((p) => [p.id, p.title]));
   if (chosen.some((i) => !title.has(i.productId))) throw new ShipmentError("Produto indisponível. Atualize a página.");
   const empty = allowed.find((p) => p.outOfStock && chosen.some((i) => i.productId === p.id));

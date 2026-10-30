@@ -40,6 +40,19 @@ export async function signupCouponTaken(prisma: PrismaClient, brandId: string, c
   return Boolean(coupon || pending || reserved);
 }
 
+/**
+ * D-WELCOMECHOICE: as duas opções do envio inicial da marca (configuradas em Marcas), com os nomes dos produtos. Sem as
+ * duas (ou com produto fora da loja), o cadastro não pergunta.
+ */
+export async function signupWelcome(prisma: PrismaClient, brand: { welcomeOneIds: string[]; welcomeTwoIds: string[] }): Promise<{ one: string; two: string } | null> {
+  if (brand.welcomeOneIds.length !== 1 || brand.welcomeTwoIds.length !== 2) return null;
+  const ids = [...brand.welcomeOneIds, ...brand.welcomeTwoIds];
+  const rows = await prisma.product.findMany({ where: { id: { in: ids }, active: true }, select: { id: true, title: true } });
+  const title = new Map(rows.map((r) => [r.id, r.title]));
+  if (ids.some((id) => !title.has(id))) return null;
+  return { one: `1 produto: ${title.get(ids[0]!)}`, two: `2 produtos + 3 vídeos para a marca: ${title.get(ids[1]!)} e ${title.get(ids[2]!)}` };
+}
+
 export async function submitSignup(
   prisma: PrismaClient,
   input: { brandSlug: string; values: Record<string, string | undefined>; password: string; honeypot: string; hunterCode: string | null; ip: string | null; campaignTag?: string | null },
@@ -47,7 +60,7 @@ export async function submitSignup(
   now = new Date(),
   cnpjLookup: CnpjLookup = lookupCnpj,
 ): Promise<SignupOutcome> {
-  const brand = await prisma.brand.findUnique({ where: { slug: input.brandSlug.toLowerCase() }, select: { id: true, slug: true, name: true, archivedAt: true } });
+  const brand = await prisma.brand.findUnique({ where: { slug: input.brandSlug.toLowerCase() }, select: { id: true, slug: true, name: true, archivedAt: true, welcomeOneIds: true, welcomeTwoIds: true } });
   if (!brand || brand.archivedAt) throw new ApplicationError("Marca não encontrada.");
   // Campo invisível preenchido: robô. Responde como se tivesse dado certo e não grava nada.
   if (input.honeypot.trim()) return { ok: true, email: null };
@@ -57,7 +70,11 @@ export async function submitSignup(
   const errors: Record<string, string> = checked.ok ? {} : { ...checked.errors };
   const badPassword = passwordProblem(input.password);
   if (badPassword) errors.password = badPassword;
-  if (!checked.ok || badPassword) return { ok: false, errors };
+  // D-WELCOMECHOICE: marca com as duas opções do envio inicial pergunta qual ela quer.
+  const welcomeOptions = await signupWelcome(prisma, brand);
+  const welcome = welcomeOptions ? (input.values.welcome === "1" ? welcomeOptions.one : input.values.welcome === "2" ? welcomeOptions.two : null) : null;
+  if (welcomeOptions && !welcome) errors.welcome = "Escolha o seu envio inicial.";
+  if (!checked.ok || Object.keys(errors).length) return { ok: false, errors };
   const acc = checked.account;
 
   const ipHash = hashIp(input.ip, brand.id, now);
@@ -110,6 +127,7 @@ export async function submitSignup(
     [BRANDS_QUESTION]: brandName,
     ...(code ? { [HUNTER_QUESTION]: code } : {}),
     ...(cnpjNote ? { "Endereço do CNPJ:": cnpjNote } : {}),
+    ...(welcome ? { "Envio inicial:": welcome } : {}),
     Aceite: signupConsentText(brandName),
   };
   try {

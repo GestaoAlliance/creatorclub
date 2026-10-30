@@ -30,5 +30,14 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
   const inBrand = scopedActor(actor, brand?.id);
   const data = await listApplications(db(), inBrand, status, filters);
   // M4.1 (D-MANUALAPP): "Nova candidata" para quem edita creators na marca do topo.
-  return <CandidatasView status={status} sp={sp} filters={filters} data={data} canCreate={Boolean(brand && can(actor.grants, "creators.edit", brand.id))} />;
+  const canCreate = Boolean(brand && can(actor.grants, "creators.edit", brand.id));
+  // D-CONTRACTSWITCH: a Gestão da marca liga ou desliga a trava do contrato aqui.
+  const lock = brand && canCreate
+    ? {
+        brandId: brand.id,
+        on: (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { contractLock: true } })).contractLock,
+        waiting: await db().creator.count({ where: { brandId: brand.id, awaitingContractAt: { not: null } } }),
+      }
+    : null;
+  return <CandidatasView status={status} sp={sp} filters={filters} data={data} canCreate={canCreate} lock={lock} />;
 }

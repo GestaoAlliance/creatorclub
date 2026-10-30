@@ -28,7 +28,7 @@ export function KitPicker({
   viewOnly,
 }: {
   marca: string;
-  kit: { id: string; products: number };
+  kit: { id: string; products: number; preset?: { id: string; title: string; photo?: string | null; outOfStock?: boolean }[] | null };
   monthLabel: string;
   welcome?: boolean;
   /** D-GOALKIT: produto da meta de R$ 1.000. */
@@ -41,8 +41,13 @@ export function KitPicker({
   const [editing, setEditing] = useState(address === null);
   const [state, action, pending] = useActionState(chooseKitAction, undefined);
   // Pedido do responsável (2026-10-27): com uma opção só (Revita, VermeFree), o produto já vem escolhido.
-  const single = products.length === 1 ? products[0]! : null;
-  const [qty, setQty] = useState<Record<string, number>>(() => (single ? { [single.id]: kit.products } : {}));
+  // D-WELCOMECHOICE: kit com produtos definidos (1º pedido pela opção do cadastro) também já vem pronto.
+  const list = kit.preset ?? products;
+  const fixed = Boolean(kit.preset) || list.length === 1;
+  const single = fixed ? list[0]! : null;
+  const [qty, setQty] = useState<Record<string, number>>(() =>
+    kit.preset ? Object.fromEntries(kit.preset.map((p) => [p.id, 1])) : single ? { [single.id]: kit.products } : {},
+  );
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
   const left = kit.products - total;
   const set = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + d) }));
@@ -62,7 +67,7 @@ export function KitPicker({
           <input type="hidden" name="marca" value={marca} />
           <input type="hidden" name="kitId" value={kit.id} />
           <ul className={ui.list}>
-            {products.map((p) => {
+            {list.map((p) => {
               const n = qty[p.id] ?? 0;
               return (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">

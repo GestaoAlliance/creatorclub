@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { addMonthsToDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, WELCOME_VIDEO_PRODUCTS, WELCOME_VIDEOS, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { addMonthsToDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, WELCOME_VIDEO_PRODUCTS, WELCOME_VIDEOS, welcomePreset, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -358,7 +358,7 @@ export async function approveApplication(
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
 ): Promise<{ creatorId: string; accountId: string; couponCode: string; awaitingContract: boolean }> {
-  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true, contractLock: true } } } });
+  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true, contractLock: true, welcomeOneIds: true, welcomeTwoIds: true } } } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
@@ -496,7 +496,7 @@ export async function approveApplication(
         });
         // D-D4SIGN: 1 produto de boas-vindas em todas as marcas, para ela escolher na aba Pedidos; D-WELCOMEVIDEO: 2 na Opção 2.
         const month = start.slice(0, 7);
-        await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: welcomeProducts } });
+        await tx.kitGrant.create({ data: { brandId: app.brandId, creatorId: creator.id, kind: "WELCOME", month, salesCents: 0, products: welcomeProducts, presetProductIds: welcomePreset(brand, welcomeProducts) } });
         await notify(tx, [{ brandId: app.brandId, creatorId: creator.id, notice: notices.kitAvailable("WELCOME", month, welcomeProducts, brand.slug) }]);
       }
       await tx.commissionPolicy.create({

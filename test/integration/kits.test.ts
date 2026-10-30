@@ -179,4 +179,19 @@ describe("produtos que a creator pode escolher (D-KITOPTIONS, banco real)", () =
     expect(await grantGoalKits(prisma, T("2026-12-05T12:00:00Z"))).toBe(1);
     expect(await grantGoalKits(prisma, T("2027-01-20T12:00:00Z"))).toBe(0);
   });
+
+  it("D-WELCOMECHOICE: 1º pedido com produtos definidos vai com eles, mesmo fora da lista de escolha", async () => {
+    const s = await setup([], false);
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    await prisma.product.update({ where: { id: s.whey.id }, data: { kitOption: true } }); // a lista de escolha só tem o Whey
+    const kit = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-10", salesCents: 0, products: 2, presetProductIds: [s.whey.id, s.creatina.id] } });
+    const mine = await myPendingKits(prisma, s.ctx);
+    expect(mine.kits[0]!.preset?.map((p) => p.title).sort()).toEqual(["Creatina", "Whey"]);
+    const id = await chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.whey.id, quantity: 2 }]);
+    const items = await prisma.shipmentItem.findMany({ where: { shipmentId: id }, orderBy: { title: "asc" } });
+    expect(items.map((i) => [i.title, i.quantity])).toEqual([["Creatina", 1], ["Whey", 1]]);
+    // Produto definido saiu da loja: ela escolhe como nos outros kits.
+    const other = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "GOAL", month: "2026-11", salesCents: 0, products: 1, presetProductIds: [s.inativo.id] } });
+    expect((await myPendingKits(prisma, s.ctx)).kits.find((k) => k.id === other.id)?.preset).toBeNull();
+  });
 });

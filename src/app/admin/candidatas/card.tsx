@@ -3,7 +3,7 @@ import Link from "next/link";
 import { InstagramLink, LinkifiedText, WhatsappLink } from "@/components/ui/contact-links";
 import { badge, ui } from "@/components/ui/styles";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
-import { PAYOUT_PF, PAYOUT_PJ } from "@/domain";
+import { PAYOUT_PF, PAYOUT_PJ, welcomeChoice } from "@/domain";
 import { ContractBox } from "./contract";
 import { DecisionForms, ReopenButton, type TemplateOption } from "./forms";
 
@@ -95,8 +95,9 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
             hasLogin={a.hasLogin} applicationId={a.id} name={a.fullName} phone={a.phone} brand={a.brandName} email={a.email} coupon={a.couponProposal} category={a.categoryProposal}
             templates={templates} ratePct={a.defaultRateBps / 100} discountPct={a.defaultDiscountBps / 100} hasCnpj={Boolean(a.cnpj)}
             choices={{
-              autentique: true, // D-CONTRACTLOCK: aprovar sempre trava até o contrato
+              autentique: a.autentique, // D-CONTRACTSWITCH: segue a trava da marca
               payout: a.payoutAnswer === PAYOUT_PJ ? "cnpj" : a.payoutAnswer === PAYOUT_PF ? "cpf" : null,
+              welcome: welcomeChoice(a.welcomeAnswer),
             }}
           />
         </div>

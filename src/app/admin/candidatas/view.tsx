@@ -1,3 +1,4 @@
+import { ContractLockForm } from "../marcas/forms";
 import { Plus, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page";
@@ -23,7 +24,7 @@ const qs = (sp: Search, patch: Partial<Search>) => {
 };
 
 /** Tela Candidatas no modelo da referência: situação, origem em abas, busca e filtros, tabela com aprovar/recusar na linha. */
-export function CandidatasView({ status, sp, filters, data, canCreate }: { status: ApplicationFilter; sp: Search; filters: ApplicationFilters; data: Data; canCreate: boolean }) {
+export function CandidatasView({ status, sp, filters, data, canCreate, lock }: { status: ApplicationFilter; sp: Search; filters: ApplicationFilters; data: Data; canCreate: boolean; lock: { brandId: string; on: boolean; waiting: number } | null }) {
   const { rows, counts, total, hunters } = data;
   const filtered = rows.length !== total;
   const base: Search = status === "NEW" ? {} : { ver: status };
@@ -44,6 +45,13 @@ export function CandidatasView({ status, sp, filters, data, canCreate }: { statu
         ))}
         <HelpTip id="cand-abas" />
       </nav>
+      {/* D-CONTRACTSWITCH: trava do contrato na aprovação (Gestão da marca e super admin). */}
+      {lock && (
+        <details className={ui.card}>
+          <summary className="cursor-pointer text-sm font-medium">Contrato na aprovação: {lock.on ? "trava ligada" : "trava desligada"}</summary>
+          <div className="mt-3"><ContractLockForm {...lock} /></div>
+        </details>
+      )}
 
       <section className={`${ui.card} gap-4`}>
         <div className="flex flex-wrap gap-1.5">
