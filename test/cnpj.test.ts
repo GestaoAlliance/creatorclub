@@ -47,7 +47,7 @@ describe("cadastro PJ (D-PJADDR)", () => {
 
   it("no cadastro, CNPJ pede o regime; sem CNPJ o regime é ignorado", () => {
     const base = {
-      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(31) 99211-3232", instagram: "maria", coupon: "MARIA", payoutAs: "Empresa (CNPJ)",
+      fullName: "Maria Exemplo", cpf: "529.982.247-25", email: "m@x.com", phone: "(31) 99211-3232", instagram: "maria", coupon: "MARIA", payoutAs: "Empresa (CNPJ)", birthDate: "1995-03-15",
       addrZip: "30140-071", addrStreet: "Rua X", addrNumber: "120", addrDistrict: "Savassi", addrCity: "Belo Horizonte", addrState: "MG",
     };
     const semRegime = validateSignup({ ...base, cnpj: "11.222.333/0001-81" });

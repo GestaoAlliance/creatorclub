@@ -224,8 +224,8 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
             </select>
           </Field>
         )}
-        <Field label={q("birthDate").label} optional hint="Para a equipe comemorar com você." error={errors.birthDate} className="sm:max-w-[calc(50%-0.5rem)]">
-          {text("birthDate", { type: "date", autoComplete: "bday" })}
+        <Field label={q("birthDate").label} hint="Para a equipe comemorar com você." error={errors.birthDate} className="sm:max-w-[calc(50%-0.5rem)]">
+          {text("birthDate", { type: "date", autoComplete: "bday", required: true })}
         </Field>
       </Block>
 
