@@ -7,7 +7,7 @@ import { useActionState, useCallback, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { approvalMessage, rejectionMessage, whatsappLink } from "@/domain";
-import { approveAction, rejectAction } from "./actions";
+import { approveAction, rejectAction, reopenAction } from "./actions";
 
 const CATEGORY = { INFLUENCER: "Influencer", PRESCRITOR: "Prescritor", UGC: "UGC" } as const;
 
@@ -209,5 +209,17 @@ export function DecisionForms(p: Person & { hasLogin: boolean; email: string | n
       {done !== "rejected" && <ApproveForm {...p} onDone={approved} />}
       {done !== "approved" && <RejectForm applicationId={p.applicationId} name={p.name} phone={p.phone} brand={p.brand} onDone={rejected} />}
     </>
+  );
+}
+
+/** D-REOPENAPP: recusada por engano volta para Pendentes (a Gestão decide de novo). */
+export function ReopenButton({ applicationId }: { applicationId: string }) {
+  const [state, action, pending] = useActionState(reopenAction, undefined);
+  return (
+    <form action={action} className="flex items-center gap-2">
+      <input type="hidden" name="applicationId" value={applicationId} />
+      <button className={`${ui.ghostSm} self-start`} disabled={pending}>{pending ? "Voltando…" : "Voltar para Pendentes"}</button>
+      <Msg state={state} />
+    </form>
   );
 }

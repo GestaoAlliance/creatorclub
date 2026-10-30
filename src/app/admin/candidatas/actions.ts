@@ -2,7 +2,7 @@
 
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { approveApplication, ApplicationError, createStaffApplication, rejectApplication, rejectApplications, type Category } from "@/lib/onboarding/applications";
+import { approveApplication, ApplicationError, createStaffApplication, rejectApplication, reopenApplication, rejectApplications, type Category } from "@/lib/onboarding/applications";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { staffContext } from "@/lib/staff/context";
@@ -92,6 +92,18 @@ export async function approveAction(_prev: ApproveState, form: FormData): Promis
 }
 
 export type RejectState = { error?: string; ok?: string } | undefined;
+
+/** D-REOPENAPP: recusada volta para Pendentes. */
+export async function reopenAction(_prev: RejectState, form: FormData): Promise<RejectState> {
+  try {
+    await reopenApplication(db(), await currentActor(), String(form.get("applicationId") ?? ""));
+    revalidatePath("/admin/candidatas");
+    return { ok: "Voltou para Pendentes." };
+  } catch (error) {
+    if (error instanceof ApplicationError) return { error: error.message };
+    throw error;
+  }
+}
 
 export async function rejectAction(_prev: RejectState, form: FormData): Promise<RejectState> {
   try {
