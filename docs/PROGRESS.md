@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-246 — 2026-10-30 — Trava do contrato também pela Gestão da marca, em Candidatas
+- **Feito:** a chave "Contrato na aprovação" (D-CONTRACTSWITCH) passa a poder ser ligada/desligada pela Gestão da
+  marca (ex.: a Fátima, só Revita) além do super admin, e aparece no topo de Candidatas para a marca escolhida (Marcas
+  continua para o super admin). Teste ajustado em `test/integration/autentique-application.test.ts`.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-245 — 2026-10-30 — Data de nascimento obrigatória no cadastro (D-BIRTHREQ)
 - **Feito:** no cadastro do site (`/inscricao/[marca]`, as 3 marcas), a data de nascimento deixou de ser opcional: sem
   ela o envio não passa ("Preencha este campo."). Vai para a conta e para as respostas que a Ana lê. Testes atualizados

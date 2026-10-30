@@ -295,16 +295,17 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     expect((await actionQueue(prisma, s.brand.id, at("2026-11-09T17:00:00Z"))).some((t) => t.kind === "UNSIGNED")).toBe(false);
   });
 
-  it("D-CONTRACTSWITCH: trava desligada libera quem espera e aprovar volta a criar o cupom na hora; só super admin", async () => {
+  it("D-CONTRACTSWITCH: trava desligada libera quem espera e aprovar volta a criar o cupom na hora; Gestão da marca ou super admin", async () => {
     const s = await setup();
     const deps = { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: null };
     const app = await apply(s.brand.slug);
     const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
     const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, deps);
-    await expect(setContractLock(prisma, s.gestao, s.brand.id, false, deps)).rejects.toThrow(/super admin/);
+    await expect(setContractLock(prisma, await s.mk("HUNTER"), s.brand.id, false, deps)).rejects.toThrow(/Sem permissão/);
 
+    // A Gestão da marca também pode (pedido do responsável: a Fátima, na Revita).
     shopCalls.length = 0;
-    expect(await setContractLock(prisma, s.sa, s.brand.id, false, deps)).toEqual({ released: 1, failed: [] });
+    expect(await setContractLock(prisma, s.gestao, s.brand.id, false, deps)).toEqual({ released: 1, failed: [] });
     expect(shopCalls).toHaveLength(1); // cupom criado na Shopify
     expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ status: "CANCELLED" });
     const released = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: true } });

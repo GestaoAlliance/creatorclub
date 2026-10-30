@@ -19,7 +19,7 @@ import {
   whatsappChatUrl,
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
-import { brandsWith, can } from "@/lib/auth/permissions";
+import { can } from "@/lib/auth/permissions";
 import { currentContract } from "@/lib/contracts/sign";
 import { CouponCreateError, createDiscountInShopify } from "@/lib/coupons/create";
 import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
@@ -593,12 +593,12 @@ export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | 
 }
 
 /**
- * D-CONTRACTSWITCH (pedido da Fátima em 2026-10-30): o super admin liga ou desliga, por marca, a trava do contrato na
+ * D-CONTRACTSWITCH (pedido da Fátima em 2026-10-30): o super admin ou a Gestão da marca liga ou desliga a trava do contrato na
  * aprovação. Ao desligar, quem está esperando o contrato é liberado como no fluxo antigo (contrato em aberto cancelado
  * no Autentique, cupom criado na Shopify, plataforma liberada e a mensagem de boas-vindas).
  */
 export async function setContractLock(prisma: PrismaClient, actor: Actor | null, brandId: string, on: boolean, deps: Deps = {}) {
-  if (!actor || brandsWith(actor.grants, "staff.manage") !== "ALL") throw new ContractSendError("Só super admin.");
+  if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new ContractSendError("Sem permissão.");
   const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { contractLock: true } });
   if (!brand) throw new ContractSendError("Marca não encontrada.");
   if (brand.contractLock !== on) {
