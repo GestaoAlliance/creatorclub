@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-249 — 2026-10-30 — Autentique da Revita ligado (chave na Vercel)
+- **Feito:** chave da API do Autentique da Revita guardada na Vercel como variável secreta própria
+  `AUTENTIQUE_TOKEN_REVITA_DERMA` (só produção), sem mexer na `AUTENTIQUE_TOKENS` da Botanika e da VermeFree. O sistema
+  lê primeiro a variável da marca (`AUTENTIQUE_TOKEN_<SLUG>`), depois o JSON. Teste em `test/autentique.test.ts`.
+- **Pendente:** depois do deploy, ligar a trava da Revita em Candidatas → "Contrato na aprovação" e fazer uma aprovação
+  de teste; conferir em Marcas → Revita os produtos do envio inicial.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-248 — 2026-10-30 — Revita: regras do contrato novo para todas (D-REVITARULES)
 - **Feito:** migração `20261116090000_revita_rules`: a Revita libera com **R$ 100 de comissão** acumulada (influencer e
   prescritor; versões de contrato com comissão também), saque pedido **do dia 5 ao 15** e pagamento **do dia 20 ao 25**
