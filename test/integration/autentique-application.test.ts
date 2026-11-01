@@ -53,20 +53,22 @@ const shop = async () =>
   }) as unknown as ShopifyClient;
 /** Autentique falso: guarda o que foi enviado/cancelado e responde a situação que o teste mandar. */
 function fakeAutentique() {
-  const state: { sent: FormData[]; deleted: string[]; status: "none" | "signed" | "rejected" } = { sent: [], deleted: [], status: "none" };
+  const state: { sent: FormData[]; deleted: string[]; status: "none" | "signed" | "rejected"; noLink?: boolean; links: number } = { sent: [], deleted: [], status: "none", links: 0 };
   const fetcher: Fetcher = async (_url, init) => {
     const reply = (data: unknown) => ({ ok: true, status: 200, text: async () => JSON.stringify({ data }) });
     if (init.body instanceof FormData) {
       state.sent.push(init.body);
       const id = `doc-${state.sent.length}-${randomUUID()}`;
-      return reply({ createDocument: { id, signatures: [{ public_id: "dono", action: null, link: null }, { public_id: "s1", action: { name: "SIGN" }, link: { short_link: `https://assina.ae/${id}` } }] } });
+      // O Autentique de verdade manda o signatário de e-mail sem link (state.noLink): o sistema pede o link à parte.
+      return reply({ createDocument: { id, signatures: [{ public_id: "dono", action: null, link: null }, { public_id: "s1", action: { name: "SIGN" }, link: state.noLink ? null : { short_link: `https://assina.ae/${id}` } }] } });
     }
     const q = JSON.parse(init.body as string) as { query: string; variables: { id?: string } };
     if (q.query.includes("me {")) return reply({ me: { id: "u", name: "Marca", email: "contratos@marca.com" } });
     if (q.query.includes("deleteDocument")) return (state.deleted.push(q.variables.id!), reply({ deleteDocument: true }));
+    if (q.query.includes("createLinkToSignature")) return (state.links++, reply({ createLinkToSignature: { short_link: `https://assina.ae/link-${state.links}` } }));
     const signed = state.status === "signed" ? { created_at: "2026-10-29 18:00:00" } : null;
     const rejected = state.status === "rejected" ? { created_at: "2026-10-29 18:00:00", reason: "CPF errado" } : null;
-    return reply({ document: { id: q.variables.id, files: { signed: null }, signatures: [{ email: "x@y.com", action: { name: "SIGN" }, signed, rejected }] } });
+    return reply({ document: { id: q.variables.id, files: { signed: null }, signatures: [{ public_id: "s1", email: "x@y.com", action: { name: "SIGN" }, link: null, signed, rejected }] } });
   };
   return { state, fetcher };
 }
@@ -342,5 +344,24 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     s.aut.state.status = "signed";
     await checkContracts(prisma, s.brand.id, { ...deps, creatorId: r.creatorId });
     expect(await prisma.kitGrant.findFirstOrThrow({ where: { creatorId: r.creatorId, kind: "WELCOME" } })).toMatchObject({ products: 2, presetProductIds: [serum!.id, gel!.id] });
+  });
+
+  it("link de assinatura: pedido ao Autentique quando o envio vem só por e-mail; contrato antigo sem link ganha o link e o WhatsApp", async () => {
+    const s = await setup();
+    s.aut.state.noLink = true;
+    const deps = { fetcher: s.aut.fetcher, encKey };
+    const app = await apply(s.brand.slug);
+    const r = await approveApplication(prisma, s.gestao, { applicationId: app.id, couponCode: letters(6), category: "INFLUENCER", rateBps: 1500, discountBps: 1000, receivesAsIndividual: true }, shop);
+    const sent = await sendCreatorContract(prisma, s.gestao, r.creatorId, deps);
+    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ signLink: "https://assina.ae/link-1" });
+
+    // Contrato que saiu antes da correção, sem link: a conferência pede o link e agenda o WhatsApp.
+    await prisma.contractRequest.update({ where: { id: sent!.requestId }, data: { signLink: null } });
+    await prisma.job.deleteMany({ where: { type: CONTRACT_LINK_JOB, dedupeKey: `contract-link:${sent!.requestId}` } });
+    await checkContracts(prisma, s.brand.id, { ...deps, creatorId: r.creatorId });
+    expect(await prisma.contractRequest.findUniqueOrThrow({ where: { id: sent!.requestId } })).toMatchObject({ signLink: "https://assina.ae/link-2" });
+    expect(await prisma.job.count({ where: { type: CONTRACT_LINK_JOB, dedupeKey: `contract-link:${sent!.requestId}` } })).toBe(1);
+    await checkContracts(prisma, s.brand.id, { ...deps, creatorId: r.creatorId });
+    expect(s.aut.state.links).toBe(2); // com link, não pede de novo
   });
 });

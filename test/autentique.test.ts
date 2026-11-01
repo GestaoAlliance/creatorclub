@@ -57,7 +57,7 @@ describe("cliente do Autentique (D-AUTENTIQUE)", () => {
         },
       }),
     );
-    expect(doc).toEqual({ id: "doc-1", signedFileUrl: "https://x/signed.pdf", signatures: [{ email: "maria@x.com", signedAt: "2026-10-13 18:00:00", rejectedAt: null, rejectReason: null }] });
+    expect(doc).toEqual({ id: "doc-1", signedFileUrl: "https://x/signed.pdf", signatures: [{ publicId: null, email: "maria@x.com", signedAt: "2026-10-13 18:00:00", rejectedAt: null, rejectReason: null, link: null }] });
   });
 });
 
