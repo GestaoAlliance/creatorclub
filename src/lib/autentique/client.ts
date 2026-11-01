@@ -73,10 +73,24 @@ export async function createAutentiqueDocument(
   form.append("map", JSON.stringify({ file: ["variables.file"] }));
   form.append("file", new Blob([input.pdf as BlobPart], { type: "application/pdf" }), input.fileName);
   const res = await fetcher(AUTENTIQUE_URL, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
-  type Raw = { createDocument: { id: string; signatures?: { action: { name: string } | null; link: { short_link: string | null } | null }[] | null } };
+  type Raw = { createDocument: { id: string; signatures?: { public_id?: string; action: { name: string } | null; link: { short_link: string | null } | null }[] | null } };
   const data = await parse<Raw>(res);
-  const signer = data.createDocument.signatures?.find((s) => s.action !== null && s.link?.short_link);
-  return { id: data.createDocument.id, signLink: signer?.link?.short_link ?? null };
+  const signers = (data.createDocument.signatures ?? []).filter((s) => s.action !== null);
+  const ready = signers.find((s) => s.link?.short_link)?.link?.short_link ?? null;
+  // Quem recebe por e-mail vem sem link: o link de assinatura é pedido à parte (para o WhatsApp e o portal).
+  const signLink = ready ?? (signers[0]?.public_id ? await createSignLink(token, signers[0].public_id, fetcher).catch(() => null) : null);
+  return { id: data.createDocument.id, signLink };
+}
+
+/** Link de assinatura de um signatário (o Autentique só cria quando é pedido). */
+export async function createSignLink(token: string, publicId: string, fetcher: Fetcher = defaultFetch): Promise<string | null> {
+  const data = await autentiqueQuery<{ createLinkToSignature: { short_link: string | null } | null }>(
+    token,
+    "mutation createLinkToSignature($public_id: UUID!) { createLinkToSignature(public_id: $public_id) { short_link } }",
+    { public_id: publicId },
+    fetcher,
+  );
+  return data.createLinkToSignature?.short_link ?? null;
 }
 
 /** Cancela o documento ainda não assinado (recusa da candidata pela equipe ou contrato reenviado). */
@@ -84,10 +98,10 @@ export async function deleteAutentiqueDocument(token: string, id: string, fetche
   await autentiqueQuery<{ deleteDocument: boolean }>(token, "mutation deleteDocument($id: UUID!) { deleteDocument(id: $id) }", { id }, fetcher);
 }
 
-export type AutentiqueSignature = { email: string | null; signedAt: string | null; rejectedAt: string | null; rejectReason: string | null };
+export type AutentiqueSignature = { publicId: string | null; email: string | null; signedAt: string | null; rejectedAt: string | null; rejectReason: string | null; link: string | null };
 
 const DOCUMENT = `query document($id: UUID!) {
-  document(id: $id) { id files { signed } signatures { email action { name } signed { created_at } rejected { created_at reason } } }
+  document(id: $id) { id files { signed } signatures { public_id email action { name } link { short_link } signed { created_at } rejected { created_at reason } } }
 }`;
 
 /** Situação de cada assinatura do documento (quem assinou, quem recusou) e o link do PDF assinado. */
@@ -100,7 +114,7 @@ export async function getAutentiqueDocument(
     document: {
       id: string;
       files: { signed: string | null } | null;
-      signatures: { email: string | null; action: { name: string } | null; signed: { created_at: string } | null; rejected: { created_at: string; reason: string | null } | null }[];
+      signatures: { public_id?: string; email: string | null; action: { name: string } | null; link?: { short_link: string | null } | null; signed: { created_at: string } | null; rejected: { created_at: string; reason: string | null } | null }[];
     } | null;
   };
   const data = await autentiqueQuery<Raw>(token, DOCUMENT, { id }, fetcher);
@@ -111,6 +125,6 @@ export async function getAutentiqueDocument(
     signatures: data.document.signatures
       // O autor do documento aparece como assinatura sem ação; só contam os signatários de verdade.
       .filter((s) => s.action !== null)
-      .map((s) => ({ email: s.email, signedAt: s.signed?.created_at ?? null, rejectedAt: s.rejected?.created_at ?? null, rejectReason: s.rejected?.reason ?? null })),
+      .map((s) => ({ publicId: s.public_id ?? null, email: s.email, signedAt: s.signed?.created_at ?? null, rejectedAt: s.rejected?.created_at ?? null, rejectReason: s.rejected?.reason ?? null, link: s.link?.short_link ?? null })),
   };
 }

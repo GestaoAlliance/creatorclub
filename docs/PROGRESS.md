@@ -315,6 +315,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-250 — 2026-11-01 — Link de assinatura do Autentique e diagnóstico das aprovadas presas
+- **Diagnóstico (banco, 2026-11-01):** 28 creators esperando contrato (25 Revita, 2 Botanika, 1 VermeFree). Revita: 12
+  sem contrato por **falta de créditos no Autentique** (`unavailable_credits`), 6 escolheram empresa sem CNPJ, 1 sem CPF
+  válido; 6 Revita e 2 Botanika com contrato enviado só por e-mail, **sem link** (defeito). VermeFree: falta publicar o
+  texto "Influencer · pessoa física (CPF)".
+- **Feito:** o Autentique só devolve link para quem assina pelo link; quem recebe por e-mail vem sem link, e o sistema
+  não mandava o WhatsApp nem mostrava "Assinar o contrato" no portal. Agora o sistema pede o link
+  (`createLinkToSignature`) ao enviar e, na conferência periódica, para contratos já enviados sem link (salva e agenda
+  o WhatsApp). As 6 da Revita sem CNPJ passaram a pessoa física direto no banco (auditoria `creator.payout_type`,
+  pedido do responsável). Teste em `test/integration/autentique-application.test.ts`.
+- **Pendente:** desligar a trava da Revita (libera as 25) até comprarem créditos no Autentique; publicar o contrato da
+  VermeFree; CPF da creator Fátima Beatriz.
+- **Próxima:** Olist parte 2 quando chegarem as respostas do Álvaro.
+
 ### CP-249 — 2026-10-30 — Autentique da Revita ligado (chave na Vercel)
 - **Feito:** chave da API do Autentique da Revita guardada na Vercel como variável secreta própria
   `AUTENTIQUE_TOKEN_REVITA_DERMA` (só produção), sem mexer na `AUTENTIQUE_TOKENS` da Botanika e da VermeFree. O sistema

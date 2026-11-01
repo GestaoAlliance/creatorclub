@@ -30,7 +30,7 @@ import { siteOrigin } from "@/lib/notifications/scheduled";
 import { configuredWhatsApp, inWhatsAppHours, type WhatsAppSender } from "@/lib/notifications/whatsapp";
 import { defaultClientFactory, type ClientFactory } from "@/lib/shopify/jobs";
 import { isValidCpf } from "@/lib/terms/terms";
-import { createAutentiqueDocument, deleteAutentiqueDocument, getAutentiqueDocument, type Fetcher } from "./client";
+import { createAutentiqueDocument, createSignLink, deleteAutentiqueDocument, getAutentiqueDocument, type Fetcher } from "./client";
 import { loadAutentique } from "./credentials";
 import { contractPdf } from "./pdf";
 
@@ -391,7 +391,12 @@ export async function checkContracts(prisma: PrismaClient, brandId: string, deps
       } else if (mine?.signedAt) {
         if (await markSigned(prisma, req.id, now)) out.signed++;
       } else {
-        await prisma.contractRequest.update({ where: { id: req.id }, data: { lastCheckedAt: now, lastError: null } });
+        // Contrato enviado sem link (o Autentique só manda o e-mail): pede o link e manda pelo WhatsApp.
+        const link = req.signLink ? null : (mine?.link ?? (mine?.publicId ? await createSignLink(conn.token, mine.publicId, deps.fetcher).catch(() => null) : null));
+        await prisma.$transaction(async (tx) => {
+          await tx.contractRequest.update({ where: { id: req.id }, data: { lastCheckedAt: now, lastError: null, ...(link ? { signLink: link } : {}) } });
+          if (link && !req.linkSentAt) await enqueueJob(tx, { type: CONTRACT_LINK_JOB, brandId, payload: { requestId: req.id }, dedupeKey: `contract-link:${req.id}`, runAt: nextWhatsAppTime(now), maxAttempts: 5 });
+        });
       }
     } catch (error) {
       out.errors++;
