@@ -40,6 +40,16 @@ export function backoffMs(attempts: number): number {
   return Math.min(BACKOFF_BASE_MS * 2 ** Math.max(attempts - 1, 0), BACKOFF_MAX_MS);
 }
 
+/**
+ * Erro "tente mais tarde" com espera própria (ex.: limite de chamadas da Meta, D-IGLIMIT): a nova tentativa fica
+ * para depois de `delayMs` em vez da espera crescente. Ainda conta como tentativa.
+ */
+export class RetryLaterError extends Error {
+  constructor(message: string, readonly delayMs: number) {
+    super(message);
+  }
+}
+
 /** Grava uma tarefa. Com `dedupeKey` repetida, não grava de novo e devolve `false`. */
 export async function enqueueJob(tx: Db, input: JobInput): Promise<boolean> {
   const { count } = await tx.job.createMany({
@@ -104,7 +114,7 @@ async function failJob(prisma: PrismaClient, job: ClaimedJob, workerId: string, 
     where: heldBy(job, workerId),
     data: final
       ? { status: "FAILED", lockedBy: null, lockedUntil: null, lastError: message, finishedAt: now }
-      : { status: "PENDING", lockedBy: null, lockedUntil: null, lastError: message, runAt: new Date(now.getTime() + backoffMs(job.attempts)) },
+      : { status: "PENDING", lockedBy: null, lockedUntil: null, lastError: message, runAt: new Date(now.getTime() + (error instanceof RetryLaterError ? error.delayMs : backoffMs(job.attempts))) },
   });
 }
 

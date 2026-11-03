@@ -1,18 +1,24 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { dayKey, usableHandle } from "@/domain";
-import { enqueueJob, type JobHandler } from "@/lib/jobs/queue";
-import { brandTags, discoverProfile, realFetcher, type Fetcher } from "./graph";
+import { enqueueJob, RetryLaterError, type JobHandler } from "@/lib/jobs/queue";
+import { brandTags, discoverProfile, GraphError, realFetcher, type Fetcher } from "./graph";
 
 /**
  * Leitura diária do Instagram (D-INSTAGRAM): a partir das 4h (horário de Brasília), uma tarefa por pessoa com
  * creator ativa e @ cadastrado (seguidores e últimos posts) e uma por marca com Instagram ligado (posts que marcam a
  * marca). Sem token na Vercel, nada é agendado.
+ * D-IGLIMIT: uma leitura a cada 2 min (30 por hora); se a Meta disser que o limite estourou, todas as leituras que
+ * faltam param 1 hora (insistir só gasta mais do limite).
  */
 
 export const INSTAGRAM_PROFILE_JOB = "instagram.profile";
 export const INSTAGRAM_TAGS_JOB = "instagram.tags";
 const START_HOUR = 4;
-const SPACING_MS = 30_000;
+const SPACING_MS = 120_000;
+export const RATE_LIMIT_PAUSE_MS = 60 * 60_000;
+/** Códigos da Meta para "limite de chamadas atingido" (app, usuário, página, ação). */
+const RATE_LIMIT_CODES = new Set([4, 17, 32, 613]);
+export const isRateLimit = (e: unknown) => e instanceof GraphError && e.code !== null && RATE_LIMIT_CODES.has(e.code);
 const TZ = "America/Sao_Paulo";
 const hourIn = (now: Date) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", hourCycle: "h23" }).format(now));
 
@@ -32,12 +38,12 @@ export async function enqueueDueInstagram(prisma: PrismaClient, now = new Date()
     where: { instagram: { not: null }, creators: { some: { status: "ACTIVE", archivedAt: null } } },
     select: { id: true, instagram: true },
   });
-  // Uma leitura a cada 30 s (no máximo ~120 por hora), para ficar longe do limite da Meta.
+  // Uma leitura a cada 2 min (30 por hora), para ficar longe do limite da Meta (D-IGLIMIT).
   let i = 0;
   for (const a of accounts) {
     if (!usableHandle(a.instagram)) continue;
     const runAt = new Date(now.getTime() + i++ * SPACING_MS);
-    if (await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.id }, dedupeKey: `ig:profile:${a.id}:${day}`, runAt, maxAttempts: 4 })) created++;
+    if (await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.id }, dedupeKey: `ig:profile:${a.id}:${day}`, runAt, maxAttempts: 6 })) created++;
   }
   return created;
 }
@@ -92,7 +98,15 @@ export function instagramHandlers(prisma: PrismaClient, fetcher: Fetcher = realF
     [INSTAGRAM_PROFILE_JOB]: async (job) => {
       const accountId = (job.payload as { accountId?: string } | null)?.accountId;
       if (!accountId) throw new Error("Tarefa sem pessoa.");
-      await readProfile(prisma, accountId, fetcher, token());
+      try {
+        await readProfile(prisma, accountId, fetcher, token());
+      } catch (e) {
+        if (!isRateLimit(e)) throw e;
+        // D-IGLIMIT: limite da Meta estourou; as leituras que faltam esperam 1 hora junto com esta.
+        await prisma.$executeRaw`UPDATE "Job" SET "runAt" = GREATEST("runAt", now()) + make_interval(secs => ${RATE_LIMIT_PAUSE_MS / 1000})
+          WHERE "type" = ${INSTAGRAM_PROFILE_JOB} AND "status" = 'PENDING' AND "id" <> ${job.id}`;
+        throw new RetryLaterError(`Limite da Meta: nova leitura em 1 hora. (${(e as Error).message})`, RATE_LIMIT_PAUSE_MS);
+      }
     },
     [INSTAGRAM_TAGS_JOB]: async (job) => {
       if (!job.brandId) throw new Error("Tarefa sem marca.");

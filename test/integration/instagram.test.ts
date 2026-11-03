@@ -3,7 +3,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import type { Fetcher } from "@/lib/instagram/graph";
 import { creatorInstagram, engagementDropCount, instagramRanking } from "@/lib/instagram/ranking";
-import { enqueueDueInstagram, INSTAGRAM_PROFILE_JOB, readBrandTags, readProfile } from "@/lib/instagram/sync";
+import { enqueueDueInstagram, INSTAGRAM_PROFILE_JOB, instagramHandlers, RATE_LIMIT_PAUSE_MS, readBrandTags, readProfile } from "@/lib/instagram/sync";
+import { enqueueJob, RetryLaterError } from "@/lib/jobs/queue";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -101,5 +102,33 @@ describe("Instagram (D-INSTAGRAM, banco real)", () => {
     await expectDbError(prisma.instagramSnapshot.create({ data: { accountId: s.account.id, day: new Date("2026-10-02"), handle: "Dani!", status: "OK", followers: 1, mediaCount: 1 } }), /InstagramSnapshot_values/);
     await expectDbError(prisma.instagramSnapshot.create({ data: { accountId: s.account.id, day: new Date("2026-10-03"), handle: "dani", status: "OK" } }), /InstagramSnapshot_values/);
     await expectDbError(prisma.brand.update({ where: { id: s.brand.id }, data: { instagramUserId: "abc" } }), /Brand_instagramUserId/);
+  });
+
+  it("D-IGLIMIT: uma leitura a cada 2 min; limite da Meta pausa todas as leituras que faltam por 1 hora", async () => {
+    const a = await world(`lim${randomUUID().slice(0, 6)}`);
+    const b = await world(`lim${randomUUID().slice(0, 6)}`);
+    const day = "2026-10-29";
+    const at = new Date(`${day}T12:00:00Z`);
+    await enqueueDueInstagram(prisma, at, { META_SYSTEM_TOKEN: "x" });
+    const jobs = await prisma.job.findMany({ where: { type: INSTAGRAM_PROFILE_JOB, dedupeKey: { in: [`ig:profile:${a.account.id}:${day}`, `ig:profile:${b.account.id}:${day}`] } }, orderBy: { runAt: "asc" } });
+    expect(jobs).toHaveLength(2);
+    expect((jobs[1]!.runAt.getTime() - at.getTime()) % 120_000).toBe(0);
+    expect(jobs.every((j) => j.maxAttempts === 6)).toBe(true);
+
+    // A Meta responde "(#4) Application request limit reached".
+    const limited = (async () => ({ ok: true, status: 200, json: async () => ({ error: { code: 4, message: "(#4) Application request limit reached" } }) })) as unknown as Fetcher;
+    const other = await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: b.account.id }, dedupeKey: `ig:lim:${b.account.id}`, runAt: new Date() });
+    expect(other).toBe(true);
+    const handler = instagramHandlers(prisma, limited, { META_SYSTEM_TOKEN: "x" })[INSTAGRAM_PROFILE_JOB]!;
+    const err = await handler({ id: jobs[0]!.id, brandId: null, type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.account.id }, attempts: 1, maxAttempts: 6 }).catch((e) => e);
+    expect(err).toBeInstanceOf(RetryLaterError);
+    expect(err.delayMs).toBe(RATE_LIMIT_PAUSE_MS);
+    const moved = await prisma.job.findUniqueOrThrow({ where: { dedupeKey: `ig:lim:${b.account.id}` } });
+    expect(moved.runAt.getTime()).toBeGreaterThan(Date.now() + 59 * 60_000);
+
+    // Outro erro da Meta segue a espera normal da fila.
+    const broken = (async () => ({ ok: true, status: 200, json: async () => ({ error: { code: 2, message: "Service temporarily unavailable" } }) })) as unknown as Fetcher;
+    const err2 = await instagramHandlers(prisma, broken, { META_SYSTEM_TOKEN: "x" })[INSTAGRAM_PROFILE_JOB]!({ id: jobs[0]!.id, brandId: null, type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.account.id }, attempts: 1, maxAttempts: 6 }).catch((e) => e);
+    expect(err2).not.toBeInstanceOf(RetryLaterError);
   });
 });
