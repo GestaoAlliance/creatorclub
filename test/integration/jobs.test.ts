@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { claimJobs, enqueueJob, LEASE_MS, runJobs, type ClaimedJob } from "@/lib/jobs/queue";
+import { claimJobs, enqueueJob, LEASE_MS, RetryLaterError, runJobs, type ClaimedJob } from "@/lib/jobs/queue";
 import { testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -103,5 +103,14 @@ describe("fila de tarefas", () => {
       status: "FAILED",
       lastError: "Prazo esgotado na última tentativa.",
     });
+  });
+
+  it("D-IGLIMIT: RetryLaterError agenda a nova tentativa com a espera pedida", async () => {
+    await enqueueJob(prisma, { type: "limite", runAt: T0, dedupeKey: "lim" });
+    const r = await runJobs(prisma, { limite: async () => { throw new RetryLaterError("limite", 3_600_000); } }, { clock: () => T0 });
+    expect(r).toMatchObject({ retried: 1 });
+    const j = await prisma.job.findUniqueOrThrow({ where: { dedupeKey: "lim" } });
+    expect(j).toMatchObject({ status: "PENDING", attempts: 1 });
+    expect(j.runAt.getTime()).toBe(at(3_600_000).getTime());
   });
 });

@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-253 — 2026-11-03 — Instagram: leituras espaçadas e pausa no limite da Meta (D-IGLIMIT)
+- Produção: `instagram.profile` falhava ~50%/dia com "(#4) Application request limit reached" (03/11: 87 ok, 105 falhas,
+  todas depois de ~40 min de leituras). Agora 2 min entre leituras, `maxAttempts` 6 e `RetryLaterError` na fila
+  (`src/lib/jobs/queue.ts`): no limite, a tarefa e as pendentes do Instagram passam 1 hora para frente. Testes novos em
+  `instagram.test.ts` e `jobs.test.ts`. Conferir em 04/11 se as leituras do dia fecham sem falhas.
+
 ### CP-252 — 2026-11-03 — Alergias saem da inscrição, da ficha e de Envios (D-NOALLERGY)
 - Campo tirado do formulário do site (3 marcas), do perfil na ficha e do aviso no cartão de Envios. Coluna
   `CreatorAccount.allergies` continua (sem migração); `updateProfile` sem a chave preserva o valor (teste ajustado).
