@@ -315,9 +315,6 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
             {text("mediaKitUrl", { inputMode: "url", maxLength: 500, autoComplete: "off" })}
           </Field>
         </div>
-        <Field label="Alergias ou restrições" optional hint="Para montarmos o seu kit (ex.: lactose, glúten)." error={errors.allergies}>
-          {text("allergies", { maxLength: 300, autoComplete: "off" })}
-        </Field>
       </Block>
 
       <Block title={sec("cupom").title} hint={sec("cupom").hint}>

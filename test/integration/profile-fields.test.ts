@@ -33,8 +33,9 @@ describe("perfil opcional na ficha (M4.3, D-PROFILEFIELDS, banco real)", () => {
     const ships = await staffShipments(prisma, await userWith("SUPER_ADMIN", null));
     expect(ships.find((s) => s.creator.id === creator.id)?.creator.account.allergies).toBe("lactose");
 
+    // D-NOALLERGY: a ficha não manda mais alergias; o que já foi preenchido fica guardado.
     await updateProfile(prisma, gestao, creator.id, {});
-    expect((await creatorProfile(prisma, gestao, creator.id)).profile).toEqual({ professionalId: null, niches: [], youtube: null, kwai: null, allergies: null, mediaKitUrl: null });
+    expect((await creatorProfile(prisma, gestao, creator.id)).profile).toEqual({ professionalId: null, niches: [], youtube: null, kwai: null, allergies: "lactose", mediaKitUrl: null });
     await expectDbError(prisma.creatorAccount.update({ where: { id: account.id }, data: { mediaKitUrl: "http://x.com" } }), /CreatorAccount_profile/);
   });
 });

@@ -435,7 +435,6 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               <div className="grid gap-1 text-sm">
                 <p><span className="text-stone-500">Nicho</span> {p.profile.niches.join(", ") || "—"}</p>
                 <p><span className="text-stone-500">Registro</span> {p.profile.professionalId ?? "—"}</p>
-                <p><span className="text-stone-500">Alergias/restrições</span> {p.profile.allergies ?? "—"}</p>
               </div>
             )}
           </Card>
