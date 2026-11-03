@@ -419,7 +419,6 @@ export function ProfileForm({ creatorId, p }: { creatorId: string; p: { professi
         <label className={ui.label}>YouTube<input className={input} name="youtube" defaultValue={p.youtube ?? ""} placeholder="@ do canal" autoCapitalize="none" /></label>
         <label className={ui.label}>Kwai<input className={input} name="kwai" defaultValue={p.kwai ?? ""} placeholder="@ dela" autoCapitalize="none" /></label>
       </div>
-      <label className={ui.label}>Alergias ou restrições (aparece em Envios)<input className={input} name="allergies" defaultValue={p.allergies ?? ""} maxLength={300} placeholder="ex.: lactose, glúten" /></label>
       <Msg state={state} />
       <button className={btn} disabled={pending}>Salvar perfil</button>
     </form>

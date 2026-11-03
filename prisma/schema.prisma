@@ -182,6 +182,8 @@ model User {
   disabledAt DateTime?
   /// M4.4b (D-ACCESS): último acesso ao sistema (painel ou portal), gravado no máximo uma vez por hora.
   lastSeenAt DateTime?
+  /// D-ACCESSFIX: entrou com senha provisória da equipe; o portal pede a senha nova antes de tudo.
+  mustChangePassword Boolean @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

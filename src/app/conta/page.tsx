@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { ui } from "@/components/ui/styles";
 import { currentActor } from "@/lib/auth/current";
+import { mustChangePassword } from "@/lib/auth/access";
 import { db } from "@/lib/db";
 import { supabaseServer } from "@/lib/supabase/server";
 import { signOut } from "../entrar/actions";
@@ -14,6 +15,8 @@ export default async function ContaPage() {
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/entrar?next=/conta");
   const actor = await currentActor();
+  // D-ACCESSFIX: senha provisória da equipe: primeiro cria a própria senha.
+  if (actor && (await mustChangePassword(db(), actor.userId))) redirect("/entrar/nova-senha?provisoria=1");
   if (actor && actor.grants.length > 0) redirect("/admin");
   if (actor && Object.keys(actor.creatorIds).length > 0) redirect("/portal");
   // D-SIGNUPACCOUNT: quem se cadastrou pelo site entra antes de ser aprovada e vê em que pé está o cadastro.

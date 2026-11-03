@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { emailPasswordReset, passwordResetLink, touchLastSeen } from "@/lib/auth/access";
+import { changeLoginEmail, emailPasswordReset, mustChangePassword, passwordResetLink, setTemporaryPassword, temporaryPassword, touchLastSeen, type AuthAdmin } from "@/lib/auth/access";
 import { loadActor } from "@/lib/auth/actor";
 import type { EmailMessage } from "@/lib/email/sender";
 import { seedBrand, testClient } from "./fixtures";
@@ -50,5 +50,37 @@ describe("acesso: último acesso e nova senha (M4.4b, D-ACCESS, banco real)", ()
     expect(sent[0]).toMatchObject({ to: account.email, subject: `Nova senha do Creator Club ${brand.name}` });
     expect(sent[0]!.text).toContain("/auth/confirm?token_hash=");
     expect(await prisma.auditLog.count({ where: { entityId: uid, action: { in: ["password.reset_link", "password.reset_email"] } } })).toBe(2);
+  });
+
+  it("D-ACCESSFIX: senha provisória (Gestão da marca), troca no 1º acesso; corrigir e-mail de login (só quem edita todas as marcas dela)", async () => {
+    const { brand, account, creator } = await seedBrand(prisma);
+    const other = await seedBrand(prisma);
+    const uid = randomUUID();
+    await prisma.user.create({ data: { id: uid, email: account.email, name: account.name } });
+    await prisma.creatorAccount.update({ where: { id: account.id }, data: { userId: uid } });
+    const calls: string[] = [];
+    const admin: AuthAdmin = { setPassword: async (id, p) => void calls.push(`pw:${id}:${p}`), setEmail: async (id, e) => void calls.push(`mail:${id}:${e}`) };
+    const gestao = await staff("GESTAO", brand.id);
+
+    expect(temporaryPassword()).toMatch(/^[a-hj-km-np-z2-9]{10}$/);
+    await expect(setTemporaryPassword(prisma, await staff("GESTAO", other.brand.id), uid, admin)).rejects.toThrow(/permissão/);
+    const r = await setTemporaryPassword(prisma, gestao, uid, admin, () => "abc23defgh");
+    expect(r).toEqual({ password: "abc23defgh", email: account.email });
+    expect(calls).toEqual([`pw:${uid}:abc23defgh`]);
+    expect(await mustChangePassword(prisma, uid)).toBe(true);
+    expect(await prisma.auditLog.count({ where: { entityId: uid, action: "password.temporary" } })).toBe(1);
+
+    const typo = `CERTO-${randomUUID()}@Exemplo.com`;
+    expect(await changeLoginEmail(prisma, gestao, uid, typo, admin)).toBe(typo.toLowerCase());
+    expect(calls.at(-1)).toBe(`mail:${uid}:${typo.toLowerCase()}`);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: uid } })).email).toBe(typo.toLowerCase());
+    expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: account.id } })).email).toBe(typo.toLowerCase());
+    await expect(changeLoginEmail(prisma, gestao, uid, "x@", admin)).rejects.toThrow(/inválido/);
+    await expect(changeLoginEmail(prisma, gestao, uid, other.account.email, admin)).rejects.toThrow(/outra pessoa/);
+    // Creator também de outra marca que a Gestão não acessa: só super admin.
+    await prisma.creator.create({ data: { brandId: other.brand.id, accountId: account.id, categories: ["INFLUENCER"] } });
+    await expect(changeLoginEmail(prisma, gestao, uid, `n-${randomUUID()}@x.com`, admin)).rejects.toThrow(/super admin/);
+    await expect(changeLoginEmail(prisma, await staff("SUPER_ADMIN", null), uid, `n-${randomUUID()}@x.com`, admin)).resolves.toContain("@x.com");
+    void creator;
   });
 });

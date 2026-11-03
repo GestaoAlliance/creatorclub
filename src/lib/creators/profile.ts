@@ -176,6 +176,8 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     /** M4.4b (D-ACCESS): login dela e o último acesso. */
     userId: a.userId,
     lastSeenAt: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { lastSeenAt: true } }))?.lastSeenAt?.toISOString() ?? null) : null,
+    /** D-ACCESSFIX: o e-mail com que ela entra no portal. */
+    loginEmail: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { email: true } }))?.email ?? null) : null,
     reviewedAt: creator.reviewedAt,
     withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,
     categories: creator.categories,
@@ -240,7 +242,7 @@ export async function updateContact(
   if (email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ProfileError("Use o e-mail real da creator.");
   const a = creator.account;
   if (email !== a.email && a.userId) {
-    throw new ProfileError("Esta creator já entrou no portal; a troca de e-mail de login fica para depois.");
+    throw new ProfileError("Ela já tem login: para trocar o e-mail, use \"Corrigir e-mail de login\" no cartão Acesso ao portal.");
   }
   if (email !== a.email && (await prisma.creatorAccount.findUnique({ where: { email } }))) {
     throw new ProfileError("Este e-mail já é de outra creator.");
@@ -279,7 +281,8 @@ export async function updateProfile(
   if (!r.ok) throw new ProfileError(Object.values(r.errors)[0]!);
   const a = creator.account;
   await prisma.$transaction([
-    prisma.creatorAccount.update({ where: { id: a.id }, data: r.value }),
+    // D-NOALLERGY: alergias saíram das telas; sem o campo no pedido, o que já foi preenchido fica guardado.
+    prisma.creatorAccount.update({ where: { id: a.id }, data: "allergies" in input ? r.value : { ...r.value, allergies: a.allergies } }),
     audit(
       prisma, actor, creator.brandId, "creator.profile", "CreatorAccount", a.id,
       { professionalId: a.professionalId, niches: a.niches, youtube: a.youtube, kwai: a.kwai, allergies: a.allergies, mediaKitUrl: a.mediaKitUrl },
