@@ -1,5 +1,6 @@
 "use server";
 
+import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
@@ -44,7 +45,9 @@ export async function updatePassword(_prev: FormState, form: FormData): Promise<
   if (problem) return { error: problem };
   if (password !== form.get("confirm")) return { error: "As duas senhas não são iguais." };
   const supabase = await supabaseServer();
-  const { error } = await supabase.auth.updateUser({ password: password as string });
+  const { data, error } = await supabase.auth.updateUser({ password: password as string });
   if (error) return { error: "Não foi possível trocar a senha. Peça um novo link." };
+  // D-ACCESSFIX: criou a própria senha: some a senha provisória da equipe.
+  if (data.user) await db().user.updateMany({ where: { id: data.user.id, mustChangePassword: true }, data: { mustChangePassword: false } });
   redirect("/conta");
 }

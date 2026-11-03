@@ -424,7 +424,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           {/* M4.4b (D-ACCESS): último acesso ao portal e nova senha. */}
           {p.userId && (
             <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
-              <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} />
+              <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} loginEmail={p.loginEmail} />
             </Card>
           )}
           {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}

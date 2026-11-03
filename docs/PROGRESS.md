@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-251 — 2026-11-03 — Senha provisória e correção do e-mail de login (D-ACCESSFIX)
+- Ficha → "Acesso ao portal": mostra "Entra com: <e-mail>"; botão **Criar senha provisória** (mensagem pronta para WhatsApp);
+  **Corrigir e-mail de login** (Supabase + `User.email` + `CreatorAccount.email`). Coluna `User.mustChangePassword`
+  (migração `20261117090000_temp_password`): portal e /conta mandam para `/entrar/nova-senha?provisoria=1` até ela trocar.
+- Editar contato na ficha não troca mais o e-mail de quem já tem login: aponta para "Corrigir e-mail de login".
+- Testes de integração novos em `access.test.ts`. Próxima: tirar "Alergias ou restrições" da inscrição (pedido 2026-11-03).
+
 ### CP-250 — 2026-11-01 — Link de assinatura do Autentique e diagnóstico das aprovadas presas
 - **Diagnóstico (banco, 2026-11-01):** 28 creators esperando contrato (25 Revita, 2 Botanika, 1 VermeFree). Revita: 12
   sem contrato por **falta de créditos no Autentique** (`unavailable_credits`), 6 escolheram empresa sem CNPJ, 1 sem CPF

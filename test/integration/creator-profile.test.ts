@@ -41,7 +41,7 @@ describe("ficha da creator (banco real)", () => {
     const userId = randomUUID();
     await prisma.user.create({ data: { id: userId, email: a.account.email, name: "C" } });
     await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { userId } });
-    await expect(updateContact(prisma, ana, a.creator.id, { name: "X", email: `${randomUUID()}@x.com`, phone: "" })).rejects.toThrow(/fica para depois/);
+    await expect(updateContact(prisma, ana, a.creator.id, { name: "X", email: `${randomUUID()}@x.com`, phone: "" })).rejects.toThrow(/Corrigir e-mail de login/);
   });
 
   it("situação: Pausada e Desligada com data; volta a Ativa", async () => {

@@ -176,6 +176,8 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     /** M4.4b (D-ACCESS): login dela e o último acesso. */
     userId: a.userId,
     lastSeenAt: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { lastSeenAt: true } }))?.lastSeenAt?.toISOString() ?? null) : null,
+    /** D-ACCESSFIX: o e-mail com que ela entra no portal. */
+    loginEmail: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { email: true } }))?.email ?? null) : null,
     reviewedAt: creator.reviewedAt,
     withdrawalsUnlocked: creator.withdrawalsUnlockedAt !== null,
     categories: creator.categories,
@@ -240,7 +242,7 @@ export async function updateContact(
   if (email.endsWith(FAKE_EMAIL_DOMAIN)) throw new ProfileError("Use o e-mail real da creator.");
   const a = creator.account;
   if (email !== a.email && a.userId) {
-    throw new ProfileError("Esta creator já entrou no portal; a troca de e-mail de login fica para depois.");
+    throw new ProfileError("Ela já tem login: para trocar o e-mail, use \"Corrigir e-mail de login\" no cartão Acesso ao portal.");
   }
   if (email !== a.email && (await prisma.creatorAccount.findUnique({ where: { email } }))) {
     throw new ProfileError("Este e-mail já é de outra creator.");

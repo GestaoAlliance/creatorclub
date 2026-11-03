@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { PortalShell } from "@/components/portal/shell";
 import { currentActor } from "@/lib/auth/current";
+import { mustChangePassword } from "@/lib/auth/access";
 import { PortalError } from "@/lib/portal/context";
 import { currentPortalContext } from "@/lib/portal/current";
 import { TermsGate } from "@/components/portal/terms-gate";
@@ -40,6 +41,8 @@ export default async function PortalLayout({ children, params }: { children: Rea
   const { marca } = await params;
   const actor = await currentActor();
   if (!actor) redirect(`/entrar?next=/portal/${marca}`);
+  // D-ACCESSFIX: senha provisória da equipe: primeiro cria a própria senha.
+  if (await mustChangePassword(db(), actor.userId)) redirect("/entrar/nova-senha?provisoria=1");
   let ctx;
   try {
     ctx = await currentPortalContext(marca);
