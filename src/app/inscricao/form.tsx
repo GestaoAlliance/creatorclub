@@ -315,14 +315,9 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
             })}
           </div>
         </fieldset>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Registro profissional" optional hint="CRN, CRM, CRF… se você é profissional de saúde." error={errors.professionalId}>
-            {text("professionalId", { maxLength: 40, autoComplete: "off" })}
-          </Field>
-          <Field label="Link do mídia kit" optional hint="Drive, Canva ou site com os seus números." error={errors.mediaKitUrl}>
-            {text("mediaKitUrl", { inputMode: "url", maxLength: 500, autoComplete: "off" })}
-          </Field>
-        </div>
+        <Field label="Link do mídia kit" optional hint="Drive, Canva ou site com os seus números." error={errors.mediaKitUrl} className="sm:max-w-[calc(50%-0.5rem)]">
+          {text("mediaKitUrl", { inputMode: "url", maxLength: 500, autoComplete: "off" })}
+        </Field>
       </Block>
 
       <Block title={sec("cupom").title} hint={sec("cupom").hint}>

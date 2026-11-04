@@ -217,12 +217,12 @@ export async function removeTagAction(_p: State, form: FormData): Promise<State>
   return run(id, async () => removeCreatorTag(db(), await currentActor(), id, String(form.get("tagId") ?? "")), "Tag retirada.");
 }
 
-/** M4.3 (D-PROFILEFIELDS): perfil opcional (registro, nichos, redes, mídia kit; alergias saíram das telas em D-NOALLERGY). */
+/** M4.3 (D-PROFILEFIELDS): perfil opcional (nichos, redes, mídia kit; alergias e registro saíram das telas em D-NOALLERGY). */
 export async function profileAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId") ?? "");
   const f = (k: string) => String(form.get(k) ?? "");
   return run(id, async () => updateProfile(db(), await currentActor(), id, {
-    professionalId: f("professionalId"), niches: form.getAll("niches").map(String), youtube: f("youtube"), kwai: f("kwai"), mediaKitUrl: f("mediaKitUrl"),
+    niches: form.getAll("niches").map(String), youtube: f("youtube"), kwai: f("kwai"), mediaKitUrl: f("mediaKitUrl"),
   }), "Perfil salvo.");
 }
 

@@ -315,6 +315,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-258 — 2026-11-04 — Registro profissional sai do cadastro e da ficha (D-NOREGISTRY)
+- Campo tirado do formulário do site, do `ProfileForm`, da leitura do perfil e da etiqueta do topo da ficha.
+  `CreatorAccount.professionalId` continua; `updateProfile` sem a chave preserva o valor (teste ajustado).
+
 ### CP-257 — 2026-11-04 — Lembrete dos produtos parados em Envios (D-KITREMINDER)
 - `src/lib/shipments/kit-reminder.ts` (público, disparo, envio na fila `kit.reminder`), `kitReminderMessage` no domínio,
   `kitReminderAction` e cartão "Lembrar quem ainda não escolheu os produtos" em Envios (permissão `creators.edit`).
