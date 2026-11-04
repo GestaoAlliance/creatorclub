@@ -9,6 +9,7 @@ import { instagramHandlers } from "@/lib/instagram/sync";
 import { autentiqueHandlers } from "@/lib/autentique/applications";
 import { olistHandlers } from "@/lib/olist/stock";
 import { firstKitHandlers } from "@/lib/shipments/first-kit-notice";
+import { kitReminderHandlers } from "@/lib/shipments/kit-reminder";
 import type { JobHandlers } from "./queue";
 
 /** Tipos de tarefa conhecidos pelo worker. Cada etapa da E3 registra o seu aqui. */
@@ -23,6 +24,7 @@ export function jobHandlers(): JobHandlers {
     ...autentiqueHandlers(prisma),
     ...olistHandlers(prisma),
     ...firstKitHandlers(prisma),
+    ...kitReminderHandlers(prisma),
     [RECHECK_JOB]: async (job) => {
       if (!job.brandId) throw new Error("Tarefa sem marca.");
       await recheckBrand(prisma, job.brandId, postCommission);

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { FirstKitNoticeError, startFirstKitNotices } from "@/lib/shipments/first-kit-notice";
+import { KitReminderError, startKitReminders } from "@/lib/shipments/kit-reminder";
 import { staffContext } from "@/lib/staff/context";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -84,6 +85,21 @@ export async function firstKitNoticeAction(_prev: ActionState): Promise<ActionSt
     return { ok: `${r.queued} avisos na fila do WhatsApp.` };
   } catch (error) {
     if (error instanceof FirstKitNoticeError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-KITREMINDER: a Gestão da marca dispara o lembrete de quem tem produto liberado e não escolheu. */
+export async function kitReminderAction(_prev: ActionState): Promise<ActionState> {
+  const actor = await currentActor();
+  try {
+    const brandId = actor ? (await staffContext(actor)).brand?.id : undefined;
+    if (!brandId) return { error: "Escolha a marca no topo." };
+    const r = await startKitReminders(db(), actor, brandId);
+    revalidatePath("/admin/envios");
+    return { ok: `${r.queued} lembretes na fila do WhatsApp.` };
+  } catch (error) {
+    if (error instanceof KitReminderError) return { error: error.message };
     throw error;
   }
 }
