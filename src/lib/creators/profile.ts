@@ -283,8 +283,11 @@ export async function updateProfile(
   if (!r.ok) throw new ProfileError(Object.values(r.errors)[0]!);
   const a = creator.account;
   await prisma.$transaction([
-    // D-NOALLERGY: alergias saíram das telas; sem o campo no pedido, o que já foi preenchido fica guardado.
-    prisma.creatorAccount.update({ where: { id: a.id }, data: "allergies" in input ? r.value : { ...r.value, allergies: a.allergies } }),
+    // D-NOALLERGY: alergias e registro profissional saíram das telas; sem o campo no pedido, o que já foi preenchido fica guardado.
+    prisma.creatorAccount.update({
+      where: { id: a.id },
+      data: { ...r.value, ...("allergies" in input ? {} : { allergies: a.allergies }), ...("professionalId" in input ? {} : { professionalId: a.professionalId }) },
+    }),
     audit(
       prisma, actor, creator.brandId, "creator.profile", "CreatorAccount", a.id,
       { professionalId: a.professionalId, niches: a.niches, youtube: a.youtube, kwai: a.kwai, allergies: a.allergies, mediaKitUrl: a.mediaKitUrl },

@@ -95,7 +95,6 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 {p.contact.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
                 {p.birthDate && <span className={badge.neutral}>🎂 {birthdayLabel(p.birthDate)}</span>}
                 {p.place && <span className={badge.neutral}>📍 {p.place}</span>}
-                {p.profile.professionalId && <span className={badge.sky}>{p.profile.professionalId}</span>}
                 {p.profile.niches.map((n) => <span key={n} className={badge.neutral}>{n}</span>)}
               </div>
               {origin && (
@@ -447,7 +446,6 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             ) : (
               <div className="grid gap-1 text-sm">
                 <p><span className="text-stone-500">Nicho</span> {p.profile.niches.join(", ") || "—"}</p>
-                <p><span className="text-stone-500">Registro</span> {p.profile.professionalId ?? "—"}</p>
               </div>
             )}
           </Card>

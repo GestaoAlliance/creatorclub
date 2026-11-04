@@ -414,7 +414,6 @@ export function ProfileForm({ creatorId, p }: { creatorId: string; p: { professi
         </div>
       </fieldset>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className={ui.label}>Registro profissional<input className={input} name="professionalId" defaultValue={p.professionalId ?? ""} maxLength={40} placeholder="CRN, CRM, CRF…" /></label>
         <label className={ui.label}>Link do mídia kit<input className={input} name="mediaKitUrl" defaultValue={p.mediaKitUrl ?? ""} maxLength={500} placeholder="https://" /></label>
         <label className={ui.label}>YouTube<input className={input} name="youtube" defaultValue={p.youtube ?? ""} placeholder="@ do canal" autoCapitalize="none" /></label>
         <label className={ui.label}>Kwai<input className={input} name="kwai" defaultValue={p.kwai ?? ""} placeholder="@ dela" autoCapitalize="none" /></label>
