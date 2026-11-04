@@ -25,6 +25,7 @@ import { InstagramCard } from "./ig-card";
 import { OriginLine } from "./origin-form";
 import type { Origin } from "@/domain";
 import { UgcVideosCard } from "./ugc-card";
+import { ContractFileForm } from "./contract-file";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
@@ -352,6 +353,18 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           </Card>
                 </div>
                 <div className="flex min-w-0 flex-col gap-6">
+          {/* D-CONTRACTFILE: PDF do contrato assinado, anexado pela equipe; a creator vê no portal. */}
+          <Card title="Contrato assinado (PDF)" icon={<FileText className="size-4" />}>
+            {p.contractFile ? (
+              <p className="text-sm">
+                Anexado em {date(p.contractFile.createdAt)} ·{" "}
+                <a href={`/admin/creators/${p.id}/contrato-pdf`} target="_blank" rel="noopener noreferrer" className={ui.link}>Abrir o PDF</a>
+              </p>
+            ) : (
+              <p className={ui.hint}>Nenhum contrato anexado. Anexe o PDF assinado: ela vê e baixa no portal.</p>
+            )}
+            {p.canEdit && <ContractFileForm creatorId={p.id} has={!!p.contractFile} />}
+          </Card>
           {(contract.required || contract.signature) && (
             <Card title="Contrato no portal" icon={<FileSignature className="size-4" />}>
               {contract.signature ? (
