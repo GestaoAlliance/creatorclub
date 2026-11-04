@@ -23,6 +23,8 @@ import { addCreatorNote, NoteError } from "@/lib/creators/timeline";
 import { addCreatorTag, removeCreatorTag, TagError } from "@/lib/creators/tags";
 import { archiveCreator, ArchiveError, unarchiveCreator } from "@/lib/creators/archive";
 import { OriginError, setCreatorOrigin } from "@/lib/creators/origin";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { assertCanAttach, assertUploadId, attachContractFile, CONTRACT_BUCKET, ContractFileError, contractFilePath, MAX_CONTRACT_BYTES } from "@/lib/contracts/attachment";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -32,7 +34,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError) {
       return { error: error.message };
     }
     throw error;
@@ -239,4 +241,34 @@ export async function originAction(_p: State, form: FormData): Promise<State> {
     async () => setCreatorOrigin(db(), await currentActor(), id, { kind: String(form.get("kind") ?? ""), hunterId: String(form.get("hunterId") ?? "") || null, note: String(form.get("note") ?? "") }),
     "Origem salva.",
   );
+}
+
+/** D-CONTRACTFILE: link de envio de uso único para o PDF ir direto do navegador ao bucket privado (a Vercel limita o corpo). */
+export async function prepareContractUpload(creatorId: string, uploadId: string): Promise<{ ok: true; signedUrl: string } | { ok: false; error: string }> {
+  try {
+    assertUploadId(uploadId);
+    const { brandId } = await assertCanAttach(db(), await currentActor(), creatorId);
+    const { data, error } = await supabaseAdmin().storage.from(CONTRACT_BUCKET).createSignedUploadUrl(contractFilePath(brandId, creatorId, uploadId), { upsert: true });
+    if (error || !data) throw new Error(error?.message ?? "sem link");
+    return { ok: true, signedUrl: data.signedUrl };
+  } catch (error) {
+    if (error instanceof ContractFileError) return { ok: false, error: error.message };
+    console.error("contract-file.prepare", error);
+    return { ok: false, error: "Não foi possível preparar o envio. Tente de novo em instantes." };
+  }
+}
+
+/** D-CONTRACTFILE: confere o PDF que chegou ao bucket e anexa na ficha. */
+export async function attachContractAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  const uploadId = String(form.get("uploadId") ?? "");
+  return run(id, async () => {
+    assertUploadId(uploadId);
+    const actor = await currentActor();
+    const { brandId } = await assertCanAttach(db(), actor, id);
+    const { data, error } = await supabaseAdmin().storage.from(CONTRACT_BUCKET).download(contractFilePath(brandId, id, uploadId));
+    if (error || !data) throw new ContractFileError("O arquivo não chegou. Envie o PDF de novo.");
+    if (data.size > MAX_CONTRACT_BYTES) throw new ContractFileError("O PDF passa de 10 MB.");
+    await attachContractFile(db(), actor, id, uploadId, new Uint8Array(await data.arrayBuffer()));
+  }, "Contrato anexado. Ela já vê no portal.");
 }

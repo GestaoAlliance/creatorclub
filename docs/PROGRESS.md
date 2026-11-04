@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-256 — 2026-11-04 — Contrato assinado anexado na ficha e visto no portal (D-CONTRACTFILE)
+- `Creator.contractFileId` → `File` (migração `20261118090000_contract_file`). `src/lib/contracts/attachment.ts`
+  (permissão, PDF, auditoria, local do arquivo); ações `prepareContractUpload`/`attachContractAction` na ficha
+  (upload direto ao bucket por link assinado, como a NF); rotas `/admin/creators/[id]/contrato-pdf` e
+  `/portal/[marca]/contrato-pdf`; cartão "Contrato assinado (PDF)" na aba Contrato e "Meu contrato" no Início do portal.
+- Produção: bucket privado `contratos` (PDF, 10 MB) criado. Teste `test/integration/contract-file.test.ts`.
+
+### CP-255 — 2026-11-04 — Cadastro sem envio inicial; Revita com recibo RPA e Gel Creme (D-REVITASIGNUP)
+- `submitSignup` não pede nem grava "Envio inicial:"; o formulário e o `hero` não montam mais as opções (`signupWelcome`
+  removido). Aprovação continua com o seletor "Envio inicial" (padrão 1 produto). `signupPayoutHint(slug)` no domínio.
+- Produção: Revita `welcomeOneIds` = Gel Creme Nano Retinal (auditoria `brand.welcome`).
+- Contrato de teste da Vanessa (Revita, 04/11): parou em "Autentique: unavailable_credits" (trava ligada de novo às 13:49).
+
 ### CP-254 — 2026-11-04 — Cadastro: aviso do campo que falta (D-SIGNUPINVALID)
 - Reproduzido: sem escolher "Vai receber como" (rádio `sr-only` com `required`), o navegador barra o envio sem aviso
   visível no iPhone. `onInvalidCapture` no formulário (`src/app/inscricao/form.tsx`) troca o balão do navegador por

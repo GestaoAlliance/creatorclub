@@ -176,6 +176,8 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     /** M4.4b (D-ACCESS): login dela e o último acesso. */
     userId: a.userId,
     lastSeenAt: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { lastSeenAt: true } }))?.lastSeenAt?.toISOString() ?? null) : null,
+    /** D-CONTRACTFILE: PDF do contrato assinado anexado pela equipe. */
+    contractFile: (await prisma.creator.findUnique({ where: { id: creator.id }, select: { contractFile: { select: { createdAt: true, sizeBytes: true } } } }))?.contractFile ?? null,
     /** D-ACCESSFIX: o e-mail com que ela entra no portal. */
     loginEmail: a.userId ? ((await prisma.user.findUnique({ where: { id: a.userId }, select: { email: true } }))?.email ?? null) : null,
     reviewedAt: creator.reviewedAt,

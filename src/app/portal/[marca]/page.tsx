@@ -11,7 +11,7 @@ import { portalCoupons } from "@/lib/portal/coupons";
 import { portalSummary } from "@/lib/portal/home";
 import { portalCampaigns } from "@/lib/campaigns/campaigns";
 import Link from "next/link";
-import { Megaphone, Trophy } from "lucide-react";
+import { FileText, Megaphone, Trophy } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
     portalSummary(db(), ctx),
     // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
     db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
-    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { tiktok: true, birthDate: true } } } }).then((c) => c.account),
+    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { contractFileId: true, account: { select: { tiktok: true, birthDate: true } } } }).then((c) => ({ ...c.account, contractFileId: c.contractFileId })),
     portalCoupons(db(), ctx),
   ]);
   // M4.5 (D-CAMPAIGN): campanha aberta (em breve ou acontecendo) aparece no Início.
@@ -56,6 +56,16 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
           <span className="text-sm text-stone-600 dark:text-stone-300">Veja quanto vendeu depois de cada post →</span>
         </span>
       </Link>
+      {/* D-CONTRACTFILE: contrato assinado anexado pela equipe. */}
+      {account.contractFileId && (
+        <a href={`${base}/contrato-pdf`} target="_blank" rel="noopener noreferrer" className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
+          <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><FileText className="size-4" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Meu contrato</span>
+            <span className="text-sm text-stone-600 dark:text-stone-300">Ver o contrato assinado (PDF) →</span>
+          </span>
+        </a>
+      )}
       {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
       <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
     </div>

@@ -352,6 +352,8 @@ model Creator {
   legacyId                String?
   /// D-CONTRACTVER: modelo de contrato que a creator assinou (mínimo de vendas, faixas de kit, prazo).
   contractTemplateId      String?
+  /// D-CONTRACTFILE: PDF do contrato assinado anexado pela equipe (a creator vê no portal). Trocar aponta para outro arquivo; nada é apagado.
+  contractFileId          String?
   /// D-SIGNCONTRACT: creator aprovada em Candidatas precisa assinar o contrato no portal (o portal fica travado até lá).
   contractRequiredAt      DateTime?
   /// D-CHECKLIST: contrato (vigência; aviso 30 dias antes e no fim, nunca desliga sozinho) e checklist da Central.
@@ -403,6 +405,7 @@ model Creator {
   legacyPayments     LegacyPayment[]
   kitGrants          KitGrant[]
   ugcVideos          UgcVideo[]
+  contractFile       File?               @relation("CreatorContractFile", fields: [contractFileId], references: [id], onDelete: Restrict)
   contractTemplate   ContractTemplate?   @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
   creatorNotes       CreatorNote[]
   tagLinks           CreatorTagLink[]
@@ -722,6 +725,7 @@ model File {
 
   brand       Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
   withdrawals Withdrawal[]
+  contractOf  Creator[]    @relation("CreatorContractFile")
 
   @@unique([bucket, path])
 }

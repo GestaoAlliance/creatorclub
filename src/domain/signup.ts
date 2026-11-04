@@ -42,6 +42,15 @@ export type SignupQuestion = {
 export const PAYOUT_PF = "Pessoa física (CPF)";
 export const PAYOUT_PJ = "Empresa (CNPJ)";
 
+/**
+ * D-REVITASIGNUP (pedido da Revita, 2026-11-04): textos do cadastro que mudam por marca (recibo RPA para pessoa
+ * física). Marca fora da lista: texto padrão.
+ */
+const SIGNUP_BY_BRAND: Record<string, { payoutHint?: string }> = {
+  "revita-derma": { payoutHint: "Pessoa física saca com recibo RPA; empresa (inclusive MEI) saca com nota fiscal." },
+};
+export const signupPayoutHint = (brandSlug: string): string | undefined => SIGNUP_BY_BRAND[brandSlug]?.payoutHint;
+
 export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "fullName", title: "Seu nome completo:", label: "Nome completo", kind: "text", required: true },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
