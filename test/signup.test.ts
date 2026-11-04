@@ -121,3 +121,11 @@ describe("Como funciona a parceria (inscrição)", () => {
     expect(none[2]!.text).toContain("mínimo do contrato");
   });
 });
+
+describe("D-REVITASIGNUP: textos do cadastro por marca", () => {
+  it("Revita: recibo RPA; outras marcas, texto padrão", async () => {
+    const { signupPayoutHint } = await import("@/domain");
+    expect(signupPayoutHint("revita-derma")).toMatch(/recibo RPA/);
+    expect(signupPayoutHint("botanika")).toBeUndefined();
+  });
+});
