@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-254 — 2026-11-04 — Cadastro: aviso do campo que falta (D-SIGNUPINVALID)
+- Reproduzido: sem escolher "Vai receber como" (rádio `sr-only` com `required`), o navegador barra o envio sem aviso
+  visível no iPhone. `onInvalidCapture` no formulário (`src/app/inscricao/form.tsx`) troca o balão do navegador por
+  erro em vermelho no campo, rola até o primeiro e mostra o resumo no botão; some ao preencher.
+
 ### CP-253 — 2026-11-03 — Instagram: leituras espaçadas e pausa no limite da Meta (D-IGLIMIT)
 - Produção: `instagram.profile` falhava ~50%/dia com "(#4) Application request limit reached" (03/11: 87 ok, 105 falhas,
   todas depois de ~40 min de leituras). Agora 2 min entre leituras, `maxAttempts` 6 e `RetryLaterError` na fila
