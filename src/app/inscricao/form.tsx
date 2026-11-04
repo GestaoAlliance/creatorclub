@@ -80,7 +80,11 @@ type ZipLookup = "idle" | "loading" | "found" | "notfound" | "error";
  */
 export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode: string | null; campaign?: string | null; brand: SignupBrand }) {
   const [state, action, pending] = useActionState(signupAction, { n: 0 } as SignupState);
-  const errors = state.errors ?? {};
+  // D-SIGNUPINVALID: campo obrigatório vazio ganha aviso em vermelho na própria página (no iPhone, o aviso do navegador
+  // não aparece em escolhas como "Vai receber como" e o botão parecia não fazer nada).
+  const [missing, setMissing] = useState<Record<string, string>>({});
+  const errors: Record<string, string> = { ...(state.errors ?? {}), ...missing };
+  const lastInvalid = useRef(0);
   const [v, setV] = useState<Record<string, string>>(() => state.values ?? {});
   const [zip, setZip] = useState<ZipLookup>("idle");
   const [coupon, setCoupon] = useState<CouponCheck | null>(null);
@@ -91,7 +95,24 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
   const [cnpjAddr, setCnpjAddr] = useState<{ cnpj: string; legalName: string } | { cnpj: string; state: "loading" | "notfound" | "unavailable" } | null>(null);
   const numberRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const set = (k: string, value: string) => setV((cur) => ({ ...cur, [k]: value }));
+  const set = (k: string, value: string) => {
+    setV((cur) => ({ ...cur, [k]: value }));
+    setMissing((cur) => (k in cur ? Object.fromEntries(Object.entries(cur).filter(([key]) => key !== k)) : cur));
+  };
+  const onInvalid = (e: React.FormEvent<HTMLFormElement>) => {
+    const el = e.target as HTMLInputElement;
+    if (!el.name) return;
+    e.preventDefault();
+    const message = el.type === "radio" ? "Escolha uma opção." : el.validity.valueMissing ? "Preencha este campo." : el.validationMessage || "Confira este campo.";
+    setMissing((cur) => (cur[el.name] ? cur : { ...cur, [el.name]: message }));
+    // Só o primeiro campo da tentativa leva a página até ele.
+    const now = Date.now();
+    if (now - lastInvalid.current < 800) return;
+    lastInvalid.current = now;
+    const box = el.closest("fieldset") ?? el.closest("label") ?? el;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el.type !== "radio") el.focus({ preventScroll: true });
+  };
   /** D-CONTRACTFLOW: escolha de uma opção em botões (como no TikTok Shop). */
   const chips = (key: string) => (
     <fieldset className="flex flex-col gap-1.5">
@@ -197,7 +218,7 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
   if (state.existing === "request") return <AccessRequest values={state.values ?? {}} />;
 
   return (
-    <form ref={formRef} action={action} className="flex flex-col gap-6">
+    <form ref={formRef} action={action} onInvalidCapture={onInvalid} onSubmit={() => setMissing({})} className="flex flex-col gap-6">
       <input type="hidden" name="marca" value={brand.slug} />
       {hunterCode && <input type="hidden" name="h" value={hunterCode} />}
       {campaign && <input type="hidden" name="origem" value={campaign} />}
@@ -415,7 +436,7 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
               name="password"
               type={show ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); set("password", ""); }}
               required
               minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
@@ -431,7 +452,8 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
 
       <div className="flex flex-col gap-3 border-t border-stone-200 pt-6 dark:border-white/10">
         {errors._form && <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">{errors._form}</p>}
-        {state.errors && !errors._form && <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">Confira os campos marcados em vermelho.</p>}
+        {Object.keys(missing).length > 0 && <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">Falta preencher os campos marcados em vermelho.</p>}
+        {state.errors && !errors._form && !Object.keys(missing).length && <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">Confira os campos marcados em vermelho.</p>}
         <button disabled={pending || couponBlocked} className="h-12 rounded-xl bg-[var(--b)] text-[15px] font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:opacity-40">
           {pending ? "Criando conta…" : "Criar conta"}
         </button>
