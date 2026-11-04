@@ -11,7 +11,8 @@ import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import type { ShipmentAddress } from "@/lib/shipments/address";
 import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, type ShipmentStatusValue } from "@/lib/shipments/shipments";
-import { FirstKitNotice, NewShipmentForm } from "./forms";
+import { FirstKitNotice, KitReminder, NewShipmentForm } from "./forms";
+import { kitReminderAudience, kitReminderPreview } from "@/lib/shipments/kit-reminder";
 import { firstKitAudience, firstKitPreview } from "@/lib/shipments/first-kit-notice";
 import { RECEIPT_CHECK_DAYS } from "@/lib/shipments/reminders";
 import { ShipmentsTable } from "./table";
@@ -46,6 +47,8 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   const staleCount = brandId ? await db().shipment.count({ where: { brandId, status: "SHIPPED", shippedAt: { lte: staleBefore } } }) : 0;
   // D-FIRSTKITNOTICE: aviso do 1º produto, pronto e esperando o clique do super admin.
   const firstKit = brandId && brandsWith(actor.grants, "staff.manage") === "ALL" ? await firstKitAudience(db(), brandId) : null;
+  // D-KITREMINDER: lembrete dos produtos parados, para a Gestão da marca.
+  const kitReminder = brandId && can(actor.grants, "creators.edit", brandId) ? await kitReminderAudience(db(), brandId) : null;
   const canPrint = Boolean(brandId && can(actor.grants, "shipping.view", brandId) && can(actor.grants, "personal.address", brandId));
   return (
     <>
@@ -73,6 +76,9 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
       )}
       {firstKit && firstKit.grantIds.length > 0 && (
         <FirstKitNotice count={firstKit.grantIds.length} names={firstKit.names} text={firstKitPreview(firstKit.brand)} hasWhatsApp={Boolean(firstKit.brand.whatsappInstance)} />
+      )}
+      {kitReminder && kitReminder.grantIds.length > 0 && (
+        <KitReminder count={kitReminder.grantIds.length} names={kitReminder.names} text={kitReminderPreview(kitReminder.brand)} hasWhatsApp={Boolean(kitReminder.brand.whatsappInstance)} />
       )}
       {/* D-LABEL: etiquetas (4 por A4) e declarações de todos os envios em "Preparando". */}
       {preparingCount > 0 && canPrint && (

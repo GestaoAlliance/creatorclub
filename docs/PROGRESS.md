@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-257 — 2026-11-04 — Lembrete dos produtos parados em Envios (D-KITREMINDER)
+- `src/lib/shipments/kit-reminder.ts` (público, disparo, envio na fila `kit.reminder`), `kitReminderMessage` no domínio,
+  `kitReminderAction` e cartão "Lembrar quem ainda não escolheu os produtos" em Envios (permissão `creators.edit`).
+  Teste `test/integration/kit-reminder.test.ts`.
+
 ### CP-256 — 2026-11-04 — Contrato assinado anexado na ficha e visto no portal (D-CONTRACTFILE)
 - `Creator.contractFileId` → `File` (migração `20261118090000_contract_file`). `src/lib/contracts/attachment.ts`
   (permissão, PDF, auditoria, local do arquivo); ações `prepareContractUpload`/`attachContractAction` na ficha

@@ -2,7 +2,7 @@
 
 import { CARRIERS } from "@/domain";
 import { useActionState, useState } from "react";
-import { approveAction, cancelAction, createShipmentAction, firstKitNoticeAction, deliveredAction, rejectAction, shippedAction } from "./actions";
+import { approveAction, cancelAction, createShipmentAction, firstKitNoticeAction, kitReminderAction, deliveredAction, rejectAction, shippedAction } from "./actions";
 
 import { AddressFields } from "@/components/ui/address-fields";
 import { Msg } from "@/components/ui/msg";
@@ -140,6 +140,26 @@ export function FirstKitNotice(p: { count: number; names: string[]; text: string
         <p className={ui.hint}>Para: {p.names.join(", ")}</p>
         {!p.hasWhatsApp && <p className="text-amber-800 dark:text-amber-300">Esta marca ainda não tem WhatsApp ligado.</p>}
         <form action={action} onSubmit={(e) => { if (!confirm(`Mandar o aviso para ${p.count} creators?`)) e.preventDefault(); }} className="flex items-center gap-3">
+          <button className={ui.btnSm} disabled={pending || !p.hasWhatsApp}>{pending ? "Colocando na fila…" : `Mandar para ${p.count}`}</button>
+          <Msg state={state} />
+        </form>
+      </div>
+    </details>
+  );
+}
+
+/** D-KITREMINDER (Gestão da marca): lembrete de quem tem produto liberado e não escolheu; dispara só no clique. */
+export function KitReminder(p: { count: number; names: string[]; text: string; hasWhatsApp: boolean }) {
+  const [state, action, pending] = useActionState(kitReminderAction, undefined);
+  return (
+    <details className={ui.card}>
+      <summary className="cursor-pointer text-sm font-medium">Lembrar quem ainda não escolheu os produtos ({p.count})</summary>
+      <div className="mt-3 flex flex-col gap-3 text-sm">
+        <p className={ui.hint}>Vai pelo WhatsApp da marca, uma mensagem a cada 45 segundos (das 9h às 20h), uma vez por pessoa, só para quem ainda não escolheu.</p>
+        <pre className={`${ui.inset} whitespace-pre-wrap font-sans text-sm`}>{p.text}</pre>
+        <p className={ui.hint}>Para: {p.names.join(", ")}</p>
+        {!p.hasWhatsApp && <p className="text-amber-800 dark:text-amber-300">Esta marca ainda não tem WhatsApp ligado.</p>}
+        <form action={action} onSubmit={(e) => { if (!confirm(`Mandar o lembrete para ${p.count} creators?`)) e.preventDefault(); }} className="flex items-center gap-3">
           <button className={ui.btnSm} disabled={pending || !p.hasWhatsApp}>{pending ? "Colocando na fila…" : `Mandar para ${p.count}`}</button>
           <Msg state={state} />
         </form>

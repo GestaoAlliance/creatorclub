@@ -103,6 +103,11 @@ export function firstKitMessage(p: { name: string; brand: string; link: string }
   ].join("\n\n");
 }
 
+/** D-KITREMINDER (texto aprovado em 2026-11-04): produto liberado e ainda não escolhido no portal. */
+export function kitReminderMessage(p: { name: string; brand: string; link: string }): string {
+  return `Oi, ${firstName(p.name)}! Seus produtos da ${p.brand} estão liberados e esperando você escolher 🎁 É só entrar no portal, na aba Pedidos, e escolher: ${p.link}`;
+}
+
 /** Recusa da candidata (D-AUTENTIQUE2, texto aprovado em 2026-10-29): a equipe abre o WhatsApp com o texto pronto. */
 export function rejectionMessage(p: { name: string; brand: string }): string {
   return `Oi, ${firstName(p.name)}! Obrigada pelo interesse em ser parceira da ${p.brand} 💖 Neste momento não vamos seguir com a parceria, mas seu cadastro fica com a gente e podemos te chamar em uma próxima oportunidade. Um abraço!`;
