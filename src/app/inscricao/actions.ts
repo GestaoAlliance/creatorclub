@@ -39,6 +39,7 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
     ["heardFrom", String(form.get("heardFrom") ?? "")],
     ["heardFromOther", String(form.get("heardFromOther") ?? "")],
     // D-WELCOMECHOICE: envio inicial (só nas marcas com as duas opções).
+    ["welcome", String(form.get("welcome") ?? "")],
   ]);
   const password = String(form.get("password") ?? "");
   let email: string | null;

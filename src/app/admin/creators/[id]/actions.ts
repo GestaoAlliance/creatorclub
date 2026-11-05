@@ -24,7 +24,8 @@ import { addCreatorTag, removeCreatorTag, TagError } from "@/lib/creators/tags";
 import { archiveCreator, ArchiveError, unarchiveCreator } from "@/lib/creators/archive";
 import { OriginError, setCreatorOrigin } from "@/lib/creators/origin";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { assertCanAttach, assertUploadId, attachContractFile, CONTRACT_BUCKET, ContractFileError, contractFilePath, MAX_CONTRACT_BYTES } from "@/lib/contracts/attachment";
+import { assertCanAttach, assertUploadId, attachAndRelease, CONTRACT_BUCKET, ContractFileError, contractFilePath, MAX_CONTRACT_BYTES } from "@/lib/contracts/attachment";
+import { ContractSendError } from "@/lib/autentique/applications";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -34,7 +35,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError || error instanceof ContractSendError) {
       return { error: error.message };
     }
     throw error;
@@ -269,6 +270,13 @@ export async function attachContractAction(_p: State, form: FormData): Promise<S
     const { data, error } = await supabaseAdmin().storage.from(CONTRACT_BUCKET).download(contractFilePath(brandId, id, uploadId));
     if (error || !data) throw new ContractFileError("O arquivo não chegou. Envie o PDF de novo.");
     if (data.size > MAX_CONTRACT_BYTES) throw new ContractFileError("O PDF passa de 10 MB.");
-    await attachContractFile(db(), actor, id, uploadId, new Uint8Array(await data.arrayBuffer()));
+    // D-ATTACHRELEASE: quem esperava assinar e teve o contrato assinado anexado é liberada na hora (como "Já assinou").
+    const r = await attachAndRelease(db(), actor, id, uploadId, new Uint8Array(await data.arrayBuffer()));
+    if (r.released) {
+      revalidatePath("/admin/candidatas");
+      return r.activated
+        ? { ok: "Contrato anexado e parceria liberada: cupom criado, plataforma liberada e mensagem enviada." }
+        : { ok: `Contrato anexado e marcado como assinado. A ativação falhou agora (${r.error}); o sistema tenta de novo em 5 minutos.` };
+    }
   }, "Contrato anexado. Ela já vê no portal.");
 }

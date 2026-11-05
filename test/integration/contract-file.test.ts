@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { attachContractFile, CONTRACT_BUCKET, contractFileLocation, contractFilePath } from "@/lib/contracts/attachment";
+import { attachAndRelease, attachContractFile, CONTRACT_BUCKET, contractFileLocation, contractFilePath } from "@/lib/contracts/attachment";
 import { seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -39,5 +39,20 @@ describe("contrato assinado anexado (D-CONTRACTFILE, banco real)", () => {
     expect(await prisma.file.findUnique({ where: { id: first.fileId } })).not.toBeNull(); // nada é apagado
     const logs = await prisma.auditLog.findMany({ where: { entityId: creator.id, action: "creator.contract_file" }, orderBy: { createdAt: "asc" } });
     expect(logs.map((l) => (l.after as { contractFileId: string }).contractFileId)).toEqual([first.fileId, second.fileId]);
+  });
+
+  it("D-ATTACHRELEASE: anexar o contrato de quem espera assinar marca como assinado (como \"Já assinou\"); quem já está ativa só anexa", async () => {
+    const { brand, creator } = await seedBrand(prisma);
+    const gestao = await staff("GESTAO", brand.id);
+    // A loja nunca é chamada no teste (D-REALSTORE).
+    const deps = { clientFor: () => { throw new Error("sem loja no teste"); }, origin: null } as never;
+    expect(await attachAndRelease(prisma, gestao, creator.id, randomUUID(), pdf("ativa"), deps)).toEqual({ released: false });
+
+    const other = await seedBrand(prisma);
+    await prisma.creator.update({ where: { id: other.creator.id }, data: { awaitingContractAt: new Date(), contractSigned: false } });
+    const r = await attachAndRelease(prisma, await staff("GESTAO", other.brand.id), other.creator.id, randomUUID(), pdf("assinado"), deps);
+    expect(r).toMatchObject({ released: true, activated: true }); // sem cupom reservado, nada vai à loja
+    expect(await prisma.creator.findUniqueOrThrow({ where: { id: other.creator.id } })).toMatchObject({ contractSigned: true, awaitingContractAt: null });
+    expect((await prisma.auditLog.findFirstOrThrow({ where: { entityId: other.creator.id, action: "contract.signed_outside" } })).after).toMatchObject({ reason: "contrato assinado anexado na ficha" });
   });
 });

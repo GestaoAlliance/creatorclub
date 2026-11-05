@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { confirmSignedOutside } from "@/lib/autentique/applications";
 
 /**
  * D-CONTRACTFILE: PDF do contrato assinado anexado na ficha (pedido da Revita). A Gestão da marca (quem edita creators)
@@ -61,4 +62,16 @@ export async function contractFileLocation(prisma: PrismaClient, who: { actor: A
   if (!allowed) throw new ContractFileError("Sem permissão.");
   if (!c.contractFile) throw new ContractFileError("Nenhum contrato anexado.");
   return c.contractFile;
+}
+
+/**
+ * D-ATTACHRELEASE (pedido da Fátima, 2026-11-05): anexa o contrato e, se ela ainda esperava assinar, confirma a
+ * assinatura como em "Já assinou" (contrato do Autentique cancelado, cupom criado, plataforma liberada, mensagem).
+ */
+export async function attachAndRelease(prisma: PrismaClient, actor: Actor | null, creatorId: string, uploadId: string, pdf: Uint8Array, deps: Parameters<typeof confirmSignedOutside>[3] = {}) {
+  await attachContractFile(prisma, actor, creatorId, uploadId, pdf);
+  const c = await prisma.creator.findUnique({ where: { id: creatorId }, select: { awaitingContractAt: true } });
+  if (!c?.awaitingContractAt) return { released: false as const };
+  const r = await confirmSignedOutside(prisma, actor, creatorId, deps, "contrato assinado anexado na ficha");
+  return { released: true as const, ...r };
 }

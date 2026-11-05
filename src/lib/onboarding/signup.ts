@@ -40,6 +40,25 @@ export async function signupCouponTaken(prisma: PrismaClient, brandId: string, c
   return Boolean(coupon || pending || reserved);
 }
 
+/** D-WELCOMEASK (2026-11-05): marcas em que o cadastro pergunta o envio inicial (volta a pedido da Revita e da Botanika). */
+export const SIGNUP_WELCOME_BRANDS: readonly string[] = ["revita-derma", "botanika"];
+
+/**
+ * D-WELCOMECHOICE: as duas opções do envio inicial da marca (configuradas em Marcas), com os nomes dos produtos. Marca
+ * fora de SIGNUP_WELCOME_BRANDS, sem as duas opções (ou com produto fora da loja): o cadastro não pergunta.
+ * D-WELCOMEPICK: "1 produto" com duas opções aparece como "A ou B" (ela escolhe no portal).
+ */
+export async function signupWelcome(prisma: PrismaClient, brand: { slug: string; welcomeOneIds: string[]; welcomeTwoIds: string[] }): Promise<{ one: string; two: string } | null> {
+  if (!SIGNUP_WELCOME_BRANDS.includes(brand.slug)) return null;
+  if (brand.welcomeOneIds.length < 1 || brand.welcomeOneIds.length > 2 || brand.welcomeTwoIds.length !== 2) return null;
+  const ids = [...brand.welcomeOneIds, ...brand.welcomeTwoIds];
+  const rows = await prisma.product.findMany({ where: { id: { in: ids }, active: true }, select: { id: true, title: true } });
+  const title = new Map(rows.map((r) => [r.id, r.title]));
+  if (ids.some((id) => !title.has(id))) return null;
+  const one = brand.welcomeOneIds.map((id) => title.get(id)!).join(" ou ");
+  return { one: `1 produto: ${one}${brand.welcomeOneIds.length > 1 ? " (você escolhe no portal)" : ""}`, two: `2 produtos + 3 vídeos para a marca: ${brand.welcomeTwoIds.map((id) => title.get(id)!).join(" e ")}` };
+}
+
 export async function submitSignup(
   prisma: PrismaClient,
   input: { brandSlug: string; values: Record<string, string | undefined>; password: string; honeypot: string; hunterCode: string | null; ip: string | null; campaignTag?: string | null },
@@ -58,6 +77,9 @@ export async function submitSignup(
   const badPassword = passwordProblem(input.password);
   if (badPassword) errors.password = badPassword;
   // D-WELCOMECHOICE: marca com as duas opções do envio inicial pergunta qual ela quer.
+  const welcomeOptions = await signupWelcome(prisma, brand);
+  const welcome = welcomeOptions ? (input.values.welcome === "1" ? welcomeOptions.one : input.values.welcome === "2" ? welcomeOptions.two : null) : null;
+  if (welcomeOptions && !welcome) errors.welcome = "Escolha o seu envio inicial.";
   if (!checked.ok || Object.keys(errors).length) return { ok: false, errors };
   const acc = checked.account;
 
@@ -111,6 +133,7 @@ export async function submitSignup(
     [BRANDS_QUESTION]: brandName,
     ...(code ? { [HUNTER_QUESTION]: code } : {}),
     ...(cnpjNote ? { "Endereço do CNPJ:": cnpjNote } : {}),
+    ...(welcome ? { "Envio inicial:": welcome } : {}),
     Aceite: signupConsentText(brandName),
   };
   try {

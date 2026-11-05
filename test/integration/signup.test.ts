@@ -4,7 +4,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { createHunterLink, recordHunterClick, resolveHunterLink } from "@/lib/onboarding/hunters";
 import { approveApplication } from "@/lib/onboarding/applications";
 import { actionQueue } from "@/lib/actions/queue";
-import { requestPortalAccess, SIGNUP_LIMIT_PER_HOUR, signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
+import { requestPortalAccess, SIGNUP_LIMIT_PER_HOUR, signupCouponTaken, signupWelcome, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
 import { createCreatorInvite, inviteCreatorsInBulk } from "@/lib/team/creator-invites";
 import { expectDbError, seedBrand, testClient, letters } from "./fixtures";
 
@@ -212,14 +212,29 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     await expect(inviteCreatorsInBulk(prisma, gestao, a.brand.id, [], { origin: "x", email: null })).rejects.toThrow(/Marque/);
   });
 
-  it("D-REVITASIGNUP: o cadastro não pergunta o envio inicial, mesmo com as opções configuradas (decide a equipe na aprovação)", async () => {
+  it("D-WELCOMEASK: só Revita e Botanika perguntam o envio inicial; 1 produto com duas opções vira \"A ou B\"", async () => {
     const { brand } = await seedBrand(prisma);
     const [serum, gel] = await Promise.all(["Sérum Pepti Code", "Gel em Creme"].map((title) => prisma.product.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title, active: true } })));
-    await prisma.brand.update({ where: { id: brand.id }, data: { welcomeOneIds: [gel!.id], welcomeTwoIds: [serum!.id, gel!.id] } });
+    await prisma.brand.update({ where: { id: brand.id }, data: { welcomeOneIds: [serum!.id, gel!.id], welcomeTwoIds: [serum!.id, gel!.id] } });
     const { auth } = fakeAuth();
-    const email = `${randomUUID()}@example.com`;
-    expect(await submitSignup(prisma, { ...base(brand.slug, email, "7.7.7.7"), values: { ...base(brand.slug, email, "7.7.7.7").values, welcome: "2" } }, auth)).toMatchObject({ ok: true });
-    const app = await prisma.creatorApplication.findFirstOrThrow({ where: { brandId: brand.id, email: email.toLowerCase() } });
-    expect(app.welcomeAnswer).toBeNull();
+    // Marca fora da lista (VermeFree, por exemplo): não pergunta, mesmo configurada.
+    expect(await signupWelcome(prisma, { slug: brand.slug, welcomeOneIds: [serum!.id, gel!.id], welcomeTwoIds: [serum!.id, gel!.id] })).toBeNull();
+    const e1 = `${randomUUID()}@example.com`;
+    expect(await submitSignup(prisma, base(brand.slug, e1, "7.7.7.8"), auth)).toMatchObject({ ok: true });
+
+    await prisma.brand.update({ where: { id: brand.id }, data: { slug: "botanika" } });
+    try {
+      expect(await signupWelcome(prisma, { slug: "botanika", welcomeOneIds: [serum!.id], welcomeTwoIds: [] })).toBeNull();
+      expect(await signupWelcome(prisma, { slug: "botanika", welcomeOneIds: [serum!.id], welcomeTwoIds: [serum!.id, gel!.id] })).toEqual({ one: "1 produto: Sérum Pepti Code", two: "2 produtos + 3 vídeos para a marca: Sérum Pepti Code e Gel em Creme" });
+      expect((await signupWelcome(prisma, { slug: "botanika", welcomeOneIds: [serum!.id, gel!.id], welcomeTwoIds: [serum!.id, gel!.id] }))?.one).toBe("1 produto: Sérum Pepti Code ou Gel em Creme (você escolhe no portal)");
+      const email = `${randomUUID()}@example.com`;
+      const input = base("botanika", email, "7.7.7.7");
+      expect(await submitSignup(prisma, input, auth)).toMatchObject({ ok: false, errors: { welcome: "Escolha o seu envio inicial." } });
+      expect(await submitSignup(prisma, { ...input, values: { ...input.values, welcome: "2" } }, auth)).toMatchObject({ ok: true });
+      const app = await prisma.creatorApplication.findFirstOrThrow({ where: { brandId: brand.id, email: email.toLowerCase() } });
+      expect(app.welcomeAnswer).toBe("2 produtos + 3 vídeos para a marca: Sérum Pepti Code e Gel em Creme");
+    } finally {
+      await prisma.brand.update({ where: { id: brand.id }, data: { slug: brand.slug } });
+    }
   });
 });

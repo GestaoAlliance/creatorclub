@@ -360,7 +360,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 <a href={`/admin/creators/${p.id}/contrato-pdf`} target="_blank" rel="noopener noreferrer" className={ui.link}>Abrir o PDF</a>
               </p>
             ) : (
-              <p className={ui.hint}>Nenhum contrato anexado. Anexe o PDF assinado: ela vê e baixa no portal.</p>
+              <p className={ui.hint}>Nenhum contrato anexado. Anexe o PDF assinado: ela vê e baixa no portal. Se ela ainda esperava assinar, anexar já libera a plataforma (cupom e mensagem).</p>
             )}
             {p.canEdit && <ContractFileForm creatorId={p.id} has={!!p.contractFile} />}
           </Card>
