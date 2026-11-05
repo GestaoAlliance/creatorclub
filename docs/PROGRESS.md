@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-259 — 2026-11-05 — Revita: 1 produto à escolha (Sérum ou Gel) e contratos novos (D-WELCOMEPICK)
+- `welcomePreset` com 1 produto devolve as opções da marca; `presetProductIds` maior que `products` = opções (portal e
+  `chooseKit`). Marcas: duas opções em "1 produto". Migração `20261119090000_revita_welcome_pick`: trava
+  `Brand_welcome_sizes` (1 produto até 2), contratos INFLUENCER_PF_1/PJ_1 da Revita em versão nova, Revita
+  `welcomeOneIds` = Sérum + Gel e kits de boas-vindas de 1 produto ainda não pedidos com as duas opções (auditoria).
+
 ### CP-258 — 2026-11-04 — Registro profissional sai do cadastro e da ficha (D-NOREGISTRY)
 - Campo tirado do formulário do site, do `ProfileForm`, da leitura do perfil e da etiqueta do topo da ficha.
   `CreatorAccount.professionalId` continua; `updateProfile` sem a chave preserva o valor (teste ajustado).

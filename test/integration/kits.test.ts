@@ -194,4 +194,16 @@ describe("produtos que a creator pode escolher (D-KITOPTIONS, banco real)", () =
     const other = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "GOAL", month: "2026-11", salesCents: 0, products: 1, presetProductIds: [s.inativo.id] } });
     expect((await myPendingKits(prisma, s.ctx)).kits.find((k) => k.id === other.id)?.preset).toBeNull();
   });
+
+  it("D-WELCOMEPICK: 1 produto com duas opções: ela escolhe uma delas (nem fora delas, nem as duas)", async () => {
+    const s = await setup([], false);
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+    const kit = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-10", salesCents: 0, products: 1, presetProductIds: [s.whey.id, s.creatina.id] } });
+    expect((await myPendingKits(prisma, s.ctx)).kits[0]!.preset?.map((p) => p.title).sort()).toEqual(["Creatina", "Whey"]);
+    await expect(chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.whey.id, quantity: 1 }, { productId: s.creatina.id, quantity: 1 }])).rejects.toThrow();
+    const outside = await prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title: "Fora das opções", active: true } });
+    await expect(chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: outside.id, quantity: 1 }])).rejects.toThrow(/indisponível/);
+    const id = await chooseKit(prisma, s.ctx, s.userId, kit.id, [{ productId: s.creatina.id, quantity: 1 }]);
+    expect((await prisma.shipmentItem.findMany({ where: { shipmentId: id } })).map((i) => [i.title, i.quantity])).toEqual([["Creatina", 1]]);
+  });
 });

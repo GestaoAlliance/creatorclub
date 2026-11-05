@@ -168,12 +168,15 @@ export function nextTier(salesCents: number, trial: boolean, brandSlug = "botani
 }
 
 /**
- * D-WELCOMECHOICE: produtos já definidos do 1º pedido, pela opção dela (1 produto; 2 produtos + 3 vídeos) e pelo que a
- * marca escolheu em Marcas. Opção não configurada (ou com outro número de produtos): vazio, ela escolhe no portal.
+ * D-WELCOMECHOICE: produtos do 1º pedido, pela opção dela (1 produto; 2 produtos + 3 vídeos) e pelo que a marca
+ * escolheu em Marcas. Com 2 produtos, os dois vão fixos. D-WELCOMEPICK: com 1 produto, a marca pode deixar 1 (fixo) ou 2
+ * opções (ela escolhe um no portal, ex.: Revita, Sérum ou Gel Creme). Opção não configurada: vazio, ela escolhe entre
+ * os produtos do kit da marca.
  */
 export function welcomePreset(brand: { welcomeOneIds: readonly string[]; welcomeTwoIds: readonly string[] }, products: number): string[] {
-  const ids = products === 2 ? brand.welcomeTwoIds : products === 1 ? brand.welcomeOneIds : [];
-  return ids.length === products ? [...ids] : [];
+  if (products === 2) return brand.welcomeTwoIds.length === 2 ? [...brand.welcomeTwoIds] : [];
+  if (products === 1) return [...brand.welcomeOneIds];
+  return [];
 }
 
 /** D-WELCOMECHOICE: resposta "Envio inicial" do cadastro → opção da aprovação (null = não respondeu ou outro texto). */

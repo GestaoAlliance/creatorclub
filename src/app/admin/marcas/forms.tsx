@@ -162,20 +162,22 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
             </div>
           </div>
         )}
-        {/* D-WELCOMECHOICE: com as duas opções, o cadastro pergunta e o 1º pedido já vem com estes produtos. */}
+        {/* D-WELCOMECHOICE / D-WELCOMEPICK: produtos do 1º pedido por opção da aprovação. */}
         {!create && products.length > 0 && (
           <div className="flex flex-col gap-2">
             <input type="hidden" name="welcomeSent" value="1" />
             <p className="text-sm font-medium">Envio inicial (1º pedido depois do contrato)</p>
-            <p className={ui.hint}>Com as duas opções preenchidas, o cadastro do site pergunta qual ela quer, o contrato sai no modelo certo e o 1º pedido já vem com estes produtos. Vazio: ela escolhe no portal.</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className={ui.label}>
-                1 produto
-                <select name="welcomeOne" defaultValue={initial.welcomeOneIds?.[0] ?? ""} className={ui.input}>
-                  <option value="">—</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                </select>
-              </label>
+            <p className={ui.hint}>Quem aprova escolhe 1 produto ou 2 produtos + 3 vídeos; o contrato sai no modelo certo e o 1º pedido já vem com estes produtos. Em &quot;1 produto&quot;, com duas opções ela escolhe uma no portal. Vazio: ela escolhe entre os produtos do kit.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(["welcomeOne", "welcomeOneB"] as const).map((name, i) => (
+                <label key={name} className={ui.label}>
+                  1 produto ({i === 0 ? "opção 1" : "opção 2, se ela puder escolher"})
+                  <select name={name} defaultValue={initial.welcomeOneIds?.[i] ?? ""} className={ui.input}>
+                    <option value="">—</option>
+                    {products.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </label>
+              ))}
               {(["welcomeTwoA", "welcomeTwoB"] as const).map((name, i) => (
                 <label key={name} className={ui.label}>
                   2 produtos + 3 vídeos ({i + 1}º)

@@ -40,8 +40,9 @@ export async function kitProducts(prisma: PrismaClient, brandId: string) {
 }
 
 /**
- * D-WELCOMECHOICE: os produtos já definidos do kit (1º pedido pela opção do cadastro). Algum fora da loja (inativo ou de
- * outra marca): null, e ela escolhe como nos outros kits.
+ * D-WELCOMECHOICE: os produtos do kit definidos na aprovação (1º pedido). Mesmo número de produtos do kit: vão fixos;
+ * mais (D-WELCOMEPICK): são as opções dela. Algum fora da loja (inativo ou de outra marca): null, e ela escolhe como nos
+ * outros kits.
  */
 async function presetProducts(prisma: PrismaClient, brandId: string, ids: readonly string[]) {
   if (ids.length === 0) return null;
@@ -73,11 +74,13 @@ export async function chooseKit(
   const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true } });
   if (!kit || kit.creatorId !== ctx.creatorId) throw new ShipmentError("Kit não encontrado.");
   if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
-  // D-WELCOMECHOICE: kit com produtos definidos vai com eles, seja o que for enviado pelo formulário.
+  // D-WELCOMECHOICE: kit com produtos fixos vai com eles, seja o que for enviado pelo formulário; com mais opções que
+  // produtos (D-WELCOMEPICK), ela escolhe entre elas.
   const preset = await presetProducts(prisma, kit.brandId, kit.presetProductIds);
+  const fixed = preset && preset.length === kit.products ? preset : null;
   let chosen: { productId: string; quantity: number }[];
   try {
-    chosen = preset ? preset.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, kit.products, ctx.brand.slug);
+    chosen = fixed ? fixed.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, kit.products, ctx.brand.slug);
   } catch (e) {
     throw new ShipmentError((e as Error).message);
   }
