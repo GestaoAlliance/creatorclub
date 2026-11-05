@@ -32,6 +32,9 @@ export function ShipmentsTable({ shipments }: { shipments: Row[] }) {
               <div>
                 <Link href={`/admin/creators/${s.creator.id}`} className="font-semibold hover:underline">{s.creator.account.name}</Link>
                 <p className={ui.hint}>registrado em {day(s.createdAt)}</p>
+                {/* D-OLISTORDER: pedido criado no Olist ao aprovar (o rastreio volta sozinho). */}
+                {s.olistOrderNumber && <p className="mt-1 text-xs font-medium text-sky-800 dark:text-sky-300">No Olist: pedido nº {s.olistOrderNumber}</p>}
+                {s.olistError && s.status === "PREPARING" && <p className="mt-1 text-xs font-medium text-red-700 dark:text-red-400">Não foi para o Olist: {s.olistError}</p>}
               </div>
               <span className="flex items-center gap-1">
                 <span className={STATUS_BADGE[s.status]}>{SHIPMENT_STATUS_LABEL[s.status]}</span>

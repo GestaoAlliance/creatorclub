@@ -17,6 +17,7 @@ import { enqueueDueReconciles } from "@/lib/shopify/reconcile";
 import { enqueueDueInstagram } from "@/lib/instagram/sync";
 import { enqueueDueContractChecks, remindUnsignedContracts } from "@/lib/autentique/applications";
 import { enqueueDueOlistStock, runStockAlerts } from "@/lib/olist/stock";
+import { enqueueDueOlistTracking } from "@/lib/olist/orders";
 
 // Worker da fila: chamado a cada minuto pelo pg_cron do Supabase (D-CRON), com o segredo JOBS_SECRET.
 // Também agenda a reconciliação de cada loja a cada 15 min, o catálogo de produtos uma vez por dia, roda o fechamento do mês no dia 1 (D-CONTRACT) e os avisos.
@@ -30,7 +31,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const prisma = db();
     // D-INSTAGRAM: leitura diária do Instagram (a partir das 4h). D-AUTENTIQUE2: contratos das candidatas a cada 5 min.
-    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueInstagram(prisma)) + (await enqueueDueContractChecks(prisma)) + (await enqueueDueOlistStock(prisma));
+    const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueInstagram(prisma)) + (await enqueueDueContractChecks(prisma)) + (await enqueueDueOlistStock(prisma)) + (await enqueueDueOlistTracking(prisma));
     const released = await closeDueMonths(prisma);
     // D-GOALKIT: produto liberado assim que a creator bate R$ 1.000 na janela da meta.
     const goalKits = await grantGoalKits(prisma);

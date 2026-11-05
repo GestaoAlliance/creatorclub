@@ -24,6 +24,30 @@ export function olistToken(slug: string, env: Record<string, string | undefined>
   }
 }
 
+/**
+ * Chamada sem conferir o status (D-OLISTORDER): quem chamou lê `status`, `registros` e os erros de cada registro.
+ * Só lança em falha de rede, resposta sem JSON ou autenticação.
+ */
+export async function olistCallRaw(token: string, method: string, params: Record<string, string>, fetcher: OlistFetcher = defaultFetch): Promise<Retorno> {
+  const body = new URLSearchParams({ token, formato: "json", ...params }).toString();
+  let res;
+  try {
+    res = await fetcher(`${OLIST_API}/${method}.php`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+  } catch {
+    throw new OlistError("Não foi possível falar com o Olist.");
+  }
+  const text = await res.text();
+  let json: { retorno?: Retorno };
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new OlistError(`Olist respondeu ${res.status} sem JSON.`);
+  }
+  if (!json.retorno) throw new OlistError("Resposta do Olist sem 'retorno'.");
+  if (String(json.retorno.codigo_erro) === "2") throw new OlistError("Olist: token inválido.");
+  return json.retorno;
+}
+
 /** Chamada a um método da API. "Sem registros" (código 20) volta como retorno com status "Erro" para quem chamou decidir. */
 export async function olistCall(token: string, method: string, params: Record<string, string>, fetcher: OlistFetcher = defaultFetch): Promise<Retorno> {
   const body = new URLSearchParams({ token, formato: "json", ...params }).toString();

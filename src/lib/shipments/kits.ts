@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { enqueueOlistOrder } from "@/lib/olist/orders";
 import { addDaysKey, dayKey, GOAL_SALES_CENTS, goalWindowsUntil, isTierTrialMonth, kitNoun, monthKey, nextTier, productPhoto, startOfLocalDay, tierProducts, validateKitChoice } from "@/domain";
 import { salesByMonth } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
@@ -149,6 +150,9 @@ export async function approveShipment(prisma: PrismaClient, actor: Actor | null,
       });
     }
     await tx.auditLog.create({ data: { brandId: s.brandId, actorType: "USER", actorId: actor!.userId, action: "shipment.approved", entity: "Shipment", entityId: shipmentId, after: {} } });
+    // D-OLISTORDER: marca com Olist ligado recebe o pedido lá (a fila cria; o rastreio volta sozinho).
+    const brand = await tx.brand.findUniqueOrThrow({ where: { id: s.brandId }, select: { slug: true, olistNatureId: true } });
+    await enqueueOlistOrder(tx, { id: shipmentId, brandId: s.brandId, brandSlug: brand.slug, olistNatureId: brand.olistNatureId });
   });
 }
 

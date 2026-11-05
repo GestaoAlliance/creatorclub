@@ -8,6 +8,7 @@ import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
 import { instagramHandlers } from "@/lib/instagram/sync";
 import { autentiqueHandlers } from "@/lib/autentique/applications";
 import { olistHandlers } from "@/lib/olist/stock";
+import { olistOrderHandlers } from "@/lib/olist/orders";
 import { firstKitHandlers } from "@/lib/shipments/first-kit-notice";
 import { kitReminderHandlers } from "@/lib/shipments/kit-reminder";
 import type { JobHandlers } from "./queue";
@@ -23,6 +24,7 @@ export function jobHandlers(): JobHandlers {
     ...instagramHandlers(prisma),
     ...autentiqueHandlers(prisma),
     ...olistHandlers(prisma),
+    ...olistOrderHandlers(prisma),
     ...firstKitHandlers(prisma),
     ...kitReminderHandlers(prisma),
     [RECHECK_JOB]: async (job) => {

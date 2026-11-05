@@ -25,7 +25,8 @@ export type ShipmentStatusValue = keyof typeof SHIPMENT_STATUS_LABEL;
 export { trackingUrl } from "@/domain";
 
 function audit(prisma: PrismaClient | Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0], brandId: string, actorId: string, action: string, entityId: string, after: object) {
-  return prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId, action, entity: "Shipment", entityId, after } });
+  // D-OLISTORDER: o que o sistema faz sozinho (ex.: rastreio vindo do Olist) fica como SYSTEM.
+  return prisma.auditLog.create({ data: { brandId, actorType: actorId.startsWith("system:") ? "SYSTEM" : "USER", actorId, action, entity: "Shipment", entityId, after } });
 }
 
 function assertManage(actor: Actor | null, brandId: string): asserts actor is Actor {
@@ -158,6 +159,26 @@ export async function markShipped(
   );
 }
 
+/**
+ * D-OLISTORDER: o rastreio chegou pelo Olist (sem ninguém clicar): mesmo caminho de "Marcar como enviado" (aviso com os
+ * produtos e o link do rastreio), com o sistema como autor.
+ */
+export async function markShippedFromOlist(prisma: PrismaClient, input: { shipmentId: string; carrier: string; trackingCode: string }, now = new Date()) {
+  const carrier = input.carrier.trim().slice(0, 60) || "Correios";
+  const trackingCode = input.trackingCode.trim().toUpperCase().slice(0, 60);
+  if (!trackingCode) throw new ShipmentError("Sem código de rastreio.");
+  const items = await prisma.shipmentItem.findMany({ where: { shipmentId: input.shipmentId }, orderBy: { title: "asc" }, select: { title: true, quantity: true } });
+  await transition(
+    prisma,
+    input.shipmentId,
+    ["PREPARING"],
+    { status: "SHIPPED", carrier, trackingCode, shippedAt: now, shippedById: "system:olist" },
+    () => undefined,
+    { actorId: "system:olist", action: "shipment.shipped", after: { carrier, trackingCode, via: "olist" } },
+    notices.shipped(input.shipmentId, carrier, trackingCode, items, trackingLink(carrier, trackingCode)),
+  );
+}
+
 export async function markDeliveredByStaff(prisma: PrismaClient, actor: Actor | null, shipmentId: string, now = new Date()) {
   // D-TRACKING: "seus produtos chegaram" com o cupom dela.
   const s = await prisma.shipment.findUnique({
@@ -216,6 +237,9 @@ const SHIPMENT_SELECT = {
   cancelledAt: true,
   approvedAt: true,
   rejectReason: true,
+  // D-OLISTORDER: pedido no Olist (número) ou o motivo de não ter ido.
+  olistOrderNumber: true,
+  olistError: true,
   items: { select: { title: true, quantity: true }, orderBy: { title: "asc" as const } },
   // D-SHOPTAB: etiqueta "Loja" ou "Prêmio" nos envios da creator.
   balanceCents: true,
