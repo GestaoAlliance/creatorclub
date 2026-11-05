@@ -64,7 +64,19 @@ export function buildOlistOrder(o: OlistOrderInput) {
 }
 
 type Registro = { status?: string; id?: string | number; numero?: string | number; erros?: { erro?: string }[] };
-const firstRegistro = (r: Record<string, unknown>) => ((r.registros as { registro?: Registro }[] | undefined) ?? [])[0]?.registro ?? null;
+/** `registros` vem como lista ([{ registro }]) na documentação, mas também como objeto ({ registro }) na API real. */
+const firstRegistro = (r: Record<string, unknown>): Registro | null => {
+  const raw = r.registros as { registro?: Registro } | { registro?: Registro }[] | undefined;
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  return first?.registro ?? null;
+};
+/** Pedido já criado com o número do Creator Club (a fila repetiu ou a resposta anterior não foi entendida). */
+async function findByRef(token: string, ref: string, fetcher?: OlistFetcher) {
+  const found = await olistCallRaw(token, "pedidos.pesquisa", { numeroEcommerce: ref }, fetcher);
+  const raw = found.pedidos as { pedido?: { id?: string | number; numero?: string | number } } | { pedido?: { id?: string | number; numero?: string | number } }[] | undefined;
+  const hit = (Array.isArray(raw) ? raw[0] : raw)?.pedido;
+  return hit?.id ? { id: String(hit.id), numero: hit.numero != null ? String(hit.numero) : null } : null;
+}
 const errorsOf = (r: { erros?: { erro?: string }[] }, reg: Registro | null) =>
   [...(reg?.erros ?? []), ...(r.erros ?? [])].map((e) => e.erro).filter(Boolean).join("; ") || "erro sem mensagem";
 
@@ -114,19 +126,25 @@ export async function sendOlistOrder(prisma: PrismaClient, shipmentId: string, d
     note: `Creator Club ${ref}: ${s.note ?? "pedido da creator"} (${acc.name})`,
   });
 
-  const r = await olistCallRaw(token, "pedido.incluir", { pedido: JSON.stringify(order) }, deps.fetcher);
-  const reg = firstRegistro(r);
-  let id = reg?.status === "OK" && reg.id ? String(reg.id) : null;
-  let numero = id && reg?.numero != null ? String(reg.numero) : null;
+  // Antes de criar, confere se já existe (nunca dois pedidos para o mesmo envio).
+  const existing = await findByRef(token, ref, deps.fetcher);
+  let id = existing?.id ?? null;
+  let numero = existing?.numero ?? null;
   if (!id) {
-    const msg = errorsOf(r as { erros?: { erro?: string }[] }, reg);
-    // Já criado antes (a fila repetiu): acha o pedido pelo número do Creator Club.
-    if (!/j[áa] existe/i.test(msg)) return failWith(prisma, s.id, `Olist recusou: ${msg}`);
-    const found = await olistCallRaw(token, "pedidos.pesquisa", { numeroEcommerce: ref }, deps.fetcher);
-    const hit = ((found.pedidos as { pedido?: { id?: string | number; numero?: string | number } }[] | undefined) ?? [])[0]?.pedido;
-    if (!hit?.id) return failWith(prisma, s.id, `Olist diz que o pedido ${ref} já existe, mas não o encontrei.`);
-    id = String(hit.id);
-    numero = hit.numero != null ? String(hit.numero) : null;
+    const r = await olistCallRaw(token, "pedido.incluir", { pedido: JSON.stringify(order) }, deps.fetcher);
+    const reg = firstRegistro(r);
+    id = (reg?.status ?? r.status) === "OK" && reg?.id ? String(reg.id) : null;
+    numero = id && reg?.numero != null ? String(reg.numero) : null;
+    if (!id) {
+      const msg = errorsOf(r as { erros?: { erro?: string }[] }, reg);
+      if (!/j[áa] existe/i.test(msg)) {
+        const detail = msg === "erro sem mensagem" ? `resposta: ${JSON.stringify(r).slice(0, 200)}` : msg;
+        return failWith(prisma, s.id, `Olist recusou: ${detail}`);
+      }
+      const hit = await findByRef(token, ref, deps.fetcher);
+      if (!hit) return failWith(prisma, s.id, `Olist diz que o pedido ${ref} já existe, mas não o encontrei.`);
+      ({ id, numero } = hit);
+    }
   }
   const now = deps.now ?? new Date();
   await prisma.$transaction([

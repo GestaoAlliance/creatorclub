@@ -10,7 +10,7 @@ const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
 /** Olist falso (D-REALSTORE: nunca o real): guarda os pedidos e devolve o rastreio combinado. */
-function fakeOlist(opts: { duplicate?: boolean; tracking?: string; reject?: string } = {}) {
+function fakeOlist(opts: { duplicate?: boolean; tracking?: string; reject?: string; objectShape?: boolean; existing?: boolean } = {}) {
   const calls: { method: string; params: URLSearchParams }[] = [];
   const fetcher: OlistFetcher = async (url, init) => {
     const params = new URLSearchParams(init.body);
@@ -22,9 +22,13 @@ function fakeOlist(opts: { duplicate?: boolean; tracking?: string; reject?: stri
           ? { status: "Erro", codigo_erro: 31, registros: [{ registro: { sequencia: "1", status: "Erro", erros: [{ erro: opts.reject }] } }] }
           : opts.duplicate
             ? { status: "Erro", codigo_erro: 30, registros: [{ registro: { sequencia: "1", status: "Erro", erros: [{ erro: "Pedido com número X já existe" }] } }] }
-            : { status: "OK", registros: [{ registro: { sequencia: 1, status: "OK", id: 789456, numero: 12345 } }] }
+            : opts.objectShape
+              ? { status_processamento: 3, status: "OK", registros: { registro: { sequencia: "1", status: "OK", id: "789456", numero: "12345" } } }
+              : { status: "OK", registros: [{ registro: { sequencia: 1, status: "OK", id: 789456, numero: 12345 } }] }
         : method === "pedidos.pesquisa"
-          ? { status: "OK", pedidos: [{ pedido: { id: 555, numero: 777 } }] }
+          ? opts.existing || (opts.duplicate && calls.some((c) => c.method === "pedido.incluir"))
+            ? { status: "OK", pedidos: [{ pedido: { id: 555, numero: 777 } }] }
+            : { status: "Erro", codigo_erro: 20, erros: [{ erro: "A consulta não retornou registros" }] }
           : { status: "OK", pedido: { situacao: opts.tracking ? "enviado" : "aprovado", codigo_rastreamento: opts.tracking ?? "", nome_transportador: "Correios" } };
     return { ok: true, status: 200, text: async () => JSON.stringify({ retorno: reply }) };
   };
@@ -77,9 +81,17 @@ describe("pedido da creator no Olist (D-OLISTORDER, banco real)", () => {
     const a = await s.ship("PREPARING");
     const dup = fakeOlist({ duplicate: true });
     expect(await sendOlistOrder(prisma, a.id, { token: "tok", fetcher: dup.fetcher })).toEqual({ ok: true, id: "555", numero: "777" });
-    expect(JSON.parse(dup.calls[0]!.params.get("pedido")!).pedido.cliente).toMatchObject({ tipo_pessoa: "J", cpf_cnpj: "11222333000181" });
-    expect(dup.calls[1]).toMatchObject({ method: "pedidos.pesquisa" });
-    expect(dup.calls[1]!.params.get("numeroEcommerce")).toBe(olistRef(a.id));
+    expect(dup.calls.map((c) => c.method)).toEqual(["pedidos.pesquisa", "pedido.incluir", "pedidos.pesquisa"]);
+    expect(JSON.parse(dup.calls[1]!.params.get("pedido")!).pedido.cliente).toMatchObject({ tipo_pessoa: "J", cpf_cnpj: "11222333000181" });
+    expect(dup.calls[0]!.params.get("numeroEcommerce")).toBe(olistRef(a.id));
+
+    // Resposta real do Olist com "registros" como objeto; e pedido que já existia não é criado de novo.
+    const obj = await s.ship("PREPARING");
+    expect(await sendOlistOrder(prisma, obj.id, { token: "tok", fetcher: fakeOlist({ objectShape: true }).fetcher })).toEqual({ ok: true, id: "789456", numero: "12345" });
+    const again = await s.ship("PREPARING");
+    const ex = fakeOlist({ existing: true });
+    expect(await sendOlistOrder(prisma, again.id, { token: "tok", fetcher: ex.fetcher })).toEqual({ ok: true, id: "555", numero: "777" });
+    expect(ex.calls.map((c) => c.method)).toEqual(["pedidos.pesquisa"]);
 
     const noSku = await s.mk("Sem SKU", null, 1000);
     const b = await s.ship("PREPARING", noSku.id, "Sem SKU");
