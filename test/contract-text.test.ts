@@ -80,6 +80,8 @@ describe("D-WELCOMECHOICE: modelo pelo envio inicial e produtos do 1º pedido", 
     expect(welcomePreset(brand, 1)).toEqual(["s"]);
     expect(welcomePreset(brand, 2)).toEqual(["s", "g"]);
     expect(welcomePreset({ welcomeOneIds: [], welcomeTwoIds: ["s"] }, 2)).toEqual([]);
+    // D-WELCOMEPICK: 1 produto com duas opções (ela escolhe uma no portal).
+    expect(welcomePreset({ welcomeOneIds: ["s", "g"], welcomeTwoIds: [] }, 1)).toEqual(["s", "g"]);
     expect(welcomeChoice("2 produtos + 3 vídeos para a marca: Sérum e Gel")).toBe("videos");
     expect(welcomeChoice("1 produto: Sérum")).toBe("one");
     expect(welcomeChoice(null)).toBeNull();

@@ -49,7 +49,7 @@ export type BrandInput = {
   /** D-KITOPTIONS: ids dos produtos que a creator pode escolher no portal; nenhum = todos os ativos. */
   kitOptions?: string[];
   /** D-WELCOMECHOICE: produtos do envio inicial (1 produto; 2 produtos + 3 vídeos); vazio = sem a opção. */
-  welcome?: { one: string; two: [string, string] };
+  welcome?: { one: [string, string]; two: [string, string] };
 };
 
 /** "VermeFree Saúde" → "vermefree-saude". */
@@ -191,7 +191,8 @@ export async function updateBrand(prisma: PrismaClient, actor: Actor | null, bra
     await tx.brand.update({ where: { id: brandId }, data });
     await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: manager.userId, action: "brand.update", entity: "Brand", entityId: brandId, before, after: forAudit(data) } });
     if (input.welcome) {
-      const one = input.welcome.one ? [input.welcome.one] : [];
+      // D-WELCOMEPICK: 1 produto com 1 opção (fixo) ou 2 (ela escolhe uma no portal).
+      const one = [...new Set(input.welcome.one.filter(Boolean))];
       const two = input.welcome.two.filter(Boolean);
       if (two.length === 1 || (two.length === 2 && two[0] === two[1])) throw new BrandError("Envio inicial de 2 produtos: escolha 2 produtos diferentes (ou nenhum).");
       const ids = [...new Set([...one, ...two])];

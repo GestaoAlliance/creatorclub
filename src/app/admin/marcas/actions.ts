@@ -34,7 +34,7 @@ const input = (form: FormData) => ({
   ...(form.has("kitOptionsSent") ? { kitOptions: form.getAll("kitOption").map(String) } : {}),
   // D-WELCOMECHOICE: produtos do envio inicial.
   ...(form.has("welcomeSent")
-    ? { welcome: { one: String(form.get("welcomeOne") ?? ""), two: [String(form.get("welcomeTwoA") ?? ""), String(form.get("welcomeTwoB") ?? "")] as [string, string] } }
+    ? { welcome: { one: [String(form.get("welcomeOne") ?? ""), String(form.get("welcomeOneB") ?? "")] as [string, string], two: [String(form.get("welcomeTwoA") ?? ""), String(form.get("welcomeTwoB") ?? "")] as [string, string] } }
     : {}),
 });
 

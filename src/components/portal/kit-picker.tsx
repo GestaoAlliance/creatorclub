@@ -43,10 +43,12 @@ export function KitPicker({
   // Pedido do responsável (2026-10-27): com uma opção só (Revita, VermeFree), o produto já vem escolhido.
   // D-WELCOMECHOICE: kit com produtos definidos (1º pedido pela opção do cadastro) também já vem pronto.
   const list = kit.preset ?? products;
-  const fixed = Boolean(kit.preset) || list.length === 1;
+  // D-WELCOMEPICK: preset com o mesmo número de produtos do kit vai fixo; com mais, são as opções dela.
+  const presetFixed = Boolean(kit.preset) && kit.preset!.length === kit.products;
+  const fixed = presetFixed || list.length === 1;
   const single = fixed ? list[0]! : null;
   const [qty, setQty] = useState<Record<string, number>>(() =>
-    kit.preset ? Object.fromEntries(kit.preset.map((p) => [p.id, 1])) : single ? { [single.id]: kit.products } : {},
+    presetFixed ? Object.fromEntries(kit.preset!.map((p) => [p.id, 1])) : single ? { [single.id]: kit.products } : {},
   );
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
   const left = kit.products - total;
