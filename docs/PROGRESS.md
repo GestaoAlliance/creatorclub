@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-263 — 2026-11-05 — Olist: resposta real com "registros" em objeto; confere antes de criar (D-OLISTORDER)
+- 1º pedido real (Fátima Beatriz, Botanika) ficou com "Olist recusou: erro sem mensagem": a leitura só aceitava
+  `registros` em lista (exemplo da documentação). Agora aceita lista ou objeto, pesquisa o número "CC-…" antes de criar
+  (nunca dois pedidos para o mesmo envio) e, sem mensagem de erro, guarda o começo da resposta no envio.
+- Depois do deploy: reenviar o pedido da Fátima Beatriz pela fila (liga ao pedido se já tiver sido criado).
+
 ### CP-262 — 2026-11-05 — Olist parte 2: pedido automático e rastreio de volta (D-OLISTORDER)
 - Migração `20261120090000_olist_orders`: `Brand.olistNatureId` (Botanika = 337803880) e `Shipment.olistOrderId/
   olistOrderNumber/olistSentAt/olistError`. `src/lib/olist/orders.ts`: `buildOlistOrder`, `sendOlistOrder` (fila
