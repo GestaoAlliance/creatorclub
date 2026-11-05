@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-261 — 2026-11-05 — Pergunta do envio inicial de volta (Revita e Botanika) e anexo que libera (D-WELCOMEASK, D-ATTACHRELEASE)
+- `signupWelcome` volta (com `SIGNUP_WELCOME_BRANDS` e 1 produto de até 2 opções); formulário, `hero` e `submitSignup`
+  restaurados; recibo RPA da Revita mantido. `attachAndRelease` em `src/lib/contracts/attachment.ts` (ficha → anexar).
+- Produção: Isabela Martins Silva (Revita) com `welcomeVideos` 3 (kit), auditoria `creator.welcome_change`; falta liberar
+  (anexar de novo depois do deploy ou "Já assinou" em Esperando assinatura).
+
 ### CP-260 — 2026-11-05 — Candidatas: aba "Esperando assinatura" e botão "Desistiu" (D-WAITSIGN)
 - `ApplicationFilter` ganha `WAITING` (aprovada com `Creator.awaitingContractAt`); Aprovadas e `listCreators` deixam
   essas de fora. Contagem das abas ajustada. `UndoApproval` com o texto "Desistiu (não vai assinar)". Teste em
