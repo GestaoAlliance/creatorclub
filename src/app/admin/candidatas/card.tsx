@@ -102,7 +102,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
           />
         </div>
       )}
-      {status === "APPROVED" && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
+      {(status === "APPROVED" || status === "WAITING") && a.creatorId && <Link href={`/admin/creators/${a.creatorId}`} className={`${ui.link} text-sm`}>Abrir a ficha</Link>}
       {status === "REJECTED" && a.decisionNote && <p className={ui.hint}>Motivo: {a.decisionNote}</p>}
       {status === "REJECTED" && a.canDecide && <ReopenButton applicationId={a.id} />}
     </article>

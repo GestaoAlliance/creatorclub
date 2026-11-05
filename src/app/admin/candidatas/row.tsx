@@ -66,7 +66,7 @@ export function candidateRow(a: Row, status: ApplicationFilter, templates: reado
     // D-AUTENTIQUE2: selo do contrato e aprovar só depois de assinado (marcas com Autentique).
     contract: a.awaitingContract ? (a.awaitingContract.signed ? { label: "assinado: ativando", tone: "amber" } : contractBadge(a.contract, a.contractError)) : null,
     approvable: true,
-    creatorId: status === "APPROVED" ? a.creatorId : null,
+    creatorId: status === "APPROVED" || status === "WAITING" ? a.creatorId : null,
     detail: <ApplicationDetail a={a} status={status} templates={templates} />,
   };
 }

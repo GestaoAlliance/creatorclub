@@ -124,7 +124,7 @@ function UndoApproval(p: { creatorId: string; person: { name: string; phone: str
   if (!open)
     return (
       <button type="button" className={`${ui.ghostSm} self-start text-red-800 dark:text-red-300`} onClick={() => setOpen(true)}>
-        Desfazer aprovação (não assinou)
+        Desistiu (não vai assinar)
       </button>
     );
   return (
@@ -132,8 +132,8 @@ function UndoApproval(p: { creatorId: string; person: { name: string; phone: str
       <input type="hidden" name="creatorId" value={p.creatorId} />
       <p className={ui.hint}>O contrato é cancelado no Autentique, o cupom reservado fica livre, ela fica Desligada (nada é apagado) e a candidatura vai para Recusadas.</p>
       <div className="flex flex-wrap gap-2">
-        <input name="note" required maxLength={300} placeholder="Motivo (só a equipe vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
-        <button className={ui.dangerSm} disabled={pending}>{pending ? "Desfazendo…" : "Desfazer aprovação"}</button>
+        <input name="note" required maxLength={300} defaultValue="Desistiu do contrato" placeholder="Motivo (só a equipe vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
+        <button className={ui.dangerSm} disabled={pending}>{pending ? "Desfazendo…" : "Confirmar desistência"}</button>
         <button type="button" className={ui.ghostSm} onClick={() => setOpen(false)}>Voltar</button>
       </div>
       <Msg state={state} />

@@ -9,7 +9,7 @@ import type { ApplicationFilter, listApplications } from "@/lib/onboarding/appli
 import { candidateRow } from "./row";
 import { CandidateTable } from "./table";
 
-export const TABS: [ApplicationFilter, string][] = [["NEW", "Pendentes"], ["APPROVED", "Aprovadas"], ["REJECTED", "Recusadas"]];
+export const TABS: [ApplicationFilter, string][] = [["NEW", "Pendentes"], ["WAITING", "Esperando assinatura"], ["APPROVED", "Aprovadas"], ["REJECTED", "Recusadas"]];
 export const SORTS: [ApplicationSort, string][] = [["prioridade", "Prioridade"], ["antigas", "Mais antigas primeiro"], ["novas", "Mais novas primeiro"], ["seguidores", "Mais seguidores"]];
 const KINDS: [string, string][] = [["", "Todos os tipos"], ["INFLUENCER", "Influencer"], ["UGC", "UGC"], ["PRESCRITOR", "Prescritor"]];
 const SOURCES: [string, string][] = [["", "Todas as origens"], ["site_form", "Site"], ["captacao_form", "Captação"], ["hunter_form", "Hunter"], ["staff_form", "Equipe"]];

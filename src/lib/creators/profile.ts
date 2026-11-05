@@ -36,8 +36,9 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
   if (!actor || !can(actor.grants, "creators.view", brandId)) throw new ProfileError("Sem permissão.");
   const [creators, brand] = await Promise.all([
     prisma.creator.findMany({
-      // D-ARCHIVECREATOR: arquivadas só na lista própria ("Ver arquivadas").
-      where: { brandId, archivedAt: archived ? { not: null } : null },
+      // D-ARCHIVECREATOR: arquivadas só na lista própria ("Ver arquivadas"). D-WAITSIGN: quem espera assinar o contrato
+      // fica em Candidatas → Esperando assinatura até assinar.
+      where: { brandId, archivedAt: archived ? { not: null } : null, ...(archived ? {} : { awaitingContractAt: null }) },
       orderBy: { account: { name: "asc" } },
       include: {
         account: { select: { name: true, email: true, userId: true, phone: true, instagram: true, tiktok: true, cpf: true, birthDate: true, addrCity: true, addrState: true, niches: true } },

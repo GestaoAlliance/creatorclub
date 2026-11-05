@@ -21,6 +21,7 @@ import { publishContract } from "@/lib/contracts/sign";
 import type { WhatsAppMessage } from "@/lib/notifications/whatsapp";
 import { actionQueue } from "@/lib/actions/queue";
 import { approveApplication, listApplications, receiveApplication } from "@/lib/onboarding/applications";
+import { listCreators } from "@/lib/creators/profile";
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
@@ -158,8 +159,11 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     expect(await sendContractLink(prisma, async (m) => void sent.push(m), req.id)).toBe(true);
     expect(sent[0]).toMatchObject({ instance: "botanika", phone: "5511988887777", kind: "CONTRACT_LINK" });
 
-    const row = (await listApplications(prisma, s.gestao, "APPROVED")).rows.find((x) => x.id === app.id)!;
+    // D-WAITSIGN: antes de assinar, fica em "Esperando assinatura" (fora de Aprovadas e da lista de Creators).
+    const row = (await listApplications(prisma, s.gestao, "WAITING")).rows.find((x) => x.id === app.id)!;
     expect(row).toMatchObject({ awaitingContract: { signed: false }, contract: { status: "SENT" } });
+    expect((await listApplications(prisma, s.gestao, "APPROVED")).rows.some((x) => x.id === app.id)).toBe(false);
+    expect((await listCreators(prisma, s.gestao, s.brand.id)).some((c) => c.id === r.creatorId)).toBe(false);
 
     // Assinou, mas a Shopify falhou: contrato vale, ativação tenta de novo.
     await enqueueDueContractChecks(prisma);
@@ -173,6 +177,9 @@ describe("contrato pelo Autentique depois da aprovação (D-CONTRACTFLOW, banco 
     expect(await checkContracts(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey, clientFor: shop, origin: "https://x.test" })).toMatchObject({ activated: 1 });
     const active = await prisma.creator.findUniqueOrThrow({ where: { id: r.creatorId }, include: { couponAssignments: { include: { coupon: true } }, kitGrants: true, notifications: true } });
     expect(active).toMatchObject({ awaitingContractAt: null, pendingCouponCode: null, pendingDiscountBps: null });
+    expect((await listApplications(prisma, s.gestao, "APPROVED")).rows.some((x) => x.id === app.id)).toBe(true);
+    expect((await listApplications(prisma, s.gestao, "WAITING")).rows.some((x) => x.id === app.id)).toBe(false);
+    expect((await listCreators(prisma, s.gestao, s.brand.id)).some((c) => c.id === r.creatorId)).toBe(true);
     expect(active.goalStartAt).not.toBeNull();
     expect(active.contractStart).not.toBeNull();
     expect(active.couponAssignments[0]!.coupon).toMatchObject({ code: code.toUpperCase(), discountBps: 1000 });

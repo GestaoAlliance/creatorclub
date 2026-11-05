@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-260 — 2026-11-05 — Candidatas: aba "Esperando assinatura" e botão "Desistiu" (D-WAITSIGN)
+- `ApplicationFilter` ganha `WAITING` (aprovada com `Creator.awaitingContractAt`); Aprovadas e `listCreators` deixam
+  essas de fora. Contagem das abas ajustada. `UndoApproval` com o texto "Desistiu (não vai assinar)". Teste em
+  `autentique-application.test.ts` (antes e depois de assinar).
+
 ### CP-259 — 2026-11-05 — Revita: 1 produto à escolha (Sérum ou Gel) e contratos novos (D-WELCOMEPICK)
 - `welcomePreset` com 1 produto devolve as opções da marca; `presetProductIds` maior que `products` = opções (portal e
   `chooseKit`). Marcas: duas opções em "1 produto". Migração `20261119090000_revita_welcome_pick`: trava
