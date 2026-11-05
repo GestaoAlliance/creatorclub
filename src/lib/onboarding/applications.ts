@@ -197,20 +197,28 @@ export async function receiveApplication(
   }
 }
 
-export type ApplicationFilter = "NEW" | "APPROVED" | "REJECTED";
+/** D-WAITSIGN: "WAITING" = aprovada que ainda não assinou o contrato (fica fora de Aprovadas e da lista de Creators). */
+export type ApplicationFilter = "NEW" | "WAITING" | "APPROVED" | "REJECTED";
 
 export async function listApplications(prisma: PrismaClient, actor: Actor | null, status: ApplicationFilter = "NEW", filters: ApplicationFilters = {}) {
   if (!actor) throw new ApplicationError("Sem permissão.");
   const brands = brandsWith(actor.grants, "creators.view");
   if (brands !== "ALL" && brands.length === 0) throw new ApplicationError("Sem permissão.");
   const scope = { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), brand: { archivedAt: null } };
+  const waitingIds = (await prisma.creator.findMany({ where: { ...scope, awaitingContractAt: { not: null } }, select: { id: true } })).map((c) => c.id);
+  const waiting = { status: "APPROVED" as const, creatorId: { in: waitingIds } };
+  const where =
+    status === "WAITING" ? { ...scope, ...waiting } : status === "APPROVED" ? { ...scope, status, OR: [{ creatorId: null }, { creatorId: { notIn: waitingIds } }] } : { ...scope, status };
   const rows = await prisma.creatorApplication.findMany({
-    where: { ...scope, status },
+    where,
     orderBy: status === "NEW" ? { submittedAt: "asc" } : { decidedAt: "desc" },
     take: 1000,
     include: { brand: { select: { name: true, slug: true, defaultCommissionBps: true, defaultDiscountBps: true } }, hunterLink: { select: { code: true, user: { select: { name: true } } } } },
   });
-  const counts = await prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true });
+  const [counts, waitingCount] = await Promise.all([
+    prisma.creatorApplication.groupBy({ by: ["status"], where: scope, _count: true }),
+    prisma.creatorApplication.count({ where: { ...scope, ...waiting } }),
+  ]);
   // F2: repetidas — mesmo e-mail, CPF ou @ em outra candidata (qualquer situação) ou numa creator da marca.
   const brandIds = [...new Set(rows.map((r) => r.brandId))];
   const [others, accounts] = await Promise.all([
@@ -338,7 +346,10 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
   });
   return {
     templates,
-    counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>,
+    counts: (() => {
+      const by = Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<ApplicationFilter, number>>;
+      return { ...by, WAITING: waitingCount, APPROVED: (by.APPROVED ?? 0) - waitingCount };
+    })(),
     total: mapped.length,
     hunters,
     rows: filterApplications(mapped, filters).map(withContract),
