@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-262 — 2026-11-05 — Olist parte 2: pedido automático e rastreio de volta (D-OLISTORDER)
+- Migração `20261120090000_olist_orders`: `Brand.olistNatureId` (Botanika = 337803880) e `Shipment.olistOrderId/
+  olistOrderNumber/olistSentAt/olistError`. `src/lib/olist/orders.ts`: `buildOlistOrder`, `sendOlistOrder` (fila
+  `olist.order`, agendada em `approveShipment`), `trackOlistOrders` (fila `olist.track`, a cada 30 min) e
+  `markShippedFromOlist` (sistema como autor). `olistCallRaw` no cliente. Cartão de Envios mostra "No Olist: pedido nº"
+  ou o motivo. Campos conferidos na documentação oficial da API v2 (api-docs.erp.olist.com). Teste
+  `test/integration/olist-orders.test.ts` (Olist falso).
+- Próxima: teste real com o Álvaro (1 pedido aprovado → conferir no Olist → nota/etiqueta → rastreio volta).
+
 ### CP-261 — 2026-11-05 — Pergunta do envio inicial de volta (Revita e Botanika) e anexo que libera (D-WELCOMEASK, D-ATTACHRELEASE)
 - `signupWelcome` volta (com `SIGNUP_WELCOME_BRANDS` e 1 produto de até 2 opções); formulário, `hero` e `submitSignup`
   restaurados; recibo RPA da Revita mantido. `attachAndRelease` em `src/lib/contracts/attachment.ts` (ficha → anexar).

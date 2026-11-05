@@ -81,6 +81,8 @@ model Brand {
   shopDiscountBps           Int                 @default(0)
   /// D-D4SIGN: produto sugerido na mensagem de aprovação (escolhido em Marcas); null = mensagem sem a sugestão.
   approvalSuggestion        String?
+  /// D-OLISTORDER: id da natureza de operação do Olist para o pedido da creator (Botanika: remessa em bonificação).
+  olistNatureId           String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
@@ -919,6 +921,11 @@ model Shipment {
   rejectReason    String?
   /// D-SHIPALERT: quando entrou no resumo de hora em hora do WhatsApp de quem é Envio (null = ainda não avisado).
   staffNotifiedAt DateTime?
+  /// D-OLISTORDER: pedido criado no Olist ERP ao aprovar o pedido da creator (id, número, quando, último erro).
+  olistOrderId     String?
+  olistOrderNumber String?
+  olistSentAt      DateTime?
+  olistError       String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
