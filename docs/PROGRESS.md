@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-271 — 2026-11-06 — Contrato assinado no Autentique anexado sozinho (D-AUTOCONTRACTFILE)
+- Pedido da Fátima: assinado no Autentique, o PDF assinado é baixado, guardado no bucket `contratos` e anexado na ficha
+  (a creator vê em "Meu contrato"). Três marcas, inclusive quem já tinha assinado (12 Botanika e 3 Revita sem PDF).
+- PDF anexado à mão pela equipe continua valendo (o do Autentique fica guardado). Até 5 tentativas por contrato.
+- Migração `20261123090000_contract_signed_file`: `ContractRequest.signedFileId`, `signedFileAttempts` (CHECK 0..20),
+  `signedFileError`. `src/lib/autentique/signed-file.ts` (tarefa `autentique.signed_file`, de hora em hora pelo worker).
+  Teste `test/integration/signed-file.test.ts`.
+- Próximo: investigar o erro ao remover cupom no checkout da Revita (TALITA5 + PAULAGUEDES juntos).
+
 ### CP-270 — 2026-11-06 — Git Guardrails ligado (D-SKILLS)
 - Hook `.claude/hooks/block-dangerous-git.sh` (PreToolUse/Bash): bloqueia push forçado, push direto na `main`, apagar
   branch remota, `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`, `stash drop/clear`. Push normal da

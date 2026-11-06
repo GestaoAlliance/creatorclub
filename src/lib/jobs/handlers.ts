@@ -7,6 +7,7 @@ import { PRODUCTS_JOB, productsSyncHandler } from "@/lib/shopify/products";
 import { RECONCILE_JOB, reconcileHandler } from "@/lib/shopify/reconcile";
 import { instagramHandlers } from "@/lib/instagram/sync";
 import { autentiqueHandlers } from "@/lib/autentique/applications";
+import { SIGNED_FILE_JOB, fetchSignedFiles } from "@/lib/autentique/signed-file";
 import { olistHandlers } from "@/lib/olist/stock";
 import { olistOrderHandlers } from "@/lib/olist/orders";
 import { firstKitHandlers } from "@/lib/shipments/first-kit-notice";
@@ -23,6 +24,10 @@ export function jobHandlers(): JobHandlers {
     ...backfillHandlers(prisma),
     ...instagramHandlers(prisma),
     ...autentiqueHandlers(prisma),
+    [SIGNED_FILE_JOB]: async (job) => {
+      if (!job.brandId) throw new Error("Tarefa sem marca.");
+      await fetchSignedFiles(prisma, job.brandId);
+    },
     ...olistHandlers(prisma),
     ...olistOrderHandlers(prisma),
     ...firstKitHandlers(prisma),
