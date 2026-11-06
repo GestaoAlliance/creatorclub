@@ -51,11 +51,20 @@ const SIGNUP_BY_BRAND: Record<string, { payoutHint?: string }> = {
 };
 export const signupPayoutHint = (brandSlug: string): string | undefined => SIGNUP_BY_BRAND[brandSlug]?.payoutHint;
 
+/** D-ALELOCARD: nome da mãe limpo (espaços, 5 a 120 letras, pelo menos nome e sobrenome); inválido = null. */
+export function cleanMotherName(raw: string): string | null {
+  const v = raw.replace(/\s+/g, " ").trim();
+  if (v.length < 5 || v.length > 120 || !/^[\p{L}' .-]+$/u.test(v) || v.split(" ").length < 2) return null;
+  return v;
+}
+
 export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
   { key: "fullName", title: "Seu nome completo:", label: "Nome completo", kind: "text", required: true },
   { key: "cpf", title: "CPF: ", label: "CPF", kind: "text", required: true },
   { key: "payoutAs", title: "Vai receber como:", label: "Vai receber como", kind: "choice", options: [PAYOUT_PF, PAYOUT_PJ], required: true, hint: "Pessoa física saca com recibo; empresa (inclusive MEI) saca com nota fiscal." },
   { key: "cnpj", title: "CNPJ: ", label: "CNPJ", kind: "text", required: false, hint: "O CNPJ da empresa que emite a nota." },
+  // D-ALELOCARD: pessoa física recebe no cartão Alelo, que pede o nome da mãe.
+  { key: "motherName", title: "Nome completo da mãe:", label: "Nome completo da sua mãe", kind: "text", required: false, hint: "Pedido pela Alelo para emitir o cartão onde você recebe." },
   // D-PJADDR: regime tributário de quem informa CNPJ (MEI pode receber em outro endereço; os outros, no do CNPJ).
   { key: "taxRegime", title: "Regime tributário do CNPJ:", label: "Regime tributário", kind: "text", required: false },
   // M4.2 (D-TAGS): aniversário (opcional), para a equipe comemorar.
@@ -72,7 +81,7 @@ export const SIGNUP_QUESTIONS: readonly SignupQuestion[] = [
 
 /** Blocos do cadastro, na ordem da página (a senha vem no fim, fora das respostas). */
 export const SIGNUP_SECTIONS: readonly { id: string; title: string; hint?: string; keys: readonly string[] }[] = [
-  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "payoutAs", "cnpj", "taxRegime", "birthDate"] },
+  { id: "dados", title: "Seus dados", keys: ["fullName", "cpf", "payoutAs", "motherName", "cnpj", "taxRegime", "birthDate"] },
   { id: "contato", title: "Contato", keys: ["email", "phone"] },
   { id: "redes", title: "Redes sociais", hint: "Os perfis onde você vai divulgar.", keys: ["instagram", "tiktok", "tiktokShop"] },
   { id: "cupom", title: "Seu cupom", hint: "O código que seus seguidores usam na compra. É por ele que contamos as suas vendas.", keys: ["coupon"] },
@@ -188,6 +197,8 @@ export type SignupAccount = {
   tiktokShop: boolean | null;
   /** "AAAA-MM-DD" ou null (M4.2). */
   birthDate: string | null;
+  /** D-ALELOCARD: nome da mãe (só pessoa física). */
+  motherName: string | null;
   /** M4.3 (D-PROFILEFIELDS): perfil opcional. */
   profile: ProfileFields;
   coupon: string;
@@ -248,6 +259,17 @@ export function validateSignup(values: Record<string, string | undefined>, today
     delete clean.cnpj;
     delete answers["CNPJ: "];
     delete errors.cnpj;
+    // D-ALELOCARD: pessoa física informa o nome da mãe (cartão Alelo).
+    const mother = cleanMotherName(clean.motherName ?? "");
+    if (!mother) errors.motherName = "Informe o nome completo da sua mãe.";
+    else {
+      clean.motherName = mother;
+      answers["Nome completo da mãe:"] = mother;
+    }
+  } else {
+    delete clean.motherName;
+    delete answers["Nome completo da mãe:"];
+    delete errors.motherName;
   }
   // D-PJADDR: com CNPJ, o regime é obrigatório; sem CNPJ, não se pergunta.
   if (clean.cnpj && !clean.taxRegime && !errors.cnpj) errors.taxRegime = "Escolha o regime do CNPJ.";
@@ -276,6 +298,7 @@ export function validateSignup(values: Record<string, string | undefined>, today
       tiktok: clean.tiktok || null,
       tiktokShop: clean.tiktokShop ? clean.tiktokShop === "Sim" : null,
       birthDate: clean.birthDate || null,
+      motherName: clean.payoutAs === PAYOUT_PF ? (clean.motherName ?? null) : null,
       profile: profile.value,
       coupon: clean.coupon!,
       receivesAsIndividual: clean.payoutAs !== PAYOUT_PJ,

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { dayKey, parseBirthDate, socialHandle } from "@/domain";
+import { cleanMotherName, dayKey, parseBirthDate, socialHandle } from "@/domain";
 import type { PortalContext } from "./context";
 
 /**
@@ -38,5 +38,21 @@ export async function setMyBirthDate(prisma: PrismaClient, ctx: PortalContext, a
     await tx.auditLog.create({
       data: { brandId: creator.brandId, actorType: "USER", actorId: actorUserId, action: "creator.birthdate", entity: "CreatorAccount", entityId: creator.accountId, after: { birthDate: b.day } },
     });
+  });
+}
+
+/**
+ * D-ALELOCARD: a creator de pessoa física informa o nome da mãe (a Alelo pede para emitir o cartão onde ela recebe).
+ * Só enquanto não há nome; depois quem corrige é a equipe.
+ */
+export async function setMyMotherName(prisma: PrismaClient, ctx: PortalContext, actorUserId: string, raw: string): Promise<void> {
+  if (ctx.viewAs) throw new SocialError("Visualização da equipe: nada é alterado em nome da creator.");
+  const motherName = cleanMotherName(raw);
+  if (!motherName) throw new SocialError("Informe o nome completo da sua mãe (nome e sobrenome).");
+  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true, brandId: true } });
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.creatorAccount.updateMany({ where: { id: creator.accountId, motherName: null }, data: { motherName } });
+    if (!count) throw new SocialError("O nome já foi informado. Para corrigir, fale com a equipe.");
+    await tx.auditLog.create({ data: { brandId: creator.brandId, actorType: "USER", actorId: actorUserId, action: "creator.mother_name", entity: "CreatorAccount", entityId: creator.accountId, after: {} } });
   });
 }

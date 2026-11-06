@@ -3,7 +3,7 @@
 import { Check, Circle, Eye, EyeOff, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
-import { formatBrPhone, HEARD_FROM_OPTIONS, mustShipToCnpj, PAYOUT_PJ, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid, signupPayoutHint } from "@/domain";
+import { formatBrPhone, HEARD_FROM_OPTIONS, mustShipToCnpj, PAYOUT_PF, PAYOUT_PJ, NICHES, TAX_REGIMES, SIGNUP_COUPON_MAX, SIGNUP_QUESTIONS, SIGNUP_SECTIONS, signupConsentText, signupCouponPreview, signupCouponValid, signupPayoutHint } from "@/domain";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/rules";
 import { UFS } from "@/lib/shipments/address";
 import { checkCouponAction, cnpjAddressAction, requestAccessAction, signupAction, type CouponCheck, type SignupState } from "./actions";
@@ -250,6 +250,10 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
             </div>
             {errors.welcome && <p className="text-xs text-red-700 dark:text-red-400">{errors.welcome}</p>}
           </fieldset>
+        )}
+        {/* D-ALELOCARD: pessoa física recebe no cartão Alelo, que pede o nome da mãe. */}
+        {v.payoutAs === PAYOUT_PF && (
+          <Field label={q("motherName").label} hint={q("motherName").hint} error={errors.motherName}>{text("motherName", { required: true, maxLength: 120, autoComplete: "off" })}</Field>
         )}
         {v.payoutAs === PAYOUT_PJ && (
           <Field label={q("cnpj").label} hint={q("cnpj").hint} error={errors.cnpj} className="sm:max-w-[calc(50%-0.5rem)]">{text("cnpj", { required: true, inputMode: "numeric", autoComplete: "off" })}</Field>
