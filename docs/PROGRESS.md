@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-269 — 2026-11-06 — Git Guardrails ligado (D-SKILLS)
+- Hook `.claude/hooks/block-dangerous-git.sh` (PreToolUse/Bash): bloqueia push forçado, push direto na `main`, apagar
+  branch remota, `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`, `stash drop/clear`. Push normal da
+  branch liberado (regra 3). 19 casos testados à mão. Detalhes em `docs/SKILLS.md`.
+
 ### CP-268 — 2026-11-06 — Skills do Claude instaladas no repositório (D-SKILLS)
 - `.claude/skills/` com 66 skills (os 50 itens do guia da Asimov; mapa em `docs/SKILLS.md`), GSD 1.42.3 e PAUL 1.4.0
   pelos instaladores oficiais (hooks revisados e testados; caminho do Node portátil). Claude Art Skill não existe mais

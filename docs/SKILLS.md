@@ -22,6 +22,14 @@ regras de dinheiro, `docs/design/DESIGN.md`). Skill que mandar outra coisa perde
   demonstração da Last30Days (17 MB, não usados pela skill).
 - `.claude/` fica fora do deploy da Vercel (`.vercelignore`).
 
+## Git Guardrails (ligado em 2026-11-06)
+
+Hook `PreToolUse` em `.claude/hooks/block-dangerous-git.sh`. O original bloqueia todo `git push`, o que quebraria a
+regra 3 do `CLAUDE.md`; aqui o push normal da branch de trabalho e o `--force-with-lease` continuam liberados.
+Bloqueados: push forçado (`--force`, `-f`, `+ref`), push direto para `main`/`master` (vai ao ar; usar PR), apagar
+branch remota, `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .` e `stash drop`/`clear`. Para liberar
+um caso, o responsável roda o comando ou edita o script.
+
 ## Mapa: item do guia → onde está
 
 | # | Item do guia | Instalado em | Observação |
@@ -30,7 +38,7 @@ regras de dinheiro, `docs/design/DESIGN.md`). Skill que mandar outra coisa perde
 | 2 | Skill Creator | `skills/skill-creator` | |
 | 3 | Superpowers | `skills/using-superpowers` + 14 skills do fluxo | pacote inteiro (interdependente) |
 | 4 | Grill Me | `skills/grill-me` | |
-| 5 | Git Guardrails | `skills/git-guardrails-claude-code` | a skill ensina a ligar o hook; ainda não ligado |
+| 5 | Git Guardrails | `skills/git-guardrails-claude-code` + `hooks/block-dangerous-git.sh` | **ligado**, adaptado (ver abaixo) |
 | 6 | Caveman | `skills/caveman` | só liga com "/caveman" |
 | 7 | Last30Days | `skills/last30days` | precisa de chaves de API (X, Reddit etc.) |
 | 8 | GSD | `commands/gsd`, `agents/gsd-*`, `get-shit-done/`, `hooks/` | instalador oficial |
