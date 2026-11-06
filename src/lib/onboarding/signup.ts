@@ -152,6 +152,7 @@ export async function submitSignup(
           tiktok: acc.tiktok,
           tiktokShop: acc.tiktokShop,
           birthDate: acc.birthDate ? new Date(`${acc.birthDate}T00:00:00Z`) : null,
+          motherName: acc.motherName,
           ...acc.profile,
           addrZip: acc.address.zip,
           addrStreet: acc.address.street,

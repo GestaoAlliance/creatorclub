@@ -15,6 +15,8 @@ import { can } from "@/lib/auth/permissions";
 import { remessaPreview } from "@/lib/withdrawals/remessa";
 import { BatchBar, RemessaBar, RetornoForm } from "./forms";
 import { SaquesTable } from "./table";
+import { AleloCardBox } from "./alelo-card";
+import { aleloCardStatus } from "@/lib/withdrawals/alelo";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,8 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
   const [rows, sum] = await Promise.all([withdrawalQueue(db(), inBrand, tab), payoutSummary(db(), inBrand, brandId ? [brandId] : undefined)]);
   const today = dayKey(new Date(), "America/Sao_Paulo");
   const remessa = tab === "APPROVED" && brandId && can(actor.grants, "withdrawals.manage", brandId) ? await remessaPreview(db(), actor, brandId, today) : null;
+  // D-ALELOCARD: pedido do cartão Alelo de quem recebe como pessoa física (para quem paga).
+  const alelo = brandId && can(actor.grants, "withdrawals.manage", brandId) ? await aleloCardStatus(db(), actor, brandId) : null;
 
   return (
     <>
@@ -57,6 +61,7 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
           <Kpi label="Aguardando" value={formatBRL(sum.awaiting.salesCents)} hint={`em vendas sem pagamento ainda (${sum.awaiting.orders})`} />
         </div>
       </Card>
+      {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}
       <nav aria-label="Situação" data-tour="sq-abas" className="flex flex-wrap items-center gap-2">
         {TABS.map((t) => (
           <Link key={t.id} href={`/admin/saques?ver=${t.ver}`} className={tab === t.id ? ui.pillOn : ui.pill}>

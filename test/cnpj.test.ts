@@ -55,7 +55,7 @@ describe("cadastro PJ (D-PJADDR)", () => {
     const ok = validateSignup({ ...base, cnpj: "11.222.333/0001-81", taxRegime: "SIMPLES" });
     expect(ok.ok && ok.account.taxRegime).toBe("SIMPLES");
     expect(ok.ok && ok.answers["Regime tributário do CNPJ:"]).toBe("Simples Nacional (ME/EPP)");
-    const pf = validateSignup({ ...base, payoutAs: "Pessoa física (CPF)", cnpj: "", taxRegime: "SIMPLES" });
+    const pf = validateSignup({ ...base, payoutAs: "Pessoa física (CPF)", motherName: "Joana Exemplo", cnpj: "", taxRegime: "SIMPLES" });
     expect(pf.ok && pf.account.taxRegime).toBeNull();
   });
 });

@@ -263,6 +263,8 @@ model CreatorAccount {
   phone             String?
   cpf               String?
   cnpj              String?
+  /// D-ALELOCARD: nome da mãe (só pessoa física; a Alelo pede para emitir o cartão onde ela recebe).
+  motherName        String?
   /// D-PJADDR: regime do CNPJ (MEI, SIMPLES, OUTRO); fora do MEI os produtos vão para o endereço do CNPJ.
   taxRegime         String?
   pixKey            String?
@@ -359,6 +361,8 @@ model Creator {
   contractTemplateId      String?
   /// D-CONTRACTFILE: PDF do contrato assinado anexado pela equipe (a creator vê no portal). Trocar aponta para outro arquivo; nada é apagado.
   contractFileId          String?
+  /// D-ALELOCARD: quando entrou na planilha de pedido do cartão Alelo baixada pelo Pagamento (null = ainda não pedido).
+  aleloCardRequestedAt    DateTime?
   /// D-SIGNCONTRACT: creator aprovada em Candidatas precisa assinar o contrato no portal (o portal fica travado até lá).
   contractRequiredAt      DateTime?
   /// D-CHECKLIST: contrato (vigência; aviso 30 dias antes e no fim, nunca desliga sozinho) e checklist da Central.

@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-265 — 2026-11-06 — Cartão Alelo: nome da mãe e planilha de pedido de cartão (D-ALELOCARD)
+- Migração `20261122090000_alelo_card`: `CreatorAccount.motherName` (trava `CreatorAccount_mother_name`) e
+  `Creator.aleloCardRequestedAt`. Cadastro (pessoa física: nome da mãe obrigatório, `cleanMotherName`), aviso
+  `MotherAsk` no portal (`setMyMotherName`), ficha mostra nome da mãe e cartão pedido. `src/lib/withdrawals/alelo.ts`
+  (`aleloCardStatus`, `aleloCardSheet`) + rota POST `/admin/saques/alelo` + cartão em Saques; `src/lib/xlsx.ts`
+  (planilha .xlsx sem biblioteca). Testes `test/integration/alelo.test.ts` e no cadastro.
+- Produção: Botanika `bankAgency` 4027, `bankAccount` 90666987, dígito 1 (auditoria). Falta o convênio do SICOOB.
+- Pendente: modelo do arquivo de crédito da Alelo (valores), com o representante.
+
 ### CP-264 — 2026-11-06 — Olist: forma de envio e de frete no pedido (D-OLISTSHIP)
 - `Brand.olistShippingMethod` e `Brand.olistFreightForm` (migração `20261121090000_olist_shipping`, Botanika =
   "Correios Log+ Extrema" / "PAC CORREIOS LOG+"); `buildOlistOrder` manda `forma_envio` e `forma_frete`.

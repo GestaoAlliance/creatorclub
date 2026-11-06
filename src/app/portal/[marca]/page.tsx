@@ -3,6 +3,7 @@ import { publicOrigin } from "@/lib/site";
 import { HomeView } from "@/components/portal/home-view";
 import { KitBanner } from "@/components/portal/kit-banner";
 import { BirthdayAsk } from "@/components/portal/birthday-ask";
+import { MotherAsk } from "@/components/portal/mother-ask";
 import { TiktokAsk } from "@/components/portal/tiktok-ask";
 import { InstallCard, InstallModal } from "@/components/portal/install-app";
 import { db } from "@/lib/db";
@@ -24,7 +25,7 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
     portalSummary(db(), ctx),
     // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
     db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
-    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { contractFileId: true, account: { select: { tiktok: true, birthDate: true } } } }).then((c) => ({ ...c.account, contractFileId: c.contractFileId })),
+    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { contractFileId: true, receivesAsIndividual: true, account: { select: { tiktok: true, birthDate: true, motherName: true } } } }).then((c) => ({ ...c.account, contractFileId: c.contractFileId, receivesAsIndividual: c.receivesAsIndividual })),
     portalCoupons(db(), ctx),
   ]);
   // M4.5 (D-CAMPAIGN): campanha aberta (em breve ou acontecendo) aparece no Início.
@@ -66,6 +67,8 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
           </span>
         </a>
       )}
+      {/* D-ALELOCARD: pessoa física sem o nome da mãe (cartão Alelo). */}
+      {account.receivesAsIndividual && !account.motherName && <MotherAsk marca={ctx.brand.slug} />}
       {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
       <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
     </div>

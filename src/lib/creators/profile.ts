@@ -171,7 +171,7 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     canViewAs: can(actor.grants, "portal.viewAs", creator.brandId),
     adjustments: money ? adjustments.map((e) => ({ at: e.createdAt, amountCents: e.amountCents, reason: e.note ?? "" })) : null,
     contact: { name: a.name, email: a.email, phone: a.phone, fakeEmail: a.email.endsWith(FAKE_EMAIL_DOMAIN) },
-    fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey } : null,
+    fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey, motherName: a.motherName, aleloCardRequestedAt: creator.aleloCardRequestedAt } : null,
     address,
     hasLogin: a.userId !== null,
     /** M4.4b (D-ACCESS): login dela e o último acesso. */

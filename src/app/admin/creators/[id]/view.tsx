@@ -420,6 +420,9 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 <p><span className="text-stone-500">CPF</span> {p.fiscal.cpf ?? "—"}</p>
                 <p><span className="text-stone-500">CNPJ</span> {p.fiscal.cnpj ?? "—"}</p>
                 <p><span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}</p>
+                {/* D-ALELOCARD: dados do cartão Alelo (pessoa física). */}
+                <p><span className="text-stone-500">Nome da mãe</span> {p.fiscal.motherName ?? "—"}</p>
+                {p.fiscal.aleloCardRequestedAt && <p><span className="text-stone-500">Cartão Alelo</span> pedido em {date(p.fiscal.aleloCardRequestedAt)}</p>}
               </div>
             )}
             {p.address && (
