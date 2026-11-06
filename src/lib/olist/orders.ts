@@ -7,7 +7,7 @@ import { olistCallRaw, olistToken, OlistError, type OlistFetcher } from "./clien
  * D-OLISTORDER (Olist parte 2; respostas do Álvaro em 2026-11-05): o pedido da creator aprovado pela Gestão vira pedido
  * no Olist ERP da marca, já "aprovado", com a natureza de operação da marca (Botanika: remessa em bonificação, doação
  * ou brinde), os produtos pelo SKU a preço de custo e o frete por conta da empresa. O Álvaro só emite a nota e a
- * etiqueta no Olist (forma de envio escolhida lá; Correios Log+). A cada 30 minutos o sistema lê os pedidos em aberto:
+ * etiqueta no Olist (forma de envio e de frete da marca, D-OLISTSHIP). A cada 30 minutos o sistema lê os pedidos em aberto:
  * com código de rastreio, o envio vira "Enviado" e a creator recebe o aviso com o link.
  */
 
@@ -27,6 +27,8 @@ export type OlistOrderInput = {
   ref: string;
   date: Date;
   natureId: string;
+  /** D-OLISTSHIP: forma de envio e de frete cadastradas no Olist (nomes exatos); null = o Álvaro escolhe lá. */
+  shipping?: { method: string | null; freight: string | null };
   person: { name: string; company: boolean; document: string; email: string | null; phone: string | null };
   address: { zip: string; street: string; number: string; complement: string | null; district: string; city: string; state: string };
   items: { sku: string; title: string; quantity: number; costCents: number }[];
@@ -57,6 +59,8 @@ export function buildOlistOrder(o: OlistOrderInput) {
       },
       itens: o.items.map((i) => ({ item: { codigo: i.sku, descricao: i.title.slice(0, 120), unidade: "UN", quantidade: String(i.quantity), valor_unitario: money(i.costCents) } })),
       frete_por_conta: "R",
+      ...(o.shipping?.method ? { forma_envio: o.shipping.method.slice(0, 30) } : {}),
+      ...(o.shipping?.freight ? { forma_frete: o.shipping.freight.slice(0, 30) } : {}),
       marcadores: [{ marcador: { descricao: "Creator Club" } }],
       obs: o.note.slice(0, 100),
     },
@@ -94,7 +98,7 @@ export async function sendOlistOrder(prisma: PrismaClient, shipmentId: string, d
     where: { id: shipmentId },
     select: {
       id: true, brandId: true, creatorId: true, status: true, note: true, address: true, olistOrderId: true, approvedAt: true,
-      brand: { select: { slug: true, olistNatureId: true } },
+      brand: { select: { slug: true, olistNatureId: true, olistShippingMethod: true, olistFreightForm: true } },
       items: { select: { title: true, quantity: true, product: { select: { sku: true, costCents: true } } } },
       creator: { select: { receivesAsIndividual: true, account: { select: { name: true, email: true, phone: true, cpf: true, cnpj: true } } } },
     },
@@ -120,6 +124,7 @@ export async function sendOlistOrder(prisma: PrismaClient, shipmentId: string, d
     ref,
     date: deps.now ?? new Date(),
     natureId: s.brand.olistNatureId,
+    shipping: { method: s.brand.olistShippingMethod, freight: s.brand.olistFreightForm },
     person: { name: (company && app?.companyName?.trim()) || acc.name, company, document, email: acc.email, phone: acc.phone },
     address: { zip: a.zip, street: a.street, number: a.number ?? "S/N", complement: a.complement ?? null, district: a.district ?? "", city: a.city, state: a.state },
     items: s.items.map((i) => ({ sku: i.product!.sku!, title: i.title, quantity: i.quantity, costCents: i.product!.costCents! })),
