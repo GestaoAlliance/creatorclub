@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { cnpjAddressLine, heardFromValue, mustShipToCnpj, normalizeCampaignTag, normalizeHunterCode, sameShipAddress, signupBrandFor, signupConsentText, validateSignup } from "@/domain";
+import { cnpjAddressLine, heardFromValue, mustShipToCnpj, normalizeCampaignTag, normalizeHunterCode, sameShipAddress, signupBrandFor, signupConsentText, signupWelcomeLabels, validateSignup } from "@/domain";
 import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
 import { passwordProblem } from "@/lib/auth/rules";
 import { hashIp } from "@/lib/links/tracked";
@@ -55,6 +55,10 @@ export async function signupWelcome(prisma: PrismaClient, brand: { slug: string;
   const rows = await prisma.product.findMany({ where: { id: { in: ids }, active: true }, select: { id: true, title: true } });
   const title = new Map(rows.map((r) => [r.id, r.title]));
   if (ids.some((id) => !title.has(id))) return null;
+  // D-WELCOMELABELS: marca com texto próprio (ex.: Revita) mostra o texto dela; a escolha continua começando por
+  // "1 produto" / "2 produtos" (é assim que a aprovação reconhece a opção).
+  const custom = signupWelcomeLabels(brand.slug);
+  if (custom) return custom;
   const one = brand.welcomeOneIds.map((id) => title.get(id)!).join(" ou ");
   return { one: `1 produto: ${one}${brand.welcomeOneIds.length > 1 ? " (você escolhe no portal)" : ""}`, two: `2 produtos + 3 vídeos para a marca: ${brand.welcomeTwoIds.map((id) => title.get(id)!).join(" e ")}` };
 }

@@ -315,6 +315,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-267 — 2026-11-07 — Revita: texto das opções do envio inicial (D-WELCOMELABELS)
+- `welcomeLabels` em `SIGNUP_BY_BRAND` (domínio) e `signupWelcomeLabels`; `signupWelcome` usa o texto da marca quando
+  existe. Teste em `test/signup.test.ts` (texto e `welcomeChoice` reconhecendo cada opção).
+
 ### CP-266 — 2026-11-06 — SICOOB da Botanika completo (D-REMESSA)
 - Produção: Botanika `bankConvenio` = 5732360 ("código do cliente" enviado pelo Sr. Guilherme; auditoria). Com agência 4027
   e conta 90666987-1, o arquivo de Pix (Saques → Aprovados) já pode ser gerado. Confirmar o convênio no 1º teste na

@@ -46,10 +46,19 @@ export const PAYOUT_PJ = "Empresa (CNPJ)";
  * D-REVITASIGNUP (pedido da Revita, 2026-11-04): textos do cadastro que mudam por marca (recibo RPA para pessoa
  * física). Marca fora da lista: texto padrão.
  */
-const SIGNUP_BY_BRAND: Record<string, { payoutHint?: string }> = {
-  "revita-derma": { payoutHint: "Pessoa física saca com recibo RPA; empresa (inclusive MEI) saca com nota fiscal." },
+const SIGNUP_BY_BRAND: Record<string, { payoutHint?: string; welcomeLabels?: { one: string; two: string } }> = {
+  "revita-derma": {
+    payoutHint: "Pessoa física saca com recibo RPA; empresa (inclusive MEI) saca com nota fiscal.",
+    // D-WELCOMELABELS (texto da Fátima, 2026-11-07): opções curtas, com o que cada uma pede de conteúdo.
+    welcomeLabels: {
+      one: "1 produto: Sérum Pepti Code ou Gel Creme Retinal – 2 story semanal e 1 reels mês",
+      two: "2 produtos: Kit (sérum e gel) – 2 story semanal, 1 reels mês, 3 vídeos para a marca usar para tráfego, site, collab",
+    },
+  },
 };
 export const signupPayoutHint = (brandSlug: string): string | undefined => SIGNUP_BY_BRAND[brandSlug]?.payoutHint;
+/** D-WELCOMELABELS: texto próprio das opções do envio inicial (null = monta pelos nomes dos produtos). */
+export const signupWelcomeLabels = (brandSlug: string): { one: string; two: string } | null => SIGNUP_BY_BRAND[brandSlug]?.welcomeLabels ?? null;
 
 /** D-ALELOCARD: nome da mãe limpo (espaços, 5 a 120 letras, pelo menos nome e sobrenome); inválido = null. */
 export function cleanMotherName(raw: string): string | null {

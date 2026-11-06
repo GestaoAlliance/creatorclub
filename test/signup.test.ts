@@ -143,3 +143,15 @@ describe("D-ALELOCARD: nome da mãe para o cartão Alelo", () => {
     expect(pj.ok && pj.account.motherName).toBeNull();
   });
 });
+
+describe("D-WELCOMELABELS: texto próprio das opções do envio inicial", () => {
+  it("Revita mostra o texto da Fátima e a aprovação reconhece cada opção", async () => {
+    const { signupWelcomeLabels, welcomeChoice } = await import("@/domain");
+    const l = signupWelcomeLabels("revita-derma")!;
+    expect(l.one).toBe("1 produto: Sérum Pepti Code ou Gel Creme Retinal – 2 story semanal e 1 reels mês");
+    expect(l.two).toMatch(/^2 produtos: Kit \(sérum e gel\)/);
+    expect(welcomeChoice(l.one)).toBe("one");
+    expect(welcomeChoice(l.two)).toBe("videos");
+    expect(signupWelcomeLabels("botanika")).toBeNull();
+  });
+});
