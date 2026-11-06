@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-268 — 2026-11-06 — Queda do site: conexões do banco esgotadas (D-DBPOOL)
+- Erro na Vercel: `(EMAXCONN) max client connections reached, limit: 200` no pooler do Supabase (1.156 vezes, 17
+  pessoas, todas as telas). Cada instância abria até 10 conexões e as segurava quando era suspensa.
+- `src/lib/db.ts`: pool próprio com `max` 3, conexões paradas fecham em 5 s, espera de 15 s, e `attachDatabasePool`
+  (`@vercel/functions` 3.10.3) para fechar as conexões antes de a instância parar. Teste `test/db-pool.test.ts`.
+
 ### CP-267 — 2026-11-07 — Revita: texto das opções do envio inicial (D-WELCOMELABELS)
 - `welcomeLabels` em `SIGNUP_BY_BRAND` (domínio) e `signupWelcomeLabels`; `signupWelcome` usa o texto da marca quando
   existe. Teste em `test/signup.test.ts` (texto e `welcomeChoice` reconhecendo cada opção).
