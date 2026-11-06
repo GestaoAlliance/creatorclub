@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-264 — 2026-11-06 — Olist: forma de envio e de frete no pedido (D-OLISTSHIP)
+- `Brand.olistShippingMethod` e `Brand.olistFreightForm` (migração `20261121090000_olist_shipping`, Botanika =
+  "Correios Log+ Extrema" / "PAC CORREIOS LOG+"); `buildOlistOrder` manda `forma_envio` e `forma_frete`.
+- Pendente: respostas do Guilherme sobre a Alelo (nome da mãe, matrícula/centro de custo, modelo do arquivo de crédito).
+
 ### CP-263 — 2026-11-05 — Olist: resposta real com "registros" em objeto; confere antes de criar (D-OLISTORDER)
 - 1º pedido real (Fátima Beatriz, Botanika) ficou com "Olist recusou: erro sem mensagem": a leitura só aceitava
   `registros` em lista (exemplo da documentação). Agora aceita lista ou objeto, pesquisa o número "CC-…" antes de criar

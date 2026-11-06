@@ -37,7 +37,7 @@ function fakeOlist(opts: { duplicate?: boolean; tracking?: string; reject?: stri
 
 async function setup() {
   const s = await seedBrand(prisma);
-  await prisma.brand.update({ where: { id: s.brand.id }, data: { olistNatureId: "337803880" } });
+  await prisma.brand.update({ where: { id: s.brand.id }, data: { olistNatureId: "337803880", olistShippingMethod: "Correios Log+ Extrema", olistFreightForm: "PAC CORREIOS LOG+" } });
   await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { cpf: "52998224725", phone: "31991234567" } });
   const mk = (title: string, sku: string | null, costCents: number | null) => prisma.product.create({ data: { brandId: s.brand.id, shopifyId: `gid://shopify/Product/${randomUUID()}`, title, sku, costCents } });
   const whey = await mk("Whey", "80.1.8", 4250);
@@ -59,6 +59,7 @@ describe("pedido da creator no Olist (D-OLISTORDER, banco real)", () => {
     const sent = JSON.parse(o.calls.find((c) => c.method === "pedido.incluir")!.params.get("pedido")!).pedido;
     expect(sent).toMatchObject({
       numero_pedido_ecommerce: olistRef(shipment.id), data_pedido: "05/11/2026", situacao: "aprovado", id_natureza_operacao: "337803880", frete_por_conta: "R",
+      forma_envio: "Correios Log+ Extrema", forma_frete: "PAC CORREIOS LOG+",
       cliente: { tipo_pessoa: "F", cpf_cnpj: "52998224725", endereco: "Rua X", numero: "10", bairro: "Centro", cep: "30130010", cidade: "Belo Horizonte", uf: "MG" },
       itens: [{ item: { codigo: "80.1.8", descricao: "Whey", unidade: "UN", quantidade: "2", valor_unitario: "42.50" } }],
     });
