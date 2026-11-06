@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-268 — 2026-11-06 — Skills do Claude instaladas no repositório (D-SKILLS)
+- `.claude/skills/` com 66 skills (os 50 itens do guia da Asimov; mapa em `docs/SKILLS.md`), GSD 1.42.3 e PAUL 1.4.0
+  pelos instaladores oficiais (hooks revisados e testados; caminho do Node portátil). Claude Art Skill não existe mais
+  no GitHub. `.vercelignore` tira `.claude/` do deploy. `CLAUDE.md`: regras do projeto acima de qualquer skill.
+  Nenhum código do app mudou; próxima tarefa segue a mesma.
+
 ### CP-267 — 2026-11-07 — Revita: texto das opções do envio inicial (D-WELCOMELABELS)
 - `welcomeLabels` em `SIGNUP_BY_BRAND` (domínio) e `signupWelcomeLabels`; `signupWelcome` usa o texto da marca quando
   existe. Teste em `test/signup.test.ts` (texto e `welcomeChoice` reconhecendo cada opção).
