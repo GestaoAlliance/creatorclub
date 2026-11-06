@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-271 — 2026-11-06 — Contexto de negócio da Botanika levantado nas fontes
+- `docs/CONTEXTO-BOTANIKA.md`: loja (Shopify), mídia paga (Meta e UTMify), programa em produção (Supabase e conector
+  Creator Club), documentos da equipe (Drive) e planejamento de novembro (AllianceOS). Tudo só leitura, sem dados
+  pessoais. Pontos em aberto listados no fim do documento (cupom de 2% em novembro, Revita sem atribuição, falhas do
+  Instagram, avisos do Supabase). Nenhum código mudou; próxima tarefa segue a mesma.
+
 ### CP-270 — 2026-11-06 — Git Guardrails ligado (D-SKILLS)
 - Hook `.claude/hooks/block-dangerous-git.sh` (PreToolUse/Bash): bloqueia push forçado, push direto na `main`, apagar
   branch remota, `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`, `stash drop/clear`. Push normal da
