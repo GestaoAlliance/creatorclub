@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-266 — 2026-11-06 — SICOOB da Botanika completo (D-REMESSA)
+- Produção: Botanika `bankConvenio` = 5732360 ("código do cliente" enviado pelo Sr. Guilherme; auditoria). Com agência 4027
+  e conta 90666987-1, o arquivo de Pix (Saques → Aprovados) já pode ser gerado. Confirmar o convênio no 1º teste na
+  homologação do SICOOB (nenhum saque aprovado em 06/11). Sobre a Alelo: nome da mãe confirmado como essencial; o
+  modelo do arquivo de crédito chega hoje pelo representante.
+
 ### CP-265 — 2026-11-06 — Cartão Alelo: nome da mãe e planilha de pedido de cartão (D-ALELOCARD)
 - Migração `20261122090000_alelo_card`: `CreatorAccount.motherName` (trava `CreatorAccount_mother_name`) e
   `Creator.aleloCardRequestedAt`. Cadastro (pessoa física: nome da mãe obrigatório, `cleanMotherName`), aviso
