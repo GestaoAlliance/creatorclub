@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-269 — 2026-11-06 — Contrato assinado no Autentique anexado sozinho (D-AUTOCONTRACTFILE)
+- Pedido da Fátima: assinado no Autentique, o PDF assinado é baixado, guardado no bucket `contratos` e anexado na ficha
+  (a creator vê em "Meu contrato"). Três marcas, inclusive quem já tinha assinado (12 Botanika e 3 Revita sem PDF).
+- PDF anexado à mão pela equipe continua valendo (o do Autentique fica guardado). Até 5 tentativas por contrato.
+- Migração `20261123090000_contract_signed_file`: `ContractRequest.signedFileId`, `signedFileAttempts` (CHECK 0..20),
+  `signedFileError`. `src/lib/autentique/signed-file.ts` (tarefa `autentique.signed_file`, de hora em hora pelo worker).
+  Teste `test/integration/signed-file.test.ts`.
+- Próximo: investigar o erro ao remover cupom no checkout da Revita (TALITA5 + PAULAGUEDES juntos).
+
 ### CP-268 — 2026-11-06 — Queda do site: conexões do banco esgotadas (D-DBPOOL)
 - Erro na Vercel: `(EMAXCONN) max client connections reached, limit: 200` no pooler do Supabase (1.156 vezes, 17
   pessoas, todas as telas). Cada instância abria até 10 conexões e as segurava quando era suspensa.

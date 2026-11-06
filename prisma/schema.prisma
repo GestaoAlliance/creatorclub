@@ -82,10 +82,10 @@ model Brand {
   /// D-D4SIGN: produto sugerido na mensagem de aprovação (escolhido em Marcas); null = mensagem sem a sugestão.
   approvalSuggestion        String?
   /// D-OLISTORDER: id da natureza de operação do Olist para o pedido da creator (Botanika: remessa em bonificação).
-  olistNatureId           String?
+  olistNatureId             String?
   /// D-OLISTSHIP: forma de envio e forma de frete do pedido no Olist (Botanika: "Correios Log+ Extrema" / "PAC CORREIOS LOG+").
-  olistShippingMethod     String?
-  olistFreightForm        String?
+  olistShippingMethod       String?
+  olistFreightForm          String?
   whatsappInstance          String? // M2.2 (D-WHATSAPP): instância da Evolution (n8n) que manda os avisos; null = só portal e e-mail
   nfTakerDocument           String? // D-NF: CNPJ do tomador da nota fiscal da creator
   legalName                 String? // razão social (recibo de pessoa física, D-PFRECEIPT)
@@ -180,17 +180,17 @@ model BrandIntegration {
 
 /// Pessoa que faz login (equipe ou creator). id = id do usuário no Supabase Auth.
 model User {
-  id         String    @id
-  email      String    @unique
-  name       String
-  phone      String? // telefone da pessoa da equipe (ex.: hunter), opcional
-  disabledAt DateTime?
+  id                 String    @id
+  email              String    @unique
+  name               String
+  phone              String? // telefone da pessoa da equipe (ex.: hunter), opcional
+  disabledAt         DateTime?
   /// M4.4b (D-ACCESS): último acesso ao sistema (painel ou portal), gravado no máximo uma vez por hora.
-  lastSeenAt DateTime?
+  lastSeenAt         DateTime?
   /// D-ACCESSFIX: entrou com senha provisória da equipe; o portal pede a senha nova antes de tudo.
-  mustChangePassword Boolean @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   roleGrants     RoleGrant[]
   creatorAccount CreatorAccount?
@@ -732,9 +732,10 @@ model File {
   uploadedById String?
   createdAt    DateTime @default(now())
 
-  brand       Brand        @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  brand       Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
   withdrawals Withdrawal[]
-  contractOf  Creator[]    @relation("CreatorContractFile")
+  contractOf  Creator[]         @relation("CreatorContractFile")
+  signedOf    ContractRequest[] @relation("ContractRequestSignedFile")
 
   @@unique([bucket, path])
 }
@@ -901,40 +902,40 @@ enum ShipmentStatus {
 /// Envio de produtos à creator (D-SHIPMENTS). Endereço copiado no momento do envio; situação com datas coerentes
 /// (travas na migração). Nada é apagado: cancelar é situação.
 model Shipment {
-  id              String         @id @default(uuid())
-  brandId         String
-  creatorId       String
-  status          ShipmentStatus @default(PREPARING)
-  note            String?
-  address         Json
-  carrier         String?
-  trackingCode    String?
+  id               String         @id @default(uuid())
+  brandId          String
+  creatorId        String
+  status           ShipmentStatus @default(PREPARING)
+  note             String?
+  address          Json
+  carrier          String?
+  trackingCode     String?
   /// M3.2 (D-COST): frete pago pelo envio (digitado ao marcar como enviado); null = não informado.
-  freightCents    Int?
+  freightCents     Int?
   /// M5.1 (D-SHOPBALANCE): compra com o saldo — valor reservado enquanto espera a Gestão e lançado no extrato ao aprovar.
-  balanceCents    Int?
-  createdById     String
-  shippedAt       DateTime?
-  shippedById     String?
-  deliveredAt     DateTime?
-  deliveredBy     String? // STAFF | CREATOR
-  deliveredById   String?
-  cancelledAt     DateTime?
-  cancelledById   String?
+  balanceCents     Int?
+  createdById      String
+  shippedAt        DateTime?
+  shippedById      String?
+  deliveredAt      DateTime?
+  deliveredBy      String? // STAFF | CREATOR
+  deliveredById    String?
+  cancelledAt      DateTime?
+  cancelledById    String?
   /// D-KITAPPROVAL: quem da Gestão aprovou o pedido da creator (só pedidos que passaram por aprovação).
-  approvedAt      DateTime?
-  approvedById    String?
+  approvedAt       DateTime?
+  approvedById     String?
   /// D-KITAPPROVAL: motivo quando a Gestão recusa o pedido (o kit volta para ela escolher de novo).
-  rejectReason    String?
+  rejectReason     String?
   /// D-SHIPALERT: quando entrou no resumo de hora em hora do WhatsApp de quem é Envio (null = ainda não avisado).
-  staffNotifiedAt DateTime?
+  staffNotifiedAt  DateTime?
   /// D-OLISTORDER: pedido criado no Olist ERP ao aprovar o pedido da creator (id, número, quando, último erro).
   olistOrderId     String?
   olistOrderNumber String?
   olistSentAt      DateTime?
   olistError       String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   brand   Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
@@ -1390,8 +1391,13 @@ model ContractRequest {
   lastCheckedAt      DateTime?
   lastError          String?
   createdById        String
+  /// D-AUTOCONTRACTFILE: PDF assinado baixado do Autentique (tentativas e último erro).
+  signedFileId       String?
+  signedFileAttempts Int                   @default(0)
+  signedFileError    String?
 
   brand            Brand               @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  signedFile       File?               @relation("ContractRequestSignedFile", fields: [signedFileId], references: [id], onDelete: Restrict)
   creator          Creator?            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   application      CreatorApplication? @relation(fields: [applicationId, brandId], references: [id, brandId], onDelete: Restrict)
   contractDocument ContractDocument    @relation(fields: [contractDocumentId, brandId], references: [id, brandId], onDelete: Restrict)
