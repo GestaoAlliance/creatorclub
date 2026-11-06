@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-270 — 2026-11-06 — Git Guardrails ligado (D-SKILLS)
+- Hook `.claude/hooks/block-dangerous-git.sh` (PreToolUse/Bash): bloqueia push forçado, push direto na `main`, apagar
+  branch remota, `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`, `stash drop/clear`. Push normal da
+  branch liberado (regra 3). 19 casos testados à mão. Detalhes em `docs/SKILLS.md`.
+
+### CP-269 — 2026-11-06 — Skills do Claude instaladas no repositório (D-SKILLS)
+- `.claude/skills/` com 66 skills (os 50 itens do guia da Asimov; mapa em `docs/SKILLS.md`), GSD 1.42.3 e PAUL 1.4.0
+  pelos instaladores oficiais (hooks revisados e testados; caminho do Node portátil). Claude Art Skill não existe mais
+  no GitHub. `.vercelignore` tira `.claude/` do deploy. `CLAUDE.md`: regras do projeto acima de qualquer skill.
+  Nenhum código do app mudou; próxima tarefa segue a mesma.
+
 ### CP-268 — 2026-11-06 — Queda do site: conexões do banco esgotadas (D-DBPOOL)
 - Erro na Vercel: `(EMAXCONN) max client connections reached, limit: 200` no pooler do Supabase (1.156 vezes, 17
   pessoas, todas as telas). Cada instância abria até 10 conexões e as segurava quando era suspensa.

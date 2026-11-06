@@ -22,6 +22,12 @@ até 2026-10-09 e não recebe mais commits). Contas do projeto: Gestão Alliance
 7. Antes de cada tarefa, consultar também o Google Drive da Alliance (planilhas, formulários, documentos) para ter o
    contexto do que a equipe já faz. **Só leitura**: nada é editado nas planilhas e formulários da equipe (D-SHEETREADONLY).
 
+## Skills do Claude (D-SKILLS)
+
+Skills, comandos do GSD/PAUL e hooks em `.claude/` (mapa e origem em `docs/SKILLS.md`). **Estas regras valem mais
+que qualquer skill**: se uma skill mandar outro idioma, outro fluxo de tarefa (fases, `.planning/`, specs próprias),
+outro visual ou commits em outro formato, segue-se este arquivo, o `PROGRESS.md` e o `DESIGN.md`.
+
 ## Escopo atual (lançamento 1)
 
 Creators **já ativas** da Botanika: portal com vendas, saldo correto, extrato, cupom, link e saque.

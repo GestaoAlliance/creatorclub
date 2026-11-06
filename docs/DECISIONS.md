@@ -264,6 +264,7 @@
 | D-WDLOCK | 2026-10-09 | Saque travado por creator até o Pagamento aprovar o saldo de abertura (E6, D-OPEN): o saldo de hoje não desconta o que já foi pago por fora. | Pedro |
 | D-WDRULES | 2026-10-09 | (Janela, mínimo e valor parcial substituídos por D-CONTRACT em 2026-10-10.) Pedido de saque: janela do dia 10 ao 15, mínimo R$ 500 por pedido, valor parcial permitido, um pedido em aberto por vez, nota fiscal em PDF obrigatória (até 10 MB), pagamento por Pix. | Pedro |
 | D-WDFLOW | 2026-10-09 | Passo a passo do saque: valor → enviar a nota **já emitida** (PDF) → confirmar (com a chave Pix). A creator não emite a nota no meio do pedido: a aba Saque mostra antes os dados para emitir (CNPJ do tomador e sugestão de descrição/código). | Pedro |
+| D-SKILLS | 2026-11-06 | Skills do Claude no repositório (`.claude/`): os 50 itens do guia "As 50 melhores Claude Skills", uma skill por item (pacotes só com a principal), GSD e PAUL pelos instaladores oficiais com hooks revisados. As regras do `CLAUDE.md` valem mais que qualquer skill. `.claude/` fora do deploy (`.vercelignore`). Mapa em `docs/SKILLS.md`. Git Guardrails ligado sem bloquear o push normal da branch (bloqueia força, push na `main` e comandos que descartam trabalho). | Responsável |
 
 ## Em aberto (usar a proposta até haver resposta; marcar no código `// DECISÃO-ABERTA: <id>`)
 
