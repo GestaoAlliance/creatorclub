@@ -218,6 +218,7 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
   const sec = (id: string) => SIGNUP_SECTIONS.find((s) => s.id === id)!;
 
   if (state.existing === "request") return <AccessRequest values={state.values ?? {}} />;
+  if (state.joined) return <OtherBrandJoined values={state.values ?? {}} brandName={brand.name} hasLogin={state.joined === "login"} />;
 
   return (
     <form ref={formRef} action={action} onInvalidCapture={onInvalid} onSubmit={() => setMissing({})} className="flex flex-col gap-6">
@@ -473,6 +474,33 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
  * D-ACCESSREQ: quem já está no Creator Club (importada ou aprovada) e nunca criou a senha não faz outro cadastro: pede
  * o link de acesso, e a equipe vê o pedido em Ações e manda o convite.
  */
+/**
+ * D-MULTIBRAND: quem já é creator de outra marca e se inscreve nesta vira candidata desta marca com a mesma conta. A
+ * gestora da marca aprova; aprovada, a marca nova aparece no portal (números de cada marca separados).
+ */
+function OtherBrandJoined({ values, brandName, hasLogin }: { values: Record<string, string>; brandName: string; hasLogin: boolean }) {
+  const first = (values.fullName ?? "").trim().split(/\s+/)[0];
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 text-center dark:border-white/10 dark:bg-white/[0.04]">
+      <p className="text-lg font-semibold">{first ? `${first}, recebemos` : "Recebemos"} a sua inscrição na {brandName}! 💜</p>
+      <p className="text-sm text-stone-600 dark:text-stone-300">
+        Você já faz parte do Creator Club por outra marca, então usa a mesma conta. A equipe da {brandName} vai analisar o seu
+        cadastro; aprovado, a {brandName} aparece no seu portal, com os números de cada marca separados.
+      </p>
+      <p className="text-sm text-stone-600 dark:text-stone-300">
+        {hasLogin
+          ? "Para entrar, use o seu e-mail e a senha de sempre."
+          : "Você ainda não criou a sua senha: a equipe te manda o link de acesso pelo WhatsApp ou e-mail."}
+      </p>
+      {hasLogin && (
+        <p className="text-sm">
+          <Link href="/entrar" className="font-semibold text-[var(--b)] hover:underline">Entrar</Link>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AccessRequest({ values }: { values: Record<string, string> }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);

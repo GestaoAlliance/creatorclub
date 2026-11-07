@@ -26,7 +26,8 @@ export type SignupAuth = {
 };
 
 /** `existing: "request"`: e-mail ou CPF de uma creator já cadastrada que ainda não criou a senha (D-ACCESSREQ). */
-export type SignupOutcome = { ok: true; email: string | null } | { ok: false; errors: Record<string, string>; existing?: "request" };
+/** `joined`: já tinha conta (de outra marca) e virou candidata desta marca com a mesma conta (D-MULTIBRAND). */
+export type SignupOutcome = { ok: true; email: string | null; joined?: "login" | "nologin" } | { ok: false; errors: Record<string, string>; existing?: "request" };
 
 /** Cupom já usado na marca ou reservado por outra inscrição em análise. */
 export async function signupCouponTaken(prisma: PrismaClient, brandId: string, code: string): Promise<boolean> {
@@ -102,9 +103,23 @@ export async function submitSignup(
   // D-ACCESSREQ: creator que já está no sistema (importada ou aprovada) e nunca criou a senha: em vez do erro, o
   // formulário oferece pedir o link de acesso à equipe. Quem já tem senha continua indo para "Entrar".
   const found = [byEmail, byCpf].filter((a) => a !== null);
-  if (!staff && found.length > 0 && found.every((a) => a.userId === null)) return { ok: false, errors: {}, existing: "request" };
-  if (byEmail || staff) errors.email = "Você já tem acesso com este e-mail. Entre com ele (ou toque em \"Esqueci a senha\").";
-  if (byCpf) errors.cpf = "Este CPF já tem acesso ao portal. Entre com o seu e-mail (ou toque em \"Esqueci a senha\").";
+  // D-MULTIBRAND (pedido do responsável, 2026-11-07): creator de outra marca que se inscreve nesta vira candidata desta
+  // marca com a mesma conta (mesmo login). A conta não muda: o que ela digitou fica na candidatura para a gestora conferir.
+  const sameAccount = found.length > 0 && new Set(found.map((a) => a.id)).size === 1 ? found[0] : null;
+  const joining =
+    sameAccount &&
+    !(await prisma.creator.findFirst({ where: { brandId: brand.id, accountId: sameAccount.id }, select: { id: true } })) &&
+    !(await prisma.creatorApplication.findFirst({ where: { brandId: brand.id, accountId: sameAccount.id, status: { not: "NEW" } }, select: { id: true } })) &&
+    // Inscrição feita pelo próprio cadastro desta marca (conta nasceu aqui): não é "outra marca".
+    (await prisma.creator.count({ where: { accountId: sameAccount.id } })) > 0
+      ? sameAccount
+      : null;
+  // Já mandou esta inscrição (em análise): repetir o cadastro só mostra a mesma resposta.
+  if (joining && (await prisma.creatorApplication.findFirst({ where: { brandId: brand.id, accountId: joining.id, status: "NEW" }, select: { id: true } })))
+    return { ok: true, email: null, joined: joining.userId ? "login" : "nologin" };
+  if (!joining && !staff && found.length > 0 && found.every((a) => a.userId === null)) return { ok: false, errors: {}, existing: "request" };
+  if (!joining && (byEmail || staff)) errors.email = "Você já tem acesso com este e-mail. Entre com ele (ou toque em \"Esqueci a senha\").";
+  if (!joining && byCpf) errors.cpf = "Este CPF já tem acesso ao portal. Entre com o seu e-mail (ou toque em \"Esqueci a senha\").";
   if (couponTaken) errors.coupon = "Este cupom já está em uso. Escolha outro.";
   if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -117,13 +132,6 @@ export async function submitSignup(
     else if (!sameShipAddress(acc.address, info.address))
       return { ok: false, errors: { addrZip: `Para empresa que não é MEI, os produtos vão para o endereço do CNPJ: ${cnpjAddressLine(info.address)}.` } };
     else cnpjNote = `conferido com a Receita (${info.legalName})`;
-  }
-
-  const login = await auth.createUser(acc.email, input.password);
-  if ("error" in login) {
-    return login.error === "exists"
-      ? { ok: false, errors: { email: "Este e-mail já tem cadastro. Entre com ele ou fale com a equipe." } }
-      : { ok: false, errors: { _form: "Não foi possível criar a conta agora. Tente de novo em instantes." } };
   }
 
   const code = normalizeHunterCode(input.hunterCode);
@@ -140,6 +148,37 @@ export async function submitSignup(
     ...(welcome ? { "Envio inicial:": welcome } : {}),
     Aceite: signupConsentText(brandName),
   };
+  if (joining) {
+    {
+      await prisma.$transaction(async (tx) => {
+        const app = await receiveApplication(tx as unknown as PrismaClient, {
+          brandSlug: brand.slug,
+          source: SIGNUP_SOURCE,
+          externalKey: `site:${randomUUID()}`,
+          submittedAt: now,
+          answers,
+          consentAt: now,
+          ipHash,
+          accountId: joining.id,
+        });
+        if (campaignTag || heardFrom) await tx.creatorApplication.update({ where: { id: app.id }, data: { campaignTag, heardFrom } });
+        // Sem senha ainda (ex.: importada): vira também o pedido do link de acesso (D-ACCESSREQ) para a equipe.
+        if (!joining.userId) await tx.creatorAccount.update({ where: { id: joining.id }, data: { accessRequestedAt: now } });
+        await tx.auditLog.create({
+          data: { brandId: brand.id, actorType: "SYSTEM", actorId: "signup:other-brand", action: "signup.other_brand", entity: "CreatorApplication", entityId: app.id, after: { accountId: joining.id, coupon: acc.coupon } },
+        });
+      });
+    }
+    return { ok: true, email: null, joined: joining.userId ? "login" : "nologin" };
+  }
+
+  const login = await auth.createUser(acc.email, input.password);
+  if ("error" in login) {
+    return login.error === "exists"
+      ? { ok: false, errors: { email: "Este e-mail já tem cadastro. Entre com ele ou fale com a equipe." } }
+      : { ok: false, errors: { _form: "Não foi possível criar a conta agora. Tente de novo em instantes." } };
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.user.create({ data: { id: login.userId, email: acc.email, name: acc.name, phone: acc.phone } });
