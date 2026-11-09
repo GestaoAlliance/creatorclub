@@ -193,6 +193,39 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     expect(tasks).toEqual([]);
   });
 
+  it("D-MULTIBRAND: creator de outra marca se inscreve nesta: vira candidata com a mesma conta, sem login novo nem duplicar", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const doc = cpf();
+    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { cpf: doc } });
+    const { auth, users } = fakeAuth();
+    const now = new Date("2026-11-07T12:00:00Z");
+    const typed = { ...values(a.account.email), cpf: doc };
+
+    // Na própria marca: continua o pedido do link de acesso.
+    expect(await submitSignup(prisma, { ...base(a.brand.slug, a.account.email, "8.8.8.1"), values: typed }, auth, now)).toEqual({ ok: false, errors: {}, existing: "request" });
+
+    // Em outra marca: candidatura ligada à conta; a conta não muda; sem senha, vira também o pedido do link.
+    const before = await prisma.creatorAccount.findUniqueOrThrow({ where: { id: a.account.id } });
+    const r = await submitSignup(prisma, { ...base(b.brand.slug, a.account.email, "8.8.8.2"), values: typed }, auth, now);
+    expect(r).toEqual({ ok: true, email: null, joined: "nologin" });
+    expect(users.size).toBe(0);
+    const apps = await prisma.creatorApplication.findMany({ where: { brandId: b.brand.id, accountId: a.account.id } });
+    expect(apps).toHaveLength(1);
+    const after = await prisma.creatorAccount.findUniqueOrThrow({ where: { id: a.account.id } });
+    expect({ ...after, accessRequestedAt: null, updatedAt: null }).toEqual({ ...before, accessRequestedAt: null, updatedAt: null });
+    expect(after.accessRequestedAt).toEqual(now);
+
+    // Repetir o cadastro não cria outra candidatura.
+    expect(await submitSignup(prisma, { ...base(b.brand.slug, a.account.email, "8.8.8.3"), values: typed }, auth, now)).toMatchObject({ ok: true, joined: "nologin" });
+    expect(await prisma.creatorApplication.count({ where: { brandId: b.brand.id, accountId: a.account.id } })).toBe(1);
+
+    // Com senha: mesma coisa, avisando para entrar com a senha de sempre.
+    await prisma.user.create({ data: { id: randomUUID(), email: `${randomUUID()}@x.com`, name: "L" } }).then(async (u) => prisma.creatorAccount.update({ where: { id: a.account.id }, data: { userId: u.id } }));
+    const c = await seedBrand(prisma);
+    expect(await submitSignup(prisma, { ...base(c.brand.slug, a.account.email, "8.8.8.4"), values: typed }, auth, now)).toEqual({ ok: true, email: null, joined: "login" });
+  });
+
   it("D-ACCESSREQ: convites em massa só para quem não tem senha e tem e-mail real, com a mensagem do WhatsApp", async () => {
     const a = await seedBrand(prisma);
     const gestao = await userWith("GESTAO", a.brand.id);

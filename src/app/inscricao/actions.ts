@@ -11,7 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /** `existing: "request"`: já tem cadastro sem senha; o formulário vira o pedido do link de acesso (D-ACCESSREQ). */
-export type SignupState = { errors?: Record<string, string>; values?: Record<string, string>; existing?: "request"; n: number };
+export type SignupState = { errors?: Record<string, string>; values?: Record<string, string>; existing?: "request"; joined?: "login" | "nologin"; n: number };
 
 /** Login do cadastro no Supabase Auth (D-SIGNUPACCOUNT): e-mail já confirmado, como no convite. */
 const supabaseSignupAuth: SignupAuth = {
@@ -58,6 +58,8 @@ export async function signupAction(prev: SignupState, form: FormData): Promise<S
       supabaseSignupAuth,
     );
     if (!r.ok) return r.existing ? { existing: r.existing, values, n: prev.n + 1 } : { errors: r.errors, values, n: prev.n + 1 };
+    // D-MULTIBRAND: já tinha conta de outra marca; virou candidata desta (sem login novo).
+    if (r.joined) return { joined: r.joined, values, n: prev.n + 1 };
     email = r.email;
   } catch (error) {
     if (error instanceof ApplicationError) return { errors: { _form: error.message }, values, n: prev.n + 1 };

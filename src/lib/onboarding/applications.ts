@@ -419,10 +419,8 @@ export async function approveApplication(
     throw new ApplicationError(`O cupom ${coupon.code} já está reservado para outra creator esperando o contrato. Escolha outro.`);
   const known = await prisma.creatorAccount.findUnique({ where: { email }, select: { creators: { select: { brandId: true } } } });
   if (known?.creators.some((c) => c.brandId === app.brandId)) throw new ApplicationError("Esta pessoa já é creator nesta marca.");
-  // Isolamento entre marcas (D-BRANDISOLATION): juntar ao cadastro de quem já é creator de uma marca fora do acesso de
-  // quem aprova mostraria a essa pessoa os dados que a creator deu lá (CPF, Pix, endereço). Só quem tem as duas marcas.
-  if (known?.creators.some((c) => !can(actor.grants, "creators.edit", c.brandId)))
-    throw new ApplicationError("Este e-mail já é de uma creator de outra marca que você não acessa. Peça a um super admin para aprovar esta candidata.");
+  // D-MULTIBRAND (2026-11-07, muda D-BRANDISOLATION): a gestora da marca aprova quem já é creator de outra marca; a conta
+  // (dados da pessoa) é a mesma, mas vendas, saldo, cupom e contrato de cada marca continuam separados.
   let shopifyId: string | null = null;
   try {
     if (!autentique) shopifyId = await createDiscountInShopify(prisma, app.brandId, coupon.code, input.discountBps, clientFor, now);

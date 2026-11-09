@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-272 — 2026-11-07 — Creator de uma marca se inscreve em outra com a mesma conta (D-MULTIBRAND)
+- Caso Naiana (Botanika, sem senha) no cadastro da Revita: o formulário travava e mandava o "pedido de link" para a
+  Botanika; a Fátima não achava. Agora quem já tem conta (e-mail/CPF) e ainda não é desta marca vira candidata desta
+  marca ligada à mesma conta: sem login novo, a conta não muda (o que ela digitou fica na candidatura), repetir não
+  duplica; sem senha, vira também o pedido do link (Ações). Tela "Recebemos a sua inscrição na <marca>!".
+- Aprovação: a gestora da marca aprova sozinha quem já é de outra marca (tirada a trava de D-BRANDISOLATION para esse
+  caso). Portal: a marca nova aparece na troca de marca, números separados.
+- `src/lib/onboarding/signup.ts`, `src/app/inscricao/{actions.ts,form.tsx}`, `src/lib/onboarding/applications.ts`.
+  Testes em `test/integration/signup.test.ts` e `applications.test.ts`.
+- Próximo: a Naiana preenche o cadastro da Revita de novo; depois, erro ao remover cupom no checkout da Revita.
+
 ### CP-271 — 2026-11-06 — Contrato assinado no Autentique anexado sozinho (D-AUTOCONTRACTFILE)
 - Pedido da Fátima: assinado no Autentique, o PDF assinado é baixado, guardado no bucket `contratos` e anexado na ficha
   (a creator vê em "Meu contrato"). Três marcas, inclusive quem já tinha assinado (12 Botanika e 3 Revita sem PDF).
