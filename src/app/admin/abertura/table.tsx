@@ -10,14 +10,14 @@ const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_
 /** Pendentes (com o formulário) e já liberadas (com o que foi lançado). */
 export function OpeningTable({ rows }: { rows: OpeningRow[] }) {
   const pending = rows.filter((r) => !r.unlockedAt && r.status !== "DEACTIVATED");
-  const ready = pending.filter((r) => r.ready);
-  const waiting = pending.filter((r) => !r.ready);
+  // D-OPENINGBYPAY: o Pagamento confere e aprova direto (sem esperar a conferência da gestora).
+  const ready = pending;
   const done = rows.filter((r) => r.unlockedAt);
   return (
     <>
-      <Card title={`Prontas para aprovar (${ready.length})`}>
+      <Card title={`A aprovar (${ready.length})`}>
         {ready.length === 0 ? (
-          <p className={ui.muted}>Nenhuma. As creators aparecem aqui depois que a Ana marca &quot;Conferi os números&quot; na ficha.</p>
+          <p className={ui.muted}>Nenhuma creator esperando o saldo de abertura.</p>
         ) : (
           <ul className={ui.list}>
             {ready.map((r) => (
@@ -35,21 +35,6 @@ export function OpeningTable({ rows }: { rows: OpeningRow[] }) {
           </ul>
         )}
       </Card>
-
-      {waiting.length > 0 && (
-        <Card title={`Aguardando a conferência da Ana (${waiting.length})`}>
-          <ul className="flex flex-wrap gap-2">
-            {waiting.map((r) => (
-              <li key={r.creatorId}>
-                <Link href={`/admin/creators/${r.creatorId}`} className={ui.pill}>
-                  {r.name} · <span className="tabular-nums">{formatBRL(r.ledgerCents)}</span>
-                  {r.paid && <span className="text-stone-500"> · já recebeu {formatBRL(r.paid.cents)}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
 
       <Card title={`Saque liberado (${done.length})`}>
         {done.length === 0 ? (

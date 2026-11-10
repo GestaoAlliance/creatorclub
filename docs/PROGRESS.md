@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-275 — 2026-11-10 — O Pagamento confere e aprova o saldo de abertura sozinho (D-OPENINGBYPAY)
+- Vanessa: "a gestora não confere os valores, é o Guilherme que confere"; o responsável: "segue o que a Vanessa
+  pediu". `approveOpening` não exige mais "Conferi os números" (D-ANAREVIEW); a tela de Saldo de abertura mostra
+  todas as pendentes em "A aprovar". A marcação na ficha continua existindo, sem travar. Teste em `opening.test.ts`.
+- Próximo: Guilherme aprovar as 4 com o já recebido preenchido e as demais com zero.
+
 ### CP-274 — 2026-11-10 — Botanika: já recebido registrado e janela de saque 05–15 (dados, sem código)
 - Com o OK da Vanessa (grupo da Botanika), registrado em `OpeningPaid` (auditoria `creator.opening_paid`, actor
   `system:claude`) o já recebido pelos comprovantes do Sr. Guilherme: Victoria R$ 23.428,62; Julia R$ 3.547,32;

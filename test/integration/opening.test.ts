@@ -54,11 +54,7 @@ describe("saldo de abertura (banco real)", () => {
     expect(await approveOpening(prisma, neg.pagamento, { creatorId: neg.creator.id, alreadyPaidCents: 70_000, note: "Pix" })).toEqual({ balanceCents: -20_000 });
   });
 
-  it("recusa: antes da Ana, sem observação, valor negativo, sem permissão", async () => {
-    const pending = await creator(false);
-    expect((await openingList(prisma, pending.pagamento)).find((r) => r.creatorId === pending.creator.id)?.ready).toBe(false);
-    await expect(approveOpening(prisma, pending.pagamento, { creatorId: pending.creator.id, alreadyPaidCents: 0, note: "" })).rejects.toThrow(/Ana/);
-
+  it("recusa: sem observação, valor negativo, sem permissão", async () => {
     const c = await creator();
     await expect(approveOpening(prisma, c.pagamento, { creatorId: c.creator.id, alreadyPaidCents: 100, note: " " })).rejects.toThrow(/Descreva/);
     await expect(approveOpening(prisma, c.pagamento, { creatorId: c.creator.id, alreadyPaidCents: -1, note: "x" })).rejects.toThrow(/já foi pago/);
@@ -68,10 +64,12 @@ describe("saldo de abertura (banco real)", () => {
     expect((await prisma.creator.findUniqueOrThrow({ where: { id: c.creator.id } })).withdrawalsUnlockedAt).toBeNull();
   });
 
-  it("Ana marca 'conferi' (Gestão ou super admin); antes disso a abertura fica travada mesmo com taxa confirmada", async () => {
+  it("D-OPENINGBYPAY: o Pagamento aprova sem a conferência da gestora; a Ana ainda pode marcar 'conferi' (Gestão ou super admin)", async () => {
+    const pending = await creator(false);
+    await approveOpening(prisma, pending.pagamento, { creatorId: pending.creator.id, alreadyPaidCents: 0, note: "" });
+    expect((await prisma.creator.findUniqueOrThrow({ where: { id: pending.creator.id } })).withdrawalsUnlockedAt).not.toBeNull();
+
     const c = await creator(true, false);
-    expect((await openingList(prisma, c.pagamento)).find((r) => r.creatorId === c.creator.id)?.ready).toBe(false);
-    await expect(approveOpening(prisma, c.pagamento, { creatorId: c.creator.id, alreadyPaidCents: 0, note: "" })).rejects.toThrow(/Ana/);
     await expect(markReviewed(prisma, c.pagamento, c.creator.id)).rejects.toThrow(/permissão/);
     const ana = await userWith("SUPER_ADMIN", null);
     await markReviewed(prisma, ana, c.creator.id);

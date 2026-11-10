@@ -37,18 +37,6 @@ function assertManage(actor: Actor | null, brandId: string): asserts actor is Ac
   if (!actor || !can(actor.grants, "withdrawals.manage", brandId)) throw new OpeningError("Sem permissão para o saldo de abertura.");
 }
 
-type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
-
-async function isReady(prisma: PrismaClient | Tx, creatorId: string): Promise<boolean> {
-  const c = await prisma.creator.findUniqueOrThrow({ where: { id: creatorId }, select: { reviewedAt: true } });
-  if (!c.reviewedAt) return false;
-  const [assignments, policies] = await Promise.all([
-    prisma.couponAssignment.findMany({ where: { creatorId, coupon: { kind: "CREATOR" } }, select: { confirmedAt: true } }),
-    prisma.commissionPolicy.findMany({ where: { creatorId }, select: { confirmedAt: true } }),
-  ]);
-  return assignments.length > 0 && policies.length > 0 && [...assignments, ...policies].every((x) => x.confirmedAt !== null);
-}
-
 export async function openingList(prisma: PrismaClient, actor: Actor | null): Promise<OpeningRow[]> {
   if (!actor) throw new OpeningError("Sem permissão para o saldo de abertura.");
   const brands = brandsWith(actor.grants, "withdrawals.manage");
@@ -111,7 +99,8 @@ export async function approveOpening(
     await tx.$queryRaw`SELECT id FROM "Creator" WHERE id = ${creator.id} FOR UPDATE`;
     const fresh = await tx.creator.findUniqueOrThrow({ where: { id: creator.id }, select: { withdrawalsUnlockedAt: true } });
     if (fresh.withdrawalsUnlockedAt) throw new OpeningError("O saldo de abertura desta creator já foi aprovado.");
-    if (!(await isReady(tx, creator.id))) throw new OpeningError("Aguardando a conferência da Ana (cupons e taxa desta creator).");
+    // D-OPENINGBYPAY (Vanessa, 2026-11-10): quem confere é o Pagamento, na própria aprovação; a conferência da gestora
+    // ("Conferi os números", D-ANAREVIEW) não trava mais o saque.
     if (input.alreadyPaidCents > 0) {
       await tx.ledgerEntry.create({
         data: {
