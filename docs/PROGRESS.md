@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-274 — 2026-11-10 — Botanika: já recebido registrado e janela de saque 05–15 (dados, sem código)
+- Com o OK da Vanessa (grupo da Botanika), registrado em `OpeningPaid` (auditoria `creator.opening_paid`, actor
+  `system:claude`) o já recebido pelos comprovantes do Sr. Guilherme: Victoria R$ 23.428,62; Julia R$ 3.547,32;
+  Fernanda R$ 31,22; Joingle R$ 1.357,20 (jun/jul pago pela Alliance e reembolsado pela Botanika). Nada lançado no
+  extrato: vale quando o Pagamento aprova o saldo de abertura.
+- Botanika: pedido de saque do dia 05 ao 15 e pagamento do 20 ao 25 (auditoria `brand.withdrawal_window`); saque do
+  valor total disponível, como já era. Fluxo mantido: a gestora confere cupom e taxa ("Conferi os números"), o
+  Guilherme confere o já pago e aprova.
+- Próximo: gestora conferir as fichas; Guilherme aprovar; depois, erro de cupons da Revita só se voltar.
+
 ### CP-273 — 2026-11-10 — Saldo de abertura com o que foi pago de verdade (D-OPENINGPAID)
 - Achado ao ler os comprovantes do Sr. Guilherme e a aba CONTROLE da planilha "Pagamentos influencers - Botanika":
   a planilha não foi toda paga (R$ 31.854,60 devidos, R$ 21.579,81 pagos até 30/10, mais Victoria 21/10 e Joingle
