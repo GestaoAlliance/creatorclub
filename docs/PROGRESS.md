@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-273 — 2026-11-10 — Saldo de abertura com o que foi pago de verdade (D-OPENINGPAID)
+- Achado ao ler os comprovantes do Sr. Guilherme e a aba CONTROLE da planilha "Pagamentos influencers - Botanika":
+  a planilha não foi toda paga (R$ 31.854,60 devidos, R$ 21.579,81 pagos até 30/10, mais Victoria 21/10 e Joingle
+  22/10). A tela de abertura vinha preenchida com o total devido (D-LEGACYPAY), o que tiraria das creators o que
+  ainda não receberam. Nenhuma das 19 com pagamento antigo estava liberada.
+- Tabela `OpeningPaid` (um por creator, CHECKs `OpeningPaid_paid_cents` e `OpeningPaid_note`, RLS) e
+  `setOpeningPaid` (Pagamento/super admin, só antes de aprovar, auditoria). A tela vem preenchida com o já recebido;
+  a planilha aparece só como "Devido na planilha … não é o que foi pago". Teste em `test/integration/opening.test.ts`.
+- Próximo: com o OK da Vanessa (e a Joingle confirmada pelo Guilherme), registrar o já recebido das 4 creators
+  (Victoria R$ 23.428,62; Julia R$ 3.547,32; Fernanda R$ 31,22; Joingle R$ 844,57 ou R$ 1.357,20); a Ana confere e o
+  Pagamento aprova.
+
 ### CP-272 — 2026-11-07 — Creator de uma marca se inscreve em outra com a mesma conta (D-MULTIBRAND)
 - Caso Naiana (Botanika, sem senha) no cadastro da Revita: o formulário travava e mandava o "pedido de link" para a
   Botanika; a Fátima não achava. Agora quem já tem conta (e-mail/CPF) e ainda não é desta marca vira candidata desta

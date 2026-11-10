@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { approveOpening, markReviewed, openingList } from "@/lib/withdrawals/opening";
+import { approveOpening, markReviewed, openingList, setOpeningPaid } from "@/lib/withdrawals/opening";
 import { commissionEntry, expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -109,5 +109,23 @@ describe("saldo de abertura (banco real)", () => {
     await expectDbError(prisma.legacyPayment.create({ data: { ...base, month: "2026-08", amountCents: 0, sourceRef: "x2" } }), /LegacyPayment_amounts/);
     const one = await prisma.legacyPayment.findFirstOrThrow({ where: { creatorId: c.creator.id } });
     await expectDbError(prisma.legacyPayment.update({ where: { id: one.id }, data: { amountCents: 1 } }), /somente inserção/);
+  });
+
+  it("D-OPENINGPAID: o já recebido (comprovantes) é registrado antes, aparece na lista, só o Pagamento mexe e trava depois de aprovar", async () => {
+    const c = await creator();
+    await expect(setOpeningPaid(prisma, await userWith("GESTAO", c.brand.id), { creatorId: c.creator.id, paidCents: 100, note: "x" })).rejects.toThrow(/Sem permissão/);
+    await expect(setOpeningPaid(prisma, c.pagamento, { creatorId: c.creator.id, paidCents: 100, note: "  " })).rejects.toThrow(/Descreva/);
+    await setOpeningPaid(prisma, c.pagamento, { creatorId: c.creator.id, paidCents: 10_000, note: "Pix 09/09" });
+    await setOpeningPaid(prisma, c.pagamento, { creatorId: c.creator.id, paidCents: 12_345, note: "Pix 09/09 e 22/10" });
+    const row = (await openingList(prisma, c.pagamento)).find((r) => r.creatorId === c.creator.id);
+    expect(row?.paid).toEqual({ cents: 12_345, note: "Pix 09/09 e 22/10" });
+    expect(await prisma.auditLog.count({ where: { entityId: c.creator.id, action: "creator.opening_paid" } })).toBe(2);
+
+    await approveOpening(prisma, c.pagamento, { creatorId: c.creator.id, alreadyPaidCents: 12_345, note: "Pix 09/09 e 22/10" });
+    await expect(setOpeningPaid(prisma, c.pagamento, { creatorId: c.creator.id, paidCents: 1, note: "x" })).rejects.toThrow(/já foi aprovado/);
+
+    const other = await creator();
+    await expectDbError(prisma.openingPaid.create({ data: { brandId: other.brand.id, creatorId: other.creator.id, paidCents: -1, note: "x", preparedById: "t" } }), /OpeningPaid_paid_cents/);
+    await expectDbError(prisma.openingPaid.create({ data: { brandId: other.brand.id, creatorId: other.creator.id, paidCents: 1, note: " ", preparedById: "t" } }), /OpeningPaid_note/);
   });
 });
