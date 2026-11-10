@@ -18,14 +18,16 @@ const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
 const plain = (cents: number) => (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** Sugestão vinda da planilha de pagamentos (D-LEGACYPAY): total e a descrição por mês. */
-export function legacySuggestion(payments: { month: string; amountCents: number }[]) {
-  if (payments.length === 0) return { paid: "", note: "" };
+/** D-LEGACYPAY: o que a planilha de pagamentos dizia que era devido, por mês (só referência). */
+export function legacyOwedLine(payments: { month: string; amountCents: number }[]) {
+  if (payments.length === 0) return null;
   const total = payments.reduce((s, p) => s + p.amountCents, 0);
-  return {
-    paid: plain(total),
-    note: `Planilha Pagamentos influencers: ${payments.map((p) => `${monthLabel(p.month)} ${formatBRL(p.amountCents)}`).join(", ")}`,
-  };
+  return `Devido na planilha: ${payments.map((p) => `${monthLabel(p.month)} ${formatBRL(p.amountCents)}`).join(", ")} (total ${formatBRL(total)})`;
+}
+
+/** D-OPENINGPAID: o formulário vem com o que ela recebeu de verdade (comprovantes); sem registro, vazio. */
+export function paidSuggestion(paid: { cents: number; note: string } | null) {
+  return paid ? { paid: plain(paid.cents), note: paid.note } : { paid: "", note: "" };
 }
 
 export function OpeningForm({
@@ -33,14 +35,17 @@ export function OpeningForm({
   name,
   ledgerCents,
   legacyPayments = [],
+  paidInfo = null,
 }: {
   creatorId: string;
   name: string;
   ledgerCents: number;
   legacyPayments?: { month: string; amountCents: number }[];
+  paidInfo?: { cents: number; note: string } | null;
 }) {
   const [state, action, pending] = useActionState(approveOpeningAction, undefined);
-  const suggestion = legacySuggestion(legacyPayments);
+  const suggestion = paidSuggestion(paidInfo);
+  const owed = legacyOwedLine(legacyPayments);
   const [paid, setPaid] = useState(suggestion.paid);
   const cents = toCents(paid);
   const after = cents === null ? null : ledgerCents - cents;
@@ -63,9 +68,10 @@ export function OpeningForm({
           <input name="note" maxLength={300} defaultValue={suggestion.note} placeholder="ex.: Pix 15/07 e 15/08" className={ui.input} />
         </label>
       </div>
-      {legacyPayments.length > 0 && (
-        <p className={ui.hint}>Preenchido com a planilha de pagamentos. Confira com os comprovantes antes de aprovar.</p>
-      )}
+      <p className={ui.hint}>
+        {paidInfo ? "Preenchido com o que ela já recebeu (comprovantes). Confira antes de aprovar." : "Nenhum pagamento registrado: informe o que ela já recebeu (zero se nada)."}
+        {owed && ` ${owed}; não é o que foi pago.`}
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className={`text-sm ${after !== null && after < 0 ? "font-semibold text-red-700 dark:text-red-400" : "text-stone-600 dark:text-stone-400"}`}>
           Saldo depois: <strong className="tabular-nums">{after === null ? "valor inválido" : formatBRL(after)}</strong>

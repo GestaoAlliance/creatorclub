@@ -127,6 +127,7 @@ model Brand {
   commissionReleases CommissionRelease[]
   monthClosings      MonthClosing[]
   legacyPayments     LegacyPayment[]
+  openingPaid        OpeningPaid[]
   contractTemplates  ContractTemplate[]
   kitGrants          KitGrant[]
   hunterLinks        HunterLink[]
@@ -412,6 +413,7 @@ model Creator {
   notifications      Notification[]
   commissionReleases CommissionRelease[]
   legacyPayments     LegacyPayment[]
+  openingPaid        OpeningPaid[]
   kitGrants          KitGrant[]
   ugcVideos          UgcVideo[]
   contractFile       File?               @relation("CreatorContractFile", fields: [contractFileId], references: [id], onDelete: Restrict)
@@ -1108,6 +1110,23 @@ model MonthClosing {
 
 /// D-LEGACYPAY: pagamento feito antes do Creator Club, importado da planilha da equipe ("Pagamentos influencers").
 /// Só valores (sem Pix nem documento). Serve de evidência e sugere o "já pago" do saldo de abertura. Somente inserção.
+/// D-OPENINGPAID: quanto cada creator já recebeu por fora antes do Creator Club (comprovantes), preparado antes da
+/// aprovação do saldo de abertura. Preenche a tela; quem aprova ainda pode corrigir. Um por creator; atualizações
+/// vão para a auditoria.
+model OpeningPaid {
+  id           String   @id @default(uuid())
+  brandId      String
+  creatorId    String   @unique
+  paidCents    Int
+  note         String
+  preparedById String
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+}
+
 model LegacyPayment {
   id           String   @id @default(uuid())
   brandId      String
