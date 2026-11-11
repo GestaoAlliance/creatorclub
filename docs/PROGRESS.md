@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-277 — 2026-11-11 — Início: "Precisa de você" por área e urgência (D-NEEDSAREA; aguarda OK das capturas)
+- Plano do novo Início (respostas do responsável): 1) Precisa de você por área/urgência; 2) saúde da base (funil);
+  3) movimentos (subindo/caindo/1ª venda/concentração); 5) caixa do Pagamento; 4) retorno do programa (custo pela
+  Shopify); 6) gráfico com período anterior e campanhas do AllianceOS + gamificação. Cada papel terá o seu Início.
+- Feito o 1: `needsFor` agrupa por área (Gestão, Pagamento, Envios; super admin vê as três), urgente primeiro
+  (candidata > 3 dias, kit a aprovar > 2, envio parado > 3, contrato vencido, janela de saque/prazo de pagamento
+  em até 2 dias), ações por tipo com atalho; saiu "a conferir pela Ana". `staffHome` conta os atrasados.
+  Testes: `test/staff-needs.test.ts`, `test/integration/staff-home-urgent.test.ts`.
+- Próximo: item 2 (saúde da base).
+
 ### CP-276 — 2026-11-11 — Tela Equipe: convite em cima, equipe embaixo (aguarda OK das capturas, D-REVIEW)
 - Pedido do responsável: o convite ocupa a largura (Nome, E-mail, Papel e Marca numa linha); as pessoas viram cartões
   em duas colunas na tela larga (uma no celular); convites pendentes no fim. Só layout

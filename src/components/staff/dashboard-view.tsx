@@ -49,23 +49,45 @@ export function Stat({ label, value, change, hint }: { label: string; value: Rea
   );
 }
 
-/** "Precisa de você" (regra em `needsFor`), em uma faixa de atalhos. */
+/** "Precisa de você" (regra em `needsFor`, D-NEEDSAREA): uma coluna por área, o urgente primeiro e em vermelho. */
 function Needs({ h }: { h: StaffHome }) {
-  const { readOnly, items } = needsFor(h);
-  const open = items.filter((i) => i.n > 0);
+  const { readOnly, areas } = needsFor(h);
+  const urgent = areas.reduce((n, a) => n + a.items.filter((i) => i.urgent).length, 0);
   return (
-    <section className={`${ui.card} gap-3`}>
-      <p className="text-sm font-semibold">{readOnly ? "Pendências da equipe" : "Precisa de você"}</p>
-      {open.length === 0 ? (
+    <section className={`${ui.card} gap-4`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-semibold">{readOnly ? "Pendências da equipe" : "Precisa de você"}</p>
+        {urgent > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-900/40 dark:text-red-200">
+            <span className="size-1.5 rounded-full bg-red-600" /> {urgent} {urgent === 1 ? "urgente" : "urgentes"}
+          </span>
+        )}
+      </div>
+      {areas.length === 0 ? (
         <p className={ui.muted}>Nada esperando agora.</p>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {open.map((i) => (
-            <Link key={i.label} href={i.href} className="glass group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm hover:shadow-sm">
-              <strong className="tabular-nums text-amber-700 dark:text-amber-300">{i.n}</strong>
-              {i.label}
-              <ArrowRight className="size-3.5 text-stone-400 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+        <div className={`grid gap-4 ${areas.length > 1 ? "md:grid-cols-2 xl:grid-cols-3" : ""}`}>
+          {areas.map((a) => (
+            <div key={a.area} className="flex flex-col gap-1.5">
+              {areas.length > 1 && <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{a.area}</p>}
+              <ul className="flex flex-col gap-1">
+                {a.items.map((i) => (
+                  <li key={i.label}>
+                    <Link
+                      href={i.href}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${i.urgent ? "bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60" : "hover:bg-stone-100 dark:hover:bg-white/5"}`}
+                    >
+                      <strong className={`w-8 shrink-0 text-right tabular-nums ${i.urgent ? "text-red-700 dark:text-red-300" : "text-stone-700 dark:text-stone-200"}`}>{i.n}</strong>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{i.label}</span>
+                        {i.note && <span className={`block text-xs ${i.urgent ? "text-red-700 dark:text-red-300" : "text-stone-500"}`}>{i.note}</span>}
+                      </span>
+                      <ArrowRight className="size-3.5 shrink-0 text-stone-400 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </div>
       )}
