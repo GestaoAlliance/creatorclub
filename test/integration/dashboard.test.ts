@@ -43,7 +43,8 @@ describe("dashboard do Início (M0.0.4)", () => {
     expect(d.days.find((x) => x.day === "2026-10-03")).toEqual({ day: "2026-10-03", count: 1, baseCents: 10_000, commissionCents: 1_000 });
     expect(d.topCreators).toEqual([expect.objectContaining({ id: creator.id, salesCents: 10_000, orders: 1, share: 1 })]);
     expect(d.topProducts).toEqual([{ title: "Magnésio", units: 2, salesCents: 10_000, orders: 1 }]);
-    expect(d.concentration).toEqual({ top1: 1, top3: 1 });
+    expect(d.giftUnits).toBe(0);
+    expect(d.concentration).toEqual({ top1: 1, top3: 1, alert: true });
     // Filtro de tipo: creator é INFLUENCER (seedBrand); UGC não tem vendas.
     expect((await staffDashboard(prisma, brand.id, { from: "2026-10-01", to: "2026-10-10", preset: "" }, "UGC")).kpis.sales.cents).toBe(0);
     // Período anterior (21 a 30/09) sem vendas: a variação fica "sem base".

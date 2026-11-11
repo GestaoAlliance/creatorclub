@@ -77,7 +77,7 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
   const tz = brand.timezone;
   const prev = previousPeriod(period);
-  const [cur, before, activeCreators, storeByStatus] = await Promise.all([
+  const [cur, before, activeCreators, storeByStatus, campaigns] = await Promise.all([
     window(prisma, brandId, period, category, tz),
     window(prisma, brandId, prev, category, tz),
     prisma.creator.count({ where: { brandId, status: "ACTIVE", ...(category ? { categories: { has: category } } : {}) } }),
@@ -92,6 +92,12 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
       ]);
       return { pending, refunded, cancelled };
     })(),
+    // D-HOMEINSIGHTS: campanhas do Creator Club que cruzam o período (faixas no gráfico).
+    prisma.campaign.findMany({
+      where: { brandId, startDay: { lte: period.to }, endDay: { gte: period.from } },
+      select: { id: true, name: true, startDay: true, endDay: true },
+      orderBy: { startDay: "asc" },
+    }),
   ]);
 
   const sum = (w: typeof cur) => w.orders.reduce((s, o) => s + o.subtotalCents, 0);
@@ -112,6 +118,18 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     d.commissionCents += commissionOf.get(o.id) ?? 0;
   }
 
+  // D-HOMEINSIGHTS: vendas do período anterior na mesma posição de cada dia (linha tracejada do gráfico).
+  const prevDays: number[] = [];
+  const prevIndex = new Map<string, number>();
+  for (let d = prev.from, i = 0; d <= prev.to; d = nextDayKey(d), i++) {
+    prevIndex.set(d, i);
+    prevDays.push(0);
+  }
+  for (const o of before.orders) {
+    const i = prevIndex.get(dayKey(o.paidAt!, tz));
+    if (i !== undefined) prevDays[i] = (prevDays[i] ?? 0) + o.subtotalCents;
+  }
+
   // Top creators do período.
   const perCreator = new Map<string, { salesCents: number; orders: number }>();
   for (const o of cur.orders) {
@@ -121,8 +139,21 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     perCreator.set(o.attribution!.creatorId, c);
   }
   const topIds = [...perCreator.entries()].sort((a, b) => b[1].salesCents - a[1].salesCents).slice(0, 10);
-  const people = topIds.length
-    ? await prisma.creator.findMany({ where: { id: { in: topIds.map(([id]) => id) } }, select: { id: true, categories: true, account: { select: { name: true, instagram: true } } } })
+
+  // D-HOMEINSIGHTS: movimentos contra o período anterior (quem mais subiu e quem mais caiu, em reais).
+  const prevSales = new Map<string, number>();
+  for (const o of before.orders) prevSales.set(o.attribution!.creatorId, (prevSales.get(o.attribution!.creatorId) ?? 0) + o.subtotalCents);
+  const deltas = [...new Set([...perCreator.keys(), ...prevSales.keys()])].map((id) => {
+    const nowCents = perCreator.get(id)?.salesCents ?? 0;
+    const beforeCents = prevSales.get(id) ?? 0;
+    return { id, nowCents, beforeCents, deltaCents: nowCents - beforeCents };
+  });
+  const rising = deltas.filter((x) => x.deltaCents > 0 && x.beforeCents > 0).sort((a, b) => b.deltaCents - a.deltaCents).slice(0, 5);
+  /** Caindo: vendia ao menos R$ 200 no período anterior (evita ruído de quem vende pouco). */
+  const falling = deltas.filter((x) => x.deltaCents < 0 && x.beforeCents >= 20_000).sort((a, b) => a.deltaCents - b.deltaCents).slice(0, 5);
+  const peopleIds = [...new Set([...topIds.map(([id]) => id), ...rising.map((x) => x.id), ...falling.map((x) => x.id)])];
+  const people = peopleIds.length
+    ? await prisma.creator.findMany({ where: { id: { in: peopleIds } }, select: { id: true, categories: true, account: { select: { name: true, instagram: true } } } })
     : [];
   const who = new Map(people.map((p) => [p.id, p]));
   const topCreators = topIds.map(([id, v]) => ({
@@ -139,10 +170,13 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
   const lines = ids.length
     ? await prisma.orderLine.groupBy({ by: ["title"], where: { brandId, orderId: { in: ids } }, _sum: { quantity: true, discountedTotalCents: true }, _count: { orderId: true } })
     : [];
-  const topProducts = lines
-    .map((l) => ({ title: l.title, units: l._sum.quantity ?? 0, salesCents: l._sum.discountedTotalCents ?? 0, orders: l._count.orderId }))
+  const allProducts = lines.map((l) => ({ title: l.title, units: l._sum.quantity ?? 0, salesCents: l._sum.discountedTotalCents ?? 0, orders: l._count.orderId }));
+  // D-HOMEINSIGHTS: brinde (linha sem valor) não entra no ranking; aparece só o total de unidades.
+  const topProducts = allProducts
+    .filter((p) => p.salesCents > 0)
     .sort((a, b) => b.units - a.units || b.salesCents - a.salesCents)
     .slice(0, 10);
+  const giftUnits = allProducts.filter((p) => p.salesCents === 0).reduce((n, p) => n + p.units, 0);
 
   // Concentração: quanto a maior e as 3 maiores fazem das vendas de creators.
   const sorted = [...perCreator.values()].map((v) => v.salesCents).sort((a, b) => b - a);
@@ -160,9 +194,16 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     },
     store: { salesCents: cur.store.salesCents, change: change(cur.store.salesCents, before.store.salesCents), paidOrders: cur.store.orders, ...storeByStatus },
     days: [...byDay.values()],
+    prevDays,
+    campaigns,
     topCreators,
     topProducts,
-    concentration: { top1, top3 },
+    giftUnits,
+    concentration: { top1, top3, alert: top1 >= 0.4 },
+    movements: {
+      rising: rising.map((x) => ({ ...x, name: who.get(x.id)?.account.name ?? "—" })),
+      falling: falling.map((x) => ({ ...x, name: who.get(x.id)?.account.name ?? "—" })),
+    },
     /** Valores do período anterior, para somar marcas e calcular a variação do total (Todas as marcas). */
     prev: { salesCents: sum(before), commissionCents: commission(before), sellers: sellers(before), storeSalesCents: before.store.salesCents },
     generatedAt: now,

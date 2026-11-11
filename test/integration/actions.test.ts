@@ -59,7 +59,7 @@ describe("fila de ações por creator (M2.1, D-ACTIONS, banco real)", () => {
     const ana = await user("GESTAO", a.brand.id);
     const envio = await user("ENVIO", a.brand.id);
     expect(visibleTasks(tasks, envio, a.brand.id).map((x) => x.kind)).toEqual(["SHIP_STUCK"]);
-    expect((await staffHome(prisma, envio)).actions).toEqual({ open: 1, shipStuck: 1 });
+    expect((await staffHome(prisma, envio)).actions).toMatchObject({ open: 1, shipStuck: 1, byKind: { SHIP_STUCK: 1 } });
     expect((await staffHome(prisma, ana)).actions?.open).toBeGreaterThanOrEqual(5);
 
     // Feito: sai da fila; envio não marca tarefa da Gestão; outra marca não vê.

@@ -315,6 +315,43 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-281 — 2026-11-11 — Vidro líquido do Início (D-LIQUIDHOME; aguarda OK)
+- Inspirado nas referências do responsável ("Waterline" e "Glass Folder"), sem copiar: arte da marca (`.brand-art`,
+  manchas de `--brand`/`--brand-2`) atrás da faixa do topo com os números em placas de vidro fosco (`.frost-tile`);
+  seletor de período em pílula com a gota que escorrega (`.liquid-pill`); painéis com borda de luz em degradê e brilho
+  que segue o ponteiro (`GlassLight`, `--gx/--gy`). Sem dependência nova; respeita "reduzir movimento".
+
+### CP-280 — 2026-11-11 — Início redesenhado: faixa da marca e "Sua fila" à direita (aguarda OK)
+- Pedido do responsável ("não gostei dessa parte aqui em cima… pode aplicar mais cor"): faixa no topo na cor da marca
+  (`--brand`, brilho com `--brand-2`) com período e os 4 números em branco; "Sua fila" numa coluna à direita que
+  acompanha a rolagem (urgente em cartões vermelhos, o resto por área; no celular, em cima); cartões em grade por
+  container query (`@container`, `@3xl`). Lógica igual (D-NEEDSAREA, D-HOMEINSIGHTS).
+
+### CP-279 — 2026-11-11 — Início: retorno do programa e gráfico com período anterior e campanhas (página completa, aguarda OK)
+- Cartão "Retorno do programa" (reaproveita `productReport`, D-COST): vendas por R$ 1 investido (comissão, produtos
+  enviados, frete), custo dos vendidos, lucro do programa e o que falta para a conta (produto sem custo na Shopify,
+  envio sem frete). Hoje faltam custos: Botanika 12 de 21 produtos, Revita e VermeFree todos.
+- Gráfico: linha tracejada do período anterior (`prevDays`) e faixas das campanhas do Creator Club no período.
+- Próximo: OK das capturas e merge do Início; depois os Inícios de Pagamento, Envios e Hunter, e as outras telas.
+
+### CP-278 — 2026-11-11 — Início: saúde da base, caixa, movimentos e brindes fora do ranking (D-HOMEINSIGHTS; em andamento)
+- `src/lib/staff/insights.ts`: `baseHealth` (candidatas, assinando, vendendo 30d, paradas, nunca venderam, mediana
+  até a 1ª venda, 1ª venda no período) e `cashflow` (a liberar, disponível, pedidos, aprovados, preso na abertura).
+- `staffDashboard`: movimentos (subindo/caindo contra o período anterior; caindo só quem vendia ≥ R$ 200), alerta de
+  concentração (maior ≥ 40%), brindes (linha sem valor) fora do ranking; vendas mostram % da loja.
+- Testes: `test/integration/home-insights.test.ts`, `dashboard.test.ts`. Página só vai ao ar inteira (com o OK).
+- Próximo: item 4 (retorno do programa, custo pela Shopify, D-COST já existe) e item 6 (gráfico/campanhas).
+
+### CP-277 — 2026-11-11 — Início: "Precisa de você" por área e urgência (D-NEEDSAREA; aguarda OK das capturas)
+- Plano do novo Início (respostas do responsável): 1) Precisa de você por área/urgência; 2) saúde da base (funil);
+  3) movimentos (subindo/caindo/1ª venda/concentração); 5) caixa do Pagamento; 4) retorno do programa (custo pela
+  Shopify); 6) gráfico com período anterior e campanhas do AllianceOS + gamificação. Cada papel terá o seu Início.
+- Feito o 1: `needsFor` agrupa por área (Gestão, Pagamento, Envios; super admin vê as três), urgente primeiro
+  (candidata > 3 dias, kit a aprovar > 2, envio parado > 3, contrato vencido, janela de saque/prazo de pagamento
+  em até 2 dias), ações por tipo com atalho; saiu "a conferir pela Ana". `staffHome` conta os atrasados.
+  Testes: `test/staff-needs.test.ts`, `test/integration/staff-home-urgent.test.ts`.
+- Próximo: item 2 (saúde da base).
+
 ### CP-276 — 2026-11-11 — Tela Equipe: convite em cima, equipe embaixo (aguarda OK das capturas, D-REVIEW)
 - Pedido do responsável: o convite ocupa a largura (Nome, E-mail, Papel e Marca numa linha); as pessoas viram cartões
   em duas colunas na tela larga (uma no celular); convites pendentes no fim. Só layout
