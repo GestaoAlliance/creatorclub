@@ -315,6 +315,27 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-282 — 2026-11-11 — Creators: lista nova, painel lateral, ações em grupo e abas líquidas (D-CREATORLIST, D-BULKMSG; aguarda OK)
+- Pedido do responsável ("a parte principal são as abas de creator"); escolhas dele: ordem Lista → Ficha → Candidatas →
+  Ações → Campanhas → Conteúdo → TikTok; clique abre painel lateral; linha com vendas 30d + tendência + última venda;
+  ações em grupo: mensagem, tag, convite e planilha (+ sugestões: filtros no endereço, atalhos, marcar todas da lista).
+- Faixa da marca (`.brand-art`) com título, pílula Ativas/Pausadas/Encerradas e seis quadros que filtram (vendendo,
+  pararam, nunca venderam, sem acesso, pendências, contrato). Busca (tecla /), ordem, tipos, "Filtros" (UF, origem, tag);
+  tudo guardado no endereço (`?filtro=`, `?q=`…); links antigos (`contrato=1`, `semvenda=1`, `pendencia=1`) continuam.
+- Linha: avatar, @, cupom (copiar), vendas 30d com seta contra os 30 anteriores, 12 semanas em barras, última venda
+  colorida (verde ≤15 dias, âmbar ≤45, vermelho), total e sinais (sem acesso, pendência, contrato, vídeos, tags).
+  Tabela ou cartões pela largura real do espaço (container query); sem estouro em 1920/1440/1280/1024/768/390.
+- Painel lateral (`creatorPeek`): saldo para saque e a liberar + taxa (só quem vê dinheiro), vendas, 12 semanas,
+  contrato, último envio, origem, tags e últimos acontecimentos; ↑/↓ passa de creator, Esc fecha; botão da ficha.
+- Ações em grupo (só Gestão/super admin): mensagem da equipe (`TEAM_MESSAGE`, `{nome}`/`{cupom}`, prévia de como
+  chega; portal + WhatsApp da marca ou e-mail; auditoria `creator.message.bulk`), tag pôr/tirar (`creator.tag.bulk_*`),
+  convite só para quem não tem acesso, planilha CSV das marcadas. Migração `20261125090000_team_message`
+  (`Notification_valid` com o tipo novo + `Notification_team_message_size`).
+- Abas do grupo (`SectionTabs`) em trilho de vidro com a gota da cor da marca que escorrega até a aba aberta (todas as
+  seções). "Nunca venderam" do Início passa a abrir `?filtro=nunca`.
+- Testes: `test/creator-list.test.ts`, `test/integration/creator-list-bulk.test.ts`. Próxima: OK das capturas → merge →
+  Ficha da creator.
+
 ### CP-281 — 2026-11-11 — Vidro líquido do Início (D-LIQUIDHOME; aguarda OK)
 - Inspirado nas referências do responsável ("Waterline" e "Glass Folder"), sem copiar: arte da marca (`.brand-art`,
   manchas de `--brand`/`--brand-2`) atrás da faixa do topo com os números em placas de vidro fosco (`.frost-tile`);

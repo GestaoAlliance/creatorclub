@@ -171,11 +171,11 @@ export const HELP = {
   },
   "cr-filtros": {
     title: "Busca e filtros",
-    text: "Busque pelo nome e filtre por categoria. As caixas mostram só quem tem pendência, contrato vencendo ou está sem vender.",
+    text: "Os quadros do topo filtram a lista. Busque por nome, cupom, @, e-mail, WhatsApp ou CPF (tecla /). O endereço guarda os filtros: dá para mandar o link.",
   },
   "cr-lista": {
     title: "Lista de creators",
-    text: "Cada creator com a situação, a categoria e o último pedido. Etiquetas amarelas são pendências; toque para abrir a ficha.",
+    text: "Vendas de 30 dias com a seta contra os 30 anteriores e a última venda colorida. Toque na linha para o resumo; marque várias para mensagem, tag, convite ou planilha.",
   },
   "fi-vercomo": {
     title: "Ver o portal como ela",

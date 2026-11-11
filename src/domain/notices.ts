@@ -22,7 +22,9 @@ export type NoticeKind =
   | "WITHDRAWAL_BANK_REJECTED"
   | "PARTNERSHIP_ACTIVE"
   | "SHIPMENT_DELIVERED"
-  | "RECEIPT_CHECK";
+  | "RECEIPT_CHECK"
+  /** D-BULKMSG: mensagem que a equipe escreve para várias creators de uma vez. */
+  | "TEAM_MESSAGE";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
