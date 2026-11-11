@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agoText, creatorsCsv, fillMessage, lastSaleTone, shortBRL, teamMessage, trendOf, weekIndex } from "@/domain";
+import { agoText, creatorFileNeeds, creatorsCsv, fillMessage, lastSaleTone, shortBRL, teamMessage, trendOf, weekIndex } from "@/domain";
 
 const DAY = 86_400_000;
 
@@ -49,5 +49,34 @@ describe("lista de creators (D-CREATORLIST, regras puras)", () => {
     expect(withMoney).toContain('"Ana ""Fit""";Ativa;Influencer;ANA10;@ana;;11999990000;a@x.com;São Paulo;SP;mãe, fit;1234,56;100,00;3;01/11/2026;15/08/2026');
     const noMoney = creatorsCsv([{ ...row, stats: null }]);
     expect(noMoney).not.toContain("Vendas");
+  });
+});
+
+describe("ficha da creator: o que falta (D-CREATORFILE)", () => {
+  const base = {
+    status: "ACTIVE" as const,
+    ugcOnly: false,
+    hasLogin: true,
+    fakeEmail: false,
+    reviewed: true,
+    ownerPending: false,
+    ratePending: false,
+    contract: { status: "ACTIVE" as const, daysLeft: 200, end: "2027-03-01" },
+    checklist: { contractSigned: true, couponRegistered: true, followsOnInstagram: true, inGroup: true, tagged: true },
+    opening: { approved: true, paidCents: null },
+    idleDays: null,
+  };
+  it("tudo em dia: nada; encerrada: nada", () => {
+    expect(creatorFileNeeds(base)).toEqual([]);
+    expect(creatorFileNeeds({ ...base, status: "DEACTIVATED", hasLogin: false })).toEqual([]);
+  });
+  it("urgente primeiro, com o link de onde resolve; null no checklist não conta", () => {
+    const n = creatorFileNeeds({ ...base, hasLogin: false, reviewed: false, idleDays: 60, opening: { approved: false, paidCents: 2_342_862 }, contract: { status: "EXPIRING", daysLeft: 10, end: "2026-11-21" }, checklist: { ...base.checklist, inGroup: false, tagged: null } });
+    expect(n.map((x) => [x.tone, x.href])).toEqual([["urgent", "/admin/abertura"], ["warn", "#contrato"], ["warn", "#resumo"], ["warn", "#resumo"], ["info", "#cadastro"], ["info", "#contrato"]]);
+    expect(n[0]!.label).toBe("Abertura esperando o Pagamento (já pago R$ 23.428,62)");
+    expect(n.at(-1)!.label).toBe("Checklist: no grupo");
+  });
+  it("só UGC: sem abertura, taxa ou conferência", () => {
+    expect(creatorFileNeeds({ ...base, ugcOnly: true, reviewed: false, ratePending: true, opening: { approved: false, paidCents: null } })).toEqual([]);
   });
 });

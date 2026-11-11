@@ -315,6 +315,24 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-283 — 2026-11-11 — Ficha da creator: faixa da marca, saldo previsto, abas em gota e "O que falta" (D-CREATORFILE; aguarda OK)
+- Escolhas do responsável: saldo previsto + aviso enquanto a abertura espera o Pagamento; faixa da marca + abas + coluna
+  de ações; Resumo com vendas por mês, produtos, comparação com a média e último envio.
+- Faixa da marca (`FileHero`): iniciais, situação e selos, redes em pílulas, cupom com o link para copiar, "Ver o portal
+  como ela" e 4 números em vidro fosco (vendas 30d, aguardando pagamento, a liberar no dia 1, disponível).
+- Abertura pendente (D-OPENINGPAID): saldo e disponível aparecem já sem o "já pago" dos comprovantes, com o aviso
+  "Abertura esperando o Pagamento", o valor, a observação e o botão para Pagamentos → Abertura; o extrato real fica
+  como "no extrato hoje". Nada muda no extrato até o Pagamento aprovar.
+- Coluna "O que falta" (`creatorFileNeeds`): abertura, contrato vencido/vencendo/sem datas, dona do cupom, taxa,
+  conferência, e-mail, acesso ao portal, sem vender, checklist; cada item leva à aba que resolve (`#contrato`…). Na mesma
+  coluna: origem, tags e observação rápida.
+- Abas da ficha no trilho de vidro com a gota da marca (`Tabs`), abrindo também por `#aba`.
+- Resumo (`creatorInsights`): vendas por mês (12 meses, linha do mínimo quando a liberação é pelas vendas), posição e
+  comparação com a média das ativas (30 dias), 5 produtos mais vendidos (12 meses, sem brindes) e último envio com as
+  etapas (pedido, enviado, entregue/ela confirmou) e rastreio.
+- Sem estouro em 1920/1440/1280/1024/768/390. Testes em `test/creator-list.test.ts` e
+  `test/integration/creator-list-bulk.test.ts`. Próxima: OK das capturas → merge → Candidatas.
+
 ### CP-282 — 2026-11-11 — Creators: lista nova, painel lateral, ações em grupo e abas líquidas (D-CREATORLIST, D-BULKMSG; aguarda OK)
 - Pedido do responsável ("a parte principal são as abas de creator"); escolhas dele: ordem Lista → Ficha → Candidatas →
   Ações → Campanhas → Conteúdo → TikTok; clique abre painel lateral; linha com vendas 30d + tendência + última venda;

@@ -124,3 +124,48 @@ export function shortBRL(cents: number): string {
   const k = cents / 100_000;
   return `R$\u00a0${k.toLocaleString("pt-BR", { maximumFractionDigits: k < 10 ? 1 : 0 })} mil`;
 }
+
+export type FileNeed = { label: string; tone: "urgent" | "warn" | "info"; href: string };
+
+/**
+ * "O que falta" na ficha (D-CREATORFILE): o que a equipe ainda precisa fazer por esta creator, o urgente primeiro.
+ * `href` leva para a aba da ficha (`#contrato`, `#cadastro`…) ou para a tela que resolve (Abertura).
+ */
+export function creatorFileNeeds(c: {
+  status: "ACTIVE" | "INACTIVE" | "DEACTIVATED";
+  ugcOnly: boolean;
+  hasLogin: boolean;
+  fakeEmail: boolean;
+  reviewed: boolean;
+  ownerPending: boolean;
+  ratePending: boolean;
+  contract: { status: "NONE" | "ACTIVE" | "EXPIRING" | "EXPIRED"; daysLeft: number | null; end: string | null };
+  /** null = não marcado ainda (cadastro antigo): só `false` conta como faltando. */
+  checklist: { contractSigned: boolean | null; couponRegistered: boolean | null; followsOnInstagram: boolean | null; inGroup: boolean | null; tagged: boolean | null };
+  opening: { approved: boolean; paidCents: number | null } | null;
+  idleDays: number | null;
+}): FileNeed[] {
+  if (c.status === "DEACTIVATED") return [];
+  const out: FileNeed[] = [];
+  if (c.opening && !c.opening.approved && !c.ugcOnly)
+    out.push({ label: c.opening.paidCents ? `Abertura esperando o Pagamento (já pago ${formatBRL(c.opening.paidCents)})` : "Abertura esperando o Pagamento", tone: "urgent", href: "/admin/abertura" });
+  if (c.contract.status === "EXPIRED") out.push({ label: "Contrato vencido", tone: "urgent", href: "#contrato" });
+  else if (c.contract.status === "EXPIRING") out.push({ label: `Contrato vence em ${c.contract.daysLeft} dias`, tone: "warn", href: "#contrato" });
+  else if (!c.contract.end) out.push({ label: "Sem datas do contrato", tone: "info", href: "#contrato" });
+  if (c.ownerPending) out.push({ label: "Dona do cupom a confirmar", tone: "warn", href: "#resumo" });
+  if (c.ratePending && !c.ugcOnly) out.push({ label: "Taxa a confirmar", tone: "warn", href: "#cadastro" });
+  if (!c.reviewed && !c.ugcOnly) out.push({ label: "Números a conferir", tone: "warn", href: "#resumo" });
+  if (c.fakeEmail) out.push({ label: "E-mail a confirmar", tone: "warn", href: "#cadastro" });
+  else if (!c.hasLogin) out.push({ label: "Sem acesso ao portal: mandar convite", tone: "info", href: "#cadastro" });
+  if (c.idleDays !== null) out.push({ label: `Sem vender há ${c.idleDays} dias`, tone: "warn", href: "#resumo" });
+  const missing = [
+    c.checklist.contractSigned === false && "contrato assinado",
+    c.checklist.couponRegistered === false && "cupom cadastrado",
+    c.checklist.followsOnInstagram === false && "segue no Instagram",
+    c.checklist.inGroup === false && "no grupo",
+    c.checklist.tagged === false && "marcou a marca",
+  ].filter((x): x is string => Boolean(x));
+  if (missing.length) out.push({ label: `Checklist: ${missing.join(", ")}`, tone: "info", href: "#contrato" });
+  const order = { urgent: 0, warn: 1, info: 2 };
+  return out.sort((a, b) => order[a.tone] - order[b.tone]);
+}
