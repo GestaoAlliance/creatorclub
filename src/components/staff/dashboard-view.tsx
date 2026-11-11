@@ -1,6 +1,6 @@
 import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { SalesChart } from "@/components/portal/sales-chart";
 import { needsFor } from "@/lib/staff/needs";
 import { Card } from "@/components/ui/page";
@@ -11,6 +11,7 @@ import type { StaffHome } from "@/lib/staff/home";
 import type { BaseHealth, Cashflow } from "@/lib/staff/insights";
 import type { ProductReport } from "@/lib/reports/products";
 import { HideValuesToggle } from "./hide-values";
+import { GlassLight } from "@/components/ui/glass-light";
 
 const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
 const pct = (v: number) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -106,19 +107,22 @@ function QueueRail({ h }: { h: StaffHome }) {
   );
 }
 
-/** Número principal da faixa da marca (texto branco sobre a cor da marca). O tamanho acompanha a largura do cartão. */
+/** Número principal: placa de vidro fosco sobre a arte da marca (D-LIQUIDHOME). O tamanho acompanha o cartão. */
 function HeroStat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
   const up = change !== null && change > 0;
   const down = change !== null && change < 0;
   return (
-    <div className="@container flex min-w-0 flex-col gap-2 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur-sm">
-      <p className="text-sm leading-snug text-white/75">{label}</p>
-      <p className="whitespace-nowrap text-[clamp(0.95rem,12.5cqi,1.75rem)] font-semibold leading-none tabular-nums text-white">{value}</p>
-      <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/70">
+    <div className="frost-tile @container flex min-w-0 flex-col gap-2 rounded-[22px] p-4 text-stone-900 dark:text-stone-50">
+      <p className="text-sm leading-snug text-stone-600 dark:text-stone-300">{label}</p>
+      <p className="whitespace-nowrap text-[clamp(0.95rem,12.5cqi,1.75rem)] font-semibold leading-none tabular-nums tracking-tight">{value}</p>
+      <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
         {change === null ? (
           <span className="shrink-0">sem base anterior</span>
         ) : (
-          <span className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${up ? "bg-[var(--brand-2)] text-[var(--brand)]" : down ? "bg-white/90 text-red-700" : "bg-white/20 text-white"}`}>
+          <span
+            className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${up ? "text-white" : down ? "bg-red-100 text-red-700" : "bg-stone-200/80 text-stone-600"}`}
+            style={up ? { background: "var(--brand)" } : undefined}
+          >
             {up ? <ArrowUpRight className="size-3" /> : down ? <ArrowDownRight className="size-3" /> : <Minus className="size-3" />}
             {up ? "+" : ""}
             {change.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
@@ -374,37 +378,34 @@ export function DashboardView({
   const k = d.kpis;
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
-    <div className="dash grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+    <GlassLight className="dash grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="@container order-2 flex min-w-0 flex-col gap-6 xl:order-1">
-      {/* D-HOMEINSIGHTS: faixa da marca (cor do banco) com o período e os números principais. */}
-      <section
-        className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-[0_20px_50px_-24px_var(--brand)]"
-        style={{ background: "linear-gradient(135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 78%, #000) 100%)" }}
-      >
-        <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full opacity-30 blur-3xl" style={{ background: "var(--brand-2)" }} />
+      {/* D-LIQUIDHOME: arte da marca atrás (cores do banco) e os números em placas de vidro fosco por cima. */}
+      <section className="relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_26px_60px_-30px_var(--brand)] md:p-6">
+        <div aria-hidden className="brand-art absolute inset-0" />
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_-20%,rgb(255_255_255/0.22),transparent_60%)]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Início da {brandName}</h1>
-            <p className="text-sm text-white/75">
+          <div className="min-w-0">
+            <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight drop-shadow-sm">Início da {brandName}</h1>
+            <p className="text-sm text-white/80">
               {dmy(d.period.from)} a {dmy(d.period.to)}, comparado com {dmy(d.previous.from)} a {dmy(d.previous.to)}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {DASH_PRESETS.map((p) => (
-              <Link
-                key={p.id}
-                href={href({ periodo: p.id, tipo: category })}
-                className={`rounded-full px-3 py-1 text-xs transition-colors ${d.period.preset === p.id ? "bg-white font-semibold text-[var(--brand)]" : "bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"}`}
-              >
-                {p.label}
-              </Link>
-            ))}
+            <nav aria-label="Período" className="liquid-pill" style={{ "--n": DASH_PRESETS.length, "--i": Math.max(0, DASH_PRESETS.findIndex((p) => p.id === d.period.preset)) } as CSSProperties}>
+              {DASH_PRESETS.findIndex((p) => p.id === d.period.preset) >= 0 && <span aria-hidden className="drop" />}
+              {DASH_PRESETS.map((p) => (
+                <Link key={p.id} href={href({ periodo: p.id, tipo: category })} aria-current={d.period.preset === p.id ? "true" : undefined}>
+                  {p.label}
+                </Link>
+              ))}
+            </nav>
             <form action="/admin/marca" className="flex items-center gap-1">
-              <select name="tipo" defaultValue={category} className="rounded-full border-0 bg-white/10 px-3 py-1 text-xs text-white ring-1 ring-white/20 [&>option]:text-stone-900" aria-label="Tipo de creator">
+              <select name="tipo" defaultValue={category} className="rounded-full border-0 bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur [&>option]:text-stone-900" aria-label="Tipo de creator">
                 {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
               {d.period.preset && <input type="hidden" name="periodo" value={d.period.preset} />}
-              <button className="rounded-full bg-white/10 px-3 py-1 text-xs text-white ring-1 ring-white/20 hover:bg-white/20">Aplicar</button>
+              <button className="rounded-full bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur hover:bg-white/25">Aplicar</button>
             </form>
             <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
           </div>
@@ -467,6 +468,6 @@ export function DashboardView({
       <div className="order-1 xl:order-2">
         <QueueRail h={h} />
       </div>
-    </div>
+    </GlassLight>
   );
 }

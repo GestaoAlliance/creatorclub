@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-281 — 2026-11-11 — Vidro líquido do Início (D-LIQUIDHOME; aguarda OK)
+- Inspirado nas referências do responsável ("Waterline" e "Glass Folder"), sem copiar: arte da marca (`.brand-art`,
+  manchas de `--brand`/`--brand-2`) atrás da faixa do topo com os números em placas de vidro fosco (`.frost-tile`);
+  seletor de período em pílula com a gota que escorrega (`.liquid-pill`); painéis com borda de luz em degradê e brilho
+  que segue o ponteiro (`GlassLight`, `--gx/--gy`). Sem dependência nova; respeita "reduzir movimento".
+
 ### CP-280 — 2026-11-11 — Início redesenhado: faixa da marca e "Sua fila" à direita (aguarda OK)
 - Pedido do responsável ("não gostei dessa parte aqui em cima… pode aplicar mais cor"): faixa no topo na cor da marca
   (`--brand`, brilho com `--brand-2`) com período e os 4 números em branco; "Sua fila" numa coluna à direita que
