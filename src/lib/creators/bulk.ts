@@ -58,7 +58,7 @@ export async function bulkTag(prisma: PrismaClient, actor: Actor | null, brandId
  * Mensagem da equipe (D-BULKMSG) para as marcadas: aviso no portal e, com o WhatsApp da marca ligado, no WhatsApp
  * (das 9h às 20h; o envio sai aos poucos). `{nome}` e `{cupom}` viram os de cada uma.
  */
-export async function bulkMessage(prisma: PrismaClient, actor: Actor | null, brandId: string, ids: readonly string[], msg: { title: string; body: string }) {
+export async function bulkMessage(prisma: PrismaClient, actor: Actor | null, brandId: string, ids: readonly string[], msg: { title: string; body: string; path?: string | null; audit?: object }) {
   const title = msg.title.trim();
   const body = msg.body.trim();
   if (!title || !body) throw new BulkError("Escreva o título e a mensagem.");
@@ -71,10 +71,10 @@ export async function bulkMessage(prisma: PrismaClient, actor: Actor | null, bra
       const coupon = c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null;
       const who = { name: c.account.name, coupon };
       const filledBody = fillMessage(body, who).slice(0, TEAM_MESSAGE_MAX.body);
-      return { brandId, creatorId: c.id, notice: teamMessage(sendId, fillMessage(title, who).slice(0, TEAM_MESSAGE_MAX.title), filledBody) };
+      return { brandId, creatorId: c.id, notice: teamMessage(sendId, fillMessage(title, who).slice(0, TEAM_MESSAGE_MAX.title), filledBody, msg.path ?? null) };
     });
     const sent = await notify(tx, rows);
-    await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: who.userId, action: "creator.message.bulk", entity: "Brand", entityId: brandId, after: { sendId, title, body, creators: creators.map((c) => c.id), sent } } });
+    await tx.auditLog.create({ data: { brandId, actorType: "USER", actorId: who.userId, action: "creator.message.bulk", entity: "Brand", entityId: brandId, after: { sendId, title, body, creators: creators.map((c) => c.id), sent, ...(msg.audit ?? {}) } } });
     const brand = await tx.brand.findUniqueOrThrow({ where: { id: brandId }, select: { whatsappInstance: true } });
     return { sent, whatsapp: brand.whatsappInstance !== null };
   });

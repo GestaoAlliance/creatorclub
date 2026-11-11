@@ -7,6 +7,8 @@ import { CampaignError, createCampaign, publishCampaign, settleCampaign, updateC
 import { db } from "@/lib/db";
 import { formatBRL } from "@/domain";
 import { staffContext } from "@/lib/staff/context";
+import { campaignMessage, duplicateCampaign } from "@/lib/campaigns/board";
+import { BulkError } from "@/lib/creators/bulk";
 
 export type CampaignState = { error?: string; ok?: string } | undefined;
 
@@ -66,4 +68,29 @@ export async function settleCampaignAction(_p: CampaignState, f: FormData): Prom
   } catch (error) {
     return fail(error);
   }
+}
+
+/** D-CAMPAIGNBOARD: convite (quem não se inscreveu) ou lembrete (inscritas) pelo WhatsApp da marca. */
+export async function campaignMessageAction(campaignId: string, to: "invite" | "entrants", creatorIds: string[], title: string, body: string): Promise<{ ok?: string; error?: string }> {
+  try {
+    const r = await campaignMessage(db(), await currentActor(), campaignId, { to, creatorIds, title, body });
+    revalidatePath(`/admin/campanhas/${campaignId}`);
+    const n = r.sent === 1 ? "1 creator" : `${r.sent} creators`;
+    return { ok: r.whatsapp ? `Enviado para ${n} pelo WhatsApp da marca (aos poucos, das 9h às 20h) e no portal.` : `Enviado para ${n} no portal e por e-mail.` };
+  } catch (error) {
+    if (error instanceof CampaignError || error instanceof BulkError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-CAMPAIGNBOARD: duplica como rascunho e abre a cópia. */
+export async function duplicateCampaignAction(campaignId: string): Promise<{ error?: string }> {
+  let id: string;
+  try {
+    id = (await duplicateCampaign(db(), await currentActor(), campaignId)).id;
+  } catch (error) {
+    if (error instanceof CampaignError) return { error: error.message };
+    throw error;
+  }
+  redirect(`/admin/campanhas/${id}`);
 }

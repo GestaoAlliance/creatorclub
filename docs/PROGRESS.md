@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-286 — 2026-11-11 — Campanhas: cartões vivos, pódio, resultado e recados pelo WhatsApp da marca (D-CAMPAIGNBOARD; aguarda OK)
+- Escolhas do responsável: cartões vivos; pódio e placar com barras; convidar quem não se inscreveu; resultado da
+  campanha; lembrete para as inscritas; integração com o AllianceOS fica para depois. Sugestão aceita no pedido ("que
+  mais?"): duplicar campanha.
+- Lista: faixa da marca (em andamento, inscritas agora de quantas podem, vendas agora, para confirmar) e um cartão por
+  campanha (`campaignCards`): fase, quando começa/acaba, barra do tempo, inscritas de quantas podem (%), vendas no
+  período, pódio e prêmios. Em andamento primeiro.
+- Campanha: faixa com fase, dia N de M, barra do tempo e 4 números (`campaignImpact`: inscritas de quantas podem;
+  vendas no período contra o mesmo tanto de dias antes; quantas venderam; prêmios previstos ou pagos e % das vendas).
+  Pódio do top 3 e placar com barra, prêmio e "faltam R$ X para o Nº lugar / para a meta".
+- Recados (`campaignMessage`, D-BULKMSG): convidar quem do público não se inscreveu ou lembrar as inscritas, marcando
+  quem recebe, texto com {nome}/{cupom} e prévia; leva para Campanhas no portal; só publicada e não encerrada.
+- Duplicar (`duplicateCampaign`): cópia em rascunho com as mesmas regras.
+- Sem estouro em 1920–390. Teste em `test/integration/campaigns.test.ts`. Próxima: OK das capturas → merge → Conteúdo.
+
 ### CP-285 — 2026-11-11 — Ações: fila por urgência, progresso do dia e envio pelo WhatsApp da marca (D-ACTIONSBOARD; aguarda OK)
 - Escolhas do responsável: fila única por urgência; mandar pelo WhatsApp da marca uma a uma e para todas de um tipo;
   prévia editável antes de mandar.
