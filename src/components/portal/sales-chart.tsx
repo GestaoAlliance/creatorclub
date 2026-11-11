@@ -129,7 +129,7 @@ export function SalesChart({
             <span
               key={b.id}
               className="pointer-events-none absolute top-1 max-w-[30%] truncate rounded-full bg-amber-100/90 px-2 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-900/60 dark:text-amber-100"
-              style={{ left: `${(b.x0 / W) * 100}%` }}
+              style={b.x0 / W > 0.55 ? { right: `${100 - (b.x1 / W) * 100}%` } : { left: `${(b.x0 / W) * 100}%` }}
               title={b.name}
             >
               {b.name}

@@ -106,26 +106,26 @@ function QueueRail({ h }: { h: StaffHome }) {
   );
 }
 
-/** Número principal da faixa da marca (texto branco sobre a cor da marca). */
+/** Número principal da faixa da marca (texto branco sobre a cor da marca). O tamanho acompanha a largura do cartão. */
 function HeroStat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
   const up = change !== null && change > 0;
   const down = change !== null && change < 0;
   return (
-    <div className="flex flex-col gap-1 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur-sm">
-      <p className="text-sm text-white/75">{label}</p>
-      <p className="text-[clamp(1.3rem,1.9vw,1.65rem)] font-semibold leading-tight tabular-nums text-white">{value}</p>
-      <p className="flex flex-wrap items-center gap-x-2 text-xs text-white/70">
+    <div className="@container flex min-w-0 flex-col gap-2 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur-sm">
+      <p className="text-sm leading-snug text-white/75">{label}</p>
+      <p className="whitespace-nowrap text-[clamp(0.95rem,12.5cqi,1.75rem)] font-semibold leading-none tabular-nums text-white">{value}</p>
+      <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/70">
         {change === null ? (
-          <span>sem base anterior</span>
+          <span className="shrink-0">sem base anterior</span>
         ) : (
-          <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${up ? "bg-[var(--brand-2)] text-[var(--brand)]" : down ? "bg-white/90 text-red-700" : "bg-white/20 text-white"}`}>
+          <span className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${up ? "bg-[var(--brand-2)] text-[var(--brand)]" : down ? "bg-white/90 text-red-700" : "bg-white/20 text-white"}`}>
             {up ? <ArrowUpRight className="size-3" /> : down ? <ArrowDownRight className="size-3" /> : <Minus className="size-3" />}
             {up ? "+" : ""}
             {change.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
           </span>
         )}
-        <span>{hint}</span>
-      </p>
+        <span className="min-w-0">{hint}</span>
+      </div>
     </div>
   );
 }
@@ -193,7 +193,8 @@ function HealthCard({ h }: { h: BaseHealth }) {
             <span className="h-full bg-red-400/70" style={{ width: `${(h.neverSold / Math.max(1, h.active)) * 100}%` }} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="@container">
+        <div className="grid grid-cols-2 gap-2 @lg:grid-cols-3 @3xl:grid-cols-5">
           {steps.map((x) => (
             <Link key={x.label} href={x.href} className="group rounded-2xl border border-stone-200/80 p-3 transition-colors hover:bg-stone-100/70 dark:border-white/10 dark:hover:bg-white/5">
               <p className="text-xs text-stone-500">{x.label}</p>
@@ -201,6 +202,7 @@ function HealthCard({ h }: { h: BaseHealth }) {
               <p className="text-[11px] leading-tight text-stone-500">{x.hint}</p>
             </Link>
           ))}
+        </div>
         </div>
       </div>
     </Card>
@@ -407,11 +409,11 @@ export function DashboardView({
             <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
           </div>
         </div>
-        <div className="relative mt-5 grid gap-3 sm:grid-cols-2 @3xl:grid-cols-4">
-          <HeroStat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos, {pct(k.sales.storeShare)} da loja</>} />
+        <div className="relative mt-5 grid grid-cols-2 gap-3 @3xl:grid-cols-4">
+          <HeroStat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{pct(k.sales.storeShare)} da loja</>} />
           <HeroStat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas</>} />
-          <HeroStat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
-          <HeroStat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>ticket médio <M>{formatBRL(k.units.ticketCents)}</M></>} />
+          <HeroStat label="Creators vendendo" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
+          <HeroStat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>{k.sales.orders} pedidos</>} />
         </div>
       </section>
 
