@@ -167,7 +167,7 @@ export const HELP = {
   },
   "cand-lista": {
     title: "Lista de candidatas",
-    text: "Aprovar abre cupom, tipo, comissão e desconto já preenchidos para conferir; Recusar pede só o motivo. Toque na linha para ver tudo o que ela respondeu.",
+    text: "Toque na linha: o painel mostra tudo o que ela respondeu e o aprovar já preenchido. Ao concluir, abre a próxima da fila. A cor da borda é a prioridade.",
   },
   "cr-filtros": {
     title: "Busca e filtros",

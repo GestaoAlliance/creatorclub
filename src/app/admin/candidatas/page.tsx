@@ -5,6 +5,7 @@ import { currentActor } from "@/lib/auth/current";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { db } from "@/lib/db";
 import { listApplications } from "@/lib/onboarding/applications";
+import { applicationsPace } from "@/lib/onboarding/pace";
 import { CandidatasView, SORTS, TABS, type Search } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -39,5 +40,7 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
         waiting: await db().creator.count({ where: { brandId: brand.id, awaitingContractAt: { not: null } } }),
       }
     : null;
-  return <CandidatasView status={status} sp={sp} filters={filters} data={data} canCreate={canCreate} lock={lock} />;
+  // D-CANDBOARD: ritmo da equipe e quem espera assinar (indicadores da marca do topo).
+  const pace = brand ? await applicationsPace(db(), brand.id) : null;
+  return <CandidatasView status={status} sp={sp} filters={filters} data={data} canCreate={canCreate} lock={lock} pace={pace} brandName={brand?.name ?? "Todas as marcas"} />;
 }

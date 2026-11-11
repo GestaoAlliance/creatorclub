@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-284 — 2026-11-11 — Candidatas: faixa com quadros, painel lateral e modo triagem (D-CANDBOARD; aguarda OK)
+- Escolhas do responsável: painel lateral como na lista; depois de decidir, abre a próxima sozinho; quadros de
+  prioridade alta, esperando 7+ dias, por hunter, repetidas, sem assinar e ritmo da equipe.
+- Faixa da marca com a pílula de situação (Pendentes, Esperando assinatura, Aprovadas, Recusadas) e "Nova candidata".
+  Quadros de Pendentes filtram a lista (alta, 7+ dias com a mais antiga, por hunter com os códigos não achados,
+  repetidas); "Sem assinar" leva à aba e mostra quantas há 3+ dias; "Ritmo · 30 dias" mostra o tempo médio até decidir e
+  aprovadas/recusadas (`applicationsPace`).
+- Lista com a cor da prioridade na borda, avatar, WhatsApp, tipo, redes, de onde veio e aprovar/recusar; tabela ou
+  cartões pela largura (container query).
+- Painel lateral: cabeçalho da marca com prioridade e motivos, redes, todas as respostas, aviso de repetida e o aprovar
+  já preenchido; Recusar com motivo; ↑/↓ e Esc. Modo triagem: decidiu, aparece o WhatsApp da decisão; ao concluir, a
+  tela atualiza e abre a candidata que ficou no mesmo lugar da fila. Recusar várias continua.
+- Sem estouro em 1920/1440/1280/1024/768/390. Teste: `test/integration/applications-pace.test.ts`. Próxima: OK das
+  capturas → merge → Ações.
+
 ### CP-283 — 2026-11-11 — Ficha da creator: faixa da marca, saldo previsto, abas em gota e "O que falta" (D-CREATORFILE; aguarda OK)
 - Escolhas do responsável: saldo previsto + aviso enquanto a abertura espera o Pagamento; faixa da marca + abas + coluna
   de ações; Resumo com vendas por mês, produtos, comparação com a média e último envio.
