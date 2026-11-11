@@ -25,3 +25,26 @@ describe("posts (M4.6, D-POSTS)", () => {
     expect(actionMessage({ kind: "NO_POST", days: 16, never: false }, "Ana Lima", "Botanika")).toMatch(/^Oi, Ana! Aqui é da Botanika\. Faz 16 dias que não vemos um post seu registrado/);
   });
 });
+
+describe("conteúdo: ranking, melhor dia e rede (D-CONTENTBOARD)", () => {
+  it("melhor dia e rede pela média acima do normal (2+ posts completos); ranking por creator", async () => {
+    const { bestOf, contentRanking, igKey, weekdayOf } = await import("@/domain");
+    expect(igKey(" @Maria.Ex ")).toBe("maria.ex");
+    expect(weekdayOf("2026-11-11")).toBe("quarta");
+    const it = (creatorId: string | null, platform: "INSTAGRAM" | "TIKTOK", postedDay: string, above: number, likes: number | null = null, complete = true) => ({ creatorId, platform, postedDay, complete, windowCents: above + 1000, aboveCents: above, likes });
+    const items = [
+      it("a", "INSTAGRAM", "2026-11-11", 5000, 100), // quarta
+      it("a", "INSTAGRAM", "2026-11-04", 3000, 300), // quarta
+      it("b", "TIKTOK", "2026-11-09", 100), // segunda
+      it("b", "TIKTOK", "2026-11-02", -100), // segunda
+      it("b", "TIKTOK", "2026-11-12", 9999, null, false), // incompleto: fora do melhor dia
+    ];
+    const best = bestOf(items);
+    expect(best.weekday[0]).toEqual({ key: "quarta", posts: 2, avgAboveCents: 4000 });
+    expect(best.platform.map((p) => p.key)).toEqual(["INSTAGRAM", "TIKTOK"]);
+    expect(contentRanking(items)).toEqual([
+      { creatorId: "a", posts: 2, avgLikes: 200, salesPerPostCents: 5000, aboveCents: 8000 },
+      { creatorId: "b", posts: 3, avgLikes: null, salesPerPostCents: Math.round((1100 + 900 + 10999) / 3), aboveCents: 0 },
+    ]);
+  });
+});

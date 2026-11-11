@@ -30,7 +30,7 @@ import { can } from "@/lib/auth/permissions";
 import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
-import { lastPostDays } from "@/lib/posts/posts";
+import { lastPostDaysAll } from "@/lib/posts/content";
 import { notify } from "@/lib/notifications/notify";
 
 /**
@@ -155,7 +155,8 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   }
 
   // Sem post registrado há 15 dias (parceiras ativas; desde o último post, a entrada dela ou o início dos registros).
-  const lastPost = await lastPostDays(prisma, partners.map((c) => c.id));
+  // D-CONTENTBOARD: post registrado ou detectado no Instagram (marcou a marca).
+  const lastPost = await lastPostDaysAll(prisma, brandId, partners.map((c) => c.id), tz);
   for (const c of partners) {
     const last = lastPost.get(c.id) ?? null;
     const activated = dayKey(c.createdAt, tz);

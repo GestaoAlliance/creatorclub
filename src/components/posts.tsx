@@ -18,7 +18,7 @@ function Platform({ p }: { p: PostPlatform }) {
   return <span className="text-xs font-medium text-stone-500">{POST_PLATFORM_LABEL[p]}</span>;
 }
 
-function Remove({ postId, marca }: { postId: string; marca: string | null }) {
+export function RemovePost({ postId, marca }: { postId: string; marca: string | null }) {
   const [state, action, pending] = useActionState(marca ? removeMyPostAction : staffRemovePostAction, undefined);
   return (
     <form action={action} onSubmit={(e) => { if (!confirm("Tirar este post? Use só se foi registrado por engano.")) e.preventDefault(); }}>
@@ -61,7 +61,7 @@ export function PostList({ posts, showCreator = false, canRemove, marca = null }
                 {p.overlap && <span className="block text-amber-700 dark:text-amber-300">perto de outro post</span>}
               </p>
             </div>
-            {canRemove && <Remove postId={p.id} marca={marca} />}
+            {canRemove && <RemovePost postId={p.id} marca={marca} />}
           </div>
         </li>
       ))}

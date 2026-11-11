@@ -5,6 +5,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { createCampaign, joinCampaign, publishCampaign } from "@/lib/campaigns/campaigns";
 import type { PortalContext } from "@/lib/portal/context";
 import { addPost, brandPosts, campaignPosts, creatorPosts, myPosts, removePost } from "@/lib/posts/posts";
+import { contentBoard, lastPostDaysAll } from "@/lib/posts/content";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -72,5 +73,35 @@ describe("posts das creators (M4.6, D-POSTS, banco real)", () => {
     const ctx = { creatorId: creator.id, brand: { id: brand.id }, viewAs: null } as unknown as PortalContext;
     await addPost(prisma, { kind: "creator", ctx, userId: "u" }, creator.id, { url: "https://instagram.com/p/z", postedDay: "2026-11-05" }, T("2026-11-08T15:00:00Z"));
     expect(await noPost("2026-11-08T15:00:00Z")).toEqual([]);
+  });
+});
+
+describe("conteúdo: posts registrados + detectados no Instagram (D-CONTENTBOARD, banco real)", () => {
+  it("marcação vira post da creator pelo @; mesmo link não conta duas vezes; outras menções; quem não postou; Sem post nas ações", async () => {
+    const { brand, creator, account, coupon } = await seedBrand(prisma);
+    await prisma.creatorAccount.update({ where: { id: account.id }, data: { instagram: "@Maria.Ex" } });
+    await prisma.creator.update({ where: { id: creator.id }, data: { createdAt: T("2026-10-01T12:00:00Z") } });
+    const acc2 = await prisma.creatorAccount.create({ data: { name: "Bia Lima", email: `${randomUUID()}@x.com`, instagram: "bia" } });
+    const c2 = await prisma.creator.create({ data: { brandId: brand.id, accountId: acc2.id, categories: ["INFLUENCER"], createdAt: T("2026-10-01T12:00:00Z") } });
+    const now = T("2026-11-20T15:00:00Z");
+    const tag = (username: string, postedAt: string, permalink: string, likes = 10) => prisma.instagramTag.create({ data: { brandId: brand.id, mediaId: randomUUID(), username, postedAt: T(postedAt), permalink, likes, comments: 2 } });
+    await tag("maria.ex", "2026-11-10T15:00:00Z", "https://www.instagram.com/p/AAA/", 120);
+    await tag("maria.ex", "2026-11-12T15:00:00Z", "https://www.instagram.com/reel/BBB/", 50);
+    await tag("fulana", "2026-11-11T15:00:00Z", "https://www.instagram.com/p/CCC/");
+    const gestao = await staff("GESTAO", brand.id);
+    await addPost(prisma, { kind: "staff", actor: gestao }, creator.id, { url: "https://instagram.com/reel/BBB", postedDay: "2026-11-12" }, now);
+    const o = await prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: "#x", createdAtShop: T("2026-11-10T18:00:00Z"), paidAt: T("2026-11-10T18:00:00Z"), financialStatus: "PAID", subtotalCents: 30_000, totalCents: 30_000, discountCodes: [], shopifyUpdatedAt: now } });
+    await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: o.id, creatorId: creator.id, couponId: coupon.id, rateBps: 1500, rule: "FIRST_CREATOR_CODE", evidenceCodes: [] } });
+
+    const b = await contentBoard(prisma, gestao, brand.id, now);
+    expect(b.posts.map((p) => [p.source, p.postedDay, p.likes])).toEqual([["MANUAL", "2026-11-12", 50], ["INSTAGRAM", "2026-11-10", 120]]);
+    expect(b.posts[1]).toMatchObject({ creatorId: creator.id, windowCents: 30_000, complete: true });
+    expect(b.mentions.map((m) => m.username)).toEqual(["fulana"]);
+    expect(b.notPosted.map((x) => x.id)).toEqual([c2.id]);
+    expect((await lastPostDaysAll(prisma, brand.id, [creator.id, c2.id])).get(creator.id)).toBe("2026-11-12");
+
+    // Ações: quem marcou a marca não cai em "Sem post"; quem não postou cai.
+    const tasks = (await actionQueue(prisma, brand.id, now)).filter((t) => t.kind === "NO_POST").map((t) => t.creatorId);
+    expect(tasks).toEqual([c2.id]);
   });
 });
