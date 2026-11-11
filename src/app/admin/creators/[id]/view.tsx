@@ -10,7 +10,7 @@ import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar, releaseWhat } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
-import { birthdayLabel, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
+import { birthdayLabel, CREATOR_CATEGORY_LABEL, creatorFileNeeds, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
 import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
@@ -26,6 +26,9 @@ import { OriginLine } from "./origin-form";
 import type { Origin } from "@/domain";
 import { UgcVideosCard } from "./ugc-card";
 import { ContractFileForm } from "./contract-file";
+import { CompareCard, FileHero, MonthlyCard, NeedsList, ProductsCard, ShipmentCard, type HeroTile } from "./file-parts";
+import type { CreatorInsights } from "@/lib/creators/insights";
+import { releaseNote } from "@/components/ui/release-progress";
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 const dmy = (day: string | null) => (day ? day.split("-").reverse().join("/") : "—");
@@ -70,105 +73,88 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null }: { origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null }: { insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
+  const mainCoupon = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until) ?? null;
+  // D-CREATORFILE: enquanto o Pagamento não aprova a abertura, o saldo aparece já sem o que foi pago antes (previsto).
+  const opening = insights?.money?.opening ?? null;
+  const openingPending = Boolean(opening && !opening.approved && !ugcOnly);
+  const paidBefore = openingPending ? (opening?.paidCents ?? 0) : 0;
+  const tiles: HeroTile[] = [];
+  if (numbers) {
+    tiles.push({ label: "Vendas em 30 dias", value: formatBRL(numbers.last30.salesCents), hint: `${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido" : "pedidos"} · ticket ${formatBRL(numbers.last30.ticketCents)}` });
+    tiles.push({ label: "Aguardando pagamento", value: formatBRL(numbers.pending.salesCents), hint: `${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão` : ""}` });
+  }
+  if (st && !ugcOnly) {
+    tiles.push({ label: "A liberar no dia 1", value: formatBRL(Math.max(0, st.balance.heldCents)), hint: releaseNote(st.release) });
+    const avail = st.balance.availableCents - paidBefore;
+    tiles.push({
+      label: openingPending ? "Disponível (previsto)" : "Disponível para saque",
+      value: formatBRL(avail),
+      tone: avail < 0 ? "red" : openingPending ? "amber" : undefined,
+      hint: openingPending ? "saque bloqueado até aprovar a abertura" : `saldo ${formatBRL(st.balance.totalCents)}`,
+    });
+  } else if (numbers) tiles.push({ label: "Comissão estornada", value: formatBRL(numbers.reversedCents) });
+  const needs = creatorFileNeeds({
+    status: p.status,
+    ugcOnly,
+    hasLogin: p.hasLogin,
+    fakeEmail: p.contact.fakeEmail,
+    reviewed: p.reviewedAt !== null,
+    ownerPending: p.coupons.some((c) => !c.until && !c.confirmed),
+    ratePending: p.policies.some((x) => !x.until && !x.confirmed),
+    contract: { status: p.contract.status, daysLeft: p.contract.daysLeft, end: p.contract.end },
+    checklist: p.contract,
+    opening: opening ? { approved: opening.approved, paidCents: opening.paidCents } : null,
+    idleDays: p.idle?.idle ? p.idle.days : null,
+  });
   return (
     <>
       <Link href="/admin/creators" className={`${ui.link} inline-flex items-center gap-1 self-start text-sm`}>
         <ArrowLeft className="size-4" /> Creators
       </Link>
-      {/* Cabeçalho no modelo da referência: quem é, redes, cupom com o link e os números principais. */}
-      <section className={`${ui.card} gap-5`}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="grid size-12 shrink-0 place-content-center rounded-2xl bg-brand text-xl sm:size-16 sm:rounded-3xl sm:text-2xl font-bold text-white shadow-sm">
-              {p.contact.name.slice(0, 1).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <h1 className={`${ui.title} truncate`}>{p.contact.name}</h1>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                <span className={STATUS_BADGE[p.status]}>{STATUS_LABEL[p.status]}</span>
-                {p.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k as CreatorCategoryValue]}</span>)}
-                <span className={p.hasLogin ? badge.sky : badge.neutral}>{p.hasLogin ? "já entrou no portal" : "sem acesso ao portal"}</span>
-                {p.reviewedAt && <span className={badge.green}>conferida pela Ana</span>}
-                {p.contact.fakeEmail && <span className={badge.amber}>e-mail a confirmar</span>}
-                {p.birthDate && <span className={badge.neutral}>🎂 {birthdayLabel(p.birthDate)}</span>}
-                {p.place && <span className={badge.neutral}>📍 {p.place}</span>}
-                {p.profile.niches.map((n) => <span key={n} className={badge.neutral}>{n}</span>)}
-              </div>
-              {origin && (
-                <div className="mt-2">
-                  <OriginLine creatorId={p.id} origin={origin.origin} hunters={origin.hunters} canEdit={p.canEdit} />
-                </div>
-              )}
-              {/* M4.2 (D-TAGS): tags da marca, só a equipe vê. */}
-              <div className="mt-2">
-                <TagsEditor creatorId={p.id} tags={p.tags} suggestions={tagSuggestions} canEdit={p.canEdit} />
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {p.instagram && instagramUrl(p.instagram) && (
-                  <a href={instagramUrl(p.instagram)!} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <InstagramIcon className="size-4 text-pink-600" /> {p.instagram.replace(/^@/, "")}
-                  </a>
-                )}
-                {p.tiktok && (
-                  <a href={`https://www.tiktok.com/@${p.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <TikTokIcon className="size-4" /> {p.tiktok.replace(/^@/, "")}{p.tiktokShop && " · TikTok Shop"}
-                  </a>
-                )}
-                {p.profile.youtube && (
-                  <a href={`https://www.youtube.com/@${p.profile.youtube}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <Play className="size-4 text-red-600" /> {p.profile.youtube}
-                  </a>
-                )}
-                {p.profile.kwai && <span className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">Kwai · {p.profile.kwai}</span>}
-                {p.profile.mediaKitUrl && (
-                  <a href={p.profile.mediaKitUrl} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <FileText className="size-4" /> Mídia kit
-                  </a>
-                )}
-                {p.contact.phone && whatsappChatUrl(p.contact.phone) && (
-                  <a href={whatsappChatUrl(p.contact.phone)!} target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:shadow-sm">
-                    <WhatsAppIcon className="size-4 text-emerald-600" /> {p.contact.phone}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-          {p.canViewAs && (
-            <form action={viewAsAction} data-tour="fi-vercomo" className="flex items-center gap-1">
-              <input type="hidden" name="creatorId" value={p.id} />
-              <button className={ui.ghost}><Eye className="size-4" /> Ver o portal como ela</button>
-              <HelpTip id="fi-vercomo" />
-            </form>
-          )}
+      {/* D-CREATORFILE: faixa da marca com quem é, redes, cupom com o link e os números principais. */}
+      <FileHero
+        id={p.id}
+        name={p.contact.name}
+        status={p.status}
+        categories={p.categories}
+        hasLogin={p.hasLogin}
+        reviewed={p.reviewedAt !== null}
+        birthDate={p.birthDate}
+        place={p.place}
+        niches={p.profile.niches}
+        instagram={p.instagram}
+        tiktok={p.tiktok}
+        tiktokShop={Boolean(p.tiktokShop)}
+        youtube={p.profile.youtube}
+        kwai={p.profile.kwai}
+        mediaKitUrl={p.profile.mediaKitUrl}
+        phone={p.contact.phone}
+        coupon={mainCoupon?.code ?? null}
+        link={mainCoupon ? `${linkBase}${mainCoupon.code}` : null}
+        canViewAs={p.canViewAs}
+        tiles={tiles}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
+      <aside aria-label="O que falta" className="glass flex flex-col gap-4 rounded-3xl p-4 xl:sticky xl:top-4 xl:order-2">
+        <h2 className={ui.h2}>O que falta</h2>
+        <NeedsList needs={needs} />
+        {origin && <OriginLine creatorId={p.id} origin={origin.origin} hunters={origin.hunters} canEdit={p.canEdit} />}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Tags</span>
+          <TagsEditor creatorId={p.id} tags={p.tags} suggestions={tagSuggestions} canEdit={p.canEdit} />
         </div>
-        {(() => {
-          const c = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until);
-          return c ? (
-            <div className={`${ui.inset} flex flex-wrap items-center justify-between gap-3`}>
-              <div className="min-w-0">
-                <p className="text-xs text-stone-500">Cupom e link dela</p>
-                <p className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-mono text-lg font-bold tracking-wide">{c.code}</span>
-                  <span className="truncate font-mono text-xs text-stone-500">{linkBase}{c.code}</span>
-                </p>
-              </div>
-              <CopyButton value={`${linkBase}${c.code}`} label="Copiar link" />
-            </div>
-          ) : null;
-        })()}
-        {numbers && (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Kpi label="Vendas em 30 dias" value={formatBRL(numbers.last30.salesCents)} hint={`${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido pago" : "pedidos pagos"}`} />
-            <Kpi label="Ticket médio" value={formatBRL(numbers.last30.ticketCents)} hint="últimos 30 dias" />
-            <Kpi label="Aguardando pagamento" value={formatBRL(numbers.pending.salesCents)} hint={`${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão` : ""}`} />
-            {st && !ugcOnly ? <Kpi label="Disponível para saque" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} hint={`saldo ${formatBRL(st.balance.totalCents)}`} /> : <Kpi label="Comissão estornada" value={formatBRL(numbers.reversedCents)} />}
+        {p.canEdit && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Observação rápida</span>
+            <NoteForm creatorId={p.id} />
           </div>
         )}
-      </section>
-
+      </aside>
+      <div className="min-w-0 xl:order-1">
       <Tabs
         initial={st?.month && mes ? "extrato" : undefined}
         tabs={[
@@ -179,11 +165,24 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               <>
       {st && !ugcOnly && (
         <Card title="Saldo" icon={<Receipt className="size-4" />} help="fi-saldo">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Kpi label="Saldo" value={formatBRL(st.balance.totalCents)} tone={st.balance.totalCents < 0 ? "red" : undefined} />
+          {openingPending && (
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-sm text-amber-950 dark:text-amber-100">
+              <div className="flex flex-col gap-0.5">
+                <p className="font-semibold">Abertura esperando o Pagamento</p>
+                <p>
+                  {paidBefore > 0 ? <>Já pago antes do Creator Club (comprovantes): <strong className="tabular-nums">{formatBRL(paidBefore)}</strong>. </> : "Nada informado como já pago. "}
+                  Saque bloqueado até aprovar; os números abaixo já descontam o que foi pago.
+                </p>
+                {opening?.note && <p className="text-xs opacity-80">{opening.note}</p>}
+              </div>
+              <Link href="/admin/abertura" className={ui.btnSm}>Abrir a Abertura →</Link>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4 [&_p.text-2xl]:whitespace-nowrap [&_p.text-2xl]:text-xl">
+            <Kpi label={openingPending ? "Saldo previsto" : "Saldo"} value={formatBRL(st.balance.totalCents - paidBefore)} tone={st.balance.totalCents - paidBefore < 0 ? "red" : undefined} hint={openingPending && paidBefore > 0 ? `no extrato hoje ${formatBRL(st.balance.totalCents)} (sem o desconto ainda)` : undefined} />
             <Kpi label="A liberar" value={formatBRL(st.balance.heldCents)} />
             <Kpi label="Em saque" value={formatBRL(st.balance.reservedCents)} />
-            <Kpi label="Disponível" value={formatBRL(st.balance.availableCents)} tone={st.balance.availableCents < 0 ? "red" : undefined} />
+            <Kpi label={openingPending ? "Disponível (previsto)" : "Disponível"} value={formatBRL(st.balance.availableCents - paidBefore)} tone={st.balance.availableCents - paidBefore < 0 ? "red" : undefined} />
           </div>
           <ReleaseProgressBar r={st.release} />
           <p className={ui.hint}>
@@ -196,7 +195,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
       )}
       {ret && !ugcOnly && (
         <Card title={`Retorno (últimos ${returnDays} dias)`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4 [&_p.text-2xl]:whitespace-nowrap [&_p.text-2xl]:text-xl">
             <Kpi label="Receita" value={formatBRL(ret.revenueCents)} hint={`${ret.orders} pedidos`} />
             <Kpi label="Custos" value={formatBRL(ret.cogsCents + ret.commissionCents + ret.kitsCents + ret.freightCents)} hint={`produtos ${formatBRL(ret.cogsCents)} · comissão ${formatBRL(ret.commissionCents)} · kits e frete ${formatBRL(ret.kitsCents + ret.freightCents)}`} />
             <Kpi label="Lucro que deixa" value={formatBRL(ret.profitCents)} tone={ret.profitCents < 0 ? "red" : undefined} hint={ret.unitsWithoutCost ? `${ret.unitsWithoutCost} un. sem custo na Shopify` : undefined} />
@@ -208,7 +207,13 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           </div>
         </Card>
       )}
-                <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      {insights?.money && <MonthlyCard months={insights.money.months} minCents={st && st.release.basis !== "COMMISSION" ? st.release.minCents : null} />}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        {insights?.money && <CompareCard c={insights.money.compare} />}
+        {insights && <ShipmentCard s={insights.shipment} count={insights.shipments} />}
+      </div>
+      {insights?.money && <ProductsCard products={insights.money.products} />}
+                <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
                   <div className="flex min-w-0 flex-col gap-6">
           {!p.reviewedAt && !ugcOnly && (
             <Card title="Conferência da Ana" icon={<ClipboardCheck className="size-4" />} help="fi-conferencia">
@@ -228,15 +233,15 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             <ul className={ui.list}>
               {p.coupons.map((c, i) => (
                 <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0">
-                  <span className="flex flex-col gap-1">
+                  <span className="flex min-w-0 max-w-full flex-col gap-1">
                     <span>
                     <span className="font-mono font-semibold">{c.code}</span>
                     <span className={`${ui.hint} ml-2`}>desde {date(c.since)}{c.until && ` até ${date(c.until)}`}</span>
                     </span>
                     {/* M0.2: o link que ela divulga (rastreado, D-LINK), pronto para copiar. */}
                     {!c.until && c.kind === "CREATOR" && (
-                      <span className="flex items-center gap-2">
-                        <span className="truncate font-mono text-xs text-stone-500">{linkBase}{c.code}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate font-mono text-xs text-stone-500">{linkBase}{c.code}</span>
                         <CopyButton value={`${linkBase}${c.code}`} label="Copiar link" />
                       </span>
                     )}
@@ -322,7 +327,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             id: "contrato",
             label: "Contrato",
             content: (
-              <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
                 <div className="flex min-w-0 flex-col gap-6">
           <Card title="Contrato e checklist" icon={<FileSignature className="size-4" />} help="fi-contrato">
             {p.contract.status === "EXPIRED" && <p className="text-sm font-medium text-red-700 dark:text-red-400">Contrato vencido em {dmy(p.contract.end)}: renovar ou encerrar.</p>}
@@ -401,7 +406,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             id: "cadastro",
             label: "Cadastro",
             content: (
-              <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
                 <div className="flex min-w-0 flex-col gap-6">
           <Card title="Contato" icon={<UserRound className="size-4" />}>
             {p.canEdit ? (
@@ -547,6 +552,8 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           { id: "historico", label: "Linha do tempo", badge: timeline.length, content: <Timeline events={timeline} creatorId={p.id} canEdit={p.canEdit} /> },
         ]}
       />
+      </div>
+      </div>
     </>
   );
 }

@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { bulkMessage, bulkTag } from "@/lib/creators/bulk";
 import { creatorPeek } from "@/lib/creators/peek";
+import { creatorInsights, lastMonths } from "@/lib/creators/insights";
 import { listCreators } from "@/lib/creators/profile";
 import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -104,5 +105,32 @@ describe("lista de creators: tendência, painel e ações em grupo (D-CREATORLIS
     await prisma.notification.create({ data: { ...base, dedupeKey: "team-message:1" } });
     await expectDbError(prisma.notification.create({ data: { ...base, dedupeKey: "team-message:2", body: "x".repeat(1001) } }), /Notification_team_message_size/);
     await expectDbError(prisma.notification.create({ data: { ...base, dedupeKey: "team-message:3", title: "x".repeat(81) } }), /Notification_team_message_size/);
+  });
+});
+
+describe("ficha: resumo (D-CREATORFILE, banco real)", () => {
+  it("vendas por mês, produtos, comparação com as ativas, último envio e abertura; sem dinheiro para Envio", async () => {
+    const { brand, creator, coupon } = await seedBrand(prisma);
+    const b = await secondCreator(brand.id, "Bia Lima");
+    const now = new Date();
+    const o1 = await sale(brand.id, creator.id, coupon.id, new Date(now.getTime() - 2 * DAY), 30_000);
+    await sale(brand.id, b.id, coupon.id, new Date(now.getTime() - 3 * DAY), 10_000);
+    await prisma.orderLine.createMany({ data: [
+      { brandId: brand.id, orderId: o1.id, shopifyId: "l1", title: "Sérum", quantity: 2, discountedTotalCents: 20_000 },
+      { brandId: brand.id, orderId: o1.id, shopifyId: "l2", title: "Brinde", quantity: 5, discountedTotalCents: 0 },
+    ] });
+    await prisma.openingPaid.create({ data: { brandId: brand.id, creatorId: creator.id, paidCents: 12_345, note: "Pix", preparedById: "seed" } });
+    const gestao = await userWith("GESTAO", brand.id);
+    const r = await creatorInsights(prisma, gestao, creator.id, now);
+    expect(r.money!.months).toHaveLength(12);
+    expect(r.money!.months.at(-1)!.cents + r.money!.months.at(-2)!.cents).toBe(30_000);
+    expect(r.money!.products).toEqual([{ title: "Sérum", quantity: 2, cents: 20_000 }]);
+    expect(r.money!.compare).toEqual({ sales30Cents: 30_000, averageCents: 20_000, rank: 1, active: 2 });
+    expect(r.money!.opening).toEqual({ approved: false, paidCents: 12_345, note: "Pix" });
+    expect(r.shipment).toBeNull();
+    expect(lastMonths(new Date("2026-01-15T12:00:00Z"), "America/Sao_Paulo", 3)).toEqual(["2025-11", "2025-12", "2026-01"]);
+
+    const envio = await prisma.user.create({ data: { id: randomUUID(), email: `${randomUUID()}@x.com`, name: "E", roleGrants: { create: { role: "ENVIO", brandId: brand.id } } } });
+    expect((await creatorInsights(prisma, (await loadActor(prisma, envio.id))!, creator.id, now)).money).toBeNull();
   });
 });

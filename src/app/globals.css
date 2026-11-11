@@ -432,7 +432,8 @@ aside.peek-panel {
   transition: transform 0.55s cubic-bezier(0.34, 1.36, 0.5, 1), width 0.55s cubic-bezier(0.34, 1.36, 0.5, 1);
   pointer-events: none;
 }
-.liquid-tabs > a {
+.liquid-tabs > a,
+.liquid-tabs > button {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
@@ -444,11 +445,11 @@ aside.peek-panel {
   color: rgb(87 83 78);
   transition: color 0.3s;
 }
-.dark .liquid-tabs > a { color: rgb(214 211 209); }
-.liquid-tabs > a:hover { color: rgb(28 25 23); }
-.dark .liquid-tabs > a:hover { color: white; }
-.liquid-tabs > a[aria-current="page"] { color: white; font-weight: 600; }
-.liquid-tabs:not(.is-ready) > a[aria-current="page"] { background: var(--brand); }
+.dark .liquid-tabs > a, .dark .liquid-tabs > button { color: rgb(214 211 209); }
+.liquid-tabs > a:hover, .liquid-tabs > button:hover { color: rgb(28 25 23); }
+.dark .liquid-tabs > a:hover, .dark .liquid-tabs > button:hover { color: white; }
+.liquid-tabs > a[aria-current="page"], .liquid-tabs > button[aria-selected="true"] { color: white; font-weight: 600; }
+.liquid-tabs:not(.is-ready) > a[aria-current="page"], .liquid-tabs:not(.is-ready) > button[aria-selected="true"] { background: var(--brand); }
 @media (prefers-reduced-motion: reduce) {
   .liquid-tabs > .drop { transition: none; }
 }
