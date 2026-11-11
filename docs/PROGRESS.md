@@ -315,6 +315,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-288 — 2026-11-11 — TikTok: faixa com quadros e cartões; afiliadas do TikTok Shop esperando a API (D-TIKTOKBOARD; aguarda OK)
+- Redesenho da aba no padrão das outras: faixa da marca com quadros que filtram (com TikTok, TikTok Shop, candidatas,
+  creators), busca na hora e cartões com situação, selo TikTok Shop, @ do TikTok e do Instagram, seguidores, cidade,
+  nicho e "Chamar no WhatsApp". Continua só leitura e sem dinheiro (a Mafe usa esta aba). Links antigos (`?shop=1`,
+  `?quem=`, `?q=`) continuam abrindo filtrados.
+- Afiliadas do TikTok Shop: o responsável escolheu **só pela API oficial**. A API de afiliados existe (afiliadas e pedidos
+  com comissão), mas vem desligada: precisa de app no TikTok Shop Partner Center, liberação pelo gerente de conta/parceria
+  do TikTok e autorização da loja; a disponibilidade no Brasil não está confirmada na documentação. Quadro "Afiliadas
+  Shop: esperando a API" na faixa. Quem cuida: a Mafe.
+- Ideias de integração anotadas para quando a API liberar (decidir com o responsável): cruzar afiliada × creator pelo @;
+  afiliadas que não são creators viram prospecção; creators sem afiliação recebem convite (colaboração direcionada);
+  vendas do TikTok Shop na ficha separadas das do cupom; campanhas podendo contar o TikTok Shop.
+- Sem estouro em 1920–390. Próxima: OK das capturas → merge → portal da creator (ou o que o responsável escolher).
+
 ### CP-287 — 2026-11-11 — Conteúdo: posts detectados no Instagram + registrados, mural, ranking e lembrete (D-CONTENTBOARD; aguarda OK)
 - Dado que motivou: em produção quase ninguém registra post à mão (Botanika 0, Revita 4), mas o Instagram já detecta as
   marcações da marca (Botanika 23, Revita 13), que não apareciam em Conteúdo.
