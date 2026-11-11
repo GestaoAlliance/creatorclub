@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-280 — 2026-11-11 — Início redesenhado: faixa da marca e "Sua fila" à direita (aguarda OK)
+- Pedido do responsável ("não gostei dessa parte aqui em cima… pode aplicar mais cor"): faixa no topo na cor da marca
+  (`--brand`, brilho com `--brand-2`) com período e os 4 números em branco; "Sua fila" numa coluna à direita que
+  acompanha a rolagem (urgente em cartões vermelhos, o resto por área; no celular, em cima); cartões em grade por
+  container query (`@container`, `@3xl`). Lógica igual (D-NEEDSAREA, D-HOMEINSIGHTS).
+
 ### CP-279 — 2026-11-11 — Início: retorno do programa e gráfico com período anterior e campanhas (página completa, aguarda OK)
 - Cartão "Retorno do programa" (reaproveita `productReport`, D-COST): vendas por R$ 1 investido (comissão, produtos
   enviados, frete), custo dos vendidos, lucro do programa e o que falta para a conta (produto sem custo na Shopify,

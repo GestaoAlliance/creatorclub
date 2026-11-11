@@ -51,49 +51,82 @@ export function Stat({ label, value, change, hint }: { label: string; value: Rea
   );
 }
 
-/** "Precisa de você" (regra em `needsFor`, D-NEEDSAREA): uma coluna por área, o urgente primeiro e em vermelho. */
-function Needs({ h }: { h: StaffHome }) {
+/**
+ * "Sua fila" (regra em `needsFor`, D-NEEDSAREA): coluna à direita que acompanha a rolagem (no celular, em cima).
+ * O urgente vem em cartões vermelhos; o resto em lista por área, cada linha com o atalho para a tela.
+ */
+function QueueRail({ h }: { h: StaffHome }) {
   const { readOnly, areas } = needsFor(h);
-  const urgent = areas.reduce((n, a) => n + a.items.filter((i) => i.urgent).length, 0);
+  const urgent = areas.flatMap((a) => a.items.filter((i) => i.urgent).map((i) => ({ ...i, area: a.area })));
+  const total = areas.reduce((n, a) => n + a.items.length, 0);
   return (
-    <section className={`${ui.card} gap-4`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-semibold">{readOnly ? "Pendências da equipe" : "Precisa de você"}</p>
-        {urgent > 0 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-900/40 dark:text-red-200">
-            <span className="size-1.5 rounded-full bg-red-600" /> {urgent} {urgent === 1 ? "urgente" : "urgentes"}
+    <aside aria-label={readOnly ? "Pendências da equipe" : "Sua fila"} className="glass flex flex-col gap-4 rounded-[28px] p-5 xl:sticky xl:top-6">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-base font-semibold">{readOnly ? "Pendências da equipe" : "Sua fila"}</h2>
+        <span className="text-xs text-stone-500">{total === 0 ? "tudo em dia" : `${total} ${total === 1 ? "assunto" : "assuntos"}`}</span>
+      </div>
+      {total === 0 && <p className={ui.muted}>Nada esperando por você agora.</p>}
+      {urgent.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {urgent.map((i) => (
+            <li key={i.label}>
+              <Link href={i.href} className="group flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-3 transition-colors hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:hover:bg-red-950/60">
+                <span className="grid size-9 shrink-0 place-content-center rounded-xl bg-red-600 text-sm font-bold tabular-nums text-white">{i.n}</span>
+                <span className="min-w-0 flex-1 text-sm">
+                  <span className="block font-medium text-red-950 dark:text-red-100">{i.label}</span>
+                  <span className="block text-xs text-red-800 dark:text-red-300">{i.note ?? i.area}</span>
+                </span>
+                <ArrowRight className="mt-1 size-3.5 shrink-0 text-red-400 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {areas.map((a) => {
+        const rest = a.items.filter((i) => !i.urgent);
+        if (rest.length === 0) return null;
+        return (
+          <div key={a.area} className="flex flex-col gap-1">
+            {areas.length > 1 && <p className="px-1 text-xs font-medium text-stone-500">{a.area}</p>}
+            <ul className="flex flex-col">
+              {rest.map((i) => (
+                <li key={i.label}>
+                  <Link href={i.href} className="group flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm transition-colors hover:bg-[color-mix(in_srgb,var(--brand)_8%,transparent)]">
+                    <strong className="w-7 shrink-0 text-right tabular-nums text-brand dark:text-brand-2">{i.n}</strong>
+                    <span className="min-w-0 flex-1 truncate">{i.label}</span>
+                    <ArrowRight className="size-3.5 shrink-0 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </aside>
+  );
+}
+
+/** Número principal da faixa da marca (texto branco sobre a cor da marca). */
+function HeroStat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
+  const up = change !== null && change > 0;
+  const down = change !== null && change < 0;
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur-sm">
+      <p className="text-sm text-white/75">{label}</p>
+      <p className="text-[clamp(1.3rem,1.9vw,1.65rem)] font-semibold leading-tight tabular-nums text-white">{value}</p>
+      <p className="flex flex-wrap items-center gap-x-2 text-xs text-white/70">
+        {change === null ? (
+          <span>sem base anterior</span>
+        ) : (
+          <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold ${up ? "bg-[var(--brand-2)] text-[var(--brand)]" : down ? "bg-white/90 text-red-700" : "bg-white/20 text-white"}`}>
+            {up ? <ArrowUpRight className="size-3" /> : down ? <ArrowDownRight className="size-3" /> : <Minus className="size-3" />}
+            {up ? "+" : ""}
+            {change.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
           </span>
         )}
-      </div>
-      {areas.length === 0 ? (
-        <p className={ui.muted}>Nada esperando agora.</p>
-      ) : (
-        <div className={`grid gap-4 ${areas.length > 1 ? "md:grid-cols-2 xl:grid-cols-3" : ""}`}>
-          {areas.map((a) => (
-            <div key={a.area} className="flex flex-col gap-1.5">
-              {areas.length > 1 && <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{a.area}</p>}
-              <ul className="flex flex-col gap-1">
-                {a.items.map((i) => (
-                  <li key={i.label}>
-                    <Link
-                      href={i.href}
-                      className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${i.urgent ? "bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60" : "hover:bg-stone-100 dark:hover:bg-white/5"}`}
-                    >
-                      <strong className={`w-8 shrink-0 text-right tabular-nums ${i.urgent ? "text-red-700 dark:text-red-300" : "text-stone-700 dark:text-stone-200"}`}>{i.n}</strong>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{i.label}</span>
-                        {i.note && <span className={`block text-xs ${i.urgent ? "text-red-700 dark:text-red-300" : "text-stone-500"}`}>{i.note}</span>}
-                      </span>
-                      <ArrowRight className="size-3.5 shrink-0 text-stone-400 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+        <span>{hint}</span>
+      </p>
+    </div>
   );
 }
 
@@ -273,7 +306,7 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
   );
   const col = (title: string, icon: ReactNode, children: ReactNode, empty: string, has: boolean) => (
     <div className="flex flex-col gap-1">
-      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-stone-500">{icon}{title}</p>
+      <p className="flex items-center gap-1.5 text-sm font-medium text-stone-600 dark:text-stone-300">{icon}{title}</p>
       {has ? <ul className="divide-y divide-stone-200/60 dark:divide-white/10">{children}</ul> : <p className={ui.muted}>{empty}</p>}
     </div>
   );
@@ -288,7 +321,7 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
             </span>
           </p>
         )}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-3">
           {col("Subindo", <TrendingUp className="size-3.5 text-emerald-600" />, m.rising.map((x) => row(x, true)), "Ninguém cresceu contra o período anterior.", m.rising.length > 0)}
           {col("Caindo", <TrendingDown className="size-3.5 text-red-600" />, m.falling.map((x) => row(x, false)), "Ninguém caiu forte.", m.falling.length > 0)}
           {col(
@@ -339,48 +372,48 @@ export function DashboardView({
   const k = d.kpis;
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
-    <div className="dash flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className={ui.title}>Início</h1>
-          <p className={ui.muted}>
-            Programa de creators da {brandName} · {dmy(d.period.from)} a {dmy(d.period.to)} · comparado com {dmy(d.previous.from)} a {dmy(d.previous.to)}
-          </p>
+    <div className="dash grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="@container order-2 flex min-w-0 flex-col gap-6 xl:order-1">
+      {/* D-HOMEINSIGHTS: faixa da marca (cor do banco) com o período e os números principais. */}
+      <section
+        className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-[0_20px_50px_-24px_var(--brand)]"
+        style={{ background: "linear-gradient(135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 78%, #000) 100%)" }}
+      >
+        <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full opacity-30 blur-3xl" style={{ background: "var(--brand-2)" }} />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Início da {brandName}</h1>
+            <p className="text-sm text-white/75">
+              {dmy(d.period.from)} a {dmy(d.period.to)}, comparado com {dmy(d.previous.from)} a {dmy(d.previous.to)}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {DASH_PRESETS.map((p) => (
+              <Link
+                key={p.id}
+                href={href({ periodo: p.id, tipo: category })}
+                className={`rounded-full px-3 py-1 text-xs transition-colors ${d.period.preset === p.id ? "bg-white font-semibold text-[var(--brand)]" : "bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20"}`}
+              >
+                {p.label}
+              </Link>
+            ))}
+            <form action="/admin/marca" className="flex items-center gap-1">
+              <select name="tipo" defaultValue={category} className="rounded-full border-0 bg-white/10 px-3 py-1 text-xs text-white ring-1 ring-white/20 [&>option]:text-stone-900" aria-label="Tipo de creator">
+                {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+              {d.period.preset && <input type="hidden" name="periodo" value={d.period.preset} />}
+              <button className="rounded-full bg-white/10 px-3 py-1 text-xs text-white ring-1 ring-white/20 hover:bg-white/20">Aplicar</button>
+            </form>
+            <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {DASH_PRESETS.map((p) => (
-            <Link key={p.id} href={href({ periodo: p.id, tipo: category })} className={d.period.preset === p.id ? ui.pillOn : ui.pill}>
-              {p.label}
-            </Link>
-          ))}
-          <form action="/admin/marca" className="flex items-center gap-1">
-            <select name="tipo" defaultValue={category} className={ui.inputSm} aria-label="Tipo de creator">
-              {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-            {d.period.preset && <input type="hidden" name="periodo" value={d.period.preset} />}
-            <button className={ui.ghostSm}>Aplicar</button>
-          </form>
-          <HideValuesToggle />
+        <div className="relative mt-5 grid gap-3 sm:grid-cols-2 @3xl:grid-cols-4">
+          <HeroStat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos, {pct(k.sales.storeShare)} da loja</>} />
+          <HeroStat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas</>} />
+          <HeroStat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
+          <HeroStat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>ticket médio <M>{formatBRL(k.units.ticketCents)}</M></>} />
         </div>
-      </div>
-
-      <Needs h={h} />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos · {pct(k.sales.storeShare)} da loja</>} />
-        <Stat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas de creators</>} />
-        <Stat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
-        <Stat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>com cupom · ticket <M>{formatBRL(k.units.ticketCents)}</M></>} />
-      </div>
-
-      {health && <HealthCard h={health} />}
-
-      {(program || cash) && (
-        <div className={`grid gap-6 ${program && cash ? "xl:grid-cols-2" : ""}`}>
-          {program && <ReturnCard p={program} missing={productsWithoutCost} />}
-          {cash && <CashCard c={cash} />}
-        </div>
-      )}
+      </section>
 
       {/* Pedido do responsável (2026-10-26): o Início da marca mostra só as vendas de creators (sem a loja inteira). */}
       <Card title="Vendas de creators por dia">
@@ -389,9 +422,18 @@ export function DashboardView({
         </div>
       </Card>
 
+      {health && <HealthCard h={health} />}
+
+      {(program || cash) && (
+        <div className={`grid gap-6 ${program && cash ? "@3xl:grid-cols-2" : ""}`}>
+          {program && <ReturnCard p={program} missing={productsWithoutCost} />}
+          {cash && <CashCard c={cash} />}
+        </div>
+      )}
+
       <MovementsCard d={d} h={health} />
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 @3xl:grid-cols-2">
         <TopCreatorsCard d={d} />
         <Card title="Top produtos com cupom de creator">
           {d.topProducts.length === 0 ? (
@@ -418,6 +460,10 @@ export function DashboardView({
           )}
           {d.giftUnits > 0 && <p className={`${ui.hint} mt-3`}>Fora do ranking: {d.giftUnits} brindes enviados junto com os pedidos.</p>}
         </Card>
+      </div>
+      </div>
+      <div className="order-1 xl:order-2">
+        <QueueRail h={h} />
       </div>
     </div>
   );
