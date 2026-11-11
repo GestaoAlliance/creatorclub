@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-278 — 2026-11-11 — Início: saúde da base, caixa, movimentos e brindes fora do ranking (D-HOMEINSIGHTS; em andamento)
+- `src/lib/staff/insights.ts`: `baseHealth` (candidatas, assinando, vendendo 30d, paradas, nunca venderam, mediana
+  até a 1ª venda, 1ª venda no período) e `cashflow` (a liberar, disponível, pedidos, aprovados, preso na abertura).
+- `staffDashboard`: movimentos (subindo/caindo contra o período anterior; caindo só quem vendia ≥ R$ 200), alerta de
+  concentração (maior ≥ 40%), brindes (linha sem valor) fora do ranking; vendas mostram % da loja.
+- Testes: `test/integration/home-insights.test.ts`, `dashboard.test.ts`. Página só vai ao ar inteira (com o OK).
+- Próximo: item 4 (retorno do programa, custo pela Shopify, D-COST já existe) e item 6 (gráfico/campanhas).
+
 ### CP-277 — 2026-11-11 — Início: "Precisa de você" por área e urgência (D-NEEDSAREA; aguarda OK das capturas)
 - Plano do novo Início (respostas do responsável): 1) Precisa de você por área/urgência; 2) saúde da base (funil);
   3) movimentos (subindo/caindo/1ª venda/concentração); 5) caixa do Pagamento; 4) retorno do programa (custo pela

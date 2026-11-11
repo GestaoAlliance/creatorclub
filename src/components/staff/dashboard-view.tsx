@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SalesChart } from "@/components/portal/sales-chart";
@@ -8,6 +8,7 @@ import { ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
 import { DASH_PRESETS, type DashCategory, type StaffDashboard } from "@/lib/staff/dashboard";
 import type { StaffHome } from "@/lib/staff/home";
+import type { BaseHealth, Cashflow } from "@/lib/staff/insights";
 import { HideValuesToggle } from "./hide-values";
 
 const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
@@ -132,13 +133,151 @@ export function TopCreatorsCard({ d }: { d: StaffDashboard }) {
   );
 }
 
+/** D-HOMEINSIGHTS: em que ponto do caminho está a base (agora), com o tempo até a primeira venda. */
+function HealthCard({ h }: { h: BaseHealth }) {
+  const steps = [
+    { label: "Candidatas", n: h.applications, href: "/admin/candidatas", hint: "esperando aprovação" },
+    { label: "Assinando", n: h.awaitingSignature, href: "/admin/candidatas?ver=WAITING", hint: "aprovadas, sem assinar" },
+    { label: "Vendendo", n: h.selling, href: "/admin/creators", hint: "venda nos últimos 30 dias", good: true },
+    { label: "Paradas", n: h.stopped, href: "/admin/creators/acoes?tipo=IDLE", hint: "venderam antes, nada em 30 dias", bad: true },
+    { label: "Nunca venderam", n: h.neverSold, href: "/admin/creators?semvenda=1", hint: "ativas sem nenhuma venda", bad: true },
+  ];
+  const sellingShare = h.active ? h.selling / h.active : 0;
+  return (
+    <Card title="Saúde da base de creators">
+      <div className="flex flex-col gap-4">
+        <div>
+          <div className="flex items-baseline justify-between gap-2 text-sm">
+            <span>
+              <strong className="text-2xl font-semibold tabular-nums text-brand">{pct(sellingShare)}</strong> das {h.active} ativas venderam nos últimos 30 dias
+            </span>
+            {h.medianDaysToFirstSale !== null && <span className={ui.hint}>1ª venda em ~{h.medianDaysToFirstSale} dias depois de entrar</span>}
+          </div>
+          <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-stone-300/40 dark:bg-white/10">
+            <span className="h-full bg-brand" style={{ width: `${(h.selling / Math.max(1, h.active)) * 100}%` }} />
+            <span className="h-full bg-amber-400/80" style={{ width: `${(h.stopped / Math.max(1, h.active)) * 100}%` }} />
+            <span className="h-full bg-red-400/70" style={{ width: `${(h.neverSold / Math.max(1, h.active)) * 100}%` }} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {steps.map((x) => (
+            <Link key={x.label} href={x.href} className="group rounded-2xl border border-stone-200/80 p-3 transition-colors hover:bg-stone-100/70 dark:border-white/10 dark:hover:bg-white/5">
+              <p className="text-xs text-stone-500">{x.label}</p>
+              <p className={`text-2xl font-semibold tabular-nums ${x.good ? "text-brand" : x.bad && x.n > 0 ? "text-red-700 dark:text-red-300" : ""}`}>{x.n}</p>
+              <p className="text-[11px] leading-tight text-stone-500">{x.hint}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** D-HOMEINSIGHTS: caixa do Pagamento (o que vai sair nas próximas semanas). */
+function CashCard({ c }: { c: Cashflow }) {
+  const rows = [
+    { label: "A liberar no dia 1", v: c.heldCents, hint: "comissão do mês, se bater o mínimo" },
+    { label: "Disponível para saque", v: c.availableCents, hint: `${c.availableCreators} creators podem pedir` },
+    { label: "Saques pedidos", v: c.requested.cents, hint: `${c.requested.count} para conferir` },
+    { label: "Aprovados a pagar", v: c.approved.cents, hint: `${c.approved.count} no prazo de pagamento` },
+  ];
+  return (
+    <Card title="Caixa das comissões">
+      <ul className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10">
+        {rows.map((r) => (
+          <li key={r.label} className="flex items-baseline justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+            <span className="min-w-0">
+              <span className="block text-sm">{r.label}</span>
+              <span className={ui.hint}>{r.hint}</span>
+            </span>
+            <strong className="shrink-0 tabular-nums"><M>{formatBRL(r.v)}</M></strong>
+          </li>
+        ))}
+      </ul>
+      {c.lockedCents > 0 && (
+        <p className={`${ui.hint} mt-2`}>
+          + <M>{formatBRL(c.lockedCents)}</M> liberados de quem ainda espera o saldo de abertura.{" "}
+          <Link href="/admin/abertura" className="underline">Aprovar</Link>
+        </p>
+      )}
+    </Card>
+  );
+}
+
+/** D-HOMEINSIGHTS: quem subiu, quem caiu e quem vendeu pela primeira vez, com o alerta de concentração. */
+function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
+  const m = d.movements;
+  const row = (x: { id: string; name: string; nowCents: number; beforeCents: number; deltaCents: number }, up: boolean) => (
+    <li key={x.id}>
+      <Link href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
+        <span className="min-w-0 truncate group-hover:underline">{x.name}</span>
+        <span className={`shrink-0 tabular-nums font-semibold ${up ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+          {up ? "+" : "−"}<M>{formatBRL(Math.abs(x.deltaCents))}</M>
+        </span>
+      </Link>
+    </li>
+  );
+  const col = (title: string, icon: ReactNode, children: ReactNode, empty: string, has: boolean) => (
+    <div className="flex flex-col gap-1">
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-stone-500">{icon}{title}</p>
+      {has ? <ul className="divide-y divide-stone-200/60 dark:divide-white/10">{children}</ul> : <p className={ui.muted}>{empty}</p>}
+    </div>
+  );
+  return (
+    <Card title="Movimentos do período">
+      <div className="flex flex-col gap-4">
+        {d.concentration.alert && (
+          <p className="flex items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Dependência alta:</strong> a maior creator faz {pct(d.concentration.top1)} das vendas de creators (as 3 maiores, {pct(d.concentration.top3)}). Vale ativar mais creators para diluir o risco.
+            </span>
+          </p>
+        )}
+        <div className="grid gap-6 md:grid-cols-3">
+          {col("Subindo", <TrendingUp className="size-3.5 text-emerald-600" />, m.rising.map((x) => row(x, true)), "Ninguém cresceu contra o período anterior.", m.rising.length > 0)}
+          {col("Caindo", <TrendingDown className="size-3.5 text-red-600" />, m.falling.map((x) => row(x, false)), "Ninguém caiu forte.", m.falling.length > 0)}
+          {col(
+            `Primeira venda${h && h.firstSaleCount > 0 ? ` (${h.firstSaleCount})` : ""}`,
+            <Sparkles className="size-3.5 text-brand" />,
+            (h?.firstSales ?? []).map((x) => (
+              <li key={x.id}>
+                <Link href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
+                  <span className="min-w-0 truncate group-hover:underline">{x.name}</span>
+                  <span className="shrink-0 text-xs text-stone-500">{x.day.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}</span>
+                </Link>
+              </li>
+            )),
+            "Nenhuma creator nova vendeu no período.",
+            (h?.firstSales.length ?? 0) > 0,
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 const href = (p: { periodo?: string; tipo?: string }) => {
   const s = new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][]).toString();
   return `/admin/marca${s ? `?${s}` : ""}`;
 };
 
 /** Início com o dashboard (M0.0.4, modelo da referência), para quem vê dinheiro na marca. */
-export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard; h: StaffHome; category: DashCategory; brandName: string }) {
+export function DashboardView({
+  d,
+  h,
+  category,
+  brandName,
+  health = null,
+  cash = null,
+}: {
+  d: StaffDashboard;
+  h: StaffHome;
+  category: DashCategory;
+  brandName: string;
+  health?: BaseHealth | null;
+  cash?: Cashflow | null;
+}) {
   const k = d.kpis;
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
@@ -170,11 +309,18 @@ export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard
       <Needs h={h} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos</>} />
+        <Stat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos · {pct(k.sales.storeShare)} da loja</>} />
         <Stat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas de creators</>} />
         <Stat label="Creators que venderam" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
         <Stat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>com cupom · ticket <M>{formatBRL(k.units.ticketCents)}</M></>} />
       </div>
+
+      {health && (
+        <div className={`grid gap-6 ${cash ? "xl:grid-cols-[1.6fr_1fr]" : ""}`}>
+          <HealthCard h={health} />
+          {cash && <CashCard c={cash} />}
+        </div>
+      )}
 
       {/* Pedido do responsável (2026-10-26): o Início da marca mostra só as vendas de creators (sem a loja inteira). */}
       <Card title="Vendas de creators por dia">
@@ -182,6 +328,8 @@ export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard
           <SalesChart days={d.days} />
         </div>
       </Card>
+
+      <MovementsCard d={d} h={health} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <TopCreatorsCard d={d} />
@@ -208,6 +356,7 @@ export function DashboardView({ d, h, category, brandName }: { d: StaffDashboard
               ))}
             </ol>
           )}
+          {d.giftUnits > 0 && <p className={`${ui.hint} mt-3`}>Fora do ranking: {d.giftUnits} brindes enviados junto com os pedidos.</p>}
         </Card>
       </div>
     </div>
