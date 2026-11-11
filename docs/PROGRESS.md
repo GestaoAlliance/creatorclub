@@ -315,6 +315,22 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-287 — 2026-11-11 — Conteúdo: posts detectados no Instagram + registrados, mural, ranking e lembrete (D-CONTENTBOARD; aguarda OK)
+- Dado que motivou: em produção quase ninguém registra post à mão (Botanika 0, Revita 4), mas o Instagram já detecta as
+  marcações da marca (Botanika 23, Revita 13), que não apareciam em Conteúdo.
+- Escolhas do responsável: juntar automático; mural de cartões; quem não postou (com lembrete); ranking de conteúdo;
+  melhor dia e rede; detectados contam em "Sem post" das Ações. Extra sugerido ("que mais?"): filtros de período
+  (30/60/90), rede e origem (detectado/registrado).
+- `contentBoard`: marcação vira post da creator quando o @ bate com o Instagram do cadastro (sem @, minúsculo); mesmo
+  link de um post registrado não conta duas vezes (curtidas passam para o registrado); o resto vai para "Quem mais falou
+  da marca". Vendas em 3 dias × normal (mesma régua de D-POSTS).
+- `lastPostDaysAll` (registrado ou detectado) passa a valer na fila de ações (Sem post) e em "Quem não postou".
+- Tela: faixa com período em pílula e 4 números; mural com curtidas, comentários, campanha, vendas e selo acima do
+  normal; coluna com quem não postou (marcar e mandar lembrete pelo WhatsApp da marca, leva a "Meus posts"), ranking,
+  melhor dia e rede, e outras menções. Tirar post registrado continua (Gestão).
+- Sem estouro em 1920–390. Testes em `test/posts.test.ts` e `test/integration/posts.test.ts`. Próxima: OK das capturas
+  → merge → TikTok.
+
 ### CP-286 — 2026-11-11 — Campanhas: cartões vivos, pódio, resultado e recados pelo WhatsApp da marca (D-CAMPAIGNBOARD; aguarda OK)
 - Escolhas do responsável: cartões vivos; pódio e placar com barras; convidar quem não se inscreveu; resultado da
   campanha; lembrete para as inscritas; integração com o AllianceOS fica para depois. Sugestão aceita no pedido ("que

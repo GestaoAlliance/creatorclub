@@ -59,3 +59,52 @@ export function postLift(windowCents: number, baselineCents: number): { windowCe
 export function overlapsAnother(postedDay: string, others: readonly string[]): boolean {
   return others.some((d) => d < addDaysKey(postedDay, POST_WINDOW_DAYS) && postedDay < addDaysKey(d, POST_WINDOW_DAYS));
 }
+
+/** D-CONTENTBOARD: @ do Instagram comparável (sem @, minúsculo, sem espaço). */
+export const igKey = (h: string | null | undefined) => (h ? h.trim().replace(/^@+/, "").toLowerCase() : "");
+
+export type ContentItem = { creatorId: string | null; platform: PostPlatform; postedDay: string; complete: boolean; windowCents: number; aboveCents: number; likes: number | null };
+
+const WEEKDAY = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+/** Dia da semana de "AAAA-MM-DD". */
+export const weekdayOf = (day: string) => WEEKDAY[new Date(`${day}T12:00:00Z`).getUTCDay()]!;
+
+/**
+ * Melhor dia da semana e melhor rede (D-CONTENTBOARD): média de "acima do normal" dos posts com a janela completa,
+ * só de creators; precisa de pelo menos 2 posts no grupo para entrar.
+ */
+export function bestOf(items: readonly ContentItem[]) {
+  const done = items.filter((i) => i.creatorId && i.complete);
+  const group = (key: (i: ContentItem) => string) => {
+    const m = new Map<string, { n: number; above: number }>();
+    for (const i of done) {
+      const k = key(i);
+      const g = m.get(k) ?? { n: 0, above: 0 };
+      g.n++;
+      g.above += i.aboveCents;
+      m.set(k, g);
+    }
+    return [...m].filter(([, g]) => g.n >= 2).map(([k, g]) => ({ key: k, posts: g.n, avgAboveCents: Math.round(g.above / g.n) })).sort((a, b) => b.avgAboveCents - a.avgAboveCents);
+  };
+  return { weekday: group((i) => weekdayOf(i.postedDay)), platform: group((i) => i.platform) };
+}
+
+/** Ranking de conteúdo por creator: posts, média de curtidas (Instagram) e vendas por post (janela de 3 dias). */
+export function contentRanking(items: readonly ContentItem[]) {
+  const m = new Map<string, { posts: number; likes: number; liked: number; sales: number; above: number }>();
+  for (const i of items) {
+    if (!i.creatorId) continue;
+    const g = m.get(i.creatorId) ?? { posts: 0, likes: 0, liked: 0, sales: 0, above: 0 };
+    g.posts++;
+    if (i.likes !== null) {
+      g.likes += i.likes;
+      g.liked++;
+    }
+    g.sales += i.windowCents;
+    g.above += i.complete ? i.aboveCents : 0;
+    m.set(i.creatorId, g);
+  }
+  return [...m]
+    .map(([creatorId, g]) => ({ creatorId, posts: g.posts, avgLikes: g.liked ? Math.round(g.likes / g.liked) : null, salesPerPostCents: Math.round(g.sales / g.posts), aboveCents: g.above }))
+    .sort((a, b) => b.aboveCents - a.aboveCents || b.posts - a.posts);
+}
