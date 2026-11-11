@@ -1,13 +1,14 @@
 "use client";
 
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useActionState, useCallback, useEffect, useState, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Msg } from "@/components/ui/msg";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { badge, ui } from "@/components/ui/styles";
 import { instagramUrl, rejectionMessage, whatsappChatUrl, whatsappLink } from "@/domain";
+import type { ApplicationsPace } from "@/lib/onboarding/pace";
 import { rejectAction, rejectManyAction } from "./actions";
 
 /** O essencial de cada candidata para a tabela (o cartão completo vem pronto do servidor em `detail`). */
@@ -42,7 +43,7 @@ export type CandidateRow = {
   detail: ReactNode;
 };
 
-type Chip = "" | "dup" | "hunter" | "old";
+type Chip = "" | "dup" | "hunter" | "old" | "high";
 type Open = { id: string; mode: "view" | "reject" } | null;
 
 const ext = { target: "_blank", rel: "noopener noreferrer", onClick: (e: React.MouseEvent) => e.stopPropagation() } as const;
@@ -180,10 +181,9 @@ function Who({ c }: { c: CandidateRow }) {
         ) : (
           <span className="text-xs text-stone-500">{c.phone ?? "sem WhatsApp"}</span>
         )}
-        {(c.duplicate || c.brands.length > 0 || c.contract) && (
+        {(c.brands.length > 0 || c.contract) && (
           <div className="mt-1 flex flex-wrap gap-1">
             {c.contract && <span className={badge[c.contract.tone]}>{c.contract.label}</span>}
-            {c.duplicate && <span className={badge.red}>repetida</span>}
             {c.brands.map((b) => <span key={b} className={badge.green}>{b}</span>)}
           </div>
         )}
@@ -192,11 +192,7 @@ function Who({ c }: { c: CandidateRow }) {
   );
 }
 
-/**
- * Candidatas no modelo da referência: tabela com redes, tipo, origem e há quantos dias espera; aprovar e recusar na
- * linha. Aprovar abre o formulário já preenchido (cupom, tipo, comissão, desconto) para confirmar, porque cria o cupom
- * na Shopify; recusar pede só o motivo opcional. Clicar na linha mostra tudo o que ela respondeu.
- */
+
 /** D-ORIGIN: de onde a candidata veio, em destaque (a Gestão decide sabendo qual hunter trouxe). */
 function CameFrom({ c }: { c: CandidateRow }) {
   const extra = (
@@ -229,133 +225,248 @@ function CameFrom({ c }: { c: CandidateRow }) {
   );
 }
 
-export function CandidateTable({ rows, pending }: { rows: CandidateRow[]; pending: boolean }) {
+const PRIORITY_BAR = { ALTA: "#10b981", MEDIA: "#f59e0b", BAIXA: "#a8a29e", REPETIDA: "#ef4444" } as const;
+
+/** Painel lateral da candidata (D-CANDBOARD): tudo o que ela respondeu e aprovar/recusar; ↑/↓ passa, Esc fecha. */
+function CandidatePanel({ c, mode, onMode, onClose, onPrev, onNext, pending }: { c: CandidateRow; mode: "view" | "reject"; onMode: (m: "view" | "reject") => void; onClose: () => void; onPrev: (() => void) | null; onNext: (() => void) | null; pending: boolean }) {
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    body.current?.scrollTo({ top: 0 });
+  }, [c.id]);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest("input,textarea,select,[contenteditable]")) return;
+      if (e.key === "Escape") onClose();
+      else if ((e.key === "ArrowDown" || e.key === "j") && onNext) { e.preventDefault(); onNext(); }
+      else if ((e.key === "ArrowUp" || e.key === "k") && onPrev) { e.preventDefault(); onPrev(); }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose, onNext, onPrev]);
+  const wa = c.phone ? whatsappChatUrl(c.phone) : null;
+  const ig = c.instagram ? instagramUrl(c.instagram) : null;
+  return (
+    <>
+      <button type="button" aria-label="Fechar o painel" onClick={onClose} className="fixed inset-0 z-40 bg-stone-950/25 backdrop-blur-[2px] lg:hidden" />
+      <aside aria-label={`Candidata ${c.name}`} className="peek-panel glass fixed inset-x-2 bottom-2 top-16 z-50 flex flex-col overflow-hidden rounded-3xl lg:inset-x-auto lg:bottom-4 lg:right-4 lg:top-4 lg:w-[520px]">
+        <header className="relative overflow-hidden px-5 pb-4 pt-5 text-white">
+          <div aria-hidden className="brand-art absolute inset-0 -z-10" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex gap-1">
+              <button type="button" disabled={!onPrev} onClick={() => onPrev?.()} aria-label="Candidata anterior (↑)" className="peek-btn"><ChevronUp className="size-4" /></button>
+              <button type="button" disabled={!onNext} onClick={() => onNext?.()} aria-label="Próxima candidata (↓)" className="peek-btn"><ChevronDown className="size-4" /></button>
+            </div>
+            <button type="button" onClick={onClose} aria-label="Fechar (Esc)" className="peek-btn"><X className="size-4" /></button>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="grid size-14 shrink-0 place-content-center rounded-[18px] bg-white/18 text-lg font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.5),inset_0_0_0_1px_rgb(255_255_255/0.25)]">{initials(c.name)}</span>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold leading-tight">{c.name}</h2>
+              <p className="truncate text-xs text-white/80">{c.kind} · chegou {ago(c.days)}{c.followers ? ` · ${c.followers} seguidores` : ""}</p>
+              <p className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: PRIORITY_BAR[c.priority.level] }}>{c.priority.label}</span>
+                {c.priority.reasons && <span className="text-[11px] text-white/80">{c.priority.reasons}</span>}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {wa && <a href={wa} {...ext} className="peek-chip"><WhatsAppIcon className="size-3.5" />WhatsApp</a>}
+            {ig && <a href={ig} {...ext} className="peek-chip"><InstagramIcon className="size-3.5" />{handle(c.instagram!)}</a>}
+            {c.tiktok && <a href={`https://www.tiktok.com/@${handle(c.tiktok)}`} {...ext} className="peek-chip"><TikTokIcon className="size-3.5" />{handle(c.tiktok)}</a>}
+          </div>
+        </header>
+        <div ref={body} className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 [&_article.glass]:!bg-transparent [&_article.glass]:!p-1 [&_article.glass]:!shadow-none" id={`cand-${c.id}`}>
+          {mode === "reject" ? <QuickReject id={c.id} name={c.name} phone={c.phone} brand={c.brandName} onCancel={() => onMode("view")} /> : c.detail}
+        </div>
+        {pending && c.canDecide && mode === "view" && (
+          <footer className="flex items-center gap-2 border-t border-stone-200/70 p-3 dark:border-white/10">
+            <span className="flex-1 text-[11px] leading-tight text-stone-500">Ao concluir, abre a próxima da fila.</span>
+            <button type="button" onClick={() => onMode("reject")} className={ui.ghostSm}><X className="size-3.5" /> Recusar</button>
+            <button type="button" onClick={() => body.current?.querySelector("form input[name=coupon]")?.scrollIntoView({ block: "center", behavior: "smooth" })} className={ui.btnSm}>{c.approvable ? "Aprovar" : "Ver contrato"}</button>
+          </footer>
+        )}
+        {c.creatorId && (
+          <footer className="border-t border-stone-200/70 p-3 dark:border-white/10">
+            <Link href={`/admin/creators/${c.creatorId}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white">Abrir a ficha</Link>
+          </footer>
+        )}
+      </aside>
+    </>
+  );
+}
+
+export type BoardTab = { href: string; label: string; n: number; on: boolean };
+type Tile = { id: Chip; label: string; n: number; hint: string; tone: "good" | "warn" | "bad" | "info"; test: (c: CandidateRow) => boolean };
+
+/**
+ * Candidatas (D-CANDBOARD, pedido do responsável em 2026-11-11): faixa da marca com a situação e os quadros (os de
+ * Pendentes filtram a lista), a lista com a cor da prioridade, e o painel lateral em modo triagem: decidiu, aparece o
+ * WhatsApp da decisão; ao concluir, abre a próxima da fila. Recusar várias de uma vez continua (marcar na lista).
+ */
+export function CandidateBoard(p: { rows: CandidateRow[]; pending: boolean; tabs: BoardTab[]; brandName: string; newHref: string | null; pace: ApplicationsPace | null; waitingHref: string; toolbar: ReactNode; summary: ReactNode }) {
+  const { rows, pending } = p;
   const [open, setOpen] = useState<Open>(null);
   const [chip, setChip] = useState<Chip>("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const pick = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const pick = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const clear = useCallback(() => setPicked(new Set()), []);
-  const chips: { id: Chip; label: string; test: (c: CandidateRow) => boolean }[] = [
-    { id: "old", label: "esperando há mais de 7 dias", test: (c) => pending && c.days > 7 },
-    { id: "hunter", label: "trazidas por hunter", test: (c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm },
-    { id: "dup", label: "podem ser repetidas", test: (c) => c.duplicate },
-  ];
-  const active = chips.find((x) => x.id === chip);
+  const hunterCodeMissing = rows.filter((c) => c.hunterCode !== null || (c.viaHunterForm && !c.hunter)).length;
+  const oldest = rows.reduce((m, c) => Math.max(m, c.days), 0);
+  const tiles: Tile[] = pending
+    ? [
+        { id: "high", label: "Prioridade alta", n: rows.filter((c) => c.priority.level === "ALTA").length, hint: "decidir primeiro", tone: "good", test: (c) => c.priority.level === "ALTA" },
+        { id: "old", label: "Esperando 7+ dias", n: rows.filter((c) => c.days > 7).length, hint: rows.length ? `a mais antiga há ${oldest} dias` : "nenhuma", tone: "bad", test: (c) => c.days > 7 },
+        { id: "hunter", label: "Por hunter", n: rows.filter((c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm).length, hint: hunterCodeMissing ? `${hunterCodeMissing} com código não achado` : "vieram por indicação", tone: "info", test: (c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm },
+        { id: "dup", label: "Repetidas", n: rows.filter((c) => c.duplicate).length, hint: "podem ser a mesma pessoa", tone: "warn", test: (c) => c.duplicate },
+      ]
+    : [];
+  const active = tiles.find((x) => x.id === chip);
   const shown = active ? rows.filter(active.test) : rows;
   const pickable = pending ? shown.filter((c) => c.canDecide) : [];
   const allPicked = pickable.length > 0 && pickable.every((c) => picked.has(c.id));
   const pickAll = () => setPicked(allPicked ? new Set() : new Set(pickable.map((c) => c.id)));
-  const toggle = (id: string, mode: "view" | "reject" = "view") => setOpen((o) => (o?.id === id && o.mode === mode ? null : { id, mode }));
-  const approve = (id: string) => {
-    setOpen({ id, mode: "view" });
-    setTimeout(() => document.getElementById(`cand-${id}`)?.querySelector("form input[name=coupon]")?.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
-  };
-  const expanded = (c: CandidateRow) =>
-    open?.id === c.id && (
-      <div id={`cand-${c.id}`} className="flex flex-col gap-3 pb-4" onClick={(e) => e.stopPropagation()}>
-        {open.mode === "reject" ? <QuickReject id={c.id} name={c.name} phone={c.phone} brand={c.brandName} onCancel={() => setOpen(null)} /> : c.detail}
-      </div>
-    );
+
+  // Triagem: a linha decidida some ao concluir (a tela atualiza); abre a que ficou no mesmo lugar da fila.
+  const lastIndex = useRef(0);
+  const openIndex = open ? shown.findIndex((c) => c.id === open.id) : -1;
+  if (openIndex >= 0) lastIndex.current = openIndex;
+  useEffect(() => {
+    if (!open || rows.some((c) => c.id === open.id)) return;
+    const next = shown[Math.min(lastIndex.current, shown.length - 1)];
+    setOpen(next ? { id: next.id, mode: "view" } : null);
+  }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (open) document.getElementById(`row-${open.id}`)?.scrollIntoView({ block: "nearest" });
+  }, [open?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const openRow = open ? (rows.find((c) => c.id === open.id) ?? null) : null;
+  const close = useCallback(() => setOpen(null), []);
+  const prev = openIndex > 0 ? () => setOpen({ id: shown[openIndex - 1]!.id, mode: "view" }) : null;
+  const next = openIndex >= 0 && openIndex < shown.length - 1 ? () => setOpen({ id: shown[openIndex + 1]!.id, mode: "view" }) : null;
+  const show = (id: string, mode: "view" | "reject" = "view") => setOpen({ id, mode });
+  const tabIndex = Math.max(0, p.tabs.findIndex((t) => t.on));
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
-        {chips.map((x) => {
-          const n = rows.filter(x.test).length;
-          if (!n && chip !== x.id) return null;
-          return (
-            <button key={x.id} type="button" onClick={() => setChip(chip === x.id ? "" : x.id)} className={`rounded-full border px-3 py-1 text-xs font-medium ${chip === x.id ? "border-amber-500 bg-amber-500 text-white" : "border-amber-400/60 bg-amber-100/60 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"}`}>
-              {n} {x.label}
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-4">
+      <section className="@container relative isolate overflow-hidden rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
+        <div aria-hidden className="brand-art absolute inset-0 -z-10" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
+        <div className="flex flex-col gap-5 p-5 md:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{p.brandName}</p>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Candidatas</h1>
+              <p className="mt-1 max-w-xl text-sm text-white/80">Site, formulários do Google e cadastros da equipe. Toque numa candidata para ver tudo e decidir.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {p.newHref && <Link href={p.newHref} className="peek-chip"><Plus className="size-3.5" /> Nova candidata</Link>}
+            </div>
+          </div>
+          <nav aria-label="Situação" data-tour="cand-abas" className="liquid-pill self-start max-w-full overflow-x-auto" style={{ "--n": p.tabs.length, "--i": tabIndex } as React.CSSProperties}>
+            <span aria-hidden className="drop" />
+            {p.tabs.map((t) => (
+              <Link key={t.href} href={t.href} aria-current={t.on ? "true" : undefined}>
+                {t.label} <span className="tabular-nums opacity-70">{t.n}</span>
+              </Link>
+            ))}
+          </nav>
+          <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-3 @5xl:grid-cols-6">
+            {tiles.map((t) => {
+              const on = chip === t.id;
+              return (
+                <button key={t.id} type="button" aria-pressed={on} onClick={() => setChip(on ? "" : t.id)} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white ${on ? "is-on" : ""}`}>
+                  <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">{t.label}</span><span className={`seg-dot seg-${t.tone}`} /></span>
+                  <span className="text-2xl font-semibold tabular-nums leading-tight">{t.n}</span>
+                  <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{t.hint}</span>
+                </button>
+              );
+            })}
+            {p.pace && (
+              <Link href={p.waitingHref} className="seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white">
+                <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">Sem assinar</span><span className="seg-dot seg-warn" /></span>
+                <span className="text-2xl font-semibold tabular-nums leading-tight">{p.pace.waiting}</span>
+                <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{p.pace.waitingSlow ? `${p.pace.waitingSlow} há 3+ dias` : "aprovadas sem assinar"}</span>
+              </Link>
+            )}
+            {p.pace && (
+              <div className="frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-stone-900 dark:text-white">
+                <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">Ritmo · 30 dias</span><span className="seg-dot seg-good" /></span>
+                <span className="text-2xl font-semibold tabular-nums leading-tight" title="Tempo médio entre a inscrição e a decisão">{p.pace.avgDecisionDays !== null ? p.pace.avgDecisionDays.toLocaleString("pt-BR") : "—"}<span className="ml-1 text-xs font-medium text-stone-500">dias p/ decidir</span></span>
+                <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{p.pace.approved30} aprovadas · {p.pace.rejected30} recusadas</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="glass flex flex-col gap-3 rounded-3xl p-3 md:p-4">
+        {p.toolbar}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
+          {p.summary}
+          {active && <button type="button" onClick={() => setChip("")} className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 font-semibold text-brand dark:text-brand-2">{active.label} <X className="size-3" /></button>}
+        </div>
+      </section>
 
       {pending && <BulkReject ids={[...picked].filter((id) => rows.some((r) => r.id === id))} onDone={clear} onClear={clear} />}
 
-      {shown.length === 0 ? (
-        <p className={ui.muted}>Nenhuma candidata aqui.</p>
-      ) : (
-        <>
-          {/* Celular: um cartão por candidata. */}
-          <ul data-tour="cand-lista" className="flex flex-col divide-y divide-stone-200/70 md:hidden dark:divide-white/10">
-            {shown.map((c) => (
-              <li key={c.id} onClick={() => toggle(c.id)} className="flex cursor-pointer flex-col gap-2 py-3">
-                <div className="flex items-start gap-2">
+      <section className="@container glass overflow-hidden rounded-3xl !p-0" data-tour="cand-lista">
+        {shown.length === 0 ? (
+          <p className="p-10 text-center text-sm text-stone-500">{rows.length ? "Nenhuma candidata nesse quadro." : pending ? "Nenhuma candidata esperando. 🎉" : "Nenhuma aqui."}</p>
+        ) : (
+          <>
+            <ul className="flex flex-col divide-y divide-stone-200/70 @3xl:hidden dark:divide-white/10">
+              {shown.map((c) => (
+                <li key={c.id} id={`row-${c.id}`} onClick={() => show(c.id)} style={{ boxShadow: `inset 3px 0 0 ${PRIORITY_BAR[c.priority.level]}` }} className={`flex cursor-pointer items-start gap-3 px-4 py-3 ${open?.id === c.id ? "bg-brand/8" : ""}`}>
                   {pending && <span className="pt-3"><Pick c={c} picked={picked.has(c.id)} onPick={pick} /></span>}
-                  <Who c={c} />
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-12 text-xs">
-                  {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{handle(c.instagram)}</span>}
-                  {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{handle(c.tiktok)}</span>}
-                  {c.followers && <span className="text-stone-500">{c.followers} seg.</span>}
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 pl-12">
-                  <PriorityBadge c={c} />
-                  <span className={badge[c.kindTone]}>{c.kind}</span>
-                  <span className={ui.hint}>{ago(c.days)}</span>
-                </div>
-                <div className="pl-12">
-                  <CameFrom c={c} />
-                </div>
-                <div className="pl-12">
-                  <Actions c={c} onApprove={() => approve(c.id)} onReject={() => toggle(c.id, "reject")} />
-                </div>
-                {expanded(c)}
-              </li>
-            ))}
-          </ul>
-          <div className="-mx-2 hidden overflow-x-auto md:block">
-            <table data-tour="cand-lista" className="w-full min-w-[1000px] border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-stone-500">
-                  {pending && (
-                    <th className="w-8">
-                      {pickable.length > 0 && <input type="checkbox" checked={allPicked} onChange={pickAll} aria-label="Marcar todas" className="size-4 accent-current" />}
-                    </th>
-                  )}
-                  <th>Prioridade</th>
-                  <th>Candidata</th>
-                  <th>Redes</th>
-                  <th>Tipo</th>
-                  <th>Veio de</th>
-                  <th>Chegou</th>
-                  <th className="!text-right">{pending ? "Decidir" : ""}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((c) => (
-                  <Fragment key={c.id}>
-                    <tr onClick={() => toggle(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
-                      {pending && <td><Pick c={c} picked={picked.has(c.id)} onPick={pick} /></td>}
-                      <td>
-                        <PriorityBadge c={c} />
-                        {c.priority.reasons && <span className="mt-1 block max-w-36 text-[11px] leading-tight text-stone-500">{c.priority.reasons}</span>}
+                  <div className="min-w-0 flex-1">
+                    <Who c={c} />
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-12 text-xs">
+                      <PriorityBadge c={c} />
+                      <span className={badge[c.kindTone]}>{c.kind}</span>
+                      <span className={pending && c.days > 7 ? "font-semibold text-amber-700 dark:text-amber-300" : "text-stone-500"}>{ago(c.days)}</span>
+                      {c.hunter && <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">Hunter: {c.hunter}</span>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden @3xl:block">
+              <table className="w-full border-separate border-spacing-0 text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-stone-500 [&>th]:border-b [&>th]:border-stone-200/70 [&>th]:px-3 [&>th]:py-3 dark:[&>th]:border-white/10">
+                    {pending && <th className="w-10 !pl-5">{pickable.length > 0 && <input type="checkbox" checked={allPicked} onChange={pickAll} aria-label="Marcar todas" className="size-4 accent-[var(--brand)]" />}</th>}
+                    <th className={pending ? "" : "!pl-5"}>Candidata</th>
+                    <th className="hidden @5xl:table-cell">Redes</th>
+                    <th>Veio de</th>
+                    <th>Chegou</th>
+                    <th className="!pr-5 text-right">{pending ? "Decidir" : ""}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((c) => (
+                    <tr key={c.id} id={`row-${c.id}`} onClick={() => show(c.id)} className={`cr-row group cursor-pointer align-middle transition-colors [&>td]:border-b [&>td]:border-stone-200/60 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/8 ${open?.id === c.id ? "is-open" : picked.has(c.id) ? "bg-brand/5" : "hover:bg-white/50 dark:hover:bg-white/5"}`}>
+                      {pending && <td className="!pl-5" style={{ boxShadow: `inset 3px 0 0 ${PRIORITY_BAR[c.priority.level]}` }}><Pick c={c} picked={picked.has(c.id)} onPick={pick} /></td>}
+                      <td className={pending ? "" : "!pl-5"}>
+                        <Who c={c} />
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-12">
+                          <PriorityBadge c={c} />
+                          <span className={badge[c.kindTone]}>{c.kind}</span>
+                          {c.priority.reasons && <span className="hidden max-w-64 truncate text-[11px] text-stone-500 @6xl:inline">{c.priority.reasons}</span>}
+                        </div>
                       </td>
-                      <td className="max-w-72"><Who c={c} /></td>
-                      <td><Socials c={c} /></td>
-                      <td><span className={badge[c.kindTone]}>{c.kind}</span></td>
-                      <td className="min-w-40 max-w-52"><CameFrom c={c} /></td>
-                      <td className={`whitespace-nowrap text-xs ${pending && c.days > 7 ? "font-medium text-amber-700 dark:text-amber-300" : "text-stone-500"}`}>{ago(c.days)}</td>
-                      <td>
-                        <span className="flex items-center justify-end gap-2">
-                          <Actions c={c} onApprove={() => approve(c.id)} onReject={() => toggle(c.id, "reject")} />
-                          <ChevronDown className={`size-4 shrink-0 text-stone-400 transition-transform ${open?.id === c.id && open.mode === "view" ? "rotate-180" : ""}`} />
-                        </span>
-                      </td>
+                      <td className="hidden @5xl:table-cell"><Socials c={c} /></td>
+                      <td className="max-w-52"><CameFrom c={c} /></td>
+                      <td className={`whitespace-nowrap text-xs ${pending && c.days > 7 ? "font-semibold text-amber-700 dark:text-amber-300" : "text-stone-500"}`}>{ago(c.days)}</td>
+                      <td className="!pr-5"><Actions c={c} onApprove={() => show(c.id)} onReject={() => show(c.id, "reject")} /></td>
                     </tr>
-                    {open?.id === c.id && (
-                      <tr>
-                        <td colSpan={pending ? 8 : 7} className="px-3">{expanded(c)}</td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
+
+      {openRow && open && <CandidatePanel c={openRow} mode={open.mode} onMode={(m) => setOpen({ id: openRow.id, mode: m })} onClose={close} onPrev={prev} onNext={next} pending={pending} />}
     </div>
   );
 }
