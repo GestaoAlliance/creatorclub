@@ -21,6 +21,7 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
   return (
     <div className="flex flex-col gap-4">
       <form action={action} className="flex flex-col gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className={ui.label}>Nome
           <input className={input} name="name" required />
         </label>
@@ -40,14 +41,17 @@ export function InviteForm({ brands }: { brands: { id: string; name: string }[] 
           </select>
         </label>
         {role !== "SUPER_ADMIN" && (
+          <label className={ui.label}>Marca
+            <select className={input} name="brandId" required value={mainBrand} onChange={(e) => setMainBrand(e.target.value)}>
+              {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </label>
+        )}
+        </div>
+        {role !== "SUPER_ADMIN" && (
           <>
-            <label className={ui.label}>Marca
-              <select className={input} name="brandId" required value={mainBrand} onChange={(e) => setMainBrand(e.target.value)}>
-                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </label>
             {brands.length > 1 && (
-              <fieldset className="flex flex-col gap-1.5">
+              <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 <legend className={`${ui.hint} mb-1`}>Mesmo papel também em:</legend>
                 {brands.filter((b) => b.id !== mainBrand).map((b) => (
                   <label key={b.id} className="flex items-center gap-2 text-sm">

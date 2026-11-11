@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-276 — 2026-11-11 — Tela Equipe: convite em cima, equipe embaixo (aguarda OK das capturas, D-REVIEW)
+- Pedido do responsável: o convite ocupa a largura (Nome, E-mail, Papel e Marca numa linha); as pessoas viram cartões
+  em duas colunas na tela larga (uma no celular); convites pendentes no fim. Só layout
+  (`src/app/admin/equipe/page.tsx`, `invite-form.tsx`). Botanika: Jeny saiu de hunter (continua na Gestão) e a
+  Lorena virou hunter com o link `lorena` (feito pelo responsável na tela Equipe/Hunters).
+
 ### CP-275 — 2026-11-10 — O Pagamento confere e aprova o saldo de abertura sozinho (D-OPENINGBYPAY)
 - Vanessa: "a gestora não confere os valores, é o Guilherme que confere"; o responsável: "segue o que a Vanessa
   pediu". `approveOpening` não exige mais "Conferi os números" (D-ANAREVIEW); a tela de Saldo de abertura mostra

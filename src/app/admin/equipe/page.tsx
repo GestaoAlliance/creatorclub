@@ -33,15 +33,16 @@ export default async function EquipePage() {
   return (
     <>
       <PageHeader title="Equipe">Quem acessa o painel e com qual papel, marca por marca. O convite gera um link de uso único; quem já está na equipe ganha papel em outra marca sem novo convite.</PageHeader>
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+      {/* Pedido do responsável (2026-11-11): convite em cima, ocupando a largura; a equipe embaixo, em duas colunas na tela larga. */}
+      <div className="flex flex-col gap-6">
         <Card title="Convidar" icon={<UserPlus className="size-4" />}>
           <InviteForm brands={brands} />
         </Card>
         <div className="flex flex-col gap-6">
           <Card title={`Pessoas (${users.length})`}>
-            <ul className={ui.list}>
+            <ul className="grid gap-3 xl:grid-cols-2">
               {users.map((u) => (
-                <li key={u.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
+                <li key={u.id} className="flex flex-col gap-2 rounded-2xl border border-stone-200/80 p-4 dark:border-white/10">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium">{u.name}</p>
