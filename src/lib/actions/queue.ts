@@ -2,6 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import {
   accumulatedSales,
   ACTION_OWNER,
+  actionRank,
   BIRTHDAY_WARN_DAYS,
   NO_POST_DAYS,
   POSTS_SINCE,
@@ -15,11 +16,14 @@ import {
   nextBirthday,
   releaseMinFor,
   SHIP_STUCK_DAYS,
+  startOfLocalDay,
   UNSIGNED_DAYS,
   whatsappChatUrl,
   whatsappWithText,
+  TEAM_MESSAGE_MAX,
   type ActionFacts,
   type ActionKind,
+  type Notice,
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -27,6 +31,7 @@ import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/rele
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
 import { lastPostDays } from "@/lib/posts/posts";
+import { notify } from "@/lib/notifications/notify";
 
 /**
  * Fila de ações por creator (M2.1, D-ACTIONS). Montada na hora a partir dos dados (nada fica "aberto" no banco):
@@ -59,6 +64,11 @@ export type ActionTask = {
   /** Mensagem pronta e o link do WhatsApp com ela (sem telefone válido, só o texto). */
   message: string | null;
   whatsappUrl: string | null;
+  /** D-ACTIONSBOARD: ordem na fila (menor = mais urgente) e o tom. */
+  rank: number;
+  tone: "urgent" | "warn" | "info";
+  /** Telefone que o WhatsApp da marca consegue usar (celular do Brasil). */
+  hasPhone: boolean;
 };
 
 export async function actionQueue(prisma: PrismaClient, brandId: string, now = new Date()): Promise<ActionTask[]> {
@@ -108,6 +118,8 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
       detail: actionDetail(facts),
       message,
       whatsappUrl: message && chat ? whatsappWithText(chat, message) : null,
+      ...actionRank(facts),
+      hasPhone: chat !== null,
     });
   };
   const days = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY);
@@ -165,7 +177,7 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   for (const u of unsigned) if (u.creatorId) push(u.creatorId, `UNSIGNED:${u.id}`, { kind: "UNSIGNED", days: days(u.sentAt), link: u.signLink });
   for (const s of ships) push(s.creatorId, `SHIP_STUCK:${s.id}`, { kind: "SHIP_STUCK", days: days(s.approvedAt ?? s.createdAt) });
 
-  return out;
+  return out.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** Quem vê a fila: a Gestão vê tudo; quem envia vê os envios parados. */
@@ -184,4 +196,42 @@ export async function markActionDone(prisma: PrismaClient, actor: Actor | null, 
     prisma.actionDone.createMany({ data: [{ brandId, creatorId: task.creatorId, key, doneAt: now, doneById: actor.userId }], skipDuplicates: true }),
     prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId: actor.userId, action: "action.done", entity: "Creator", entityId: task.creatorId, after: { key, kind: task.kind } } }),
   ]);
+}
+
+/** D-ACTIONSBOARD: quantas tarefas a equipe concluiu hoje (dia de São Paulo) na marca. */
+export async function actionsDoneToday(prisma: PrismaClient, brandId: string, now = new Date()): Promise<number> {
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
+  const start = startOfLocalDay(dayKey(now, brand.timezone), brand.timezone);
+  return prisma.actionDone.count({ where: { brandId, doneAt: { gte: start } } });
+}
+
+/**
+ * D-ACTIONSBOARD: manda as mensagens das tarefas pelo WhatsApp da marca (aviso no portal + WhatsApp; sem WhatsApp na
+ * marca, e-mail) e marca as tarefas como feitas. Só a Gestão; só tarefas na fila agora e com mensagem; o texto pode
+ * ter sido ajustado (vale só para este envio). Uma vez por tarefa (a chave do aviso é a da tarefa).
+ */
+export async function sendActionMessages(prisma: PrismaClient, actor: Actor | null, brandId: string, items: { key: string; title: string; text: string }[], now = new Date()) {
+  if (!actor || !can(actor.grants, "creators.edit", brandId)) throw new ActionError("Sem permissão.");
+  if (!items.length) throw new ActionError("Nenhuma tarefa escolhida.");
+  if (items.length > 300) throw new ActionError("No máximo 300 de uma vez.");
+  const queue = new Map((await actionQueue(prisma, brandId, now)).map((t) => [t.key, t]));
+  const rows: { brandId: string; creatorId: string; notice: Notice; key: string; kind: ActionKind }[] = [];
+  for (const it of items) {
+    const t = queue.get(it.key);
+    if (!t || !t.message || t.owner !== "GESTAO") continue;
+    const title = it.title.trim().slice(0, TEAM_MESSAGE_MAX.title);
+    const text = it.text.trim().slice(0, TEAM_MESSAGE_MAX.body);
+    if (!title || !text) throw new ActionError("Escreva o título e a mensagem.");
+    rows.push({ brandId, creatorId: t.creatorId, key: t.key, kind: t.kind, notice: { kind: "TEAM_MESSAGE", dedupeKey: `action:${t.key}`, title, body: text, path: null } });
+  }
+  if (!rows.length) throw new ActionError("Estas tarefas já saíram da fila. Atualize a página.");
+  return prisma.$transaction(async (tx) => {
+    const sent = await notify(tx, rows);
+    await tx.actionDone.createMany({ data: rows.map((r) => ({ brandId, creatorId: r.creatorId, key: r.key, doneAt: now, doneById: actor.userId })), skipDuplicates: true });
+    await tx.auditLog.createMany({
+      data: rows.map((r) => ({ brandId, actorType: "USER" as const, actorId: actor.userId, action: "action.sent", entity: "Creator", entityId: r.creatorId, after: { key: r.key, kind: r.kind, title: r.notice.title, text: r.notice.body } })),
+    });
+    const brand = await tx.brand.findUniqueOrThrow({ where: { id: brandId }, select: { whatsappInstance: true } });
+    return { sent, whatsapp: brand.whatsappInstance !== null };
+  });
 }

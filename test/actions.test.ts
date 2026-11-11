@@ -24,3 +24,21 @@ describe("fila de ações (M2.1, D-ACTIONS)", () => {
     expect(whatsappWithText("https://wa.me/5531999999999", "Oi, Ana! R$ 10 & mais")).toBe("https://wa.me/5531999999999?text=Oi%2C%20Ana!%20R%24%2010%20%26%20mais");
   });
 });
+
+describe("fila por urgência (D-ACTIONSBOARD)", () => {
+  it("contrato vencido e sem assinar primeiro; aniversário de hoje sobe; sem post por último", async () => {
+    const { actionRank } = await import("@/domain");
+    const order = [
+      { kind: "NO_POST", days: 20, never: false },
+      { kind: "IDLE", days: 70 },
+      { kind: "CONTRACT", endDay: "2026-12-01", expired: false },
+      { kind: "UNSIGNED", days: 8, link: null },
+      { kind: "CONTRACT", endDay: "2026-11-01", expired: true },
+      { kind: "BIRTHDAY", day: "2026-11-11", days: 0 },
+      { kind: "NEAR_MIN", missingCents: 1000 },
+    ] as const;
+    const ranked = [...order].sort((a, b) => actionRank(a).rank - actionRank(b).rank).map((f) => f.kind + ("expired" in f ? `:${f.expired}` : ""));
+    expect(ranked).toEqual(["CONTRACT:true", "UNSIGNED", "BIRTHDAY", "NEAR_MIN", "CONTRACT:false", "IDLE", "NO_POST"]);
+    expect(actionRank({ kind: "IDLE", days: 60, contractEnds: true }).tone).toBe("urgent");
+  });
+});
