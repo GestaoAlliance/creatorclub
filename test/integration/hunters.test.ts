@@ -4,6 +4,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { listApplications, receiveApplication, rejectApplication } from "@/lib/onboarding/applications";
 import { createHunterLink, hunterLinkIdFor, hunterPanel, myHunterPanel, recordHunterClick, resolveHunterLink, setFormLink, setHunterPhone, signupLinksFor } from "@/lib/onboarding/hunters";
 import { staffHome } from "@/lib/staff/home";
+import { hunterBoard } from "@/lib/onboarding/hunter-board";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -138,5 +139,36 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     expect(await resolveHunterLink(prisma, a.brand.slug, "inscricao", "evaunica")).toEqual({ url: `/inscricao/${a.brand.slug}`, click: null });
     expect(await hunterLinkIdFor(prisma, a.brand.id, "evaunica")).toBeNull();
     expect(await prisma.hunterLink.count({ where: { code: "evaunica" } })).toBe(1);
+  });
+});
+
+describe("ranking dos hunters (D-HUNTERBOARD, banco real)", () => {
+  it("funil por hunter no período: cliques → candidatas → aprovadas → venderam; parado; ordem por vendas", async () => {
+    const { brand, creator, coupon } = await seedBrand(prisma);
+    const gestao = await userWith("GESTAO", brand.id);
+    const ana = await userWith("HUNTER", brand.id, "Ana Hunter");
+    const bia = await userWith("HUNTER", brand.id, "Bia Hunter");
+    const codeA = `ana${randomUUID().replace(/\D/g, "").slice(0, 6)}`;
+    const codeB = `bia${randomUUID().replace(/\D/g, "").slice(0, 6)}`;
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: ana.userId, code: codeA });
+    await createHunterLink(prisma, gestao, { brandId: brand.id, userId: bia.userId, code: codeB });
+    const linkAna = (await prisma.hunterLink.findFirstOrThrow({ where: { brandId: brand.id, code: codeA } })).id;
+    const now = new Date();
+    const ago = (d: number) => new Date(now.getTime() - d * 86_400_000);
+    await prisma.hunterClick.createMany({ data: [ago(1), ago(2), ago(40)].map((createdAt) => ({ brandId: brand.id, hunterLinkId: linkAna, form: "hunter", createdAt })) });
+    const app = (submittedAt: Date, extra: object = {}) => prisma.creatorApplication.create({ data: { brandId: brand.id, source: "staff_form", externalKey: randomUUID(), submittedAt, fullName: "X", raw: {}, hunterLinkId: linkAna, ...extra } });
+    await app(ago(3), { status: "APPROVED", decidedAt: ago(2), decidedById: "seed", creatorId: creator.id });
+    await app(ago(5));
+    await app(ago(60)); // fora dos 30 dias
+    const o = await prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: "#x", createdAtShop: ago(1), paidAt: ago(1), financialStatus: "PAID", subtotalCents: 12_000, totalCents: 12_000, discountCodes: [], shopifyUpdatedAt: now } });
+    await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: o.id, creatorId: creator.id, couponId: coupon.id, rateBps: 1500, rule: "FIRST_CREATOR_CODE", evidenceCodes: [] } });
+
+    const { rows } = await hunterBoard(prisma, gestao, brand.id, 30, now);
+    expect(rows.map((r) => r.name)).toEqual(["Ana Hunter", "Bia Hunter"]);
+    expect(rows[0]).toMatchObject({ clicks: 2, applications: 2, approved: 1, selling: 1, salesCents: 12_000, idle: false });
+    expect(rows[0]!.weeks.reduce((s, v) => s + v, 0)).toBe(3);
+    expect(rows[1]).toMatchObject({ clicks: 0, applications: 0, idle: true, lastApplication: null });
+    expect((await hunterBoard(prisma, gestao, brand.id, null, now)).rows[0]).toMatchObject({ clicks: 3, applications: 3 });
+    await expect(hunterBoard(prisma, ana, brand.id, 30, now)).rejects.toThrow(/permissão/);
   });
 });

@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-289 — 2026-11-11 — Hunters: ranking com funil, parados e cartões; Prospecção no mesmo padrão (D-HUNTERBOARD; aguarda OK)
+- Plano do responsável para antes do portal: Hunters → Vendas → Pagamentos → Envios → Configurações. Decidido também:
+  Início = painel, Vendas = conferência dos pedidos (sem os números repetidos); Desempenho perde o que repete o Início
+  (ranking) e fica com Instagram, origem e UGC (próximas tarefas).
+- Hunters (`hunterBoard`): faixa da marca com período (30 dias, 90 dias, tudo) e os totais (cliques, candidatas,
+  aprovadas, vendas das aprovadas); um cartão por hunter, do melhor para o pior, com o funil cliques → candidatas →
+  aprovadas → venderam (barras e % de cada etapa), vendas, mini gráfico de cliques (12 semanas), link para copiar,
+  WhatsApp e telefone em edição rápida (lápis). Coluna com os parados (sem candidata há 30+ dias, botão do WhatsApp
+  com mensagem pronta) e o formulário sem hunter. Extras do "que mais?": período e mini gráfico.
+- Prospecção: faixa da marca com quadros que filtram (abordadas no mês, fazer follow up, forms enviado, inscritas) e
+  perfis em cartões com a cor da etapa; formulários e mensagens prontas como antes.
+- Sem estouro em 1920–390. Teste em `test/integration/hunters.test.ts`. Próxima: OK das capturas → merge → Vendas.
+
 ### CP-288 — 2026-11-11 — TikTok: faixa com quadros e cartões; afiliadas do TikTok Shop esperando a API (D-TIKTOKBOARD; aguarda OK)
 - Redesenho da aba no padrão das outras: faixa da marca com quadros que filtram (com TikTok, TikTok Shop, candidatas,
   creators), busca na hora e cartões com situação, selo TikTok Shop, @ do TikTok e do Instagram, seguidores, cidade,
