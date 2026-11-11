@@ -1,17 +1,19 @@
 "use client";
 
-import { ChevronDown, ChevronRight, ChevronUp, Search } from "lucide-react";
+import { AlertTriangle, ChevronRight, FileWarning, KeyRound, Search, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "@/components/portal/copy-button";
+import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { HelpTip } from "@/components/ui/tour";
-import { badge, ui } from "@/components/ui/styles";
-import { bulkInviteAction, type BulkInviteState } from "./actions";
-import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, formatBRL, originKey, originText, type Origin, instagramUrl, matchesCategory, whatsappChatUrl, type CategoryFilter, type CreatorCategoryValue } from "@/domain";
+import { ui } from "@/components/ui/styles";
+import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, formatBRL, matchesCategory, originKey, originText, shortBRL, type CategoryFilter, type CreatorCategoryValue, type Origin } from "@/domain";
+import type { BulkInviteState } from "./actions";
+import { BulkBar } from "./bulk-bar";
+import { Avatar, CopyChip, LastSale, Sparkline, TrendChip } from "./list-parts";
+import { PeekPanel } from "./peek-panel";
 
-type Row = {
+export type Row = {
   id: string;
   name: string;
   status: string;
@@ -34,7 +36,8 @@ type Row = {
   tiktok: string | null;
   cpf: string | null;
   coupon: string | null;
-  stats: { salesCents: number; orders: number; sales30Cents: number } | null;
+  /** D-CREATORLIST: 30 dias, os 30 anteriores e as 12 semanas (só para quem vê dinheiro). */
+  stats: { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; weeks: number[] } | null;
   /** M4.2 (D-TAGS). */
   tags: { id: string; name: string }[];
   /** M4.3 (D-PROFILEFIELDS). */
@@ -43,79 +46,126 @@ type Row = {
 };
 
 type Situation = "ACTIVE" | "INACTIVE" | "DEACTIVATED";
-type Alert = "" | "never" | "stopped30" | "idle60" | "noPortal" | "pending" | "contract";
-type Sort = "sales" | "orders" | "last" | "name" | "joined";
+/** Quadros do topo (D-CREATORLIST); "idle60" só vem de link antigo (`?semvenda=1`). */
+type Segment = "" | "selling" | "stopped" | "never" | "noPortal" | "pending" | "contract" | "idle60";
+type Sort = "sales30" | "sales" | "last" | "name" | "joined";
 
-const br = (day: string) => day.split("-").reverse().join("/");
 const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-const daysSince = (day: string) => Math.floor((Date.now() - Date.parse(`${day}T12:00:00Z`)) / 86_400_000);
+const daysSince = (day: string) => Math.max(0, Math.floor((Date.now() - Date.parse(`${day}T12:00:00Z`)) / 86_400_000));
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 
-const SITUATIONS: { id: Situation; label: string }[] = [
-  { id: "ACTIVE", label: "Ativas" },
-  { id: "INACTIVE", label: "Pausadas" },
-  { id: "DEACTIVATED", label: "Encerradas" },
+const SITUATIONS: { id: Situation; label: string; param: string }[] = [
+  { id: "ACTIVE", label: "Ativas", param: "ativas" },
+  { id: "INACTIVE", label: "Pausadas", param: "pausadas" },
+  { id: "DEACTIVATED", label: "Encerradas", param: "encerradas" },
+];
+const SORTS: { id: Sort; label: string; money?: boolean }[] = [
+  { id: "sales30", label: "Vendas em 30 dias", money: true },
+  { id: "sales", label: "Vendas no total", money: true },
+  { id: "last", label: "Última venda" },
+  { id: "name", label: "Nome" },
+  { id: "joined", label: "Entrada" },
 ];
 
-/** Selo dos vídeos da UGC no ciclo (D-UGCVIDEOS). */
-function UgcBadge({ c }: { c: NonNullable<Row["ugcCycle"]> }) {
-  if (c.status === "NO_CONTRACT") return <span className={badge.amber}>vídeos: sem datas do contrato</span>;
-  const cls = c.status === "DONE" ? badge.green : c.status === "MISSED" ? badge.red : badge.neutral;
-  return <span className={cls}>vídeos {c.count}/{c.goal}</span>;
+const SEGMENTS: { id: Exclude<Segment, "" | "idle60">; label: string; hint: string; tone: "good" | "warn" | "bad" | "info"; param: string; test: (r: Row) => boolean }[] = [
+  { id: "selling", label: "Vendendo", hint: "nos últimos 30 dias", tone: "good", param: "vendendo", test: (r) => r.lastOrder !== null && daysSince(r.lastOrder.day) < 30 },
+  { id: "stopped", label: "Pararam", hint: "sem venda há 30+ dias", tone: "warn", param: "pararam", test: (r) => r.lastOrder !== null && daysSince(r.lastOrder.day) >= 30 },
+  { id: "never", label: "Nunca venderam", hint: "desde que entraram", tone: "bad", param: "nunca", test: (r) => !r.lastOrder },
+  { id: "noPortal", label: "Sem acesso", hint: "não entram no portal", tone: "info", param: "semacesso", test: (r) => !r.hasLogin },
+  { id: "pending", label: "Pendências", hint: "cadastro a acertar", tone: "warn", param: "pendencia", test: (r) => r.pendings.length > 0 },
+  { id: "contract", label: "Contrato", hint: "vencendo ou vencido", tone: "bad", param: "contrato", test: (r) => r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED" },
+];
+const IDLE60 = { label: "Sem vender há 60 dias", test: (r: Row) => r.idle?.idle === true };
+
+export type ListInit = { q?: string; situation?: string; segment?: string; category?: CategoryFilter; tag?: string; origin?: string; uf?: string; sort?: string };
+
+/** Lê o endereço (filtros guardados; links do Início e da aba Origem continuam funcionando). */
+function initial(p: ListInit, money: boolean) {
+  const seg = SEGMENTS.find((s) => s.param === p.segment)?.id ?? (p.segment === "semvenda" ? "idle60" : "");
+  return {
+    q: p.q ?? "",
+    situation: SITUATIONS.find((s) => s.param === p.situation)?.id ?? "ACTIVE",
+    segment: seg as Segment,
+    category: p.category ?? "",
+    tag: p.tag ?? "",
+    origin: p.origin ?? "",
+    uf: p.uf ?? "",
+    sort: (SORTS.find((s) => s.id === p.sort && (money || !s.money))?.id ?? (money ? "sales30" : "name")) as Sort,
+  };
 }
 
 /**
- * Lista de creators no modelo da referência (M0.0.2): situação e tipo em abas, alertas clicáveis, busca por nome,
- * cupom, @, e-mail, WhatsApp ou CPF, e a tabela com redes, WhatsApp, cupom e vendas (ordenável). Tudo no navegador:
- * a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só para quem vê dados fiscais).
+ * Lista de creators (D-CREATORLIST, pedido do responsável em 2026-11-11): faixa da marca com os quadros que filtram
+ * (vendendo, pararam, nunca venderam, sem acesso, pendência, contrato), busca e filtros guardados no endereço, linha
+ * com vendas de 30 dias + tendência + 12 semanas + última venda colorida, painel lateral com o resumo e ações em grupo.
+ * Tudo no navegador: a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só com dado fiscal).
  */
-export function CreatorList(p: { rows: Row[]; tag?: string; origin?: string; contractsOnly?: boolean; idleOnly?: boolean; pendingOnly?: boolean; category?: CategoryFilter; pendingApplications: number; canInvite?: boolean }) {
+export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: string; slug: string }; pendingApplications: number; canEdit: boolean; archived: boolean; archivedCount: number; canReview: boolean }) {
   const { rows } = p;
-  const router = useRouter();
-  // A linha inteira abre a ficha (links e botões de dentro continuam funcionando sozinhos).
-  const open = (id: string) => (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("a,button,input,label")) return;
-    router.push(`/admin/creators/${id}`);
-  };
-  const [q, setQ] = useState("");
-  const [situation, setSituation] = useState<Situation>("ACTIVE");
-  const [category, setCategory] = useState<CategoryFilter>(p.category ?? "");
-  const [tag, setTag] = useState(p.tag ?? "");
-  const [uf, setUf] = useState("");
-  // D-ORIGIN: filtro por origem (formulário ou hunter); `p.origin` abre já filtrado (link da aba Origem).
-  const [origin, setOrigin] = useState(p.origin ?? "");
+  const money = rows.some((r) => r.stats !== null);
+  const start = useMemo(() => initial(p.init, money), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [q, setQ] = useState(start.q);
+  const [situation, setSituation] = useState<Situation>(start.situation);
+  const [segment, setSegment] = useState<Segment>(start.segment);
+  const [category, setCategory] = useState<CategoryFilter>(start.category);
+  const [tag, setTag] = useState(start.tag);
+  const [uf, setUf] = useState(start.uf);
+  const [origin, setOrigin] = useState(start.origin);
+  const [sort, setSort] = useState<Sort>(start.sort);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [invites, setInvites] = useState<BulkInviteState>(undefined);
+  const [moreFilters, setMoreFilters] = useState(Boolean(start.tag || start.uf || start.origin));
+  const search = useRef<HTMLInputElement>(null);
+
+  // Filtros no endereço: voltar funciona e o link pode ser mandado para outra pessoa da equipe.
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (q.trim()) sp.set("q", q.trim());
+    if (situation !== "ACTIVE") sp.set("situacao", SITUATIONS.find((s) => s.id === situation)!.param);
+    if (segment) sp.set("filtro", segment === "idle60" ? "semvenda" : SEGMENTS.find((s) => s.id === segment)!.param);
+    if (category) sp.set("categoria", category);
+    if (tag) sp.set("tag", tag);
+    if (uf) sp.set("uf", uf);
+    if (origin) sp.set("origem", origin);
+    if (sort !== (money ? "sales30" : "name")) sp.set("ordem", sort);
+    if (p.archived) sp.set("arquivadas", "1");
+    const next = `${window.location.pathname}${sp.size ? `?${sp}` : ""}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, "", next);
+  }, [q, situation, segment, category, tag, uf, origin, sort, money, p.archived]);
+
+  // "/" vai para a busca.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "/" || (e.target as HTMLElement).closest("input,textarea,select,[contenteditable]")) return;
+      e.preventDefault();
+      search.current?.focus();
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+
   const originOptions = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of rows) if (r.origin) m.set(originKey(r.origin), originText(r.origin));
     return [...m].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
   }, [rows]);
   const ufs = useMemo(() => [...new Set(rows.map((r) => r.state).filter((x): x is string => Boolean(x)))].sort(), [rows]);
-  // M4.2 (D-TAGS): tags em uso na marca, com quantas creators da situação têm cada uma.
   const tagOptions = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of rows) for (const t of r.tags) m.set(t.id, t.name);
     return [...m].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }, [rows]);
-  const [alert, setAlert] = useState<Alert>(p.contractsOnly ? "contract" : p.idleOnly ? "idle60" : p.pendingOnly ? "pending" : "");
-  const [sort, setSort] = useState<{ by: Sort; desc: boolean }>({ by: rows.some((r) => r.stats) ? "sales" : "name", desc: rows.some((r) => r.stats) });
-  const money = rows.some((r) => r.stats !== null);
 
-  const inSituation = rows.filter((r) => r.status === situation);
-  const ALERTS: { id: Exclude<Alert, "">; label: string; test: (r: Row) => boolean }[] = [
-    { id: "never", label: "nunca venderam", test: (r) => !r.lastOrder },
-    { id: "stopped30", label: "pararam há 30 dias", test: (r) => r.lastOrder !== null && daysSince(r.lastOrder.day) >= 30 },
-    { id: "idle60", label: "sem vender há 60 dias", test: (r) => r.idle?.idle === true },
-    { id: "noPortal", label: "sem acesso ao portal", test: (r) => !r.hasLogin },
-    { id: "pending", label: "com pendência", test: (r) => r.pendings.length > 0 },
-    { id: "contract", label: "contrato vencendo ou vencido", test: (r) => r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED" },
-  ];
-  const alertTest = ALERTS.find((a) => a.id === alert)?.test ?? (() => true);
+  const inSituation = useMemo(() => rows.filter((r) => r.status === situation), [rows, situation]);
+  const inCategory = useMemo(() => inSituation.filter((r) => matchesCategory(r.categories, category)), [inSituation, category]);
 
   const shown = useMemo(() => {
+    const segTest = segment === "idle60" ? IDLE60.test : (SEGMENTS.find((s) => s.id === segment)?.test ?? (() => true));
     const words = norm(q).split(/\s+/).filter(Boolean);
     const digits = q.replace(/\D/g, "");
-    const list = inSituation.filter((r) => {
-      if (!matchesCategory(r.categories, category) || !alertTest(r)) return false;
+    const list = inCategory.filter((r) => {
+      if (!segTest(r)) return false;
       if (tag && !r.tags.some((t) => t.id === tag)) return false;
       if (uf && r.state !== uf) return false;
       if (origin && (!r.origin || originKey(r.origin) !== origin)) return false;
@@ -125,265 +175,335 @@ export function CreatorList(p: { rows: Row[]; tag?: string; origin?: string; con
       return words.every((w) => hay.includes(w.replace(/^@/, ""))) || (digits.length >= 4 && nums.includes(digits));
     });
     const val = (r: Row): number | string =>
-      sort.by === "sales" ? (r.stats?.salesCents ?? 0) : sort.by === "orders" ? (r.stats?.orders ?? 0) : sort.by === "last" ? (r.lastOrder?.day ?? "") : sort.by === "joined" ? r.joinedAt.toString() : norm(r.name);
+      sort === "sales30" ? (r.stats?.sales30Cents ?? 0) : sort === "sales" ? (r.stats?.salesCents ?? 0) : sort === "last" ? (r.lastOrder?.day ?? "") : sort === "joined" ? new Date(r.joinedAt).getTime() : norm(r.name);
+    const desc = sort !== "name";
     return [...list].sort((a, b) => {
       const x = val(a);
       const y = val(b);
       const c = x < y ? -1 : x > y ? 1 : 0;
-      return sort.desc ? -c : c;
+      return (desc ? -c : c) || norm(a.name).localeCompare(norm(b.name));
     });
-  }, [q, situation, category, alert, sort, rows, tag, uf, origin]);
+  }, [q, inCategory, segment, sort, tag, uf, origin]);
 
-  // D-ACCESSREQ: no filtro "sem acesso ao portal", a Gestão marca as creators e gera os convites de uma vez.
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [invites, setInvites] = useState<BulkInviteState>(undefined);
-  const [inviting, setInviting] = useState(false);
-  const selecting = Boolean(p.canInvite) && alert === "noPortal";
-  const invitable = shown.filter((r) => !r.hasLogin && !r.fakeEmail);
-  const toggle = (id: string) => setPicked((cur) => {
-    const next = new Set(cur);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return next;
-  });
-  const Pick = ({ r }: { r: Row }) =>
-    selecting ? (
-      <input
-        type="checkbox"
-        checked={picked.has(r.id)}
-        disabled={r.fakeEmail}
-        title={r.fakeEmail ? "Confirme o e-mail na ficha antes de convidar" : "Marcar para gerar o convite"}
-        onChange={() => toggle(r.id)}
-        aria-label={`Marcar ${r.name}`}
-        className="mt-1 size-4 shrink-0 accent-current"
-      />
-    ) : null;
-  async function generate() {
-    setInviting(true);
-    setInvites(await bulkInviteAction([...picked]));
-    setPicked(new Set());
-    setInviting(false);
-    router.refresh();
-  }
+  const openIndex = openId ? shown.findIndex((r) => r.id === openId) : -1;
+  const openRow = openId ? (rows.find((r) => r.id === openId) ?? null) : null;
+  const close = useCallback(() => setOpenId(null), []);
+  const prev = openIndex > 0 ? () => setOpenId(shown[openIndex - 1]!.id) : null;
+  const next = openIndex >= 0 && openIndex < shown.length - 1 ? () => setOpenId(shown[openIndex + 1]!.id) : null;
+  // A linha aberta acompanha a navegação por teclado no painel.
+  useEffect(() => {
+    if (openId) document.getElementById(`cr-${openId}`)?.scrollIntoView({ block: "nearest" });
+  }, [openId]);
 
-  const total = inSituation.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
-  const top = [...inSituation].map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
+  const toggle = (id: string) =>
+    setPicked((cur) => {
+      const n = new Set(cur);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const allShownPicked = shown.length > 0 && shown.every((r) => picked.has(r.id));
+  const pickAll = () => setPicked((cur) => (allShownPicked ? new Set([...cur].filter((id) => !shown.some((r) => r.id === id))) : new Set([...cur, ...shown.map((r) => r.id)])));
+  const pickedRows = rows.filter((r) => picked.has(r.id));
+
+  // Linha: clique abre o painel; Ctrl/⌘ + clique no nome abre a ficha em outra aba (link normal).
+  const rowClick = (id: string) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a,button,input,label,select")) return;
+    setOpenId(id === openId ? null : id);
+  };
+  const nameClick = (id: string) => (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    setOpenId(id);
+  };
+
+  const sales30 = inCategory.reduce((s, r) => s + (r.stats?.sales30Cents ?? 0), 0);
+  const prev30 = inCategory.reduce((s, r) => s + (r.stats?.prev30Cents ?? 0), 0);
+  const total = inCategory.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
+  const top = inCategory.map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
   const share = (n: number) => (total ? Math.round((top.slice(0, n).reduce((s, v) => s + v, 0) / total) * 100) : 0);
-
-  function Head({ by, children, right = false }: { by: Sort; children: string; right?: boolean }) {
-    const on = sort.by === by;
-    return (
-      <th className={`px-3 py-2 text-xs font-medium uppercase tracking-wide text-stone-500 ${right ? "text-right" : "text-left"}`}>
-        <button type="button" onClick={() => setSort({ by, desc: on ? !sort.desc : by !== "name" })} className={`inline-flex items-center gap-1 uppercase ${on ? "text-stone-900 dark:text-white" : ""}`}>
-          {children}
-          {on && (sort.desc ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />)}
-        </button>
-      </th>
-    );
-  }
+  const filtersOn = Boolean(q.trim() || segment || category || tag || uf || origin);
+  const clearAll = () => {
+    setQ("");
+    setSegment("");
+    setCategory("");
+    setTag("");
+    setUf("");
+    setOrigin("");
+  };
+  const sitIndex = SITUATIONS.findIndex((s) => s.id === situation);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {SITUATIONS.map((s) => (
-          <button key={s.id} type="button" onClick={() => setSituation(s.id)} className={situation === s.id ? ui.pillOn : ui.pill}>
-            {s.label} · {rows.filter((r) => r.status === s.id).length}
-          </button>
-        ))}
-        <Link href="/admin/candidatas" className={ui.pill}>
-          Pendentes · {p.pendingApplications}
-        </Link>
-      </div>
-
-      <section className={`${ui.card} gap-4`}>
-        <div data-tour="cr-filtros" className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {(["", ...CREATOR_CATEGORIES] as CategoryFilter[]).map((c) => (
-              <button key={c || "todos"} type="button" onClick={() => setCategory(c)} className={`rounded-full px-3 py-1 text-sm ${category === c ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300"}`}>
-                {c ? CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] : "Todos os tipos"} <span className="tabular-nums opacity-60">{inSituation.filter((r) => matchesCategory(r.categories, c)).length}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, cupom, @, e-mail, WhatsApp ou CPF" aria-label="Buscar creator" className={`${ui.input} pl-9`} />
-            </label>
-            <HelpTip id="cr-filtros" />
-          </div>
-          {(ufs.length > 0 || tagOptions.length > 0 || originOptions.length > 0) && (
-            <div className="flex flex-wrap items-center gap-2">
-            {ufs.length > 0 && (
-              <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado" className={ui.inputSm}>
-                <option value="">Todos os estados</option>
-                {ufs.map((x) => <option key={x} value={x}>{x} ({inSituation.filter((r) => r.state === x).length})</option>)}
-              </select>
-            )}
-            {originOptions.length > 0 && (
-              <select value={origin} onChange={(e) => setOrigin(e.target.value)} aria-label="Origem" className={ui.inputSm}>
-                <option value="">Todas as origens</option>
-                {originOptions.map((o) => (
-                  <option key={o.key} value={o.key}>{o.label} ({inSituation.filter((r) => r.origin && originKey(r.origin) === o.key).length})</option>
-                ))}
-              </select>
-            )}
-            {tagOptions.length > 0 && (
-              <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={ui.inputSm}>
-                <option value="">Todas as tags</option>
-                {tagOptions.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name} ({inSituation.filter((r) => r.tags.some((x) => x.id === t.id)).length})</option>
-                ))}
-              </select>
-            )}
+    <div className={`flex flex-col gap-4 ${pickedRows.length ? "pb-44 md:pb-28" : ""}`}>
+      {/* Faixa da marca: título, situação e os quadros que filtram. */}
+      <section className="@container relative isolate overflow-hidden rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
+        <div aria-hidden className="brand-art absolute inset-0 -z-10" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
+        <div className="flex flex-col gap-5 p-5 md:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{p.brand.name}</p>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{p.archived ? "Creators arquivadas" : "Creators"}</h1>
+              <p className="mt-1 text-sm text-white/80">
+                {p.archived ? (
+                  <>{rows.length} arquivadas. Abra a ficha para desarquivar. <Link href="/admin/creators" className="font-semibold underline underline-offset-2">Voltar</Link></>
+                ) : (
+                  <>
+                    {rows.length} na base · {rows.filter((r) => r.status === "ACTIVE").length} ativas
+                    {money && sales30 > 0 && <> · <strong className="font-semibold text-white">{formatBRL(sales30)}</strong> em 30 dias</>}
+                  </>
+                )}
+              </p>
             </div>
-          )}
+            <div className="liquid-pill" style={{ "--n": SITUATIONS.length, "--i": sitIndex } as React.CSSProperties} role="tablist" aria-label="Situação">
+              <span aria-hidden className="drop" />
+              {SITUATIONS.map((s) => (
+                <button key={s.id} type="button" role="tab" aria-selected={situation === s.id} aria-current={situation === s.id ? "true" : undefined} onClick={() => { setSituation(s.id); setPicked(new Set()); }}>
+                  {s.label} <span className="tabular-nums opacity-70">{rows.filter((r) => r.status === s.id).length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           {situation !== "DEACTIVATED" && (
-            <div className="flex flex-wrap gap-2">
-              {ALERTS.map((a) => {
-                const n = inSituation.filter((r) => matchesCategory(r.categories, category) && a.test(r)).length;
-                if (!n && alert !== a.id) return null;
+            <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-3 @5xl:grid-cols-6" role="group" aria-label="Filtrar pela situação de vendas e cadastro">
+              {SEGMENTS.map((s) => {
+                const n = inCategory.filter(s.test).length;
+                const on = segment === s.id;
+                const pct = inCategory.length ? Math.round((n / inCategory.length) * 100) : 0;
                 return (
-                  <button key={a.id} type="button" onClick={() => setAlert(alert === a.id ? "" : a.id)} className={`rounded-full border px-3 py-1 text-xs font-medium ${alert === a.id ? "border-amber-500 bg-amber-500 text-white" : "border-amber-400/60 bg-amber-100/60 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"}`}>
-                    {n} {a.label}
+                  <button key={s.id} type="button" aria-pressed={on} onClick={() => setSegment(on ? "" : s.id)} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white ${on ? "is-on" : ""}`}>
+                    <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300">
+                      <span className="truncate">{s.label}</span>
+                      <span className={`seg-dot seg-${s.tone}`} />
+                    </span>
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="text-2xl font-semibold tabular-nums leading-tight">{n}</span>
+                      {(s.id === "selling" || s.id === "stopped" || s.id === "never") && <span className="text-xs font-medium tabular-nums text-stone-500 dark:text-stone-300">{pct}%</span>}
+                    </span>
+                    <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{s.hint}</span>
                   </button>
                 );
               })}
             </div>
           )}
-          {selecting && (
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-sky-500/10 p-3 text-sm">
-              <span>
-                <strong>{picked.size}</strong> marcada{picked.size === 1 ? "" : "s"} para receber o link de acesso ao portal.
-              </span>
-              <button type="button" onClick={() => setPicked(new Set(invitable.map((r) => r.id)))} className={ui.ghostSm}>Marcar todas ({invitable.length})</button>
-              {picked.size > 0 && <button type="button" onClick={() => setPicked(new Set())} className={ui.ghostSm}>Desmarcar</button>}
-              <button type="button" disabled={!picked.size || inviting} onClick={() => void generate()} className={ui.btnSm}>
-                {inviting ? "Gerando…" : "Gerar convites"}
-              </button>
-              {shown.some((r) => r.fakeEmail) && <span className={ui.hint}>Quem está com e-mail a confirmar precisa do e-mail real na ficha antes.</span>}
-            </div>
-          )}
-          {invites && <BulkInvites state={invites} onClose={() => setInvites(undefined)} />}
-          {money && total > 0 && (
-            <p className={ui.hint}>
-              Concentração: a maior faz {share(1)}% das vendas · as 3 maiores, {share(3)}%. {shown.length} de {inSituation.length} creators.
-            </p>
+        </div>
+      </section>
+
+      {/* Busca e filtros. */}
+      <section className="glass flex flex-col gap-3 rounded-3xl p-3 md:p-4" data-tour="cr-filtros">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="relative min-w-0 flex-[1_1_16rem]">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+            <input ref={search} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, cupom, @, e-mail, WhatsApp ou CPF" aria-label="Buscar creator" className={`${ui.input} !rounded-full pl-10 pr-10`} />
+            {q ? (
+              <button type="button" onClick={() => setQ("")} aria-label="Limpar a busca" className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"><X className="size-4" /></button>
+            ) : (
+              <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-stone-300/80 px-1.5 text-[11px] text-stone-400 md:block dark:border-white/15">/</kbd>
+            )}
+          </label>
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Ordenar por" className={`${ui.inputSm} !rounded-full`}>
+            {SORTS.filter((s) => money || !s.money).map((s) => <option key={s.id} value={s.id}>Ordenar: {s.label}</option>)}
+          </select>
+          {(ufs.length > 0 || tagOptions.length > 0 || originOptions.length > 0) && (
+            <button type="button" onClick={() => setMoreFilters((v) => !v)} aria-expanded={moreFilters} className={`${ui.ghostSm} !py-2`}>
+              <SlidersHorizontal className="size-3.5" /> Filtros{(tag || uf || origin) && <span className="grid size-4 place-content-center rounded-full bg-brand text-[10px] text-white">{[tag, uf, origin].filter(Boolean).length}</span>}
+            </button>
           )}
         </div>
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-0.5">
+          {(["", ...CREATOR_CATEGORIES] as CategoryFilter[]).map((c) => (
+            <button key={c || "todos"} type="button" onClick={() => setCategory(c)} className={`shrink-0 rounded-full px-3 py-1 text-sm transition-colors ${category === c ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300"}`}>
+              {c ? CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] : "Todos os tipos"} <span className="tabular-nums opacity-60">{inSituation.filter((r) => matchesCategory(r.categories, c)).length}</span>
+            </button>
+          ))}
+        </div>
+        {moreFilters && (
+          <div className="flex flex-wrap items-center gap-2">
+            {ufs.length > 0 && (
+              <select value={uf} onChange={(e) => setUf(e.target.value)} aria-label="Estado" className={ui.inputSm}>
+                <option value="">Todos os estados</option>
+                {ufs.map((x) => <option key={x} value={x}>{x} ({inCategory.filter((r) => r.state === x).length})</option>)}
+              </select>
+            )}
+            {originOptions.length > 0 && (
+              <select value={origin} onChange={(e) => setOrigin(e.target.value)} aria-label="Origem" className={ui.inputSm}>
+                <option value="">Todas as origens</option>
+                {originOptions.map((o) => <option key={o.key} value={o.key}>{o.label} ({inCategory.filter((r) => r.origin && originKey(r.origin) === o.key).length})</option>)}
+              </select>
+            )}
+            {tagOptions.length > 0 && (
+              <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={ui.inputSm}>
+                <option value="">Todas as tags</option>
+                {tagOptions.map((t) => <option key={t.id} value={t.id}>{t.name} ({inCategory.filter((r) => r.tags.some((x) => x.id === t.id)).length})</option>)}
+              </select>
+            )}
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
+          <HelpTip id="cr-filtros" />
+          <span>
+            <strong className="tabular-nums text-stone-800 dark:text-stone-100">{shown.length}</strong> de {inSituation.length} {SITUATIONS[sitIndex]!.label.toLowerCase()}
+          </span>
+          {segment === "idle60" && <button type="button" onClick={() => setSegment("")} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-900 dark:text-amber-200">{IDLE60.label} <X className="size-3" /></button>}
+          {money && total > 0 && <span>Concentração: a maior faz {share(1)}% das vendas · as 3 maiores, {share(3)}%</span>}
+          {money && sales30 + prev30 > 0 && <span className="inline-flex items-center gap-1">30 dias: {shortBRL(sales30)} <TrendChip current={sales30} previous={prev30} /></span>}
+          {filtersOn && <button type="button" onClick={clearAll} className="font-semibold text-brand hover:underline dark:text-brand-2">Limpar filtros</button>}
+          <span className="ml-auto flex flex-wrap gap-3">
+            {p.canReview && <Link href="/admin/creators/revisar" className="hover:underline">Cadastros a revisar</Link>}
+            {!p.archived && p.archivedCount > 0 && <Link href="/admin/creators?arquivadas=1" className="hover:underline">Arquivadas ({p.archivedCount})</Link>}
+            {!p.archived && p.pendingApplications > 0 && <Link href="/admin/candidatas" className="font-semibold text-brand hover:underline dark:text-brand-2">{p.pendingApplications} candidatas esperando →</Link>}
+          </span>
+        </div>
+        {invites && <BulkInvites state={invites} onClose={() => setInvites(undefined)} />}
+      </section>
 
+      {/* A lista. */}
+      <section className="@container glass overflow-hidden rounded-3xl !p-0" data-tour="cr-lista">
         {shown.length === 0 ? (
-          <p className={ui.muted}>Nenhuma creator encontrada.</p>
+          <div className="flex flex-col items-center gap-2 p-10 text-center text-sm text-stone-500">
+            <p>Nenhuma creator com esses filtros.</p>
+            {filtersOn && <button type="button" onClick={clearAll} className={ui.ghostSm}>Limpar filtros</button>}
+          </div>
         ) : (
           <>
-          {/* Celular: um cartão por creator. */}
-          <ul className="flex flex-col divide-y divide-stone-200/70 md:hidden dark:divide-white/10">
-            {shown.map((c) => {
-              const wa = c.phone ? whatsappChatUrl(c.phone) : null;
-              return (
-                <li key={c.id} onClick={open(c.id)} className="flex cursor-pointer flex-col gap-1.5 py-3">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="flex min-w-0 items-start gap-2"><Pick r={c} /><Link href={`/admin/creators/${c.id}`} className="truncate font-medium">{c.name}</Link></span>
-                    {c.stats && <span className="shrink-0 text-sm font-semibold tabular-nums">{formatBRL(c.stats.salesCents)}</span>}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    {wa && <a href={wa} {...ext} className="inline-flex items-center gap-1"><WhatsAppIcon className="size-3.5 text-emerald-600" />WhatsApp</a>}
-                    {c.origin && c.origin.kind !== "UNKNOWN" && <span className="text-stone-500">veio de: {originText(c.origin)}</span>}
-                    {c.instagram && <span className="inline-flex items-center gap-1"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
-                    {c.tiktok && <span className="inline-flex items-center gap-1"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</span>}
-                    {c.coupon && <span className="font-mono font-semibold">{c.coupon}</span>}
-                    {c.state && <span className="text-stone-500">📍 {c.city ? `${c.city}/${c.state}` : c.state}</span>}
-                    <span className="text-stone-500">{c.lastOrder ? `última venda há ${daysSince(c.lastOrder.day)} dias` : "nunca vendeu"}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {c.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>)}
-                    {c.tags.map((t) => <span key={t.id} className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand dark:border-brand-2/30 dark:bg-brand-2/15 dark:text-brand-2">{t.name}</span>)}
-                    {!c.hasLogin && <span className={badge.neutral}>sem acesso</span>}
-                    {c.pendings.filter((x) => !x.startsWith("contrato")).map((x) => <span key={x} className={badge.amber}>{x}</span>)}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="-mx-2 hidden overflow-x-auto md:block">
-            <table data-tour="cr-lista" className="w-full min-w-[960px] border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr>
-                  <Head by="name">Creator</Head>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-stone-500">Redes</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-stone-500">Cupom</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-stone-500">Tipo</th>
-                  {money && <Head by="sales" right>Vendas</Head>}
-                  {money && <Head by="orders" right>Pedidos</Head>}
-                  <Head by="last">Última venda</Head>
-                  <Head by="joined">Entrada</Head>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((c) => {
-                  const wa = c.phone ? whatsappChatUrl(c.phone) : null;
-                  const ig = c.instagram ? instagramUrl(c.instagram) : null;
-                  return (
-                    <tr key={c.id} onClick={open(c.id)} className="group cursor-pointer align-top transition-colors hover:bg-stone-500/5 [&>td]:border-t [&>td]:border-stone-200/70 [&>td]:px-3 [&>td]:py-3 dark:[&>td]:border-white/10">
-                      <td className="max-w-64">
-                        <div className="flex items-start gap-2.5">
-                          <Pick r={c} />
-                          <span className="grid size-10 shrink-0 place-content-center rounded-full bg-gradient-to-br from-brand to-brand/60 text-sm font-semibold text-white shadow-sm dark:from-brand-2 dark:to-brand-2/60">{c.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
-                          <div className="min-w-0">
-                            <Link href={`/admin/creators/${c.id}`} className="block truncate font-medium hover:underline">{c.name}</Link>
-                            {c.origin && c.origin.kind !== "UNKNOWN" && <span className="block truncate text-xs text-stone-500">veio de: {originText(c.origin)}</span>}
-                            {wa ? (
-                              <a href={wa} {...ext} className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-emerald-700 dark:text-stone-300"><WhatsAppIcon className="size-3.5 text-emerald-600" />{c.phone}</a>
-                            ) : (
-                              <span className="text-xs text-stone-500">{c.phone ?? "sem WhatsApp"}</span>
-                            )}
-                            {c.state && <span className="block text-xs text-stone-500">📍 {c.city ? `${c.city}/${c.state}` : c.state}</span>}
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {!c.hasLogin && <span className={badge.neutral}>sem acesso</span>}
-                              {c.pendings.filter((x) => !x.startsWith("contrato")).map((x) => <span key={x} className={badge.amber}>{x}</span>)}
-                              {c.contract.status === "EXPIRING" && <span className={badge.amber}>contrato vence em {c.contract.daysLeft}d</span>}
-                              {c.contract.status === "EXPIRED" && <span className={badge.red}>contrato vencido</span>}
-                              {c.ugcCycle && c.status !== "DEACTIVATED" && <UgcBadge c={c.ugcCycle} />}
+            {/* Celular: um cartão por creator. */}
+            <ul className="flex flex-col divide-y divide-stone-200/70 @3xl:hidden dark:divide-white/10">
+              {shown.map((c) => {
+                const d = c.lastOrder ? daysSince(c.lastOrder.day) : null;
+                return (
+                  <li key={c.id} id={`cr-${c.id}`} onClick={rowClick(c.id)} className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${openId === c.id ? "bg-brand/8" : ""}`}>
+                    {p.canEdit && <input type="checkbox" checked={picked.has(c.id)} onChange={() => toggle(c.id)} aria-label={`Marcar ${c.name}`} className="size-4 shrink-0 accent-[var(--brand)]" />}
+                    <Avatar name={c.name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="truncate font-medium">{c.name}</Link>
+                        {c.stats && <span className="shrink-0 text-sm font-semibold tabular-nums">{shortBRL(c.stats.sales30Cents)}</span>}
+                      </div>
+                      <div className="mt-0.5 flex items-center justify-between gap-2">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <LastSale day={c.lastOrder?.day ?? null} daysAgo={d} />
+                          {c.coupon && <span className="truncate font-mono text-[11px] text-stone-500">{c.coupon}</span>}
+                        </span>
+                        {c.stats && <TrendChip current={c.stats.sales30Cents} previous={c.stats.prev30Cents} />}
+                      </div>
+                      <Signals c={c} className="mt-1" />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="hidden @3xl:block">
+              <table className="w-full border-separate border-spacing-0 text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-stone-500 [&>th]:border-b [&>th]:border-stone-200/70 [&>th]:px-3 [&>th]:py-3 dark:[&>th]:border-white/10">
+                    {p.canEdit && (
+                      <th className="w-10 !pl-5">
+                        <input type="checkbox" checked={allShownPicked} onChange={pickAll} aria-label={allShownPicked ? "Desmarcar as da lista" : `Marcar as ${shown.length} da lista`} title={allShownPicked ? "Desmarcar as da lista" : `Marcar as ${shown.length} da lista`} className="size-4 accent-[var(--brand)]" />
+                      </th>
+                    )}
+                    <th className={p.canEdit ? "" : "!pl-5"}>Creator</th>
+                    <th className="hidden @5xl:table-cell">Cupom</th>
+                    {money && <th className="text-right">30 dias</th>}
+                    {money && <th className="hidden @6xl:table-cell">12 semanas</th>}
+                    <th>Última venda</th>
+                    {money && <th className="hidden text-right @4xl:table-cell">No total</th>}
+                    <th className="w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((c) => {
+                    const d = c.lastOrder ? daysSince(c.lastOrder.day) : null;
+                    const on = openId === c.id;
+                    return (
+                      <tr
+                        key={c.id}
+                        id={`cr-${c.id}`}
+                        onClick={rowClick(c.id)}
+                        aria-selected={on}
+                        className={`cr-row group cursor-pointer align-middle transition-colors [&>td]:border-b [&>td]:border-stone-200/60 [&>td]:px-3 [&>td]:py-2.5 dark:[&>td]:border-white/8 ${on ? "is-open" : picked.has(c.id) ? "bg-brand/5" : "hover:bg-white/50 dark:hover:bg-white/5"}`}
+                      >
+                        {p.canEdit && (
+                          <td className="!pl-5">
+                            <input type="checkbox" checked={picked.has(c.id)} onChange={() => toggle(c.id)} aria-label={`Marcar ${c.name}`} className="size-4 accent-[var(--brand)]" />
+                          </td>
+                        )}
+                        <td className={p.canEdit ? "" : "!pl-5"}>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar name={c.name} />
+                            <div className="min-w-0">
+                              <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="block max-w-64 truncate font-medium hover:underline">{c.name}</Link>
+                              <span className="flex items-center gap-2 text-xs text-stone-500">
+                                {c.instagram && <span className="inline-flex min-w-0 max-w-40 items-center gap-1 truncate"><InstagramIcon className="size-3 shrink-0 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
+                                {c.tiktok && <TikTokIcon className="size-3 shrink-0" />}
+                                {c.phone && <WhatsAppIcon className="size-3 shrink-0 text-emerald-600" />}
+                                {c.coupon && <span className="font-mono text-[11px] @5xl:hidden">{c.coupon}</span>}
+                              </span>
+                              <Signals c={c} className="mt-1" />
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex flex-col gap-0.5 text-xs">
-                          {c.instagram ? (
-                            ig ? <a href={ig} {...ext} className="inline-flex items-center gap-1.5 hover:underline"><InstagramIcon className="size-3.5 text-pink-600" />{c.instagram.replace(/^@/, "")}</a> : <span>@{c.instagram}</span>
+                        </td>
+                        <td className="hidden @5xl:table-cell">
+                          {c.coupon ? (
+                            <span className="flex items-center gap-1">
+                              <span className="font-mono text-xs font-semibold">{c.coupon}</span>
+                              <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100"><CopyChip value={c.coupon} label="" className="grid size-6 place-content-center rounded-full text-stone-500 hover:bg-stone-500/10" /></span>
+                            </span>
                           ) : (
                             <span className="text-stone-400">—</span>
                           )}
-                          {c.tiktok && (
-                            <a href={`https://www.tiktok.com/@${c.tiktok.replace(/^@/, "")}`} {...ext} className="inline-flex items-center gap-1.5 hover:underline"><TikTokIcon className="size-3.5" />{c.tiktok.replace(/^@/, "")}</a>
-                          )}
-                        </div>
-                      </td>
-                      <td>{c.coupon ? <span className="flex items-center gap-1.5"><span className="font-mono text-xs font-semibold">{c.coupon}</span><span className="opacity-0 transition-opacity group-hover:opacity-100"><CopyButton value={c.coupon} label="Copiar" /></span></span> : <span className="text-stone-400">—</span>}</td>
-                      <td><div className="flex flex-wrap gap-1">{c.categories.map((k) => <span key={k} className={badge.neutral}>{CREATOR_CATEGORY_LABEL[k]}</span>)}{c.tags.map((t) => <span key={t.id} className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand dark:border-brand-2/30 dark:bg-brand-2/15 dark:text-brand-2">{t.name}</span>)}</div></td>
-                      {money && (
-                        <td className="text-right tabular-nums">
-                          <span className="font-semibold">{formatBRL(c.stats?.salesCents ?? 0)}</span>
-                          {(c.stats?.sales30Cents ?? 0) > 0 && <span className="block text-xs text-stone-500">{formatBRL(c.stats!.sales30Cents)} em 30d</span>}
                         </td>
-                      )}
-                      {money && <td className="text-right tabular-nums">{c.stats?.orders ?? 0}</td>}
-                      <td className="whitespace-nowrap text-xs">{c.lastOrder ? <>{br(c.lastOrder.day)}<span className="block text-stone-500">há {daysSince(c.lastOrder.day)} dias</span></> : <span className="text-stone-400">nunca</span>}</td>
-                      <td className="whitespace-nowrap text-xs text-stone-500">
-                        <span className="flex items-center justify-between gap-2">
-                          {new Date(c.joinedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                          <ChevronRight className="size-4 text-stone-300 transition-transform group-hover:translate-x-0.5 group-hover:text-stone-500" />
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        {money && (
+                          <td className="whitespace-nowrap text-right">
+                            <span className="block font-semibold tabular-nums" title={formatBRL(c.stats?.sales30Cents ?? 0)}>{shortBRL(c.stats?.sales30Cents ?? 0)}</span>
+                            {c.stats && <TrendChip current={c.stats.sales30Cents} previous={c.stats.prev30Cents} />}
+                          </td>
+                        )}
+                        {money && <td className="hidden @6xl:table-cell">{c.stats && <Sparkline weeks={c.stats.weeks} />}</td>}
+                        <td><LastSale day={c.lastOrder?.day ?? null} daysAgo={d} /></td>
+                        {money && (
+                          <td className="hidden whitespace-nowrap text-right tabular-nums @4xl:table-cell">
+                            <span className="block text-stone-700 dark:text-stone-200" title={formatBRL(c.stats?.salesCents ?? 0)}>{shortBRL(c.stats?.salesCents ?? 0)}</span>
+                            <span className="text-[11px] text-stone-500">{c.stats?.orders ?? 0} pedidos</span>
+                          </td>
+                        )}
+                        <td className="!pr-5">
+                          <ChevronRight className={`size-4 transition-transform ${on ? "translate-x-0.5 text-brand" : "text-stone-300 group-hover:translate-x-0.5 group-hover:text-stone-500"}`} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </section>
+
+      {openRow && <PeekPanel row={openRow} onClose={close} onPrev={prev} onNext={next} daysAgo={openRow.lastOrder ? daysSince(openRow.lastOrder.day) : null} />}
+      {p.canEdit && pickedRows.length > 0 && <BulkBar picked={pickedRows} onClear={() => setPicked(new Set())} tags={tagOptions} brandSlug={p.brand.slug} onInvites={setInvites} />}
+    </div>
+  );
+}
+
+/** Sinais da linha: só o que pede ação (sem acesso, pendência, contrato, vídeos da UGC) e as tags. */
+function Signals({ c, className = "" }: { c: Row; className?: string }) {
+  const pend = c.pendings.filter((x) => !x.startsWith("contrato"));
+  const ugc = c.ugcCycle && c.status !== "DEACTIVATED" ? c.ugcCycle : null;
+  if (c.hasLogin && !pend.length && c.contract.status !== "EXPIRING" && c.contract.status !== "EXPIRED" && !ugc && !c.tags.length) return null;
+  return (
+    <div className={`flex flex-wrap items-center gap-1 ${className}`}>
+      {!c.hasLogin && <span title="Ainda não entra no portal" className="inline-flex items-center gap-1 rounded-full bg-sky-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 dark:text-sky-300"><KeyRound className="size-2.5" />sem acesso</span>}
+      {pend.map((x) => <span key={x} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200"><AlertTriangle className="size-2.5" />{x}</span>)}
+      {c.contract.status === "EXPIRING" && <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200"><FileWarning className="size-2.5" />contrato vence em {c.contract.daysLeft}d</span>}
+      {c.contract.status === "EXPIRED" && <span className="inline-flex items-center gap-1 rounded-full bg-red-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-red-800 dark:text-red-300"><FileWarning className="size-2.5" />contrato vencido</span>}
+      {ugc && (
+        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ugc.status === "DONE" ? "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300" : ugc.status === "MISSED" ? "bg-red-500/12 text-red-800 dark:text-red-300" : "bg-stone-500/10 text-stone-600 dark:text-stone-300"}`}>
+          {ugc.status === "NO_CONTRACT" ? "vídeos: sem datas" : `vídeos ${ugc.count}/${ugc.goal}`}
+        </span>
+      )}
+      {c.tags.slice(0, 3).map((t) => <span key={t.id} className="rounded-full border border-brand/25 bg-brand/8 px-1.5 py-0.5 text-[10px] font-medium text-brand dark:border-brand-2/30 dark:text-brand-2">{t.name}</span>)}
+      {c.tags.length > 3 && <span className="text-[10px] text-stone-500">+{c.tags.length - 3}</span>}
     </div>
   );
 }
@@ -412,7 +532,7 @@ function BulkInvites({ state, onClose }: { state: NonNullable<BulkInviteState>; 
             {r.link && r.message && (
               <span className="flex flex-wrap gap-2">
                 {r.whatsappUrl ? (
-                  <a href={r.whatsappUrl} target="_blank" rel="noopener noreferrer" className={`${ui.btnSm} !bg-emerald-600`}>
+                  <a href={r.whatsappUrl} {...ext} className={`${ui.btnSm} !bg-emerald-600`}>
                     <WhatsAppIcon className="size-3.5" /> Mandar no WhatsApp
                   </a>
                 ) : (

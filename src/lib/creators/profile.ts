@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, parseBirthDate, socialHandle, type CreatorCategoryValue, type ProfileKey } from "@/domain";
+import { assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -67,14 +67,22 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       : Promise.resolve([]),
     showOrigin ? originsFor(prisma, creators.map((c) => c.id)) : Promise.resolve(null),
   ]);
-  const since30 = Date.now() - 30 * 86_400_000;
-  const stats = new Map<string, { salesCents: number; orders: number; sales30Cents: number; lastPaidAt: Date | null }>();
+  const now = new Date();
+  const since30 = now.getTime() - 30 * 86_400_000;
+  const since60 = now.getTime() - 60 * 86_400_000;
+  type Stats = { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; weeks: number[]; lastPaidAt: Date | null };
+  const empty = (): Stats => ({ salesCents: 0, orders: 0, sales30Cents: 0, prev30Cents: 0, weeks: Array<number>(LIST_WEEKS).fill(0), lastPaidAt: null });
+  const stats = new Map<string, Stats>();
   for (const o of sales) {
     const id = o.attribution!.creatorId;
-    const st = stats.get(id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null };
+    const st = stats.get(id) ?? empty();
     st.salesCents += o.subtotalCents;
     st.orders++;
+    // D-CREATORLIST: 30 dias, os 30 anteriores (tendência) e as semanas do mini gráfico.
     if (o.paidAt && o.paidAt.getTime() >= since30) st.sales30Cents += o.subtotalCents;
+    else if (o.paidAt && o.paidAt.getTime() >= since60) st.prev30Cents += o.subtotalCents;
+    const w = o.paidAt ? weekIndex(o.paidAt, now) : null;
+    if (w !== null) st.weeks[w]! += o.subtotalCents;
     if (o.paidAt && (!st.lastPaidAt || o.paidAt > st.lastPaidAt)) st.lastPaidAt = o.paidAt;
     stats.set(id, st);
   }
@@ -114,7 +122,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       niches: c.account.niches,
       cpf: fiscal ? (c.account.cpf ?? null) : null,
       coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
-      stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? { salesCents: 0, orders: 0, sales30Cents: 0, lastPaidAt: null }) : null,
+      stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? empty()) : null,
       pendings: creatorPendings({
         status: c.status,
         reviewed: c.reviewedAt !== null,

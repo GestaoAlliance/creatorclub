@@ -178,7 +178,7 @@ function HealthCard({ h }: { h: BaseHealth }) {
     { label: "Assinando", n: h.awaitingSignature, href: "/admin/candidatas?ver=WAITING", hint: "aprovadas, sem assinar" },
     { label: "Vendendo", n: h.selling, href: "/admin/creators", hint: "venda nos últimos 30 dias", good: true },
     { label: "Paradas", n: h.stopped, href: "/admin/creators/acoes?tipo=IDLE", hint: "venderam antes, nada em 30 dias", bad: true },
-    { label: "Nunca venderam", n: h.neverSold, href: "/admin/creators?semvenda=1", hint: "ativas sem nenhuma venda", bad: true },
+    { label: "Nunca venderam", n: h.neverSold, href: "/admin/creators?filtro=nunca", hint: "ativas sem nenhuma venda", bad: true },
   ];
   const sellingShare = h.active ? h.selling / h.active : 0;
   return (

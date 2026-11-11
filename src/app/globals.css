@@ -297,3 +297,158 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .liquid-pill > .drop, .dash section.glass::after, .liquid-tile::after { transition: none; }
 }
+
+/*
+ * Lista de creators (D-CREATORLIST): quadros que filtram, linha aberta, painel lateral, barra das ações em grupo e as
+ * abas do grupo (gota que escorrega até a aba aberta). Mesmo vidro do Início (D-LIQUIDHOME).
+ */
+.liquid-pill > button {
+  position: relative;
+  z-index: 1;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 0.85);
+  transition: color 0.25s;
+}
+.liquid-pill > button[aria-current="true"] { color: var(--brand); font-weight: 600; }
+.liquid-pill > button:hover:not([aria-current="true"]) { color: white; }
+
+.seg-tile { transition: transform 0.35s cubic-bezier(0.34, 1.36, 0.5, 1), box-shadow 0.25s; }
+.seg-tile:hover { transform: translateY(-2px); }
+.seg-tile:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.seg-tile.is-on {
+  background: linear-gradient(180deg, white, rgb(255 255 255 / 0.96));
+  box-shadow: inset 0 0 0 2px var(--brand), 0 18px 36px -18px rgb(0 0 0 / 0.55);
+  transform: translateY(-2px);
+}
+.dark .seg-tile.is-on { background: linear-gradient(180deg, rgb(41 37 36 / 0.95), rgb(28 25 23 / 0.95)); box-shadow: inset 0 0 0 2px var(--brand-2, var(--brand)), 0 18px 36px -18px black; }
+.seg-dot { width: 0.5rem; height: 0.5rem; flex-shrink: 0; border-radius: 999px; }
+.seg-good { background: rgb(16 185 129); box-shadow: 0 0 0 3px rgb(16 185 129 / 0.2); }
+.seg-warn { background: rgb(245 158 11); box-shadow: 0 0 0 3px rgb(245 158 11 / 0.2); }
+.seg-bad { background: rgb(239 68 68); box-shadow: 0 0 0 3px rgb(239 68 68 / 0.18); }
+.seg-info { background: rgb(14 165 233); box-shadow: 0 0 0 3px rgb(14 165 233 / 0.2); }
+
+.cr-row.is-open { background: color-mix(in srgb, var(--brand) 8%, transparent); }
+.cr-row.is-open > td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.dark .cr-row.is-open { background: color-mix(in srgb, var(--brand-2, var(--brand)) 12%, transparent); }
+
+/* Painel lateral: fica fixo (o vidro do `.dash` põe `position: relative` nos painéis). */
+.dash aside.peek-panel,
+aside.peek-panel {
+  position: fixed;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 40px 80px -30px rgb(0 0 0 / 0.45), 0 30px 60px -40px var(--brand);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.82));
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(28px) saturate(1.6);
+}
+.dark aside.peek-panel { background: linear-gradient(180deg, rgb(28 25 23 / 0.92), rgb(20 18 17 / 0.9)); }
+@media (prefers-reduced-motion: no-preference) {
+  aside.peek-panel { animation: peek-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1); }
+  @keyframes peek-in { from { opacity: 0; transform: translateX(24px) scale(0.98); } to { opacity: 1; transform: none; } }
+}
+.peek-btn {
+  display: grid;
+  place-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: white;
+  background: rgb(255 255 255 / 0.16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.peek-btn:disabled { opacity: 0.35; }
+.peek-btn:not(:disabled):hover { background: rgb(255 255 255 / 0.28); }
+.peek-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand);
+  background: linear-gradient(180deg, white, rgb(255 255 255 / 0.85));
+  box-shadow: inset 0 1px 0 white, 0 6px 14px -8px rgb(0 0 0 / 0.5);
+}
+.peek-chip:hover { background: white; }
+
+/* Barra das ações em grupo: vidro claro que flutua embaixo. */
+.bulk-bar {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(255 255 255 / 0.8));
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: inset 0 1px 0 white, inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 24px 50px -20px rgb(0 0 0 / 0.4), 0 20px 40px -30px var(--brand);
+}
+.dark .bulk-bar { background: linear-gradient(180deg, rgb(41 37 36 / 0.92), rgb(28 25 23 / 0.88)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 24px 50px -20px black; }
+@media (prefers-reduced-motion: no-preference) {
+  .bulk-bar { animation: bulk-in 0.45s cubic-bezier(0.22, 1.3, 0.36, 1); }
+  @keyframes bulk-in { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+}
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgb(68 64 60);
+  transition: background 0.2s, color 0.2s;
+}
+.dark .bulk-btn { color: rgb(231 229 228); }
+.bulk-btn:hover { background: rgb(120 113 108 / 0.12); }
+.bulk-btn.is-on { background: var(--brand); color: white; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 8px 18px -10px var(--brand); }
+
+/* Abas do grupo do menu: trilho de vidro e a gota da cor da marca, que escorrega até a aba aberta. */
+.liquid-tabs {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.45));
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: inset 0 1px 0 white, inset 0 0 0 1px rgb(255 255 255 / 0.55), 0 10px 26px -18px color-mix(in srgb, var(--brand) 60%, black);
+}
+.liquid-tabs::-webkit-scrollbar { display: none; }
+.dark .liquid-tabs { background: linear-gradient(180deg, rgb(41 37 36 / 0.7), rgb(28 25 23 / 0.55)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.06); }
+.liquid-tabs > .drop {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 999px;
+  background: radial-gradient(120% 160% at 30% -10%, color-mix(in srgb, var(--brand) 55%, white), var(--brand) 55%, color-mix(in srgb, var(--brand) 80%, black));
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.55), inset 0 -2px 6px rgb(0 0 0 / 0.18), 0 8px 18px -8px var(--brand);
+  transition: transform 0.55s cubic-bezier(0.34, 1.36, 0.5, 1), width 0.55s cubic-bezier(0.34, 1.36, 0.5, 1);
+  pointer-events: none;
+}
+.liquid-tabs > a {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(87 83 78);
+  transition: color 0.3s;
+}
+.dark .liquid-tabs > a { color: rgb(214 211 209); }
+.liquid-tabs > a:hover { color: rgb(28 25 23); }
+.dark .liquid-tabs > a:hover { color: white; }
+.liquid-tabs > a[aria-current="page"] { color: white; font-weight: 600; }
+.liquid-tabs:not(.is-ready) > a[aria-current="page"] { background: var(--brand); }
+@media (prefers-reduced-motion: reduce) {
+  .liquid-tabs > .drop { transition: none; }
+}
