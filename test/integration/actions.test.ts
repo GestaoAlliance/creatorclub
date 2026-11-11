@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { dayKey, monthKey } from "@/domain";
-import { actionQueue, markActionDone, visibleTasks } from "@/lib/actions/queue";
+import { actionQueue, actionsDoneToday, markActionDone, sendActionMessages, visibleTasks } from "@/lib/actions/queue";
 import { loadActor } from "@/lib/auth/actor";
 import { staffHome } from "@/lib/staff/home";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
@@ -76,5 +76,30 @@ describe("fila de ações por creator (M2.1, D-ACTIONS, banco real)", () => {
     expect((await actionQueue(prisma, a.brand.id, NOW)).some((x) => x.kind === "CONTRACT")).toBe(false);
 
     await expectDbError(prisma.actionDone.create({ data: { brandId: a.brand.id, creatorId: idle.id, key: "OUTRO:x", doneById: "x" } }), /ActionDone_key_format/);
+  });
+});
+
+describe("ações pelo WhatsApp da marca (D-ACTIONSBOARD, banco real)", () => {
+  it("manda com o texto ajustado, vira feita, não repete; conta as feitas de hoje; só Gestão; tarefa interna fica de fora", async () => {
+    const a = await seedBrand(prisma);
+    const acc = await prisma.creatorAccount.create({ data: { name: "Maria Teste", email: `${randomUUID()}@x.com`, phone: "(31) 99876-5432" } });
+    const idle = await prisma.creator.create({ data: { brandId: a.brand.id, accountId: acc.id, categories: ["INFLUENCER"], contractStart: dayIn(-90) } });
+    await prisma.shipment.create({ data: { brandId: a.brand.id, creatorId: idle.id, address: {}, createdById: "x", createdAt: ago(4) } });
+    const tasks = await actionQueue(prisma, a.brand.id, NOW);
+    const task = tasks.find((t) => t.kind === "IDLE")!;
+    const ship = tasks.find((t) => t.kind === "SHIP_STUCK")!;
+    expect(task).toMatchObject({ tone: "info", hasPhone: true });
+    expect(tasks.map((t) => t.kind)).toEqual(["SHIP_STUCK", "IDLE"]); // ordem por urgência
+
+    const ana = await user("GESTAO", a.brand.id);
+    await expect(sendActionMessages(prisma, await user("ENVIO", a.brand.id), a.brand.id, [{ key: task.key, title: "t", text: "x" }], NOW)).rejects.toThrow(/permissão/);
+    await expect(sendActionMessages(prisma, ana, a.brand.id, [{ key: ship.key, title: "t", text: "x" }], NOW)).rejects.toThrow(/saíram da fila/);
+    expect(await sendActionMessages(prisma, ana, a.brand.id, [{ key: task.key, title: " Sentimos sua falta ", text: " Oi, Maria! Texto ajustado. " }], NOW)).toEqual({ sent: 1, whatsapp: false });
+    const n = await prisma.notification.findFirstOrThrow({ where: { creatorId: idle.id, kind: "TEAM_MESSAGE" } });
+    expect(n).toMatchObject({ dedupeKey: `action:${task.key}`, title: "Sentimos sua falta", body: "Oi, Maria! Texto ajustado." });
+    expect((await actionQueue(prisma, a.brand.id, NOW)).some((t) => t.key === task.key)).toBe(false);
+    await expect(sendActionMessages(prisma, ana, a.brand.id, [{ key: task.key, title: "t", text: "x" }], NOW)).rejects.toThrow(/saíram da fila/);
+    expect(await prisma.auditLog.count({ where: { entityId: idle.id, action: "action.sent" } })).toBe(1);
+    expect(await actionsDoneToday(prisma, a.brand.id, NOW)).toBe(1);
   });
 });

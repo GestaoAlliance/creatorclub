@@ -315,6 +315,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-285 — 2026-11-11 — Ações: fila por urgência, progresso do dia e envio pelo WhatsApp da marca (D-ACTIONSBOARD; aguarda OK)
+- Escolhas do responsável: fila única por urgência; mandar pelo WhatsApp da marca uma a uma e para todas de um tipo;
+  prévia editável antes de mandar.
+- Ordem (`actionRank`): contrato vencido → sem assinar → aniversário hoje → perto do mínimo → contrato vencendo → pediu
+  acesso → kit → envio parado → parou de vender → sem post; faixa colorida pelo tom (urgente, atenção, informação).
+- Faixa da marca com quantas na fila e quantas urgentes, anel com o progresso do dia (`actionsDoneToday`) e quadros por
+  tipo que filtram.
+- "Mensagem" abre a prévia (título e texto editáveis só para este envio): "Abrir no meu WhatsApp" (depois pergunta se
+  mandou para marcar feito) ou "Mandar pelo WhatsApp da marca" (`sendActionMessages`: aviso `TEAM_MESSAGE` no portal +
+  WhatsApp da marca, ou e-mail sem WhatsApp; a tarefa vira feita; auditoria `action.sent`; uma vez por tarefa).
+- Com um tipo escolhido: "Mandar para as N", cada uma com a mensagem dela (exemplo antes de confirmar).
+- Pediu acesso leva à aba Cadastro da ficha; envio parado leva a Envios. Sem estouro em 1920–390. Testes em
+  `test/actions.test.ts` e `test/integration/actions.test.ts`. Próxima: OK das capturas → merge → Campanhas.
+
 ### CP-284 — 2026-11-11 — Candidatas: faixa com quadros, painel lateral e modo triagem (D-CANDBOARD; aguarda OK)
 - Escolhas do responsável: painel lateral como na lista; depois de decidir, abre a próxima sozinho; quadros de
   prioridade alta, esperando 7+ dias, por hunter, repetidas, sem assinar e ritmo da equipe.

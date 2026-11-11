@@ -105,3 +105,43 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
 export function whatsappWithText(chatUrl: string, text: string): string {
   return `${chatUrl}?text=${encodeURIComponent(text)}`;
 }
+
+/**
+ * D-ACTIONSBOARD: ordem da fila (menor = mais urgente) e o tom da faixa na linha. Contrato vencido e sem assinar travam
+ * a parceria; perto do mínimo só vale até o fim do mês; o resto pode esperar alguns dias.
+ */
+export function actionRank(f: ActionFacts): { rank: number; tone: "urgent" | "warn" | "info" } {
+  switch (f.kind) {
+    case "CONTRACT":
+      return f.expired ? { rank: 0, tone: "urgent" } : { rank: 30, tone: "warn" };
+    case "UNSIGNED":
+      return { rank: 10, tone: "urgent" };
+    case "NEAR_MIN":
+      return { rank: 20, tone: "warn" };
+    case "BIRTHDAY":
+      return f.days === 0 ? { rank: 15, tone: "warn" } : { rank: 90 + f.days, tone: "info" };
+    case "ACCESS":
+      return { rank: 40, tone: "warn" };
+    case "KIT_PENDING":
+      return { rank: 50, tone: "warn" };
+    case "SHIP_STUCK":
+      return { rank: 55, tone: "warn" };
+    case "IDLE":
+      return { rank: 60, tone: f.contractEnds ? "urgent" : "info" };
+    case "NO_POST":
+      return { rank: 80, tone: "info" };
+  }
+}
+
+/** Título do aviso quando a mensagem sai pelo WhatsApp da marca e pelo portal (a creator lê; editável antes de mandar). */
+export const ACTION_TITLE: Record<ActionKind, string> = {
+  IDLE: "Sentimos sua falta",
+  CONTRACT: "Seu contrato",
+  NEAR_MIN: "Você está quase lá!",
+  KIT_PENDING: "Seu kit está esperando",
+  SHIP_STUCK: "Seu envio",
+  BIRTHDAY: "Feliz aniversário! 🎉",
+  NO_POST: "Registre seus posts",
+  ACCESS: "Seu acesso ao portal",
+  UNSIGNED: "Contrato esperando sua assinatura",
+};
