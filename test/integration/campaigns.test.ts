@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { campaignDetail, createCampaign, joinCampaign, portalCampaigns, publishCampaign, settleCampaign, updateCampaign, type CampaignInput } from "@/lib/campaigns/campaigns";
 import type { PortalContext } from "@/lib/portal/context";
+import { campaignCards, campaignClock, campaignImpact, campaignInvitees, campaignMessage, duplicateCampaign } from "@/lib/campaigns/board";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -81,5 +82,45 @@ describe("campanhas (M4.5, D-CAMPAIGN, banco real)", () => {
     const ctx = { creatorId: creator.id, brand: { id: brand.id }, viewAs: null } as unknown as PortalContext;
     expect(await portalCampaigns(prisma, ctx, T("2026-10-20T00:00:00Z"))).toEqual([]);
     await expect(joinCampaign(prisma, ctx, id, T("2026-10-20T00:00:00Z"))).rejects.toThrow(/não é para o seu perfil/);
+  });
+});
+
+describe("campanhas da equipe: cartões, resultado, recados e duplicar (D-CAMPAIGNBOARD, banco real)", () => {
+  it("público, inscritas, vendas antes x durante, convite só para quem falta, lembrete só para inscritas, duplicar", async () => {
+    const { brand, creator, coupon } = await seedBrand(prisma);
+    const gestao = await staff("GESTAO", brand.id);
+    const acc2 = await prisma.creatorAccount.create({ data: { name: "Bia Lima", email: `${randomUUID()}@x.com`, phone: "(11) 91234-5678" } });
+    const c2 = await prisma.creator.create({ data: { brandId: brand.id, accountId: acc2.id, categories: ["INFLUENCER"] } });
+    const now = new Date();
+    const day = (d: number) => new Date(now.getTime() + d * 86_400_000).toISOString().slice(0, 10);
+    const { id } = await createCampaign(prisma, gestao, brand.id, { ...base, startDay: day(-3), endDay: day(3) });
+    await publishCampaign(prisma, gestao, id, now);
+    await joinCampaign(prisma, { creatorId: creator.id, brand: { id: brand.id }, viewAs: null } as unknown as PortalContext, id, now);
+    const c = await prisma.campaign.findUniqueOrThrow({ where: { id } });
+    const order = async (cents: number, paidAt: Date) => {
+      const o = await prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: "#x", createdAtShop: paidAt, paidAt, financialStatus: "PAID", subtotalCents: cents, totalCents: cents, discountCodes: [], shopifyUpdatedAt: paidAt } });
+      await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: o.id, creatorId: creator.id, couponId: coupon.id, rateBps: 1500, rule: "FIRST_CREATOR_CODE", evidenceCodes: [] } });
+    };
+    await order(20_000, new Date(c.startsAt.getTime() + 3_600_000)); // durante
+    await order(5_000, new Date(c.startsAt.getTime() - 3_600_000)); // antes
+
+    const [card] = await campaignCards(prisma, gestao, brand.id, now);
+    expect(card).toMatchObject({ phase: "RUNNING", entries: 1, audience: 2, salesCents: 20_000 });
+    expect(card!.podium).toHaveLength(1);
+    const impact = await campaignImpact(prisma, c, now);
+    expect(impact).toMatchObject({ periodCents: 20_000, beforeCents: 5_000, sellers: 1, entries: 1, prizesPaid: false, prizesCents: 30_000 });
+    expect((await campaignInvitees(prisma, c)).map((x) => x.id)).toEqual([c2.id]);
+
+    expect(await campaignMessage(prisma, gestao, id, { to: "invite", creatorIds: [c2.id, creator.id], title: "Entra, {nome}", body: "Oi, {nome}!" }, now)).toEqual({ sent: 1, whatsapp: false });
+    const n = await prisma.notification.findFirstOrThrow({ where: { creatorId: c2.id, kind: "TEAM_MESSAGE" } });
+    expect(n).toMatchObject({ title: "Entra, Bia", body: "Oi, Bia!", href: `/portal/${brand.slug}/campanhas` });
+    await expect(campaignMessage(prisma, gestao, id, { to: "entrants", creatorIds: [c2.id], title: "x", body: "y" }, now)).rejects.toThrow(/Nenhuma inscrita/);
+    expect((await campaignMessage(prisma, gestao, id, { to: "entrants", creatorIds: [creator.id], title: "x", body: "y" }, now)).sent).toBe(1);
+    await expect(campaignMessage(prisma, await staff("PAGAMENTO", brand.id), id, { to: "entrants", creatorIds: [creator.id], title: "x", body: "y" }, now)).rejects.toThrow(/permissão/);
+
+    const copy = await duplicateCampaign(prisma, gestao, id);
+    expect(await prisma.campaign.findUniqueOrThrow({ where: { id: copy.id } })).toMatchObject({ name: `${base.name} (cópia)`, publishedAt: null, rankingPrizes: [30_000, 20_000] });
+    await expect(campaignMessage(prisma, gestao, copy.id, { to: "invite", creatorIds: [c2.id], title: "x", body: "y" }, now)).rejects.toThrow(/Publique/);
+    expect(campaignClock({ startsAt: new Date("2026-11-01T03:00:00Z"), endsAt: new Date("2026-11-08T03:00:00Z") }, new Date("2026-11-03T12:00:00Z"))).toEqual({ total: 7, day: 3, toStart: -2, toEnd: 5 });
   });
 });
