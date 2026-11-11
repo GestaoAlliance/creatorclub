@@ -8,6 +8,7 @@ import { scopedActor, staffContext } from "@/lib/staff/context";
 import { dashPeriod, staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
 import { staffHome } from "@/lib/staff/home";
 import { baseHealth, cashflow } from "@/lib/staff/insights";
+import { productReport } from "@/lib/reports/products";
 import { startOfLocalDay, nextDayKey } from "@/domain";
 import { onlyTikTok } from "@/lib/staff/nav";
 
@@ -29,10 +30,11 @@ export default async function BrandHomePage({ searchParams }: { searchParams: Pr
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
   const category = CATEGORIES.find((c) => c === sp.tipo) ?? "";
   const period = dashPeriod(sp, tz);
-  const [d, health, cash] = await Promise.all([
+  const [d, health, cash, products] = await Promise.all([
     staffDashboard(db(), brand.id, period, category),
     baseHealth(db(), brand.id, category, { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) }),
     can(actor.grants, "withdrawals.view", brand.id) ? cashflow(db(), brand.id) : Promise.resolve(null),
+    productReport(db(), brand.id, period, "creators"),
   ]);
-  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} />;
+  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} />;
 }

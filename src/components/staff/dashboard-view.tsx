@@ -9,6 +9,7 @@ import { formatBRL } from "@/domain";
 import { DASH_PRESETS, type DashCategory, type StaffDashboard } from "@/lib/staff/dashboard";
 import type { StaffHome } from "@/lib/staff/home";
 import type { BaseHealth, Cashflow } from "@/lib/staff/insights";
+import type { ProductReport } from "@/lib/reports/products";
 import { HideValuesToggle } from "./hide-values";
 
 const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
@@ -173,6 +174,59 @@ function HealthCard({ h }: { h: BaseHealth }) {
   );
 }
 
+/** D-HOMEINSIGHTS + D-COST: retorno do programa no período (custo dos produtos vindo da Shopify). */
+function ReturnCard({ p, missing }: { p: NonNullable<ProductReport["program"]>; missing: number }) {
+  const invested = p.commissionCents + p.kitsCents + p.freightCents;
+  const ratio = invested > 0 ? p.revenueCents / invested : null;
+  const rows = [
+    { label: "Comissão", v: p.commissionCents },
+    { label: "Produtos enviados às creators", v: p.kitsCents },
+    { label: "Frete dos envios", v: p.freightCents },
+    { label: "Custo dos produtos vendidos", v: p.cogsCents },
+  ];
+  return (
+    <Card title="Retorno do programa">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm">
+          {ratio === null ? (
+            "Sem investimento no período."
+          ) : (
+            <>
+              Cada <strong>R$ 1</strong> investido (comissão, produtos enviados e frete) trouxe{" "}
+              <strong className="text-2xl font-semibold tabular-nums text-brand"><M>R$ {ratio.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}</M></strong> em vendas.
+            </>
+          )}
+        </p>
+        <ul className="flex flex-col gap-1 text-sm">
+          {rows.map((r) => (
+            <li key={r.label} className="flex justify-between gap-3">
+              <span className="text-stone-600 dark:text-stone-300">{r.label}</span>
+              <span className="tabular-nums"><M>{formatBRL(r.v)}</M></span>
+            </li>
+          ))}
+          <li className="mt-1 flex justify-between gap-3 border-t border-stone-200/70 pt-2 font-semibold dark:border-white/10">
+            <span>Lucro do programa</span>
+            <span className={`tabular-nums ${p.profitCents < 0 ? "text-red-700 dark:text-red-300" : "text-brand"}`}><M>{formatBRL(p.profitCents)}</M></span>
+          </li>
+        </ul>
+        {(missing > 0 || p.shipmentsWithoutFreight > 0 || p.kitUnitsWithoutCost > 0) && (
+          <p className={ui.hint}>
+            Conta incompleta:{" "}
+            {[
+              missing > 0 && `${missing} produtos sem custo na Shopify`,
+              p.kitUnitsWithoutCost > 0 && `${p.kitUnitsWithoutCost} unidades enviadas sem custo`,
+              p.shipmentsWithoutFreight > 0 && `${p.shipmentsWithoutFreight} envios sem frete`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            . <Link href="/admin/vendas/produtos" className="underline">Ver detalhes</Link>
+          </p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 /** D-HOMEINSIGHTS: caixa do Pagamento (o que vai sair nas próximas semanas). */
 function CashCard({ c }: { c: Cashflow }) {
   const rows = [
@@ -270,6 +324,8 @@ export function DashboardView({
   brandName,
   health = null,
   cash = null,
+  program = null,
+  productsWithoutCost = 0,
 }: {
   d: StaffDashboard;
   h: StaffHome;
@@ -277,6 +333,8 @@ export function DashboardView({
   brandName: string;
   health?: BaseHealth | null;
   cash?: Cashflow | null;
+  program?: ProductReport["program"];
+  productsWithoutCost?: number;
 }) {
   const k = d.kpis;
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
@@ -315,9 +373,11 @@ export function DashboardView({
         <Stat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>com cupom · ticket <M>{formatBRL(k.units.ticketCents)}</M></>} />
       </div>
 
-      {health && (
-        <div className={`grid gap-6 ${cash ? "xl:grid-cols-[1.6fr_1fr]" : ""}`}>
-          <HealthCard h={health} />
+      {health && <HealthCard h={health} />}
+
+      {(program || cash) && (
+        <div className={`grid gap-6 ${program && cash ? "xl:grid-cols-2" : ""}`}>
+          {program && <ReturnCard p={program} missing={productsWithoutCost} />}
           {cash && <CashCard c={cash} />}
         </div>
       )}
@@ -325,7 +385,7 @@ export function DashboardView({
       {/* Pedido do responsável (2026-10-26): o Início da marca mostra só as vendas de creators (sem a loja inteira). */}
       <Card title="Vendas de creators por dia">
         <div className="money-chart">
-          <SalesChart days={d.days} />
+          <SalesChart days={d.days} previous={d.prevDays} bands={d.campaigns} />
         </div>
       </Card>
 

@@ -77,7 +77,7 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
   const tz = brand.timezone;
   const prev = previousPeriod(period);
-  const [cur, before, activeCreators, storeByStatus] = await Promise.all([
+  const [cur, before, activeCreators, storeByStatus, campaigns] = await Promise.all([
     window(prisma, brandId, period, category, tz),
     window(prisma, brandId, prev, category, tz),
     prisma.creator.count({ where: { brandId, status: "ACTIVE", ...(category ? { categories: { has: category } } : {}) } }),
@@ -92,6 +92,12 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
       ]);
       return { pending, refunded, cancelled };
     })(),
+    // D-HOMEINSIGHTS: campanhas do Creator Club que cruzam o período (faixas no gráfico).
+    prisma.campaign.findMany({
+      where: { brandId, startDay: { lte: period.to }, endDay: { gte: period.from } },
+      select: { id: true, name: true, startDay: true, endDay: true },
+      orderBy: { startDay: "asc" },
+    }),
   ]);
 
   const sum = (w: typeof cur) => w.orders.reduce((s, o) => s + o.subtotalCents, 0);
@@ -110,6 +116,18 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     d.count++;
     d.baseCents += o.subtotalCents;
     d.commissionCents += commissionOf.get(o.id) ?? 0;
+  }
+
+  // D-HOMEINSIGHTS: vendas do período anterior na mesma posição de cada dia (linha tracejada do gráfico).
+  const prevDays: number[] = [];
+  const prevIndex = new Map<string, number>();
+  for (let d = prev.from, i = 0; d <= prev.to; d = nextDayKey(d), i++) {
+    prevIndex.set(d, i);
+    prevDays.push(0);
+  }
+  for (const o of before.orders) {
+    const i = prevIndex.get(dayKey(o.paidAt!, tz));
+    if (i !== undefined) prevDays[i] = (prevDays[i] ?? 0) + o.subtotalCents;
   }
 
   // Top creators do período.
@@ -176,6 +194,8 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     },
     store: { salesCents: cur.store.salesCents, change: change(cur.store.salesCents, before.store.salesCents), paidOrders: cur.store.orders, ...storeByStatus },
     days: [...byDay.values()],
+    prevDays,
+    campaigns,
     topCreators,
     topProducts,
     giftUnits,

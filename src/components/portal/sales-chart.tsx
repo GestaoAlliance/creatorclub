@@ -26,18 +26,41 @@ function niceMax(v: number): number {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * exp;
 }
 
-/** `noCommission`: sem a linha de comissão (UGC, D-UGCPORTAL). */
-export function SalesChart({ days, noCommission = false }: { days: SalesDay[]; noCommission?: boolean }) {
+/**
+ * `noCommission`: sem a linha de comissão (UGC, D-UGCPORTAL). `previous` (D-HOMEINSIGHTS): vendas do período anterior,
+ * dia a dia na mesma posição, em linha tracejada para comparar.
+ */
+export function SalesChart({
+  days,
+  noCommission = false,
+  previous,
+  bands = [],
+}: {
+  days: SalesDay[];
+  noCommission?: boolean;
+  previous?: number[];
+  /** Campanhas do período (faixa clara com o nome em cima). */
+  bands?: { id: string; name: string; startDay: string; endDay: string }[];
+}) {
   const gradient = useId();
   const box = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
-  const max = niceMax(Math.max(...days.map((d) => d.baseCents)));
+  const max = niceMax(Math.max(...days.map((d) => d.baseCents), ...(previous ?? [])));
   const x = (i: number) => (days.length === 1 ? W / 2 : (i / (days.length - 1)) * W);
   const y = (v: number) => PAD_TOP + (1 - v / max) * (H - PAD_TOP);
   const points = days.map((d, i) => [x(i), y(d.baseCents)] as const);
   const line = points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
   const area = `${line} L${W},${H} L0,${H} Z`;
+  const prevLine = previous?.length
+    ? previous.slice(0, days.length).map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")
+    : null;
   const step = Math.max(1, Math.ceil(days.length / 8));
+  const dayIndex = (k: string) => days.findIndex((d) => d.day === k);
+  const spans = bands.map((b) => {
+    const from = b.startDay <= days[0]!.day ? 0 : dayIndex(b.startDay);
+    const to = b.endDay >= days[days.length - 1]!.day ? days.length - 1 : dayIndex(b.endDay);
+    return { ...b, x0: x(Math.max(0, from)), x1: x(Math.max(0, to)) };
+  });
 
   function pick(e: PointerEvent<HTMLDivElement>) {
     const r = box.current!.getBoundingClientRect();
@@ -56,7 +79,14 @@ export function SalesChart({ days, noCommission = false }: { days: SalesDay[]; n
 
   return (
     <figure className="flex flex-col gap-2">
-      <figcaption className="text-xs font-medium uppercase tracking-wide text-stone-500">Vendas por dia</figcaption>
+      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+        Vendas por dia
+        {previous && (
+          <span className="inline-flex items-center gap-1.5 normal-case tracking-normal">
+            <span className="inline-block w-5 border-t-2 border-dashed border-stone-400" /> período anterior
+          </span>
+        )}
+      </figcaption>
       <div className="flex gap-2">
         <div className="flex h-[200px] flex-col justify-between py-0 text-right text-[11px] tabular-nums text-stone-500 md:h-[240px]" aria-hidden>
           <span>{compact(max)}</span>
@@ -82,15 +112,29 @@ export function SalesChart({ days, noCommission = false }: { days: SalesDay[]; n
                 <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
               </linearGradient>
             </defs>
+            {spans.map((b) => (
+              <rect key={b.id} x={b.x0} y={0} width={Math.max(4, b.x1 - b.x0)} height={H} className="fill-amber-300/20 dark:fill-amber-200/10" />
+            ))}
             {[0, 0.5, 1].map((t) => (
               <line key={t} x1="0" x2={W} y1={y(max * t)} y2={y(max * t)} className="stroke-stone-300/70 dark:stroke-white/10" strokeWidth="1" vectorEffect="non-scaling-stroke" />
             ))}
             <path d={area} fill={`url(#${gradient})`} />
+            {prevLine && <path d={prevLine} fill="none" className="stroke-stone-400/80 dark:stroke-white/30" strokeWidth="1.5" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />}
             <path d={line} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             {a && (
               <line x1={x(active!)} x2={x(active!)} y1="0" y2={H} className="stroke-stone-400 dark:stroke-white/40" strokeWidth="1" vectorEffect="non-scaling-stroke" />
             )}
           </svg>
+          {spans.map((b) => (
+            <span
+              key={b.id}
+              className="pointer-events-none absolute top-1 max-w-[30%] truncate rounded-full bg-amber-100/90 px-2 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-900/60 dark:text-amber-100"
+              style={{ left: `${(b.x0 / W) * 100}%` }}
+              title={b.name}
+            >
+              {b.name}
+            </span>
+          ))}
           {a && (
             <>
               <span
@@ -105,6 +149,9 @@ export function SalesChart({ days, noCommission = false }: { days: SalesDay[]; n
                 <p className="flex justify-between gap-4"><span className="text-stone-500">Vendas</span><strong className="tabular-nums">{formatBRL(a.baseCents)}</strong></p>
                 {!noCommission && <p className="flex justify-between gap-4"><span className="text-stone-500">Comissão</span><strong className="tabular-nums">{formatBRL(a.commissionCents)}</strong></p>}
                 <p className="flex justify-between gap-4"><span className="text-stone-500">Pedidos</span><strong className="tabular-nums">{a.count}</strong></p>
+                {previous && previous[active!] !== undefined && (
+                  <p className="flex justify-between gap-4"><span className="text-stone-500">Período anterior</span><span className="tabular-nums">{formatBRL(previous[active!]!)}</span></p>
+                )}
               </div>
             </>
           )}

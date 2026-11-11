@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-279 — 2026-11-11 — Início: retorno do programa e gráfico com período anterior e campanhas (página completa, aguarda OK)
+- Cartão "Retorno do programa" (reaproveita `productReport`, D-COST): vendas por R$ 1 investido (comissão, produtos
+  enviados, frete), custo dos vendidos, lucro do programa e o que falta para a conta (produto sem custo na Shopify,
+  envio sem frete). Hoje faltam custos: Botanika 12 de 21 produtos, Revita e VermeFree todos.
+- Gráfico: linha tracejada do período anterior (`prevDays`) e faixas das campanhas do Creator Club no período.
+- Próximo: OK das capturas e merge do Início; depois os Inícios de Pagamento, Envios e Hunter, e as outras telas.
+
 ### CP-278 — 2026-11-11 — Início: saúde da base, caixa, movimentos e brindes fora do ranking (D-HOMEINSIGHTS; em andamento)
 - `src/lib/staff/insights.ts`: `baseHealth` (candidatas, assinando, vendendo 30d, paradas, nunca venderam, mediana
   até a 1ª venda, 1ª venda no período) e `cashflow` (a liberar, disponível, pedidos, aprovados, preso na abertura).
