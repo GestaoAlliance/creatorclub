@@ -321,6 +321,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 - `src/lib/photos/photos.ts` (`uploadPhoto`, `removePhoto`, `photoFor`), rota `/foto/[creatorId]` (equipe da marca ou creator da mesma marca; senão 404 e ficam as iniciais), ações em `src/app/foto/actions.ts`.
 - `Avatar` (`src/components/ui/avatar.tsx`) com a foto em todas as listas da equipe que mostravam iniciais de creator, na ficha (Gestão troca/tira), no topo do portal (ela troca ou volta para a do Instagram) e no placar das campanhas. `PhotoEditor` para trocar/tirar.
 - Testes: `photo.test.ts`, `integration/photos.test.ts`, placar com o id em `integration/campaigns.test.ts`.
+- Fotos já prontas (pedido do responsável): quem ainda não tem a foto do Instagram ganha uma leitura extra, uma vez por pessoa (tarefa `ig:photo:<conta>`, no ritmo de uma a cada 2 min); se já houve a leitura do dia, ela busca só a foto. Depois do merge, as fotos entram na primeira hora do worker, sem esperar o dia seguinte.
 
 ### CP-307 — 2026-11-12 — Portal: Avisos com o que pede ação, recados da equipe fixados, lista por dia e onde ela recebe (D-PORTALNOTICES; aguarda OK)
 - `src/lib/portal/notices-board.ts` (`portalNoticesBoard`): o que pede ação agora (kit para escolher, saque recusado, janela de saque aberta com saldo, envio a caminho, campanha para participar), recados da equipe ainda não lidos, avisos novos, resumo do mês e onde ela recebe (WhatsApp ou e-mail, mascarado).

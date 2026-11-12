@@ -36,7 +36,7 @@ export async function enqueueDueInstagram(prisma: PrismaClient, now = new Date()
   }
   const accounts = await prisma.creatorAccount.findMany({
     where: { instagram: { not: null }, creators: { some: { status: "ACTIVE", archivedAt: null } } },
-    select: { id: true, instagram: true },
+    select: { id: true, instagram: true, igPhotoUrl: true },
   });
   // Uma leitura a cada 2 min (30 por hora), para ficar longe do limite da Meta (D-IGLIMIT).
   let i = 0;
@@ -44,6 +44,16 @@ export async function enqueueDueInstagram(prisma: PrismaClient, now = new Date()
     if (!usableHandle(a.instagram)) continue;
     const runAt = new Date(now.getTime() + i++ * SPACING_MS);
     if (await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.id }, dedupeKey: `ig:profile:${a.id}:${day}`, runAt, maxAttempts: 6 })) created++;
+  }
+  // D-PHOTO: quem ainda não tem a foto do Instagram ganha uma leitura extra (uma vez por pessoa), para as fotos
+  // aparecerem logo, sem esperar a leitura do dia seguinte. Mesmo ritmo (uma a cada 2 min), depois das do dia.
+  const noPhoto = accounts.filter((a) => usableHandle(a.instagram) && !a.igPhotoUrl);
+  for (const a of noPhoto) {
+    const runAt = new Date(now.getTime() + i * SPACING_MS);
+    if (await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.id, photo: true }, dedupeKey: `ig:photo:${a.id}`, runAt, maxAttempts: 6 })) {
+      created++;
+      i++;
+    }
   }
   return created;
 }
@@ -55,13 +65,21 @@ async function viaBrandIg(prisma: PrismaClient, accountId: string): Promise<stri
   return (await prisma.brand.findFirst({ where: { instagramUserId: { not: null } }, orderBy: { slug: "asc" }, select: { instagramUserId: true } }))?.instagramUserId ?? null;
 }
 
-export async function readProfile(prisma: PrismaClient, accountId: string, fetcher: Fetcher, token: string, now = new Date()): Promise<"OK" | "UNREADABLE" | "SKIPPED"> {
+export async function readProfile(prisma: PrismaClient, accountId: string, fetcher: Fetcher, token: string, now = new Date(), opts: { photo?: boolean } = {}): Promise<"OK" | "UNREADABLE" | "SKIPPED"> {
   const account = await prisma.creatorAccount.findUnique({ where: { id: accountId }, select: { instagram: true } });
   const handle = usableHandle(account?.instagram)?.toLowerCase();
   const brandIg = await viaBrandIg(prisma, accountId);
   if (!handle || !brandIg) return "SKIPPED";
   const day = new Date(`${dayKey(now, TZ)}T00:00:00Z`);
-  if (await prisma.instagramSnapshot.findUnique({ where: { accountId_day: { accountId, day } }, select: { id: true } })) return "SKIPPED";
+  if (await prisma.instagramSnapshot.findUnique({ where: { accountId_day: { accountId, day } }, select: { id: true } })) {
+    // D-PHOTO: leitura extra da foto (uma vez por pessoa): já leu hoje, mas ainda sem foto de perfil: só a foto.
+    if (!opts.photo) return "SKIPPED";
+    const acc = await prisma.creatorAccount.findUnique({ where: { id: accountId }, select: { igPhotoUrl: true } });
+    if (acc?.igPhotoUrl) return "SKIPPED";
+    const p = await discoverProfile(fetcher, token, brandIg, handle);
+    if (p.status === "OK" && p.photoUrl) await prisma.creatorAccount.update({ where: { id: accountId }, data: { igPhotoUrl: p.photoUrl } });
+    return p.status === "OK" ? "OK" : "UNREADABLE";
+  }
   const d = await discoverProfile(fetcher, token, brandIg, handle);
   if (d.status === "UNREADABLE") {
     await prisma.instagramSnapshot.create({ data: { accountId, day, handle, status: "UNREADABLE" } });
@@ -97,10 +115,10 @@ export function instagramHandlers(prisma: PrismaClient, fetcher: Fetcher = realF
   };
   return {
     [INSTAGRAM_PROFILE_JOB]: async (job) => {
-      const accountId = (job.payload as { accountId?: string } | null)?.accountId;
+      const { accountId, photo } = (job.payload as { accountId?: string; photo?: boolean } | null) ?? {};
       if (!accountId) throw new Error("Tarefa sem pessoa.");
       try {
-        await readProfile(prisma, accountId, fetcher, token());
+        await readProfile(prisma, accountId, fetcher, token(), new Date(), { photo: Boolean(photo) });
       } catch (e) {
         if (!isRateLimit(e)) throw e;
         // D-IGLIMIT: limite da Meta estourou; as leituras que faltam esperam 1 hora junto com esta.
