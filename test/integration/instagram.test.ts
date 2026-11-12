@@ -95,6 +95,16 @@ describe("Instagram (D-INSTAGRAM, banco real)", () => {
     expect(await enqueueDueInstagram(prisma, NOW, { META_SYSTEM_TOKEN: "x" })).toBe(0);
     // D-PHOTO: sem foto do Instagram, uma leitura extra (uma vez por pessoa).
     expect(await prisma.job.count({ where: { type: INSTAGRAM_PROFILE_JOB, dedupeKey: `ig:photo:${s.account.id}` } })).toBe(1);
+    // A da foto fica depois da última leitura que falta; com as do dia já feitas, começa na hora.
+    const lastDaily = await prisma.job.findFirstOrThrow({ where: { type: INSTAGRAM_PROFILE_JOB, status: "PENDING", dedupeKey: { startsWith: "ig:profile:" } }, orderBy: { runAt: "desc" } });
+    const photo = await prisma.job.findUniqueOrThrow({ where: { dedupeKey: `ig:photo:${s.account.id}` } });
+    expect(photo.runAt.getTime()).toBeGreaterThan(lastDaily.runAt.getTime());
+    await prisma.job.updateMany({ where: { type: INSTAGRAM_PROFILE_JOB, status: "PENDING" }, data: { status: "DONE" } });
+    const late = await world(`late${randomUUID().slice(0, 6)}`);
+    await enqueueDueInstagram(prisma, NOW, { META_SYSTEM_TOKEN: "x" });
+    const first = await prisma.job.findUniqueOrThrow({ where: { dedupeKey: `ig:profile:${late.account.id}:2026-10-28` } });
+    const latePhoto = await prisma.job.findUniqueOrThrow({ where: { dedupeKey: `ig:photo:${late.account.id}` } });
+    expect(latePhoto.runAt.getTime() - first.runAt.getTime()).toBe(120_000);
   });
 
   it("D-PHOTO: guarda a foto de perfil; já lido hoje sem foto, lê só a foto", async () => {

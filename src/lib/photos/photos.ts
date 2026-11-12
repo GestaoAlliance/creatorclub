@@ -16,7 +16,7 @@ export class PhotoError extends Error {}
 export const PHOTO_BUCKET = "fotos";
 
 export type PhotoWho = { kind: "creator"; ctx: PortalContext; userId: string } | { kind: "staff"; actor: Actor | null };
-export type PhotoStore = { put: (path: string, bytes: Uint8Array) => Promise<void>; signedUrl: (path: string) => Promise<string | null> };
+export type PhotoStore = { put: (path: string, bytes: Uint8Array) => Promise<void>; signedUrl: (path: string) => Promise<string | null>; signedUrls: (paths: string[]) => Promise<Map<string, string>> };
 
 /** Storage real (bucket privado criado na primeira vez). */
 export function supabasePhotoStore(): PhotoStore {
@@ -34,6 +34,11 @@ export function supabasePhotoStore(): PhotoStore {
     signedUrl: async (path) => {
       const { data } = await (await admin()).storage.from(PHOTO_BUCKET).createSignedUrl(path, 3600);
       return data?.signedUrl ?? null;
+    },
+    signedUrls: async (paths) => {
+      if (!paths.length) return new Map();
+      const { data } = await (await admin()).storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+      return new Map((data ?? []).filter((d) => d.path && d.signedUrl).map((d) => [d.path!, d.signedUrl]));
     },
   };
 }
@@ -88,4 +93,23 @@ export async function photoFor(prisma: PrismaClient, actor: Actor | null, creato
   if (src === "UPLOAD") return store.signedUrl(c.account.photoPath!);
   if (src === "INSTAGRAM") return c.account.igPhotoUrl;
   return null;
+}
+
+/**
+ * Várias fotos de uma vez (D-PHOTO): a tela pede todas as fotos dela num pedido só (uma consulta ao banco e um link
+ * assinado em lote), em vez de um pedido por foto. Só devolve as que a pessoa pode ver; até 200 por vez.
+ */
+export async function photosFor(prisma: PrismaClient, actor: Actor | null, creatorIds: readonly string[], store: Pick<PhotoStore, "signedUrls">): Promise<Record<string, string | null>> {
+  const ids = [...new Set(creatorIds)].slice(0, 200);
+  const out: Record<string, string | null> = Object.fromEntries(ids.map((id) => [id, null]));
+  if (!actor || !ids.length) return out;
+  const rows = await prisma.creator.findMany({ where: { id: { in: ids } }, select: { id: true, brandId: true, account: { select: { photoPath: true, igPhotoUrl: true, photoHidden: true } } } });
+  const allowed = rows.filter((c) => can(actor.grants, "creators.view", c.brandId) || actor.creatorIds[c.brandId]);
+  const uploads = allowed.filter((c) => photoSource(c.account) === "UPLOAD").map((c) => c.account.photoPath!);
+  const signed = await store.signedUrls(uploads);
+  for (const c of allowed) {
+    const src = photoSource(c.account);
+    out[c.id] = src === "UPLOAD" ? (signed.get(c.account.photoPath!) ?? null) : src === "INSTAGRAM" ? c.account.igPhotoUrl : null;
+  }
+  return out;
 }
