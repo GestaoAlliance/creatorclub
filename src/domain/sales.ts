@@ -31,19 +31,35 @@ export function saleStatus(o: { financialStatus: string; cancelledAt: Date | nul
 /** Cupom do pedido como o sistema o conhece (null = o código não está cadastrado na marca). */
 export type SaleCoupon = { code: string; kind: "CREATOR" | "PROMO" | null } | null;
 
+/** D-SALESREVIEW: o tipo do motivo (para os quadros da conferência). */
+export type SaleReasonKind = "creator" | "nocode" | "untyped" | "noowner" | "promo" | "unknown";
+
+export function saleReasonKind(p: { creatorCoupon: string | null; codes: readonly string[]; coupons: readonly SaleCoupon[] }): SaleReasonKind {
+  if (p.creatorCoupon) return "creator";
+  if (p.codes.length === 0) return "nocode";
+  const known = p.coupons.filter((c): c is NonNullable<SaleCoupon> => c !== null);
+  if (known.some((c) => c.kind === null)) return "untyped";
+  if (known.some((c) => c.kind === "CREATOR")) return "noowner";
+  if (known.length && known.every((c) => c.kind === "PROMO")) return "promo";
+  return "unknown";
+}
+
+const REASON_TEXT: Record<Exclude<SaleReasonKind, "creator">, string> = {
+  nocode: "sem cupom",
+  untyped: "cupom ainda sem tipo (a Ana classifica em Cupons)",
+  noowner: "cupom de creator sem dona na data da venda",
+  promo: "cupom da marca (PROMO): não vai para creator",
+  unknown: "cupom fora do sistema",
+};
+
 /**
  * Por que a venda está (ou não) com uma creator, em uma frase para a equipe. Com dona: o cupom que levou. Sem dona:
  * o motivo do primeiro cupom que explica (PROMO nunca atribui; cupom sem tipo espera a Ana; cupom de creator sem dona
  * na data; código fora do sistema).
  */
 export function saleReason(p: { creatorCoupon: string | null; codes: readonly string[]; coupons: readonly SaleCoupon[] }): string {
-  if (p.creatorCoupon) return `cupom de creator ${p.creatorCoupon}`;
-  if (p.codes.length === 0) return "sem cupom";
-  const known = p.coupons.filter((c): c is NonNullable<SaleCoupon> => c !== null);
-  if (known.some((c) => c.kind === null)) return "cupom ainda sem tipo (a Ana classifica em Cupons)";
-  if (known.some((c) => c.kind === "CREATOR")) return "cupom de creator sem dona na data da venda";
-  if (known.length && known.every((c) => c.kind === "PROMO")) return "cupom da marca (PROMO): não vai para creator";
-  return "cupom fora do sistema";
+  const k = saleReasonKind(p);
+  return k === "creator" ? `cupom de creator ${p.creatorCoupon}` : REASON_TEXT[k];
 }
 
 /** Uma célula de CSV (separador ";" para abrir direto no Excel em português). */
