@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-306 — 2026-11-12 — Portal: Meus posts com resumo do mês, colar e pronto, o que mais vende, campeões, ideias e lista por mês (D-PORTALPOSTS; aguarda OK)
+- `src/lib/portal/posts-board.ts` (`portalPostsBoard`): posts registrados + detectados no Instagram (@ do cadastro), sem repetir o mesmo post; cada post com **comissão** e pedidos nos 3 dias e o normal em comissão (o total vendido não aparece).
+- `posts-view.tsx`: faixa (posts no mês, último post, melhor post, sequência e as últimas 8 semanas; aviso amarelo com 7+ dias sem postar e comissão das semanas com post x sem post), registrar com reconhecimento da rede, aviso de post repetido e dia do TikTok pelo link; "O que mais vende para você" (formato e dia), 3 campeões, ideias da semana; lista compacta por mês (mês atual aberto; toque abre link, curtidas, acima do normal e tirar).
+- Domínio `portal-posts.ts`: `postFormat`, `igShortcode`, `postInsights`, `weekStart`, `weekStreak`, `postingWeeks`, `postIdeas`, `tiktokDay`. Testes em `portal-posts.test.ts` e `integration/portal-posts.test.ts`.
+
 ### CP-305 — 2026-11-12 — Portal: Campanhas com faixa da campanha da vez, grupos por momento, posts e aviso de campanha nova (D-PORTALCAMPAIGN; aguarda OK)
 - `campaigns-view.tsx` refeito: faixa (campanha acontecendo, de preferência a dela; senão a próxima) com contagem regressiva, posição, quanto falta para passar quem está acima, barra da meta, subiu/caiu desde ontem e compartilhar o cupom; quadro "Você já ganhou R$ X em campanhas"; Acontecendo agora / Em breve / Encerradas (uma linha, abre com placar).
 - Cartão: briefing recolhido em 3 linhas com "Ler tudo" e links em botões; posts dela na campanha e "Registrar post" ali mesmo.
