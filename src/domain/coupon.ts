@@ -28,3 +28,29 @@ export function validateNewCouponCode(
   if (code.length > NEW_COUPON_MAX_LENGTH) return { ok: false, error: "LONGO_DEMAIS" };
   return { ok: true, code };
 }
+
+const letters = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z]/g, "");
+
+/**
+ * D-COUPONBOARD: sugere a dona de um cupom pelo código (ex.: VICTORIA10 → Victoria; CAROLFIT → @carolfit). Compara só
+ * as letras do código com o @ do Instagram/TikTok, o nome inteiro, nome + sobrenome e o primeiro nome (com 4+ letras).
+ * Só sugere quando uma creator só bate no melhor nível; empate ou nada = null (a Ana escolhe).
+ */
+export function suggestOwner<T extends { id: string; name: string; instagram?: string | null; tiktok?: string | null }>(code: string, creators: readonly T[]): T | null {
+  const c = letters(code);
+  if (c.length < 3) return null;
+  const score = (x: T): number => {
+    const handles = [x.instagram, x.tiktok].map((h) => letters(h ?? "")).filter((h) => h.length >= 3);
+    if (handles.some((h) => h === c || (c.startsWith(h) && h.length >= 5))) return 4;
+    const words = x.name.trim().split(/\s+/).map(letters).filter(Boolean);
+    if (letters(x.name) === c) return 3;
+    if (words.length >= 2 && (words[0]! + words.at(-1)! === c || words[0]! + words[1]! === c)) return 3;
+    if (words[0] && words[0].length >= 4 && (c === words[0] || c.startsWith(words[0]))) return 2;
+    if (words[0] && words[0].length >= 4 && words[0].startsWith(c) && c.length >= 4) return 1;
+    return 0;
+  };
+  const scored = creators.map((x) => ({ x, s: score(x) })).filter((y) => y.s > 0);
+  const best = Math.max(0, ...scored.map((y) => y.s));
+  const top = scored.filter((y) => y.s === best);
+  return top.length === 1 ? top[0]!.x : null;
+}

@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-292 — 2026-11-12 — Cupons: faixa com progresso, conferência em cartões com sugestão de dona, PROMO em lote, parados e sem cupom (D-COUPONBOARD; aguarda OK)
+- `src/lib/coupons/board.ts`: `couponBoard` (pedidos, vendas, 30 dias, primeiro/último uso, comissão parada, parado,
+  sugestão), `confirmOwnerAndRate` (classifica como CREATOR, confirma dona e a comissão a confirmar),
+  `classifyManyPromo` (só os sem tipo). `suggestOwner` em `src/domain/coupon.ts`.
+- Tela `/admin/cupons` refeita: faixa com anel e cinco quadros que trocam a lista, busca, cartões A conferir com
+  `OwnerQuick` ("É da X" num clique, outra creator, desde, comissão) e PROMO; barra "Marcar N como PROMO"; lista De
+  creator/Parados com comissão, desconto, pedidos, 30 dias e último uso (chips por comissão); Promocionais com
+  "Trocar tipo"; Sem cupom com link para a ficha. Tutorial `cp-*` atualizado.
+- Testes: unidade de `suggestOwner`; integração `coupon-board.test.ts`. Capturas em 6 larguras sem estouro.
+- Próxima: Desempenho (só Instagram, origem e UGC).
+
 ### CP-291 — 2026-11-12 — Produtos: ranking com foto, tendência, estoque, painel do produto; foto em todos os rankings (D-PRODUCTBOARD, D-PRODUCTTHUMB; aguarda OK)
 - Pedido do responsável: a miniatura do produto (como no dash da Botanika) em todos os rankings, das três marcas.
   `Product.imageUrl` (migração `20261126090000_product_image`, trava `Product_image_url`: só https) vem da foto em
