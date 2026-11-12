@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-298 — 2026-11-12 — Portal: Vendas com faixa, comparação, posts no gráfico, lista por dia, produtos, melhor horário e clientes novas (D-PORTALSALES; aguarda OK)
+- `src/lib/portal/sales-extras.ts` (`portalSalesExtras`); `sales-view.tsx` refeita (faixa com o período, lista por dia com
+  detalhe do pedido, `DayGroups`). Posts retirados não contam também no Início (`motivation.ts`).
+- Teste de integração em `portal-home.test.ts`.
+- Próxima: portal, tela Saque.
+
 ### CP-297 — 2026-11-12 — Portal: Início com meta do mês, compartilhar, próximos passos, dica, próximo kit, conquistas e posição (D-PORTALHOME; aguarda OK)
 - `src/domain/portal-home.ts` (`achievements`, `longestMonthStreak`, `rankBand`, `dailyTip`); `src/lib/portal/motivation.ts`
   (`portalHomeExtras`); `src/components/portal/home-parts.tsx` (`HomeHero`, `NextSteps`, `DailyTip`, `NextKit`,
