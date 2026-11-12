@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { MANUAL_ORIGIN_KINDS, originFromApplication, originKey, UNKNOWN_ORIGIN, type Origin, type OriginKind } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
@@ -72,23 +72,38 @@ export type OriginSummaryRow = {
   active: number;
   salesCents: number;
   sellers: number;
+  /** D-PERFBOARD: média de dias da entrada (cadastro da creator) até a 1ª venda paga; só quem vendeu depois de entrar. */
+  daysToFirstSale: number | null;
+  /** Quantas entram na média acima. */
+  firstSales: number;
 };
 
 /** Resumo por origem (aba Origem do Desempenho): inscritas, aprovadas, ativas e vendas do mês. */
 export async function originSummary(prisma: PrismaClient, actor: Actor | null, brandId: string, salesByCreator: ReadonlyMap<string, number>): Promise<OriginSummaryRow[]> {
   if (!actor || !can(actor.grants, "performance.view", brandId)) throw new OriginError("Sem permissão.");
   const [creators, apps] = await Promise.all([
-    prisma.creator.findMany({ where: { brandId, archivedAt: null }, select: { id: true, status: true } }),
+    prisma.creator.findMany({ where: { brandId, archivedAt: null }, select: { id: true, status: true, createdAt: true } }),
     prisma.creatorApplication.findMany({
       where: { brandId },
       select: { source: true, submittedAt: true, status: true, campaignTag: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
     }),
   ]);
-  const origins = await originsFor(prisma, creators.map((c) => c.id));
+  const [origins, firsts] = await Promise.all([
+    originsFor(prisma, creators.map((c) => c.id)),
+    // 1ª venda paga (não cancelada, não teste) de cada creator.
+    prisma.$queryRaw<{ creatorId: string; first: Date }[]>(Prisma.sql`
+      SELECT a."creatorId", MIN(o."paidAt") AS first
+      FROM "OrderAttribution" a JOIN "Order" o ON o.id = a."orderId"
+      WHERE a."brandId" = ${brandId} AND o."paidAt" IS NOT NULL AND o."cancelledAt" IS NULL AND o.test = false
+        AND o."financialStatus" IN ('PAID', 'PARTIALLY_REFUNDED')
+      GROUP BY a."creatorId"`),
+  ]);
+  const firstOf = new Map(firsts.map((f) => [f.creatorId, f.first]));
+  const daysSum = new Map<string, number>();
   const rows = new Map<string, OriginSummaryRow>();
   const row = (o: Pick<Origin, "kind" | "hunter" | "campaign">) => {
     const key = originKey(o);
-    if (!rows.has(key)) rows.set(key, { key, origin: { kind: o.kind, hunter: o.hunter, campaign: o.campaign ?? null }, applications: 0, approved: 0, active: 0, salesCents: 0, sellers: 0 });
+    if (!rows.has(key)) rows.set(key, { key, origin: { kind: o.kind, hunter: o.hunter, campaign: o.campaign ?? null }, applications: 0, approved: 0, active: 0, salesCents: 0, sellers: 0, daysToFirstSale: null, firstSales: 0 });
     return rows.get(key)!;
   };
   for (const a of apps) {
@@ -102,7 +117,14 @@ export async function originSummary(prisma: PrismaClient, actor: Actor | null, b
     const sales = salesByCreator.get(c.id) ?? 0;
     r.salesCents += sales;
     if (sales > 0) r.sellers++;
+    // Importadas trazem vendas de antes do cadastro: essas não entram na média.
+    const first = firstOf.get(c.id);
+    if (first && first >= c.createdAt) {
+      r.firstSales++;
+      daysSum.set(r.key, (daysSum.get(r.key) ?? 0) + (first.getTime() - c.createdAt.getTime()) / 86_400_000);
+    }
   }
+  for (const r of rows.values()) if (r.firstSales) r.daysToFirstSale = Math.round(daysSum.get(r.key)! / r.firstSales);
   return [...rows.values()].sort((a, b) => b.salesCents - a.salesCents || b.active - a.active || b.applications - a.applications);
 }
 
