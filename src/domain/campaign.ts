@@ -64,3 +64,50 @@ export function parseMoneyCents(raw: string): number | null {
 
 /** Primeiro nome (o placar do portal mostra só ele, D-CAMPAIGN). */
 export const firstNameOf = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+
+/**
+ * Contagem regressiva do portal (D-PORTALCAMPAIGN): "começa em 3 dias", "começa amanhã", "termina em 2 dias e 5 h",
+ * "termina em 5 h", "termina em menos de 1 h"; null depois do fim.
+ */
+export function campaignCountdown(now: Date, startsAt: Date, endsAt: Date): string | null {
+  const H = 3_600_000;
+  if (now < startsAt) {
+    const h = Math.ceil((startsAt.getTime() - now.getTime()) / H);
+    if (h <= 24) return h <= 1 ? "começa em menos de 1 h" : `começa em ${h} h`;
+    const d = Math.max(1, Math.round(h / 24));
+    return d === 1 ? "começa amanhã" : `começa em ${d} dias`;
+  }
+  if (now >= endsAt) return null;
+  const h = Math.floor((endsAt.getTime() - now.getTime()) / H);
+  if (h < 1) return "termina em menos de 1 h";
+  const d = Math.floor(h / 24);
+  const rest = h % 24;
+  if (!d) return `termina em ${h} h`;
+  return `termina em ${d} ${d === 1 ? "dia" : "dias"}${rest ? ` e ${rest} h` : ""}`;
+}
+
+/** Briefing do portal: cada link vira o nome do site no texto (o link vai para os botões, sem repetir). */
+export function briefingParts(text: string): { text: string; links: { url: string; label: string }[] } {
+  const links: { url: string; label: string }[] = [];
+  const clean = text.replace(/https?:\/\/[^\s)]+/g, (raw) => {
+    const url = raw.replace(/[.,;:!?]+$/, "");
+    let label = url;
+    try {
+      label = new URL(url).hostname.replace(/^www\./, "");
+    } catch {}
+    if (!links.some((l) => l.url === url)) links.push({ url, label });
+    return label + raw.slice(url.length);
+  });
+  return { text: clean.trim(), links };
+}
+
+/** Subiu (positivo) ou caiu (negativo) no placar desde ontem; null sem comparação. */
+export const placeMove = (before: number | null, now: number): number | null => (before === null ? null : before - now);
+
+/** Texto dos prêmios para o aviso de campanha nova: "Prêmios: 1º R$ 500,00, 2º R$ 300,00. Meta: R$ 3.000,00 = R$ 100,00." */
+export function campaignPrizeText(rankingPrizes: readonly number[], goalCents: number | null, goalPrizeCents: number | null, fmt: (c: number) => string): string {
+  const parts: string[] = [];
+  if (rankingPrizes.length) parts.push(`Prêmios: ${rankingPrizes.map((p, i) => `${i + 1}º ${fmt(p)}`).join(", ")}.`);
+  if (goalCents && goalPrizeCents) parts.push(`Vendeu ${fmt(goalCents)}? Ganha ${fmt(goalPrizeCents)}.`);
+  return parts.join(" ");
+}

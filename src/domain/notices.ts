@@ -24,7 +24,9 @@ export type NoticeKind =
   | "SHIPMENT_DELIVERED"
   | "RECEIPT_CHECK"
   /** D-BULKMSG: mensagem que a equipe escreve para várias creators de uma vez. */
-  | "TEAM_MESSAGE";
+  | "TEAM_MESSAGE"
+  /** D-PORTALCAMPAIGN: a equipe publicou uma campanha para o público dela. */
+  | "CAMPAIGN_NEW";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -170,5 +172,13 @@ export const notices = {
     title: "Parabéns, sua primeira venda!",
     body: "Alguém comprou com o seu cupom. Acompanhe suas vendas e a sua comissão em Vendas.",
     path: "/vendas",
+  }),
+  /** D-PORTALCAMPAIGN: campanha publicada (uma vez por campanha); portal, WhatsApp ou e-mail como os outros avisos. */
+  campaignNew: (campaignId: string, name: string, startDay: string, endDay: string, prizes: string): Notice => ({
+    kind: "CAMPAIGN_NEW",
+    dedupeKey: `campaign:${campaignId}`,
+    title: `Nova campanha: ${name}`,
+    body: `De ${startDay.slice(8, 10)}/${startDay.slice(5, 7)} a ${endDay.slice(8, 10)}/${endDay.slice(5, 7)}. ${prizes} Veja o briefing e toque em "Quero participar".`,
+    path: "/campanhas",
   }),
 };

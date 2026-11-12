@@ -21,6 +21,7 @@ export async function addMyPostAction(_p: PostState, f: FormData): Promise<PostS
     throw error;
   }
   revalidatePath(`/portal/${marca}/posts`);
+  revalidatePath(`/portal/${marca}/campanhas`); // D-PORTALCAMPAIGN: post registrado no cartão da campanha
   return { ok: "Post registrado. Em 3 dias você vê as vendas que vieram depois dele." };
 }
 
@@ -36,5 +37,6 @@ export async function removeMyPostAction(_p: PostState, f: FormData): Promise<Po
     throw error;
   }
   revalidatePath(`/portal/${marca}/posts`);
+  revalidatePath(`/portal/${marca}/campanhas`);
   return { ok: "Post tirado." };
 }
