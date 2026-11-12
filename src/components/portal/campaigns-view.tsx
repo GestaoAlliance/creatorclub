@@ -7,6 +7,7 @@ import { addMyPostAction } from "@/app/portal/[marca]/posts/actions";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
 import { briefingParts, formatBRL, shortBRL, type CampaignPhase } from "@/domain";
+import { Avatar } from "@/components/ui/avatar";
 import { ShareButton } from "./share-button";
 
 export type PortalCampaign = {
@@ -23,7 +24,7 @@ export type PortalCampaign = {
   joined: boolean;
   canJoin: boolean;
   participants: number;
-  top: { position: number; name: string; me: boolean }[];
+  top: { position: number; name: string; me: boolean; id: string }[];
   me: { position: number; move: number | null; salesCents: number | null; toAboveCents: number | null; toGoalCents: number | null } | null;
   prizes: { amountCents: number; kind: string; position: number | null }[];
   posts: { id: string; url: string; postedDay: string }[];
@@ -203,8 +204,10 @@ function Board({ c }: { c: PortalCampaign }) {
       <GoalBar c={c} />
       <ol className="flex flex-col gap-1 text-sm">
         {c.top.map((t) => (
-          <li key={t.position} className={`flex gap-2 ${t.me ? "font-semibold" : ""}`}>
-            <span className="w-7 tabular-nums text-stone-500">{t.position}º</span> {t.me ? "Você" : t.name}
+          <li key={t.position} className={`flex items-center gap-2 ${t.me ? "font-semibold" : ""}`}>
+            <span className="w-7 tabular-nums text-stone-500">{t.position}º</span>
+            <Avatar name={t.name} id={t.id} size="sm" />
+            {t.me ? "Você" : t.name}
           </li>
         ))}
       </ol>

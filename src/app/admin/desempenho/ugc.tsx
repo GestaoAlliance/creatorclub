@@ -79,7 +79,7 @@ export function UgcView({ cards, canEdit }: { cards: UgcCard[]; canEdit: boolean
           onClose={() => setOpen(null)}
           header={
             <span className="flex items-center gap-3">
-              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.name} size="lg" /></span>
+              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.name} id={open.id} size="lg" /></span>
               <span className="min-w-0">
                 <span className="block truncate text-lg font-semibold leading-tight">{open.name}</span>
                 <span className="block text-xs text-white/80">{open.cycle.count} de {open.cycle.goal} vídeos · {status(open).text}</span>

@@ -29,7 +29,7 @@ export type GraphPost = {
   permalink: string;
 };
 
-export type Discovery = { status: "OK"; followers: number; mediaCount: number; posts: GraphPost[] } | { status: "UNREADABLE" };
+export type Discovery = { status: "OK"; followers: number; mediaCount: number; photoUrl: string | null; posts: GraphPost[] } | { status: "UNREADABLE" };
 
 type RawMedia = {
   id?: string;
@@ -68,9 +68,9 @@ async function call(fetcher: Fetcher, url: string): Promise<{ data?: unknown; er
 
 /** Perfil da creator: seguidores e últimos posts. Perfil pessoal, privado ou inexistente: UNREADABLE. */
 export async function discoverProfile(fetcher: Fetcher, token: string, brandIgId: string, handle: string): Promise<Discovery> {
-  const fields = `business_discovery.username(${handle}){followers_count,media_count,media.limit(${POSTS_PER_READ}){id,timestamp,media_type,media_product_type,like_count,comments_count,caption,permalink}}`;
+  const fields = `business_discovery.username(${handle}){followers_count,media_count,profile_picture_url,media.limit(${POSTS_PER_READ}){id,timestamp,media_type,media_product_type,like_count,comments_count,caption,permalink}}`;
   const body = (await call(fetcher, `${BASE}/${brandIgId}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`)) as {
-    business_discovery?: { followers_count?: number; media_count?: number; media?: { data?: RawMedia[] } };
+    business_discovery?: { followers_count?: number; media_count?: number; profile_picture_url?: string; media?: { data?: RawMedia[] } };
     error?: { code?: number; error_subcode?: number; message?: string };
   };
   if (body.error) {
@@ -86,6 +86,8 @@ export async function discoverProfile(fetcher: Fetcher, token: string, brandIgId
     status: "OK",
     followers: d.followers_count,
     mediaCount: d.media_count ?? 0,
+    // D-PHOTO: foto de perfil (link do Instagram, renovado a cada leitura).
+    photoUrl: typeof d.profile_picture_url === "string" && /^https:\/\//.test(d.profile_picture_url) && d.profile_picture_url.length <= 2000 ? d.profile_picture_url : null,
     posts: (d.media?.data ?? []).map(toPost).filter((p): p is GraphPost => p !== null),
   };
 }

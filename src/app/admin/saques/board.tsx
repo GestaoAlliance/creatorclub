@@ -151,7 +151,7 @@ export function SaquesQueue({ rows, tab }: { rows: QRow[]; tab: Tab }) {
             <li key={r.id} className={`flex items-center gap-3 px-4 py-3 transition @3xl:px-5 ${openId === r.id ? "bg-brand/8" : "hover:bg-stone-500/5"}`}>
               {r.canPay && <span className="shrink-0" onClick={(e) => e.stopPropagation()}><BatchCheck withdrawalId={r.id} cents={r.amountCents} name={r.name} /></span>}
               <button type="button" onClick={() => setOpenId(r.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                <Avatar name={r.name} />
+                <Avatar name={r.name} id={r.creatorId} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{r.name}</span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -176,7 +176,7 @@ export function SaquesQueue({ rows, tab }: { rows: QRow[]; tab: Tab }) {
           onClose={() => setOpenId(null)}
           header={
             <span className="flex items-center gap-3">
-              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.name} size="lg" /></span>
+              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.name} id={open.creatorId} size="lg" /></span>
               <span className="min-w-0">
                 <span className="block truncate text-lg font-semibold leading-tight">{open.name}</span>
                 <span className="block text-2xl font-semibold tabular-nums"><M>{formatBRL(open.amountCents)}</M></span>

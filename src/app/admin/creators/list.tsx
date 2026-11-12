@@ -373,7 +373,7 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
                 return (
                   <li key={c.id} id={`cr-${c.id}`} onClick={rowClick(c.id)} className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${openId === c.id ? "bg-brand/8" : ""}`}>
                     {p.canEdit && <input type="checkbox" checked={picked.has(c.id)} onChange={() => toggle(c.id)} aria-label={`Marcar ${c.name}`} className="size-4 shrink-0 accent-[var(--brand)]" />}
-                    <Avatar name={c.name} />
+                    <Avatar name={c.name} id={c.id} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="truncate font-medium">{c.name}</Link>
@@ -430,7 +430,7 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
                         )}
                         <td className={p.canEdit ? "" : "!pl-5"}>
                           <div className="flex min-w-0 items-center gap-3">
-                            <Avatar name={c.name} />
+                            <Avatar name={c.name} id={c.id} />
                             <div className="min-w-0">
                               <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="block max-w-64 truncate font-medium hover:underline">{c.name}</Link>
                               <span className="flex items-center gap-2 text-xs text-stone-500">

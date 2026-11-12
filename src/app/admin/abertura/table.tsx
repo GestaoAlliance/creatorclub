@@ -78,7 +78,7 @@ export function OpeningBoard({ rows, brandName }: { rows: OpeningRow[]; brandNam
               return (
                 <li key={r.creatorId} className="liquid-tile flex min-w-0 flex-col gap-4 rounded-3xl p-4 md:p-5">
                   <div className="flex items-center gap-3">
-                    <Avatar name={r.name} />
+                    <Avatar name={r.name} id={r.creatorId} />
                     <span className="min-w-0 flex-1">
                       <Link href={`/admin/creators/${r.creatorId}`} className="block truncate font-semibold hover:underline">{r.name}</Link>
                       <span className="block text-xs text-stone-500">{r.paid ? "comprovantes registrados" : "sem comprovantes registrados"}{r.ready ? " · números conferidos" : ""}</span>

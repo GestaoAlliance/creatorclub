@@ -115,7 +115,7 @@ export function InstagramView({ data, now, canEdit }: { data: Data; now: Date; c
               <li key={r.creatorId}>
                 <button type="button" onClick={() => setOpen(r)} className="liquid-tile flex w-full flex-col gap-3 rounded-3xl p-4 text-left transition hover:-translate-y-0.5">
                   <span className="flex items-center gap-3">
-                    <span className="relative"><Avatar name={r.name} /><span className="absolute -bottom-1 -right-1 rounded-full bg-white px-1 text-[10px] font-bold tabular-nums text-stone-700 shadow dark:bg-stone-800 dark:text-stone-200">{i + 1}</span></span>
+                    <span className="relative"><Avatar name={r.name} id={r.creatorId} /><span className="absolute -bottom-1 -right-1 rounded-full bg-white px-1 text-[10px] font-bold tabular-nums text-stone-700 shadow dark:bg-stone-800 dark:text-stone-200">{i + 1}</span></span>
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{r.name}</span>
                       <span className="block truncate text-xs text-stone-500">@{r.handle}</span>

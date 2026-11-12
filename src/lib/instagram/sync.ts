@@ -69,6 +69,7 @@ export async function readProfile(prisma: PrismaClient, accountId: string, fetch
   }
   await prisma.$transaction(async (tx) => {
     await tx.instagramSnapshot.create({ data: { accountId, day, handle, status: "OK", followers: d.followers, mediaCount: d.mediaCount } });
+    if (d.photoUrl) await tx.creatorAccount.update({ where: { id: accountId }, data: { igPhotoUrl: d.photoUrl } });
     for (const p of d.posts) {
       const data = { postedAt: p.postedAt, mediaType: p.mediaType, productType: p.productType, likes: p.likes, comments: p.comments, caption: p.caption, permalink: p.permalink };
       await tx.instagramPost.upsert({ where: { id: p.id }, create: { id: p.id, accountId, ...data }, update: data });

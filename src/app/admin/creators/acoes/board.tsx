@@ -203,7 +203,7 @@ export function ActionsBoard({ tasks, doneToday, brandName, canSend, whatsappOn 
             {shown.map((t) => (
               <li key={t.key} style={{ boxShadow: `inset 3px 0 0 ${TONE_BAR[t.tone]}` }} className={`flex flex-col gap-3 px-4 py-3.5 md:px-5 ${open === t.key ? "bg-brand/5" : ""}`}>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Avatar name={t.name} />
+                  <Avatar name={t.name} id={t.creatorId} />
                   <div className="min-w-[12rem] flex-1">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Link href={`/admin/creators/${t.creatorId}`} className="font-medium hover:underline">{t.name}</Link>

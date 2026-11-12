@@ -266,7 +266,8 @@ export async function portalCampaigns(prisma: PrismaClient, ctx: PortalContext, 
         canJoin: !joined && me.status === "ACTIVE" && now < c.endsAt && !ctx.viewAs,
         participants: standings.length,
         // Placar: posição e primeiro nome das 10 primeiras, sem valores das outras (D-CAMPAIGN).
-        top: standings.slice(0, CAMPAIGN_TOP).map((s) => ({ position: s.position, name: firstNameOf(s.name), me: s.creatorId === ctx.creatorId })),
+        // D-PHOTO: o id serve só para a foto (a rota /foto confere que ela é da mesma marca).
+        top: standings.slice(0, CAMPAIGN_TOP).map((s) => ({ position: s.position, name: firstNameOf(s.name), me: s.creatorId === ctx.creatorId, id: s.creatorId })),
         me: mine
           ? {
               position: mine.position,

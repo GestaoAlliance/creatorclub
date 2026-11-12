@@ -160,7 +160,7 @@ export function ShipQueue({ rows, canPrint, emptyText }: { rows: ShipRow[]; canP
                 <input type="checkbox" checked={picked.has(s.id)} onChange={() => setPicked((p) => { const n = new Set(p); if (n.has(s.id)) n.delete(s.id); else n.add(s.id); return n; })} aria-label={`Marcar ${s.creator.name}`} className="size-4 shrink-0 accent-[var(--brand)]" />
               )}
               <button type="button" onClick={() => setOpenId(s.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                <Avatar name={s.creator.name} />
+                <Avatar name={s.creator.name} id={s.creator.id} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{s.creator.name}</span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -187,7 +187,7 @@ export function ShipQueue({ rows, canPrint, emptyText }: { rows: ShipRow[]; canP
           onClose={() => setOpenId(null)}
           header={
             <span className="flex items-center gap-3">
-              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.creator.name} size="lg" /></span>
+              <span className="rounded-full ring-2 ring-white/60"><Avatar name={open.creator.name} id={open.creator.id} size="lg" /></span>
               <span className="min-w-0">
                 <span className="block truncate text-lg font-semibold leading-tight">{open.creator.name}</span>
                 <span className="block text-xs text-white/80">{LABEL[open.status]}{open.kitLabel ? ` · ${open.kitLabel}` : ""} · {idx + 1} de {rows.length}</span>

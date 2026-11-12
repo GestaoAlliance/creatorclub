@@ -135,6 +135,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
         coupon={mainCoupon?.code ?? null}
         link={mainCoupon ? `${linkBase}${mainCoupon.code}` : null}
         canViewAs={p.canViewAs}
+        canEditPhoto={p.canEdit}
         tiles={tiles}
       />
 
