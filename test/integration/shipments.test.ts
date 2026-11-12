@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
+import { shipmentBoard } from "@/lib/shipments/board";
 import {
   cancelShipment,
   confirmReceived,
@@ -239,5 +240,33 @@ describe("envios de produtos (banco real)", () => {
     await markDeliveredByStaff(prisma, s.envio, a);
     const delivered = await prisma.notification.findFirstOrThrow({ where: { creatorId: s.creator.id, kind: "SHIPMENT_DELIVERED" } });
     expect(delivered.body).toContain(`seu cupom ${s.coupon.code}`);
+  });
+});
+
+describe("tela de Envios (D-SHIPBOARD, banco real)", () => {
+  it("contagens, atrasados no Olist, produtos do mês com frete e o contexto do próximo kit", async () => {
+    const s = await setup();
+    const now = new Date("2026-11-12T15:00:00Z");
+    const base = { brandId: s.brand.id, creatorId: s.creator.id, address: {}, createdById: "x" };
+    const old = await prisma.shipment.create({ data: { ...base, createdAt: new Date("2026-11-05T12:00:00Z") } });
+    const err = await prisma.shipment.create({ data: { ...base, createdAt: new Date("2026-11-12T10:00:00Z"), olistError: "produto sem SKU" } });
+    await prisma.shipment.create({ data: { ...base, createdAt: new Date("2026-11-12T11:00:00Z") } }); // recente, sem erro: não atrasa
+    const sent = await prisma.shipment.create({
+      data: { ...base, status: "SHIPPED", shippedAt: new Date("2026-11-03T12:00:00Z"), shippedById: "x", carrier: "Correios", trackingCode: "AA123456789BR", freightCents: 2_350, createdAt: new Date("2026-11-01T12:00:00Z") },
+    });
+    await prisma.shipmentItem.createMany({ data: [{ brandId: s.brand.id, shipmentId: sent.id, productId: s.whey.id, title: "Whey", quantity: 2 }, { brandId: s.brand.id, shipmentId: sent.id, productId: s.creatina.id, title: "Creatina", quantity: 1 }] });
+    await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "MONTHLY", month: "2026-10", salesCents: 100_000, products: 3 } });
+
+    const b = await shipmentBoard(prisma, s.envio, s.brand.id, [s.creator.id], now);
+    expect(b.counts).toMatchObject({ preparing: 3, shipped: 1, stale: 0, awaiting: 0 });
+    expect(b.olistLate.map((o) => o.id)).toEqual([old.id, err.id]);
+    expect(b.olistLate[1]!.reason).toMatch(/produto sem SKU/);
+    expect(b.month).toMatchObject({ units: 3, freightCents: 2_350, shipments: 1 });
+    expect(b.month.products.map((p) => [p.title, p.units])).toEqual([["Whey", 2], ["Creatina", 1]]);
+    expect(b.context.get(s.creator.id)).toMatchObject({ total: 4, openCount: 3, pendingKits: [{ label: "kit do mês", products: 3 }] });
+    expect(b.context.get(s.creator.id)!.lastSentAt?.toISOString()).toBe("2026-11-03T12:00:00.000Z");
+
+    const outra = await setup();
+    await expect(shipmentBoard(prisma, outra.envio, s.brand.id, [], now)).rejects.toThrow(/permissão/);
   });
 });
