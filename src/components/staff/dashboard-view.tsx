@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { ProductThumb } from "@/components/ui/product-thumb";
 import type { CSSProperties, ReactNode } from "react";
 import { SalesChart } from "@/components/portal/sales-chart";
 import { needsFor } from "@/lib/staff/needs";
@@ -446,15 +447,16 @@ export function DashboardView({
               {d.topProducts.map((p, i) => (
                 <li key={p.title} className="flex flex-col gap-1">
                   <span className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate">
-                      <span className="mr-2 tabular-nums text-stone-400">{i + 1}</span>
-                      <span className="font-medium">{p.title}</span>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span className="w-4 shrink-0 text-right tabular-nums text-stone-400">{i + 1}</span>
+                      <ProductThumb src={p.image} title={p.title} />
+                      <span className="truncate font-medium">{p.title}</span>
                     </span>
                     <span className="shrink-0 tabular-nums">
                       {p.units} un. <span className="text-xs text-stone-500">· <M>{formatBRL(p.salesCents)}</M></span>
                     </span>
                   </span>
-                  <span className="h-1.5 overflow-hidden rounded-full bg-stone-300/40 dark:bg-white/10">
+                  <span className="ml-[3.25rem] h-1.5 overflow-hidden rounded-full bg-stone-300/40 dark:bg-white/10">
                     <span className="block h-full rounded-full bg-brand" style={{ width: `${(p.units / maxUnits) * 100}%` }} />
                   </span>
                 </li>

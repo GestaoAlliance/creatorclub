@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { productImages } from "@/lib/reports/product-images";
 import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleReason, saleReasonKind, saleStatus, startOfLocalDay, type SaleReasonKind, type SaleStatus } from "@/domain";
 
 /**
@@ -222,7 +223,7 @@ export async function orderDetail(prisma: PrismaClient, brandId: string, orderId
     select: {
       ...SELECT,
       shopifyId: true,
-      lines: { select: { title: true, quantity: true, discountedTotalCents: true } },
+      lines: { select: { title: true, quantity: true, discountedTotalCents: true, productShopifyId: true } },
       attribution: { select: { creatorId: true, rateBps: true, rule: true, evidenceCodes: true, decidedAt: true, coupon: { select: { code: true } }, creator: { select: { account: { select: { name: true } } } } } },
     },
   });
@@ -233,10 +234,11 @@ export async function orderDetail(prisma: PrismaClient, brandId: string, orderId
     prisma.brandIntegration.findFirst({ where: { brandId, kind: "SHOPIFY" }, select: { externalId: true } }),
   ]);
   const numeric = o.shopifyId.split("/").pop();
+  const imageOf = await productImages(prisma, brandId);
   return {
     ...row!,
     cancelledAt: o.cancelledAt,
-    lines: o.lines,
+    lines: o.lines.map((l) => ({ title: l.title, quantity: l.quantity, discountedTotalCents: l.discountedTotalCents, image: imageOf(l.title, l.productShopifyId) })),
     evidence: o.attribution?.evidenceCodes ?? [],
     decidedAt: o.attribution?.decidedAt ?? null,
     ledger,

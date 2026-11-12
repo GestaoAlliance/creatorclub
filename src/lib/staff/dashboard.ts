@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { addDaysKey, dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, startOfLocalDay } from "@/domain";
 import type { SalesDay } from "@/lib/portal/sales";
+import { productImages } from "@/lib/reports/product-images";
 
 /**
  * Dashboard do Início (M0.0.4, modelo da referência): vendas de creators no período com a comparação com o período
@@ -170,7 +171,8 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
   const lines = ids.length
     ? await prisma.orderLine.groupBy({ by: ["title"], where: { brandId, orderId: { in: ids } }, _sum: { quantity: true, discountedTotalCents: true }, _count: { orderId: true } })
     : [];
-  const allProducts = lines.map((l) => ({ title: l.title, units: l._sum.quantity ?? 0, salesCents: l._sum.discountedTotalCents ?? 0, orders: l._count.orderId }));
+  const imageOf = await productImages(prisma, brandId);
+  const allProducts = lines.map((l) => ({ title: l.title, units: l._sum.quantity ?? 0, salesCents: l._sum.discountedTotalCents ?? 0, orders: l._count.orderId, image: imageOf(l.title) }));
   // D-HOMEINSIGHTS: brinde (linha sem valor) não entra no ranking; aparece só o total de unidades.
   const topProducts = allProducts
     .filter((p) => p.salesCents > 0)

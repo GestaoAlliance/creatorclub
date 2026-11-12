@@ -92,3 +92,29 @@ describe("produtos e custo (M3.2, D-COST, banco real)", () => {
     expect(() => freightToCents("-3")).toThrow(/Frete inválido/);
   });
 });
+
+describe("tela Produtos (D-PRODUCTBOARD, banco real)", () => {
+  it("período anterior, tendência, estoque acabando, quem não vendeu e o painel do produto", async () => {
+    const { previousPeriod, productBoard, productDetail } = await import("@/lib/reports/product-board");
+    expect(previousPeriod({ from: "2026-11-01", to: "2026-11-10" })).toEqual({ from: "2026-10-22", to: "2026-10-31", preset: "" });
+    const { brand, creator, coupon } = await seedBrand(prisma);
+    const sh = (n: string) => `gid://shopify/Product/${n}${randomUUID().slice(0, 4)}`;
+    const p1 = await prisma.product.create({ data: { brandId: brand.id, shopifyId: sh("1"), title: "Sérum", priceCents: 10_000, costCents: 3_000, stockQty: 2, imageUrl: "https://cdn.shopify.com/s.png" } });
+    await prisma.product.create({ data: { brandId: brand.id, shopifyId: sh("2"), title: "Óleo", stockQty: 50 } });
+    const sale = async (paidAt: string, qty: number) => {
+      const o = await prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: "#x", createdAtShop: new Date(paidAt), paidAt: new Date(paidAt), financialStatus: "PAID", subtotalCents: qty * 10_000, totalCents: qty * 10_000, discountCodes: [], shopifyUpdatedAt: new Date(paidAt) } });
+      await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: o.id, creatorId: creator.id, couponId: coupon.id, rateBps: 1000, rule: "first", evidenceCodes: [] } });
+      await prisma.orderLine.create({ data: { brandId: brand.id, orderId: o.id, shopifyId: randomUUID(), title: "Sérum", quantity: qty, discountedTotalCents: qty * 10_000, productShopifyId: p1.shopifyId } });
+    };
+    await sale("2026-11-05T15:00:00Z", 4); // no período
+    await sale("2026-10-25T15:00:00Z", 1); // período anterior
+    const period = { from: "2026-11-01", to: "2026-11-10", preset: "" };
+    const b = await productBoard(prisma, brand.id, period, "creators");
+    expect(b.rows[0]).toMatchObject({ title: "Sérum", units: 4, prevUnits: 1, trend: { dir: "up", pct: 300 }, image: "https://cdn.shopify.com/s.png", stockQty: 2, coverDays: 5, lowStock: true });
+    expect(b.idle.map((x) => x.title)).toEqual(["Óleo"]);
+    expect(b.rising.map((x) => x.title)).toEqual(["Sérum"]);
+    const d = await productDetail(prisma, brand.id, p1.id, period, "creators");
+    expect(d).toMatchObject({ title: "Sérum", units: 4, cents: 40_000, priceCents: 10_000, costCents: 3_000, stockQty: 2 });
+    expect(d!.creators).toEqual([{ id: creator.id, name: expect.any(String), units: 4, cents: 40_000 }]);
+  });
+});

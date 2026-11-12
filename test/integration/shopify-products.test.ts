@@ -10,7 +10,7 @@ const prisma = testClient();
 afterAll(() => prisma.$disconnect());
 
 /** Shopify falso: devolve as páginas de produtos na ordem. */
-function fakeShopify(pages: Array<Array<{ id: string; title: string; status: string }>>) {
+function fakeShopify(pages: Array<Array<{ id: string; title: string; status: string; featuredMedia?: unknown }>>) {
   const calls: Array<Record<string, unknown>> = [];
   const client = {
     shop: "x.myshopify.com",
@@ -58,5 +58,19 @@ describe("catálogo da loja (banco real)", () => {
     await prisma.user.create({ data: { id: sa, email: `${sa}@x.com`, name: "S", roleGrants: { create: { role: "SUPER_ADMIN", brandId: null } } } });
     expect(await requestProductSync(prisma, await loadActor(prisma, sa), brand.id, now)).toBe(true);
     expect(await requestProductSync(prisma, await loadActor(prisma, sa), brand.id, now)).toBe(false);
+  });
+});
+
+describe("foto do produto (D-PRODUCTTHUMB, banco real)", () => {
+  it("guarda a foto em destaque (só https), atualiza quando muda e a trava do banco recusa link sem https", async () => {
+    const { brand } = await seedBrand(prisma);
+    const a = gid(7);
+    const img = (url: string | null) => ({ preview: { image: url ? { url } : null } });
+    await syncProducts(prisma, brand.id, fakeShopify([[{ id: a, title: "Sérum", status: "ACTIVE", featuredMedia: img("https://cdn.shopify.com/a_240x240.png") }]]).client);
+    expect((await prisma.product.findFirstOrThrow({ where: { brandId: brand.id, shopifyId: a } })).imageUrl).toBe("https://cdn.shopify.com/a_240x240.png");
+    expect(await syncProducts(prisma, brand.id, fakeShopify([[{ id: a, title: "Sérum", status: "ACTIVE", featuredMedia: img("http://inseguro/a.png") }]]).client)).toMatchObject({ updated: 1 });
+    expect((await prisma.product.findFirstOrThrow({ where: { brandId: brand.id, shopifyId: a } })).imageUrl).toBeNull();
+    const { expectDbError } = await import("./fixtures");
+    await expectDbError(prisma.product.updateMany({ where: { brandId: brand.id, shopifyId: a }, data: { imageUrl: "http://x" } }), /Product_image_url/);
   });
 });

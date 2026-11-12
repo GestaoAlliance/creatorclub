@@ -124,7 +124,7 @@ describe("ficha: resumo (D-CREATORFILE, banco real)", () => {
     const r = await creatorInsights(prisma, gestao, creator.id, now);
     expect(r.money!.months).toHaveLength(12);
     expect(r.money!.months.at(-1)!.cents + r.money!.months.at(-2)!.cents).toBe(30_000);
-    expect(r.money!.products).toEqual([{ title: "Sérum", quantity: 2, cents: 20_000 }]);
+    expect(r.money!.products).toEqual([{ title: "Sérum", quantity: 2, cents: 20_000, image: null }]);
     expect(r.money!.compare).toEqual({ sales30Cents: 30_000, averageCents: 20_000, rank: 1, active: 2 });
     expect(r.money!.opening).toEqual({ approved: false, paidCents: 12_345, note: "Pix" });
     expect(r.shipment).toBeNull();

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { nextDayKey, PAID_FINANCIAL, startOfLocalDay } from "@/domain";
+import { nextDayKey, PAID_FINANCIAL, productPhoto, startOfLocalDay } from "@/domain";
 import type { DashPeriod } from "@/lib/staff/dashboard";
 
 /**
@@ -21,11 +21,13 @@ export type ProductRow = {
   unitCostCents: number | null;
   costCents: number | null;
   marginCents: number | null;
+  /** D-PRODUCTTHUMB: foto do produto (Shopify ou catálogo local). */
+  image: string | null;
 };
 
 const norm = (s: string) => s.trim().toLowerCase();
 
-type CostProduct = { id: string; shopifyId: string; title: string; costCents: number | null };
+type CostProduct = { id: string; shopifyId: string; title: string; costCents: number | null; imageUrl?: string | null };
 
 /** Produto de cada linha do pedido: pelo id da Shopify; linhas antigas (sem id) pelo nome. */
 export function productResolver(products: readonly CostProduct[]) {
@@ -35,7 +37,7 @@ export function productResolver(products: readonly CostProduct[]) {
 }
 
 export async function productReport(prisma: PrismaClient, brandId: string, period: DashPeriod, scope: ProductScope = "creators") {
-  const { timezone: tz } = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
+  const { timezone: tz, slug } = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, slug: true } });
   const gte = startOfLocalDay(period.from, tz);
   const lt = startOfLocalDay(nextDayKey(period.to), tz);
   const orders = await prisma.order.findMany({
@@ -54,7 +56,7 @@ export async function productReport(prisma: PrismaClient, brandId: string, perio
     ids.length
       ? prisma.orderLine.findMany({ where: { brandId, orderId: { in: ids } }, select: { orderId: true, title: true, quantity: true, discountedTotalCents: true, productShopifyId: true } })
       : [],
-    prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, costCents: true } }),
+    prisma.product.findMany({ where: { brandId }, select: { id: true, shopifyId: true, title: true, costCents: true, imageUrl: true } }),
     ids.length && scope === "creators"
       ? prisma.ledgerEntry.aggregate({ where: { brandId, orderId: { in: ids }, type: { in: ["COMMISSION", "REVERSAL"] } }, _sum: { amountCents: true } })
       : null,
@@ -81,6 +83,7 @@ export async function productReport(prisma: PrismaClient, brandId: string, perio
       unitCostCents: product?.costCents ?? null,
       costCents: null,
       marginCents: null,
+      image: product?.imageUrl ?? productPhoto(slug, product?.title ?? l.title),
       orderIds: new Set<string>(),
     };
     row.units += l.quantity;

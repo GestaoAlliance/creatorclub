@@ -315,6 +315,24 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-291 — 2026-11-12 — Produtos: ranking com foto, tendência, estoque, painel do produto; foto em todos os rankings (D-PRODUCTBOARD, D-PRODUCTTHUMB; aguarda OK)
+- Pedido do responsável: a miniatura do produto (como no dash da Botanika) em todos os rankings, das três marcas.
+  `Product.imageUrl` (migração `20261126090000_product_image`, trava `Product_image_url`: só https) vem da foto em
+  destaque da Shopify de cada marca no catálogo diário (`featuredMedia`, 240 px); sem foto, a foto local do catálogo e
+  depois a inicial (`ProductThumb`). Aplicado no Início (top produtos), em Produtos, na ficha ("O que ela mais vende")
+  e no painel do pedido em Vendas. Em produção, as fotos chegam no próximo catálogo (diário) ou em Configurações →
+  Shopify → "Atualizar catálogo".
+- Produtos (`productBoard`): faixa da marca (com cupom × loja inteira, período, esconder valores) com receita e unidades
+  contra o período anterior do mesmo tamanho, lucro do programa e "atenção" (acabando + sem custo). Ranking com posição,
+  foto, nome, unidades com a seta, faturamento com barra e margem colorida (verde ≥ 60%, âmbar ≥ 35%, vermelha);
+  estoque do Olist e "~N dias" quando acaba em até 15 dias no ritmo do período; brindes fora do ranking (o custo segue
+  no lucro). Clique abre o painel (`productDetail`): preço, custo, margem, estoque, unidades em 12 semanas e as creators
+  que mais vendem o produto.
+- Coluna: subindo e caindo (unidades antes → agora), acabando no estoque, lucro do programa (conta aberta) e os
+  produtos ativos que não venderam no período (extra sugerido no "que mais?").
+- Sem estouro em 1920–390. Testes em `test/integration/product-cost.test.ts` e `shopify-products.test.ts`. Próxima: OK
+  das capturas → merge → Cupons.
+
 ### CP-290 — 2026-11-12 — Vendas vira a conferência dos pedidos (D-SALESREVIEW; aguarda OK)
 - Pedido do responsável: o Início já tem os números de vendas; a aba Vendas não deve repetir. Saem os 4 números, o
   gráfico por dia e o ranking de creators (estão no Início).
