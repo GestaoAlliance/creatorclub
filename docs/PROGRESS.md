@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-297 — 2026-11-12 — Portal: Início com meta do mês, compartilhar, próximos passos, dica, próximo kit, conquistas e posição (D-PORTALHOME; aguarda OK)
+- `src/domain/portal-home.ts` (`achievements`, `longestMonthStreak`, `rankBand`, `dailyTip`); `src/lib/portal/motivation.ts`
+  (`portalHomeExtras`); `src/components/portal/home-parts.tsx` (`HomeHero`, `NextSteps`, `DailyTip`, `NextKit`,
+  `Achievements`); `home-view.tsx` e a página do Início reorganizados (campanha logo depois da faixa; perguntas com âncora).
+- Testes: `portal-home.test.ts` (unidade e integração).
+- Próxima: portal, tela Vendas.
+
 ### CP-296 — 2026-11-12 — Configurações: faixa de saúde, Marca em seções, Equipe com painel, histórico, prévia do termo e contrato (D-SETTINGSBOARD; aguarda OK)
 - `src/lib/settings/health.ts` (`settingsHealth`, `brandChecklist`, `recentChanges`, `HISTORY_ACTIONS`);
   `src/components/staff/settings-hero.tsx` (`SettingsHero`, `HistoryCard`); `src/domain/settings.ts` (nomes das

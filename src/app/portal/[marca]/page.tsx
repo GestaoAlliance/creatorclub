@@ -7,6 +7,7 @@ import { MotherAsk } from "@/components/portal/mother-ask";
 import { TiktokAsk } from "@/components/portal/tiktok-ask";
 import { InstallCard, InstallModal } from "@/components/portal/install-app";
 import { db } from "@/lib/db";
+import { portalHomeExtras } from "@/lib/portal/motivation";
 import { currentPortalContext } from "@/lib/portal/current";
 import { portalCoupons } from "@/lib/portal/coupons";
 import { portalSummary } from "@/lib/portal/home";
@@ -21,12 +22,14 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
   const base = `/portal/${ctx.brand.slug}`;
-  const [summary, kit, account, coupons] = await Promise.all([
+  const [summary, kit, account, coupons, extras] = await Promise.all([
     portalSummary(db(), ctx),
     // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
     db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
     db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { contractFileId: true, receivesAsIndividual: true, account: { select: { tiktok: true, birthDate: true, motherName: true } } } }).then((c) => ({ ...c.account, contractFileId: c.contractFileId, receivesAsIndividual: c.receivesAsIndividual })),
     portalCoupons(db(), ctx),
+    // D-PORTALHOME: próximos passos, dica do dia, próximo kit, conquistas e faixa de posição.
+    portalHomeExtras(db(), ctx),
   ]);
   // M4.5 (D-CAMPAIGN): campanha aberta (em breve ou acontecendo) aparece no Início.
   const open = (await portalCampaigns(db(), ctx)).filter((c) => c.phase === "SOON" || c.phase === "RUNNING");
@@ -38,9 +41,7 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
       {/* D-INSTALLAPP: portal na tela de início (cartão até ela fechar; aviso uma vez, depois do tutorial). */}
       {!ctx.viewAs && <InstallCard brandName={ctx.brand.name} base={base} />}
       {!ctx.viewAs && <InstallModal brandName={ctx.brand.name} base={base} />}
-      {!account.tiktok && <TiktokAsk marca={ctx.brand.slug} />}
-      {/* M4.2 (D-TAGS): aniversário, enquanto não informado. */}
-      {open.length > 0 && (
+      <HomeView top={open.length > 0 && (
         <Link href={`${base}/campanhas`} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
           <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"><Trophy className="size-4" /></span>
           <span className="min-w-0 flex-1">
@@ -48,7 +49,10 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
             <span className="text-sm text-stone-600 dark:text-stone-300">{open.some((c) => c.canJoin) ? "Veja os prêmios e participe →" : "Veja o seu lugar no placar →"}</span>
           </span>
         </Link>
-      )}
+      )} s={summary} base={base} ugc={ctx.ugcOnly} extras={extras} brandSlug={ctx.brand.slug} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
+      <div className="flex flex-col gap-4 md:gap-6">
+      {!account.tiktok && <div id="pergunta-tiktok" className="scroll-mt-24"><TiktokAsk marca={ctx.brand.slug} /></div>}
+      {/* M4.2 (D-TAGS): aniversário, enquanto não informado. */}
       {/* M4.6 (D-POSTS): atalho para registrar o post. */}
       <Link href={`${base}/posts`} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
         <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><Megaphone className="size-4" /></span>
@@ -68,9 +72,9 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
         </a>
       )}
       {/* D-ALELOCARD: pessoa física sem o nome da mãe (cartão Alelo). */}
-      {account.receivesAsIndividual && !account.motherName && <MotherAsk marca={ctx.brand.slug} />}
-      {!account.birthDate && <BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} />}
-      <HomeView s={summary} base={base} ugc={ctx.ugcOnly} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
+      {account.receivesAsIndividual && !account.motherName && <div id="pergunta-mae" className="scroll-mt-24"><MotherAsk marca={ctx.brand.slug} /></div>}
+      {!account.birthDate && <div id="pergunta-aniversario" className="scroll-mt-24"><BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} /></div>}
+      </div>
     </div>
   );
 }
