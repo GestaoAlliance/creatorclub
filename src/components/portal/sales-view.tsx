@@ -48,14 +48,21 @@ function dayLabel(key: string, today: string) {
  * vende, melhor dia e horário e clientes novas. `noCommission`: UGC, sem taxa e comissão (D-UGCPORTAL). */
 export function SalesView({ page, base, noCommission = false, extras, today }: { page: SalesPage; base: string; noCommission?: boolean; extras: Extras; today: string }) {
   const { totals } = page;
-  const prevTotal = extras.previous.reduce((a, b) => a + b, 0);
-  const delta = prevTotal > 0 ? Math.round(((totals.baseCents - prevTotal) / prevTotal) * 100) : null;
-  const kpis: { k: string; label: string; v: React.ReactNode }[] = [
-    { k: "vendas", label: "Vendas", v: <M>{shortBRL(totals.baseCents)}</M> },
-    ...(noCommission ? [] : [{ k: "comissao", label: "Comissão", v: <M>{shortBRL(totals.commissionCents)}</M> }]),
-    { k: "pedidos", label: "Pedidos", v: String(totals.count) },
-    { k: "ticket", label: "Ticket médio", v: <M>{shortBRL(totals.ticketCents)}</M> },
-  ];
+  // D-PORTALSALES: a faixa mostra a comissão (o total de vendas não aparece; cada pedido segue com venda × %). UGC, sem
+  // comissão, continua vendo as vendas.
+  const prevSeries = noCommission ? extras.previous : extras.previousCommission;
+  const prevTotal = prevSeries.reduce((a, b) => a + b, 0);
+  const mainCents = noCommission ? totals.baseCents : totals.commissionCents;
+  const delta = prevTotal > 0 ? Math.round(((mainCents - prevTotal) / prevTotal) * 100) : null;
+  const kpis: { k: string; label: string; v: React.ReactNode }[] = noCommission
+    ? [
+        { k: "pedidos", label: "Pedidos", v: String(totals.count) },
+        { k: "ticket", label: "Ticket médio", v: <M>{shortBRL(totals.ticketCents)}</M> },
+      ]
+    : [
+        { k: "pedidos", label: "Pedidos", v: String(totals.count) },
+        { k: "porpedido", label: "Comissão por pedido", v: <M>{totals.count ? formatBRL(Math.round(totals.commissionCents / totals.count)) : "—"}</M> },
+      ];
   const groups = new Map<string, Sale[]>();
   for (const sale of page.sales) {
     const k = sale.paidAt.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
@@ -72,8 +79,8 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
           <PeriodPicker page={page} base={base} />
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/75">Suas vendas</p>
-              <p className="text-3xl font-semibold tabular-nums md:text-4xl"><M>{formatBRL(totals.baseCents)}</M></p>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/75">{noCommission ? "Suas vendas" : "Sua comissão"}</p>
+              <p className="text-3xl font-semibold tabular-nums md:text-4xl"><M>{formatBRL(mainCents)}</M></p>
             </div>
             {delta !== null && (
               <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${delta >= 0 ? "bg-emerald-400/25" : "bg-red-400/25"}`}>
@@ -81,7 +88,7 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
               </span>
             )}
           </div>
-          <div className={`grid gap-2 ${noCommission ? "grid-cols-3" : "grid-cols-2 @lg:grid-cols-4"}`}>
+          <div className="grid grid-cols-2 gap-2">
             {kpis.map((t) => (
               <div key={t.k} className="frost-tile flex min-w-0 flex-col rounded-2xl px-3 py-2.5 text-stone-900 dark:text-white">
                 <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300">{t.label}</span>
@@ -96,7 +103,7 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
       {page.days.length > 1 && (
         <section data-tour="vendas-grafico" className="glass relative rounded-3xl p-4 md:p-5">
           <HelpTip id="vendas-grafico" className="absolute right-2 top-2 z-10" />
-          <SalesChart days={page.days} noCommission={noCommission} previous={extras.previous} bands={extras.postDays.map((d) => ({ id: d, name: "Post", startDay: d, endDay: d }))} />
+          <SalesChart days={page.days} noCommission={noCommission} metric={noCommission ? "sales" : "commission"} previous={prevSeries} bands={extras.postDays.map((d) => ({ id: d, name: "Post", startDay: d, endDay: d }))} />
           <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-stone-500">
             <span><span className="mr-1 inline-block h-0.5 w-4 border-t-2 border-dashed border-stone-400 align-middle" />período anterior</span>
             {extras.postDays.length > 0 && <span><span className="mr-1 inline-block size-2.5 rounded-sm bg-brand/25 align-middle" />dia em que você postou</span>}
@@ -150,7 +157,7 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
             <div key={dk} className="glass overflow-hidden rounded-3xl">
               <div className="flex items-baseline justify-between gap-2 px-4 pb-1 pt-3">
                 <h3 className="text-sm font-semibold">{dayLabel(dk, today)}</h3>
-                <span className="text-xs text-stone-500">{list.length} {list.length === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(list.reduce((a, x) => a + x.baseCents, 0))}</M></span>
+                <span className="text-xs text-stone-500">{list.length} {list.length === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(list.reduce((a, x) => a + (noCommission ? x.baseCents : x.commissionCents), 0))}</M>{noCommission ? "" : " de comissão"}</span>
               </div>
               <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
                 {list.map((x) => {

@@ -67,12 +67,12 @@ export const HELP = {
   },
   "vendas-resumo": {
     title: "Resumo do período",
-    text: "Pedidos, valor vendido, sua comissão e o ticket médio (quanto cada pessoa gastou, em média).",
+    text: "Sua comissão no período, comparada com o período anterior, e quantos pedidos saíram com o seu cupom.",
     ugcText: "Pedidos, valor vendido e o ticket médio (quanto cada pessoa gastou, em média).",
   },
   "vendas-grafico": {
-    title: "Vendas por dia",
-    text: "Suas vendas dia a dia. Compare os dias em que você postou com os outros e descubra o que mais funciona.",
+    title: "Dia a dia",
+    text: "Sua comissão dia a dia (ou vendas, na UGC). Os dias em que você postou ficam marcados: compare e descubra o que mais funciona.",
   },
   "vendas-lista": {
     title: "Seus pedidos",

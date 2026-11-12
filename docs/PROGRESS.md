@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-299 — 2026-11-12 — Portal Vendas: comissão em destaque no lugar do total de vendas (D-PORTALCOMMISSION; aguarda OK)
+- Faixa com "Sua comissão" e comparação em comissão; quadros pedidos e comissão por pedido; `SalesChart` ganhou
+  `metric` (comissão por dia no portal); `previousCommission` em `portalSalesExtras`; total do dia em comissão.
+- Textos do tutorial `vendas-resumo` e `vendas-grafico` atualizados.
+- Próxima: portal, tela Saque.
+
 ### CP-298 — 2026-11-12 — Portal: Vendas com faixa, comparação, posts no gráfico, lista por dia, produtos, melhor horário e clientes novas (D-PORTALSALES; aguarda OK)
 - `src/lib/portal/sales-extras.ts` (`portalSalesExtras`); `sales-view.tsx` refeita (faixa com o período, lista por dia com
   detalhe do pedido, `DayGroups`). Posts retirados não contam também no Início (`motivation.ts`).

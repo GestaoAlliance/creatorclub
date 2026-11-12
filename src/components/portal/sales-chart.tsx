@@ -35,20 +35,24 @@ export function SalesChart({
   noCommission = false,
   previous,
   bands = [],
+  metric = "sales",
 }: {
   days: SalesDay[];
   noCommission?: boolean;
   previous?: number[];
   /** Campanhas do período (faixa clara com o nome em cima). */
   bands?: { id: string; name: string; startDay: string; endDay: string }[];
+  /** D-PORTALSALES: no portal o gráfico mostra a comissão por dia (o total de vendas não aparece). */
+  metric?: "sales" | "commission";
 }) {
   const gradient = useId();
   const box = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
-  const max = niceMax(Math.max(...days.map((d) => d.baseCents), ...(previous ?? [])));
+  const val = (d: SalesDay) => (metric === "commission" ? d.commissionCents : d.baseCents);
+  const max = niceMax(Math.max(...days.map(val), ...(previous ?? [])));
   const x = (i: number) => (days.length === 1 ? W / 2 : (i / (days.length - 1)) * W);
   const y = (v: number) => PAD_TOP + (1 - v / max) * (H - PAD_TOP);
-  const points = days.map((d, i) => [x(i), y(d.baseCents)] as const);
+  const points = days.map((d, i) => [x(i), y(val(d))] as const);
   const line = points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
   const area = `${line} L${W},${H} L0,${H} Z`;
   const prevLine = previous?.length
@@ -80,7 +84,7 @@ export function SalesChart({
   return (
     <figure className="flex flex-col gap-2">
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
-        Vendas por dia
+        {metric === "commission" ? "Comissão por dia" : "Vendas por dia"}
         {previous && (
           <span className="inline-flex items-center gap-1.5 normal-case tracking-normal">
             <span className="inline-block w-5 border-t-2 border-dashed border-stone-400" /> período anterior
@@ -97,7 +101,7 @@ export function SalesChart({
           ref={box}
           role="img"
           tabIndex={0}
-          aria-label="Gráfico de vendas por dia. Use as setas para ver cada dia."
+          aria-label={`Gráfico de ${metric === "commission" ? "comissão" : "vendas"} por dia. Use as setas para ver cada dia.`}
           className="relative h-[200px] flex-1 touch-pan-y outline-none focus-visible:ring-2 focus-visible:ring-brand/50 md:h-[240px]"
           onPointerMove={pick}
           onPointerDown={pick}
@@ -139,14 +143,14 @@ export function SalesChart({
             <>
               <span
                 className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand ring-2 ring-white dark:bg-brand-2 dark:ring-stone-900"
-                style={{ left: `${left}%`, top: `${(y(a.baseCents) / H) * 100}%` }}
+                style={{ left: `${left}%`, top: `${(y(val(a)) / H) * 100}%` }}
               />
               <div
                 className="glass pointer-events-none absolute top-0 z-10 min-w-36 rounded-2xl px-3 py-2 text-xs"
                 style={{ left: `${left}%`, transform: `translateX(${left > 60 ? "calc(-100% - 10px)" : "10px"})` }}
               >
                 <p className="mb-1 font-medium text-stone-500">{shortDay(a.day)}</p>
-                <p className="flex justify-between gap-4"><span className="text-stone-500">Vendas</span><strong className="tabular-nums">{formatBRL(a.baseCents)}</strong></p>
+                {metric === "sales" && <p className="flex justify-between gap-4"><span className="text-stone-500">Vendas</span><strong className="tabular-nums">{formatBRL(a.baseCents)}</strong></p>}
                 {!noCommission && <p className="flex justify-between gap-4"><span className="text-stone-500">Comissão</span><strong className="tabular-nums">{formatBRL(a.commissionCents)}</strong></p>}
                 <p className="flex justify-between gap-4"><span className="text-stone-500">Pedidos</span><strong className="tabular-nums">{a.count}</strong></p>
                 {previous && previous[active!] !== undefined && (
@@ -171,11 +175,11 @@ export function SalesChart({
         )}
       </div>
       <table className="sr-only">
-        <caption>Vendas por dia</caption>
-        <thead><tr><th>Dia</th><th>Vendas</th>{!noCommission && <th>Comissão</th>}<th>Pedidos</th></tr></thead>
+        <caption>{metric === "commission" ? "Comissão por dia" : "Vendas por dia"}</caption>
+        <thead><tr><th>Dia</th>{metric === "sales" && <th>Vendas</th>}{!noCommission && <th>Comissão</th>}<th>Pedidos</th></tr></thead>
         <tbody>
           {days.map((d) => (
-            <tr key={d.day}><td>{shortDay(d.day)}</td><td>{formatBRL(d.baseCents)}</td>{!noCommission && <td>{formatBRL(d.commissionCents)}</td>}<td>{d.count}</td></tr>
+            <tr key={d.day}><td>{shortDay(d.day)}</td>{metric === "sales" && <td>{formatBRL(d.baseCents)}</td>}{!noCommission && <td>{formatBRL(d.commissionCents)}</td>}<td>{d.count}</td></tr>
           ))}
         </tbody>
       </table>
