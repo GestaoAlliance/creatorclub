@@ -1,6 +1,6 @@
 "use client";
 
-import { Gift, MapPin, Minus, Plus } from "lucide-react";
+import { Gift, MapPin, Minus } from "lucide-react";
 import { useActionState, useState } from "react";
 import { chooseKitAction } from "@/app/portal/[marca]/envios/actions";
 import { Msg } from "@/components/ui/msg";
@@ -39,6 +39,7 @@ export function KitPicker({
   viewOnly: boolean;
 }) {
   const [editing, setEditing] = useState(address === null);
+  const [addrOk, setAddrOk] = useState(false);
   const [state, action, pending] = useActionState(chooseKitAction, undefined);
   // Pedido do responsável (2026-10-27): com uma opção só (Revita, VermeFree), o produto já vem escolhido.
   // D-WELCOMECHOICE: kit com produtos definidos (1º pedido pela opção do cadastro) também já vem pronto.
@@ -68,40 +69,35 @@ export function KitPicker({
       <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="marca" value={marca} />
           <input type="hidden" name="kitId" value={kit.id} />
-          <ul className={ui.list}>
+          {/* D-PORTALSHIP: produtos em cartões com foto; toque soma, o "−" tira; sem estoque fica apagado. */}
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {list.map((p) => {
               const n = qty[p.id] ?? 0;
+              const can = !viewOnly && !single && left > 0 && !p.outOfStock;
               return (
-                <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="flex min-w-0 items-center gap-3">
-                    {p.photo && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.photo} alt="" width={64} height={64} className="size-16 shrink-0 rounded-2xl bg-white object-contain" />
-                    )}
-                    <span className={`text-sm ${n ? "font-medium" : ""} ${p.outOfStock ? "text-stone-400" : ""}`}>
-                      {p.title}
-                      {/* D-OLIST: zerado no Olist. */}
-                      {p.outOfStock && <span className="ml-2 rounded-full bg-stone-500/15 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">sem estoque</span>}
-                    </span>
-                  </span>
+                <li key={p.id} className={`relative flex flex-col overflow-hidden rounded-3xl bg-white/70 ring-2 transition dark:bg-white/5 ${n ? "ring-brand dark:ring-brand-2" : "ring-transparent"} ${p.outOfStock ? "opacity-50" : ""}`}>
                   <input type="hidden" name={`qty:${p.id}`} value={n} />
-                  {single ? (
-                    <span className="shrink-0 text-sm font-semibold tabular-nums">{n}×</span>
-                  ) : (
-                  <span className="flex shrink-0 items-center gap-2">
-                    <button type="button" aria-label={`Tirar ${p.title}`} disabled={viewOnly || n === 0} onClick={() => set(p.id, -1)} className={ui.ghostSm}>
-                      <Minus className="size-3.5" />
-                    </button>
-                    <span className="w-5 text-center text-sm font-semibold tabular-nums">{n}</span>
-                    <button type="button" aria-label={`Adicionar ${p.title}`} disabled={viewOnly || left === 0 || p.outOfStock} onClick={() => set(p.id, 1)} className={ui.ghostSm}>
-                      <Plus className="size-3.5" />
-                    </button>
-                  </span>
+                  <button type="button" disabled={!can} onClick={() => set(p.id, 1)} aria-label={`Adicionar ${p.title}`} className="flex flex-1 flex-col items-center gap-2 p-3 text-center disabled:cursor-default">
+                    {p.photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.photo} alt="" width={120} height={120} className="aspect-square w-full max-w-28 rounded-2xl bg-white object-contain" />
+                    ) : (
+                      <span className="grid aspect-square w-full max-w-28 place-content-center rounded-2xl bg-stone-200/70 text-stone-400 dark:bg-white/10"><Gift className="size-8" /></span>
+                    )}
+                    <span className="text-sm font-medium leading-snug">{p.title}</span>
+                    {p.outOfStock && <span className="rounded-full bg-stone-500/15 px-2 py-0.5 text-[11px] font-medium text-stone-600 dark:text-stone-300">sem estoque</span>}
+                  </button>
+                  {n > 0 && (
+                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-brand px-1 py-0.5 text-white shadow dark:bg-brand-2 dark:text-stone-900">
+                      {!single && <button type="button" aria-label={`Tirar ${p.title}`} disabled={viewOnly} onClick={() => set(p.id, -1)} className="grid size-6 place-content-center rounded-full hover:bg-white/20"><Minus className="size-3.5" /></button>}
+                      <span className="min-w-5 px-1 text-center text-sm font-semibold tabular-nums">{n}</span>
+                    </span>
                   )}
                 </li>
               );
             })}
           </ul>
+          {!single && <p className="text-center text-sm font-semibold">{total} de {kit.products} {plural(kit.products)} escolhidos{!viewOnly && left > 0 ? " · toque no produto para escolher" : ""}</p>}
           <div className="flex flex-col gap-3 rounded-2xl bg-white/50 p-4 dark:bg-white/5">
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-2 text-sm font-semibold"><MapPin className="size-4" /> Entregar em</p>
@@ -123,11 +119,18 @@ export function KitPicker({
               </>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* D-PORTALSHIP: "está certo?" antes de confirmar (endereço errado é o problema mais caro do envio). */}
+          {!viewOnly && (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" required checked={addrOk} onChange={(e) => setAddrOk(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+              <span>Conferi: o endereço de entrega está certo.</span>
+            </label>
+          )}
+          <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/85 p-3 shadow-lg backdrop-blur md:static md:bg-transparent md:p-0 md:shadow-none dark:bg-stone-900/85 md:dark:bg-transparent">
             <p className={ui.hint}>{single ? "Confira o endereço e envie o pedido." : left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
             {!viewOnly && (
-              <button disabled={pending || left !== 0} className={ui.btn}>
-                {pending ? "Enviando…" : "Enviar pedido"}
+              <button disabled={pending || left !== 0 || !addrOk} className={ui.btn}>
+                {pending ? "Enviando…" : "Confirmar pedido"}
               </button>
             )}
           </div>

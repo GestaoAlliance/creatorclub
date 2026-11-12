@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-302 — 2026-11-12 — Portal: Pedidos com faixa, kit em cartões com foto, envios compactos, avaliação e previsão de chegada (D-PORTALSHIP, D-SHIPREVIEW, D-SHIPETA; aguarda OK)
+- Migração `20261128090000_shipment_review` (`ShipmentReview`, RLS, travas e só inserção). `src/lib/shipments/review.ts`
+  (`reviewShipment`, `shipmentEtas`); `reviewAction`; `review-form.tsx`; `shipments-view.tsx` e `kit-picker.tsx` refeitos;
+  avaliação no `ShipmentCard` da ficha.
+- Testes de integração em `shipments.test.ts` (avaliação, travas, previsão).
+- Próxima: portal, Loja.
+
 ### CP-301 — 2026-11-12 — Portal: listas de Vendas e de Movimentações do Saque compactas, por dia (D-PORTALCOMPACT; aguarda OK)
 - `sales-view.tsx`: dias recolhidos (só o mais recente aberto), pedidos em linha fina com bolinha da situação e legenda;
   `DayGroups` removido. `withdrawal-view.tsx`: movimentações agrupadas por dia (`byDay`), mesmo formato.
