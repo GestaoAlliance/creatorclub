@@ -26,7 +26,7 @@ export async function approveAction(_prev: ActionState, form: FormData): Promise
 }
 
 export async function payAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  return run(async () => payWithdrawal(db(), await currentActor(), String(form.get("withdrawalId"))), "Marcado como pago.");
+  return run(async () => payWithdrawal(db(), await currentActor(), String(form.get("withdrawalId")), new Date(), String(form.get("pixReference") ?? "")), "Marcado como pago.");
 }
 
 export async function rejectAction(_prev: ActionState, form: FormData): Promise<ActionState> {

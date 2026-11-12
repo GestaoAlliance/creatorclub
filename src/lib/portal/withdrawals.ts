@@ -32,7 +32,7 @@ export type WithdrawalTab = {
   /** D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota). */
   individual: boolean;
   blocks: WithdrawalBlock[];
-  withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; decidedAt: Date | null; note: string | null }[];
+  withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; decidedAt: Date | null; note: string | null; pixReference: string | null }[];
   statement: Statement;
 };
 
@@ -61,7 +61,7 @@ export async function portalWithdrawalTab(
     prisma.withdrawal.findMany({
       where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
       orderBy: { requestedAt: "desc" },
-      select: { id: true, requestedAt: true, amountCents: true, status: true, decidedAt: true, note: true },
+      select: { id: true, requestedAt: true, amountCents: true, status: true, decidedAt: true, note: true, pixReference: true },
     }),
   ]);
   const [ledger, release] = await Promise.all([

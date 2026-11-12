@@ -668,6 +668,8 @@ model Withdrawal {
   bankResult     BankResult?
   bankNote       String?
   bankAt         DateTime?
+  /// D-PIXREF: ID da transação do Pix (E2E) informado por quem pagou; opcional; só em saque pago.
+  pixReference   String?
 
   brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator       Creator            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)

@@ -17,7 +17,7 @@ export function ApproveForm({ withdrawalId, label }: { withdrawalId: string; lab
       className="flex flex-col gap-1.5"
     >
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
-      <button className={`${ui.btn} w-full`} disabled={pending}>{pending ? "Salvando…" : "Aprovar para pagamento"}</button>
+      <button data-k="a" className={`${ui.btn} w-full`} disabled={pending}>{pending ? "Salvando…" : "Aprovar para pagamento"}</button>
       <Msg state={state} />
     </form>
   );
@@ -34,7 +34,9 @@ export function PayForm({ withdrawalId, label }: { withdrawalId: string; label: 
       className="flex flex-col gap-1.5"
     >
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
-      <button className={`${ui.btn} w-full`} disabled={pending}>{pending ? "Salvando…" : "Pix feito: marcar como pago"}</button>
+      {/* D-PIXREF: opcional; a creator vê no histórico do saque. */}
+      <input name="pixReference" maxLength={80} placeholder="ID do Pix (opcional, do comprovante)" aria-label="ID do Pix" autoComplete="off" className={`${ui.inputSm} font-mono`} />
+      <button data-k="p" className={`${ui.btn} w-full`} disabled={pending}>{pending ? "Salvando…" : "Pix feito: marcar como pago"}</button>
       <Msg state={state} />
     </form>
   );
@@ -46,7 +48,7 @@ export function RejectForm({ withdrawalId }: { withdrawalId: string }) {
     <form action={action} className="flex flex-col gap-1.5">
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
       <div className="flex gap-2">
-        <input name="reason" required maxLength={300} placeholder="Motivo da recusa (a creator vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
+        <input data-k="r" name="reason" required maxLength={300} placeholder="Motivo da recusa (a creator vê)" className={`${ui.inputSm} min-w-0 flex-1`} />
         <button className={ui.dangerSm} disabled={pending}>Recusar</button>
       </div>
       <Msg state={state} />

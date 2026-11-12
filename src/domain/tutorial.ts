@@ -255,16 +255,12 @@ export const HELP = {
     text: "Receita com cupom de creator menos custo dos produtos (Shopify), comissão, kits enviados e frete. O desconto do cupom já está fora da receita.",
   },
   "sq-abas": {
-    title: "Situação",
-    text: "Em análise: a Gestão confere e aprova. Aprovados: o Pagamento faz o Pix. Decididos guarda os pagos e os recusados.",
-  },
-  "sq-resumo": {
-    title: "Comissão a pagar",
-    text: "Sacável (liberado e não pedido), pedidos em análise e aprovados, o que espera o fechamento do mês e as vendas ainda sem pagamento.",
+    title: "Caminho do dinheiro",
+    text: "Em análise: a Gestão aprova. Aprovados: o Pagamento faz o Pix. Pagos no mês abre os decididos. O resumo copia tudo para o WhatsApp.",
   },
   "sq-cartao": {
-    title: "Pedido de saque",
-    text: "O selo mostra se o sistema conferiu a nota; \"Conferir de novo\" lê outra vez. Valor acima do saldo aparece em vermelho.",
+    title: "Fila de saques",
+    text: "Toque num pedido para abrir o painel com a nota. Ao aprovar ou pagar, abre o próximo sozinho. O selo de dias mostra quem espera há mais tempo.",
   },
   "sq-pagar": {
     title: "Aprovar ou pagar",
@@ -294,7 +290,7 @@ export const TOURS: Record<TourScreen, HelpId[]> = {
   "equipe-ficha": ["fi-vercomo", "fi-saldo", "fi-conferencia", "fi-cupons", "fi-contrato", "fi-extrato", "fi-taxa", "fi-ajustes"],
   "equipe-cupons": ["cp-resumo", "cp-abas", "cp-conferir"],
   "equipe-envios": ["en-aviso", "en-novo", "en-situacao", "en-cartao", "en-aprovar", "en-enviado"],
-  "equipe-saques": ["sq-abas", "sq-resumo", "sq-cartao", "sq-pagar"],
+  "equipe-saques": ["sq-abas", "sq-cartao", "sq-pagar"],
   "equipe-desempenho": ["de-grupos", "de-cartoes"],
 };
 
