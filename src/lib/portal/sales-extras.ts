@@ -28,7 +28,7 @@ export async function portalSalesExtras(prisma: PrismaClient, ctx: PortalContext
     }),
     prisma.order.findMany({
       where: { ...paid, brandId: ctx.brand.id, attribution: { creatorId: ctx.creatorId }, paidAt: { gte: new Date(period.from.getTime() - span), lt: period.from } },
-      select: { paidAt: true, subtotalCents: true },
+      select: { paidAt: true, subtotalCents: true, ledgerEntries: { where: { creatorId: ctx.creatorId, type: { in: ["COMMISSION", "REVERSAL"] } }, select: { amountCents: true } } },
     }),
     prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true } }),
     prisma.creatorPost.findMany({ where: { creatorId: ctx.creatorId, removedAt: null, postedDay: { gte: period.firstDay, lte: period.lastDay } }, select: { postedDay: true } }),
@@ -38,9 +38,14 @@ export async function portalSalesExtras(prisma: PrismaClient, ctx: PortalContext
 
   // Período anterior, dia a dia na mesma posição.
   const previous = Array<number>(len).fill(0);
+  // D-PORTALSALES: o portal compara a comissão (o total de vendas não aparece na faixa).
+  const previousCommission = Array<number>(len).fill(0);
   for (const o of prev) {
     const i = period.days.length ? daysBetween(prevFirst, dayKey(o.paidAt!, tz)) : -1;
-    if (i >= 0 && i < len) previous[i]! += Math.max(0, o.subtotalCents);
+    if (i >= 0 && i < len) {
+      previous[i]! += Math.max(0, o.subtotalCents);
+      previousCommission[i]! += o.ledgerEntries.reduce((s, e) => s + e.amountCents, 0);
+    }
   }
 
   // Produtos de cada pedido e os que mais vende.
@@ -89,7 +94,7 @@ export async function portalSalesExtras(prisma: PrismaClient, ctx: PortalContext
   }
 
   const postDays = [...new Set([...posts.map((p) => p.postedDay), ...igPosts.map((p) => dayKey(p.postedAt, tz))])].filter((d) => d >= period.firstDay && d <= period.lastDay).sort();
-  return { previous, items, top, best, customers, postDays };
+  return { previous, previousCommission, items, top, best, customers, postDays };
 }
 
 function daysBetween(a: string, b: string): number {

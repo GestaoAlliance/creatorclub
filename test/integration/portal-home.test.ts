@@ -61,6 +61,7 @@ describe("Vendas do portal (D-PORTALSALES, banco real)", () => {
     expect(x.items[o1.id]!.map((i) => i.title)).toEqual(["Whey"]);
     expect(x.top.map((t) => [t.title, t.units])).toEqual([["Whey", 3], ["Creatina", 1]]);
     expect(x.previous.reduce((s, v) => s + v, 0)).toBe(7_000);
+    expect(x.previousCommission.reduce((s, v) => s + v, 0)).toBe(0); // sem lançamento de comissão no seed
     expect(x.customers).toEqual({ new: 1, returning: 1, unknown: 0 });
     expect(x.postDays).toEqual(["2026-10-04"]);
     expect(x.best).toBeNull(); // menos de 3 pedidos
