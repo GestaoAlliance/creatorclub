@@ -1,23 +1,23 @@
-import { Plus, Store } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, PageHeader } from "@/components/ui/page";
-import { badge, ui } from "@/components/ui/styles";
+import { GlassLight } from "@/components/ui/glass-light";
+import { HistoryCard, SettingsHero } from "@/components/staff/settings-hero";
 import { formatCnpj } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { brandList } from "@/lib/brands/manage";
 import { db } from "@/lib/db";
+import { HISTORY_ACTIONS } from "@/lib/settings/health";
 import { staffContext } from "@/lib/staff/context";
 import { ALL_BRANDS_PARAM } from "@/lib/staff/nav";
-import { BrandForm, BrandImage, ContractLockForm } from "./forms";
+import { BrandForm } from "./forms";
+import { BrandSections, type SectionItem } from "./sections";
 
 export const dynamic = "force-dynamic";
 
 const pct = (bps: number) => String(bps / 100).replace(".", ",");
 
-// Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin. Em "Todas as marcas" (?todas=1) aparecem
-// todas e a criação de marca nova; dentro de uma marca, só a marca escolhida no topo (pedido do responsável).
 /** D-LABEL: remetente gravado (JSON) para o formulário. */
 function shipFromInitial(v: unknown) {
   if (!v || typeof v !== "object") return null;
@@ -26,6 +26,9 @@ function shipFromInitial(v: unknown) {
   return { zip: g("zip"), street: g("street"), number: g("number"), complement: g("complement"), district: g("district"), city: g("city"), state: g("state"), phone: g("phone") };
 }
 
+// Marcas da Alliance (A1b, D-ALLIANCE): cadastrar e editar. Só super admin. Em "Todas as marcas" (?todas=1) aparecem
+// todas e a criação de marca nova; dentro de uma marca, só a marca escolhida no topo. Visual D-SETTINGSBOARD: seções
+// com checklist.
 export default async function MarcasPage({ searchParams }: { searchParams: Promise<{ todas?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marcas");
@@ -34,69 +37,42 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
   const { brand } = await staffContext(actor);
   const brands = (await brandList(db(), actor)).filter((b) => all || b.id === brand?.id);
   return (
-    <>
-      <PageHeader title={all ? "Marcas" : `Marca ${brand?.name ?? ""}`}>
-        {all ? (
-          <>
-            As marcas da Alliance no Creator Club. Cada uma tem a própria loja Shopify, creators, cupons, equipe, termo e
-            contratos. Para começar uma marca: criar aqui, escolher a marca no topo, conectar a loja em Shopify e publicar o
-            termo e os contratos.
-          </>
-        ) : (
-          <>
-            Os dados da {brand?.name} e o que falta para ela funcionar inteira.{" "}
-            <Link href={`/admin/marcas?${ALL_BRANDS_PARAM}=1`} className={ui.link}>Ver todas as marcas</Link>
-          </>
-        )}
-      </PageHeader>
+    <GlassLight className="dash flex flex-col gap-4">
+      <SettingsHero actor={actor} brandId={all ? null : (brand?.id ?? null)} brandName={all ? "Todas as marcas" : (brand?.name ?? "")} active="marcas" title={all ? "Marcas" : `Marca ${brand?.name ?? ""}`}>
+        {all ? "As marcas da Alliance no Creator Club. Para começar uma marca: criar aqui, escolher a marca no topo, conectar a loja em Shopify e publicar o termo e os contratos." : <>O que a {brand?.name} precisa para funcionar inteira, seção por seção. <Link href={`/admin/marcas?${ALL_BRANDS_PARAM}=1`} className="font-medium underline">Ver todas as marcas</Link></>}
+      </SettingsHero>
       {brands.map((b) => {
-        const steps = [
-          { done: b.store?.status === "CONNECTED", label: "loja conectada" },
-          { done: b._count.termsVersions > 0, label: "termo publicado" },
-          { done: b._count.contractDocuments > 0, label: "contratos publicados" },
-          { done: b._count.contractTemplates > 0, label: "versões de contrato" },
-          { done: Boolean(b.nfTakerDocument && b.legalName), label: "dados para a nota" },
-          { done: Boolean(b.storeUrl), label: "site da loja" },
-          { done: Boolean(b.whatsappInstance), label: "WhatsApp dos avisos" },
+        const zip = shipFromInitial(b.shipFrom)?.zip;
+        const items: SectionItem[] = [
+          { id: "dados", label: "Dados da empresa", done: Boolean(b.legalName && b.nfTakerDocument && b.storeUrl), hint: "Nome, razão social, CNPJ (tomador da nota), site da loja e a cor da marca." },
+          { id: "padroes", label: "Comissão e desconto", done: null, hint: "Padrões para novas creators, desconto na loja com o saldo e o produto sugerido na aprovação." },
+          { id: "financeiro", label: "Financeiro e SICOOB", done: Boolean(b.financeEmail && b.bankConvenio && b.bankAccount), hint: "E-mail que recebe cada nota fiscal e a conta do SICOOB para a remessa de Pix." },
+          { id: "envio", label: "Remetente das etiquetas", done: Boolean(zip), hint: "Endereço que sai como remetente nas etiquetas e declarações de conteúdo." },
+          { id: "kits", label: "Kits e envio inicial", done: b.welcomeOneIds.length > 0, hint: "Produtos que a creator pode escolher e os do 1º pedido depois do contrato." },
+          { id: "nota", label: "Nota fiscal", done: Boolean(b.nfServiceCode), hint: "O que a creator vê na tela de saque para emitir a nota." },
+          { id: "whatsapp", label: "WhatsApp dos avisos", done: Boolean(b.whatsappInstance), hint: "Instância (Evolution, no n8n) que manda os avisos da creator das 9h às 20h." },
+          { id: "contrato", label: "Contrato na aprovação", done: null, hint: b.contractLock ? "Trava ligada: a creator só vira ativa depois de assinar." : "Trava desligada." },
+          { id: "login", label: "Tela de entrar", done: b.assets.some((a) => a.kind === "LOGO"), hint: "Logo que aparece na tela de entrar da marca." },
         ];
         return (
-          <Card key={b.id} title={b.name} icon={<span className="size-4 rounded-full" style={{ background: b.primaryColor }} />}>
-            <div className="flex flex-wrap gap-1.5">
-              {steps.map((s) => <span key={s.label} className={s.done ? badge.green : badge.amber}>{s.done ? "✓" : "falta"} {s.label}</span>)}
-              <span className={badge.neutral}>{b.activeCreators} creators ativas</span>
-              {b.store?.externalId && <span className={badge.neutral}><Store className="mr-1 inline size-3" />{b.store.externalId}</span>}
-            </div>
-            <details>
-              <summary className={`${ui.h2} cursor-pointer text-sm`}>Editar dados</summary>
-              <div className="mt-3">
-                <BrandForm initial={{ brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom), welcomeOneIds: b.welcomeOneIds, welcomeTwoIds: b.welcomeTwoIds }} products={b.products} />
-              </div>
-            </details>
-            {/* D-CONTRACTSWITCH: trava do contrato na aprovação. */}
-            <details>
-              <summary className={`${ui.h2} cursor-pointer text-sm`}>Contrato na aprovação: {b.contractLock ? "trava ligada" : "trava desligada"}</summary>
-              <div className="mt-3">
-                <ContractLockForm brandId={b.id} on={b.contractLock} waiting={b.awaitingContract} />
-              </div>
-            </details>
-            {/* M4.4a (D-BRANDLOGIN): a tela de entrar com a cara da marca. */}
-            <details>
-              <summary className={`${ui.h2} cursor-pointer text-sm`}>Tela de entrar da marca</summary>
-              <div className="mt-3 flex flex-col gap-4">
-                <p className={ui.hint}>
-                  Aparece em <Link href={`/entrar?marca=${b.slug}`} target="_blank" className={ui.link}>/entrar?marca={b.slug}</Link> (link das boas-vindas) e quando a creator volta para o portal da marca.
-                </p>
-                <BrandImage brandId={b.id} slug={b.slug} kind="LOGO" label="Logo" hint="PNG, JPG ou WebP, até 300 KB. Fundo transparente fica melhor." version={b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null} />
-              </div>
-            </details>
-          </Card>
+          <div key={b.id} className="flex flex-col gap-3">
+            {all && <h2 className="flex items-center gap-2 px-1 text-lg font-semibold"><span className="size-3 rounded-full" style={{ background: b.primaryColor }} />{b.name} <span className="text-sm font-normal text-stone-500">· {b.activeCreators} creators ativas</span></h2>}
+            <BrandSections
+              items={items}
+              form={{ initial: { brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom), welcomeOneIds: b.welcomeOneIds, welcomeTwoIds: b.welcomeTwoIds }, products: b.products }}
+              lock={{ brandId: b.id, on: b.contractLock, waiting: b.awaitingContract }}
+              logo={{ brandId: b.id, slug: b.slug, version: b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null }}
+            />
+          </div>
         );
       })}
       {all && (
-        <Card title="Nova marca" icon={<Plus className="size-4" />}>
+        <section className="glass flex flex-col gap-3 rounded-3xl p-4 md:p-5">
+          <h2 className="flex items-center gap-2 text-lg font-semibold"><Plus className="size-4" />Nova marca</h2>
           <BrandForm create initial={{ name: "", slug: "", primaryColor: "#18181B", legalName: "", cnpj: "", storeUrl: "", nfServiceCode: "", nfServiceDescription: "", nfInstructions: "", whatsappInstance: "", defaultRate: "15", defaultDiscount: "5" }} />
-        </Card>
+        </section>
       )}
-    </>
+      <HistoryCard brandId={all ? null : (brand?.id ?? null)} prefixes={HISTORY_ACTIONS.marcas} />
+    </GlassLight>
   );
 }

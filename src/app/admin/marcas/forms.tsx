@@ -31,14 +31,18 @@ type Values = {
 };
 
 /** Cadastrar marca nova ou editar uma existente (A1b). O endereço (slug) só se escolhe ao criar. */
-export function BrandForm({ initial, create = false, products = [] }: { initial: Values; create?: boolean; products?: readonly { id: string; title: string; kitOption: boolean; sku?: string | null; stockQty?: number | null; stockError?: string | null }[] }) {
+/** Seções do formulário (D-SETTINGSBOARD): na edição, só a seção escolhida aparece; as outras continuam no formulário (escondidas) e são salvas como estão. */
+export type BrandSection = "dados" | "padroes" | "financeiro" | "envio" | "kits" | "nota" | "whatsapp";
+
+export function BrandForm({ initial, create = false, products = [], section }: { initial: Values; create?: boolean; products?: readonly { id: string; title: string; kitOption: boolean; sku?: string | null; stockQty?: number | null; stockError?: string | null }[]; section?: BrandSection }) {
   const titles = products.map((p) => p.title);
+  const hide = (id: BrandSection) => Boolean(section && section !== id);
   const [state, action, pending] = useActionState(create ? createBrandAction : updateBrandAction, undefined);
   const [color, setColor] = useState(initial.primaryColor);
   return (
     <form action={action} className="flex flex-col gap-3">
       {initial.brandId && <input type="hidden" name="brandId" value={initial.brandId} />}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div hidden={hide("dados")} className="grid gap-3 sm:grid-cols-2">
         <label className={ui.label}>
           Nome
           <input name="name" defaultValue={initial.name} required className={ui.input} />
@@ -75,35 +79,34 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
         </label>
       </div>
       {/* M4.4a (D-BRANDLOGIN): padrões que a aprovação de candidata já traz preenchidos. */}
-      <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
-        <legend className="px-1 text-sm font-semibold">Padrões para novas creators</legend>
-        <p className={ui.hint}>Vêm preenchidos na aprovação de cada candidata (a Ana pode mudar). Quem já é creator mantém a comissão e o desconto dela.</p>
+      <div className="flex flex-col gap-3">
+        <p hidden={hide("padroes")} className={ui.hint}>Comissão e desconto vêm preenchidos na aprovação de cada candidata (a Ana pode mudar). Quem já é creator mantém a comissão e o desconto dela.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className={ui.label}>
+          <label hidden={hide("padroes")} className={ui.label}>
             Comissão padrão (%)
             <input name="defaultRate" defaultValue={initial.defaultRate} inputMode="decimal" required className={ui.input} />
           </label>
-          <label className={ui.label}>
+          <label hidden={hide("padroes")} className={ui.label}>
             Desconto do cupom padrão (%)
             <input name="defaultDiscount" defaultValue={initial.defaultDiscount} inputMode="decimal" required className={ui.input} />
           </label>
           {/* M5.1 (D-SHOPBALANCE): desconto na loja com o saldo (0 = preço da loja). */}
           {!create && (
-            <label className={ui.label}>
+            <label hidden={hide("padroes")} className={ui.label}>
               Desconto da creator na loja com o saldo (%)
               <input name="shopDiscount" defaultValue={initial.shopDiscount ?? "0"} inputMode="decimal" className={ui.input} />
             </label>
           )}
           {/* D-NFMAIL: cada nota fiscal enviada vai para este e-mail, com o PDF. */}
           {!create && (
-            <label className={ui.label}>
+            <label hidden={hide("financeiro")} className={ui.label}>
               E-mail do financeiro (recebe cada NF enviada)
               <input name="financeEmail" type="email" defaultValue={initial.financeEmail ?? ""} placeholder="financeiro@marca.com.br" className={ui.input} />
             </label>
           )}
           {/* D-REMESSA: conta no SICOOB para o arquivo de remessa de Pix (Saques → Aprovados). */}
           {!create && (
-            <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-5 dark:border-white/10">
+            <fieldset hidden={hide("financeiro")} className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-5 dark:border-white/10">
               <legend className="px-1 text-sm font-medium">Conta no SICOOB (remessa de Pix)</legend>
               <label className={`${ui.label} col-span-2`}>Convênio CNAB 240<input name="bankConvenio" defaultValue={initial.bank?.convenio ?? ""} placeholder="do Internet Banking" className={ui.input} /></label>
               <label className={ui.label}>Agência<input name="bankAgency" defaultValue={initial.bank?.agency ?? ""} inputMode="numeric" className={ui.input} /></label>
@@ -115,7 +118,7 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
           )}
           {/* D-LABEL: remetente da etiqueta e da declaração de conteúdo (Envios → Imprimir). */}
           {!create && (
-            <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-6 dark:border-white/10">
+            <fieldset hidden={hide("envio")} className="grid grid-cols-2 gap-3 rounded-xl border border-stone-200 p-3 sm:col-span-2 sm:grid-cols-6 dark:border-white/10">
               <legend className="px-1 text-sm font-medium">Endereço de envio (remetente das etiquetas)</legend>
               <label className={`${ui.label} col-span-2`}>CEP<input name="shipFromZip" defaultValue={initial.shipFrom?.zip ?? ""} inputMode="numeric" className={ui.input} /></label>
               <label className={`${ui.label} col-span-2 sm:col-span-3`}>Rua<input name="shipFromStreet" defaultValue={initial.shipFrom?.street ?? ""} className={ui.input} /></label>
@@ -129,7 +132,7 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
           )}
           {/* D-D4SIGN: "💡 Nossa sugestão" da mensagem de aprovação. */}
           {!create && (
-            <label className={`${ui.label} sm:col-span-2`}>
+            <label hidden={hide("padroes")} className={`${ui.label} sm:col-span-2`}>
               Produto sugerido na mensagem de aprovação
               <select name="approvalSuggestion" defaultValue={initial.approvalSuggestion ?? ""} className={ui.input}>
                 <option value="">Sem sugestão (a linha não aparece)</option>
@@ -141,7 +144,7 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
         </div>
         {/* D-KITOPTIONS: o que aparece para a creator escolher na aba Pedidos. */}
         {!create && products.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div hidden={hide("kits")} className="flex flex-col gap-2">
             <input type="hidden" name="kitOptionsSent" value="1" />
             <p className="text-sm font-medium">Produtos que a creator pode escolher (aba Pedidos)</p>
             <p className={ui.hint}>Nenhum marcado: ela vê todos os produtos ativos da loja.</p>
@@ -164,7 +167,7 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
         )}
         {/* D-WELCOMECHOICE / D-WELCOMEPICK: produtos do 1º pedido por opção da aprovação. */}
         {!create && products.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div hidden={hide("kits")} className="flex flex-col gap-2">
             <input type="hidden" name="welcomeSent" value="1" />
             <p className="text-sm font-medium">Envio inicial (1º pedido depois do contrato)</p>
             <p className={ui.hint}>Quem aprova escolhe 1 produto ou 2 produtos + 3 vídeos; o contrato sai no modelo certo e o 1º pedido já vem com estes produtos. Em &quot;1 produto&quot;, com duas opções ela escolhe uma no portal. Vazio: ela escolhe entre os produtos do kit.</p>
@@ -190,9 +193,9 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
             </div>
           </div>
         )}
-      </fieldset>
+      </div>
       {/* M1.3 (D-NFDATA): o que a creator vê na tela de saque para emitir a nota. Vazio = serviço padrão. */}
-      <fieldset className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
+      <fieldset hidden={hide("nota")} className="flex flex-col gap-3 rounded-2xl border border-stone-200/70 p-4 dark:border-white/10">
         <legend className="px-1 text-sm font-semibold">Dados para a creator emitir a nota</legend>
         <p className={ui.hint}>Aparecem na tela de saque da creator, com botão de copiar. A razão social e o CNPJ são os de cima. A conferência automática da nota exige este código.</p>
         <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
@@ -211,13 +214,13 @@ export function BrandForm({ initial, create = false, products = [] }: { initial:
         </label>
       </fieldset>
       {/* M2.2 (D-WHATSAPP): avisos à creator pelo WhatsApp da marca, via n8n + Evolution. */}
-      <label className={ui.label}>
+      <label hidden={hide("whatsapp")} className={ui.label}>
         Instância do WhatsApp para os avisos (Evolution, no n8n)
         <input name="whatsappInstance" defaultValue={initial.whatsappInstance} placeholder="ex.: Botanika" className={ui.input} />
         <span className={ui.hint}>Com o nome preenchido, os avisos da creator (comissão liberada, kit, saque…) vão pelo WhatsApp desta instância, das 9h às 20h, e saem do e-mail. Vazio = portal e e-mail.</span>
       </label>
       <Msg state={state} />
-      <button className={`${ui.btn} self-start`} disabled={pending}>{create ? "Criar marca" : "Salvar"}</button>
+      <button className={`${ui.btn} self-start`} disabled={pending}>{create ? "Criar marca" : section ? "Salvar esta seção" : "Salvar"}</button>
     </form>
   );
 }
