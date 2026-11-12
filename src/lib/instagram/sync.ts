@@ -47,12 +47,16 @@ export async function enqueueDueInstagram(prisma: PrismaClient, now = new Date()
   }
   // D-PHOTO: quem ainda não tem a foto do Instagram ganha uma leitura extra (uma vez por pessoa), para as fotos
   // aparecerem logo, sem esperar a leitura do dia seguinte. Mesmo ritmo (uma a cada 2 min), depois das do dia.
+  // Começam logo depois da última leitura que ainda falta (não depois de todas as do dia, que já podem ter rodado).
   const noPhoto = accounts.filter((a) => usableHandle(a.instagram) && !a.igPhotoUrl);
+  const last = noPhoto.length ? await prisma.job.findFirst({ where: { type: INSTAGRAM_PROFILE_JOB, status: "PENDING" }, orderBy: { runAt: "desc" }, select: { runAt: true } }) : null;
+  const from = Math.max(now.getTime(), last ? last.runAt.getTime() + SPACING_MS : 0);
+  let k = 0;
   for (const a of noPhoto) {
-    const runAt = new Date(now.getTime() + i * SPACING_MS);
+    const runAt = new Date(from + k * SPACING_MS);
     if (await enqueueJob(prisma, { type: INSTAGRAM_PROFILE_JOB, payload: { accountId: a.id, photo: true }, dedupeKey: `ig:photo:${a.id}`, runAt, maxAttempts: 6 })) {
       created++;
-      i++;
+      k++;
     }
   }
   return created;

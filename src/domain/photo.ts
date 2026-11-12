@@ -11,9 +11,6 @@ export function photoSource(a: { photoPath: string | null; igPhotoUrl: string | 
   return null;
 }
 
-/** Endereço da foto no app (a rota confere quem pode ver); `v` troca quando a foto muda (cache). */
-export const photoHref = (creatorId: string, v?: Date | string | null) => `/foto/${encodeURIComponent(creatorId)}${v ? `?v=${typeof v === "string" ? v : v.getTime()}` : ""}`;
-
 /** JPEG de verdade (começa com FF D8 FF) e no tamanho certo (o navegador já reduz para 512 × 512). */
 export const MAX_PHOTO_BYTES = 700 * 1024;
 export function isJpeg(bytes: Uint8Array): boolean {

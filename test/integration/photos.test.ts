@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { photoFor, removePhoto, uploadPhoto, type PhotoStore } from "@/lib/photos/photos";
+import { photoFor, photosFor, removePhoto, uploadPhoto, type PhotoStore } from "@/lib/photos/photos";
 import type { PortalContext } from "@/lib/portal/context";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -20,7 +20,7 @@ describe("foto de perfil (D-PHOTO, banco real)", () => {
     const { brand, creator, account } = await seedBrand(prisma);
     const other = await seedBrand(prisma);
     const saved: string[] = [];
-    const store: PhotoStore = { put: async (p) => void saved.push(p), signedUrl: async (p) => `https://storage.test/${p}` };
+    const store: PhotoStore = { put: async (p) => void saved.push(p), signedUrl: async (p) => `https://storage.test/${p}`, signedUrls: async (ps) => new Map(ps.map((p) => [p, `https://storage.test/${p}`])) };
     const ctx = { creatorId: creator.id, brand: { id: brand.id }, viewAs: null } as unknown as PortalContext;
     const me = { kind: "creator" as const, ctx, userId: "u-creator" };
 
@@ -38,6 +38,10 @@ describe("foto de perfil (D-PHOTO, banco real)", () => {
     expect(await photoFor(prisma, { userId: "x", grants: [], creatorIds: { [brand.id]: "outra" } }, creator.id, store)).toContain("storage.test");
     expect(await photoFor(prisma, { userId: "x", grants: [], creatorIds: { [other.brand.id]: other.creator.id } }, creator.id, store)).toBeNull();
     expect(await photoFor(prisma, null, creator.id, store)).toBeNull();
+    // Em lote: só as que pode ver; as outras ficam sem foto (iniciais).
+    await prisma.creatorAccount.update({ where: { id: other.account.id }, data: { igPhotoUrl: "https://cdn.instagram.test/outra.jpg" } });
+    expect(await photosFor(prisma, gestao, [creator.id, other.creator.id, "nao-existe"], store)).toEqual({ [creator.id]: `https://storage.test/${saved[0]}`, [other.creator.id]: null, "nao-existe": null });
+    expect(await photosFor(prisma, null, [creator.id], store)).toEqual({ [creator.id]: null });
 
     // Creator "usar a do Instagram": volta para a do Instagram.
     await prisma.creatorAccount.update({ where: { id: account.id }, data: { igPhotoUrl: "https://cdn.instagram.test/p.jpg" } });
