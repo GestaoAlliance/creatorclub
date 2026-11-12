@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-293 — 2026-11-12 — Desempenho: Instagram, UGC e Origem com faixa e quadros; mínimo e kit no painel de Creators (D-PERFBOARD; aguarda OK)
+- Ranking de vendas saiu do Desempenho (está no Início). `view.tsx` removido; página nova em `board.tsx` (faixa com
+  quadros Instagram/UGC/Origem, `?aba=`), `instagram.tsx`, `ugc.tsx`, `origin.tsx`, `parts.tsx` (painel lateral em portal,
+  mensagem em grupo, anel).
+- Instagram: mais cresceram/perderam, posta sem cupom (botão "Lembrar do cupom"), cartões com painel (formato que engaja,
+  cupom, frequência, posts que marcaram), perfis a corrigir (botão "Pedir a troca"), posts que marcaram a marca.
+- UGC: `src/lib/performance/board.ts` (`ugcBoard`, `monthSalesByCreator`), `ugcPace` no domínio; anel X/Y, prazo,
+  atrasadas no topo e já marcadas para "Cobrar"; vídeos do ciclo no painel.
+- Origem: funil com taxas e `daysToFirstSale` em `originSummary`.
+- Painel da lista de Creators: bloco "Mínimo do contrato" e "Kit do mês" (`creatorPeek.goal`). Tutorial `de-*` refeito.
+- `monthPerformance` continua (ferramenta do Claude/MCP). Testes: `perf-board.test.ts` (unidade e integração), painel.
+- Próxima: Pagamentos (Saques, Abertura, Conferência).
+
 ### CP-292 — 2026-11-12 — Cupons: faixa com progresso, conferência em cartões com sugestão de dona, PROMO em lote, parados e sem cupom (D-COUPONBOARD; aguarda OK)
 - `src/lib/coupons/board.ts`: `couponBoard` (pedidos, vendas, 30 dias, primeiro/último uso, comissão parada, parado,
   sugestão), `confirmOwnerAndRate` (classifica como CREATOR, confirma dona e a comissão a confirmar),

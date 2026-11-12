@@ -1,11 +1,11 @@
 "use client";
 
-import { ChevronDown, ChevronUp, ExternalLink, Package, FileSignature, MapPin, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Gift, Package, Target, FileSignature, MapPin, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "@/components/ui/social-icons";
 import { badge } from "@/components/ui/styles";
-import { CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, originText, whatsappChatUrl } from "@/domain";
+import { CREATOR_CATEGORY_LABEL, formatBRL, kitNoun, instagramUrl, originText, whatsappChatUrl } from "@/domain";
 import type { CreatorPeek } from "@/lib/creators/peek";
 import { peekAction } from "./actions";
 import { Avatar, CopyChip, LastSale, Sparkline, TrendChip } from "./list-parts";
@@ -15,6 +15,38 @@ const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const br = (day: string) => day.split("-").reverse().join("/");
 const dt = (d: Date | string) => new Date(d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 const pct = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+
+/** Meta do mês (D-PERFBOARD): barra do mínimo do contrato e a faixa do kit, que antes só apareciam no ranking do Desempenho. */
+function GoalBlock({ goal }: { goal: NonNullable<CreatorPeek["goal"]> }) {
+  const { min, kit } = goal;
+  const n = (p: number) => `${p} ${kitNoun(goal.brandSlug, p)}`;
+  if (!min && !kit) return null;
+  const p = min ? (min.minCents > 0 ? Math.min(100, Math.round((min.accumulatedCents / min.minCents) * 100)) : 100) : 0;
+  const done = min ? min.accumulatedCents >= min.minCents : false;
+  return (
+    <section className="liquid-tile flex flex-col gap-2 rounded-2xl px-3 py-2.5 text-sm">
+      {min && (
+        <div className="flex flex-col gap-1.5">
+          <span className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-stone-500"><Target className="size-3.5" />Mínimo do contrato</span>
+            <span className={`text-xs font-semibold ${done ? "text-emerald-700 dark:text-emerald-300" : ""}`}>{done ? "atingido" : `faltam ${formatBRL(min.minCents - min.accumulatedCents)}`}</span>
+          </span>
+          <span className="h-1.5 overflow-hidden rounded-full bg-stone-300/60 dark:bg-white/10">
+            <span className={`block h-full rounded-full ${done ? "bg-emerald-500" : "bg-brand dark:bg-brand-2"}`} style={{ width: `${p}%` }} />
+          </span>
+          <span className="text-xs text-stone-500">{formatBRL(min.accumulatedCents)} de {formatBRL(min.minCents)} {min.basis === "COMMISSION" ? "em comissão" : "em vendas"} acumuladas</span>
+        </div>
+      )}
+      {kit && (
+        <span className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300">
+          <Gift className="size-3.5 shrink-0" />
+          {kit.products > 0 ? `Kit do mês: ${n(kit.products)}` : "Ainda sem kit no mês"}
+          {kit.missingCents !== null && kit.nextProducts !== null && ` · faltam ${formatBRL(kit.missingCents)} para ${n(kit.nextProducts)}`}
+        </span>
+      )}
+    </section>
+  );
+}
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
@@ -110,6 +142,7 @@ export function PeekPanel({ row, onClose, onPrev, onNext, daysAgo }: { row: Row;
               </div>
             </section>
           )}
+          {peek?.goal && <GoalBlock goal={peek.goal} />}
           {!s && <LastSale day={row.lastOrder?.day ?? null} daysAgo={daysAgo} />}
 
           {(row.pendings.length > 0 || !row.hasLogin) && (

@@ -48,3 +48,19 @@ export function lastMonths(current: string, n: number): string[] {
     return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`;
   });
 }
+
+/**
+ * Instagram do Desempenho (D-PERFBOARD). `postsNoCoupon`: postou nos últimos 30 dias e não pôs o cupom em nenhum post
+ * (venda perdida fácil de recuperar). `growthMovers`: as que mais ganharam e mais perderam seguidores no mês.
+ */
+export function postsNoCoupon<T extends { lastPostAt: Date | null; couponPosts: number }>(rows: readonly T[], now: Date, days = 30): T[] {
+  const since = now.getTime() - days * 86_400_000;
+  return rows.filter((r) => r.couponPosts === 0 && r.lastPostAt !== null && r.lastPostAt.getTime() >= since);
+}
+
+export function growthMovers<T extends { growth: number | null }>(rows: readonly T[], n = 3): { up: T[]; down: T[] } {
+  const known = rows.filter((r) => r.growth !== null);
+  const up = known.filter((r) => r.growth! > 0).sort((a, b) => b.growth! - a.growth!).slice(0, n);
+  const down = known.filter((r) => r.growth! < 0).sort((a, b) => a.growth! - b.growth!).slice(0, n);
+  return { up, down };
+}

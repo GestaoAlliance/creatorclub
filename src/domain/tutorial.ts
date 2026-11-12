@@ -270,21 +270,13 @@ export const HELP = {
     title: "Aprovar ou pagar",
     text: "A Gestão aprova; o Pagamento marca como pago só depois do Pix. Se algo não bate, recuse com o motivo: a creator vê.",
   },
-  "de-filtros": {
-    title: "Filtros",
-    text: "Escolha o mês, o tipo de creator e a ordem. Mais perto do mínimo mostra quem está quase liberando a comissão.",
-  },
-  "de-resumo": {
-    title: "Resumo do mês",
-    text: "Vendas e pedidos pelo cupom no mês, quantas creators venderam e quantas já chegaram ao mínimo do contrato.",
-  },
   "de-grupos": {
-    title: "Grupos",
-    text: "Influencers e prescritores ganham comissão; UGC é permuta e fica à parte, com a meta de vídeos.",
+    title: "Três vistas",
+    text: "Instagram (seguidores, engajamento, posts sem cupom), UGC (vídeos do ciclo, quem está atrasada) e Origem (de onde vêm as creators que vendem).",
   },
-  "de-ranking": {
-    title: "Ranking",
-    text: "Cada creator com vendas, pedidos, quanto falta para o mínimo e a faixa do kit. Toque no nome para abrir a ficha.",
+  "de-cartoes": {
+    title: "Cartões",
+    text: "Toque num cartão para abrir o painel com os detalhes. Marque várias e mande a mensagem de uma vez pelo WhatsApp da marca.",
   },
 } as const satisfies Record<string, HelpTopic>;
 
@@ -303,7 +295,7 @@ export const TOURS: Record<TourScreen, HelpId[]> = {
   "equipe-cupons": ["cp-resumo", "cp-abas", "cp-conferir"],
   "equipe-envios": ["en-aviso", "en-novo", "en-situacao", "en-cartao", "en-aprovar", "en-enviado"],
   "equipe-saques": ["sq-abas", "sq-resumo", "sq-cartao", "sq-pagar"],
-  "equipe-desempenho": ["de-filtros", "de-resumo", "de-grupos", "de-ranking"],
+  "equipe-desempenho": ["de-grupos", "de-cartoes"],
 };
 
 const STAFF_SCREENS: Record<string, StaffScreen> = {

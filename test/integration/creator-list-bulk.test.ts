@@ -57,6 +57,8 @@ describe("lista de creators: tendência, painel e ações em grupo (D-CREATORLIS
     expect(peek.money).toMatchObject({ rateBps: 1200, withdrawalsUnlocked: false });
     expect(peek.money!.availableCents + peek.money!.heldCents).toBe(3_000);
     expect(peek.shipment).toBeNull();
+    // D-PERFBOARD: meta do mês no painel (mínimo do contrato da marca, sem kit sem modelo de contrato).
+    expect(peek.goal).toMatchObject({ min: { minCents: 50_000 }, kit: null });
 
     const other = await seedBrand(prisma);
     await expect(creatorPeek(prisma, await userWith("GESTAO", other.brand.id), creator.id)).rejects.toThrow(/não encontrada/);
