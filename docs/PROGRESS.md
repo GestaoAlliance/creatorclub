@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-304 — 2026-11-12 — Tema escuro legível em todas as telas (D-DARKFIX; aguarda OK)
+- `globals.css`: as regras escuras usavam `.dark` (classe que o app nunca põe); agora seguem `data-theme="dark"` e o tema do aparelho (`prefers-color-scheme`), como o resto do app. Quadros `liquid-tile` e `frost-tile` ganharam fundo, brilho e sombra escuros.
+- Barras fixas da Loja e da escolha do kit ficam opacas no escuro (o texto de baixo não aparece através).
+- Conferido em capturas no escuro: 23 telas da equipe e 8 do portal; o tema claro não mudou.
+
 ### CP-303 — 2026-11-12 — Portal: Loja em vitrine com carrinho, economia, comprar de novo e meta sem saldo (D-PORTALSHOP; aguarda OK)
 - `shop-picker.tsx` refeito; página da Loja com fotos, `shopStats` (domínio) e a meta; compras compactas com foto.
 - Teste em `payouts.test.ts`.
