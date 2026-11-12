@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-295 — 2026-11-12 — Envios: faixa por etapa, fila com painel, linha do tempo, alergia, Olist atrasado, próximo kit (D-SHIPBOARD; aguarda OK)
+- `src/app/admin/envios/board.tsx` (`ShipHero`, `ShipQueue`, `ShipExtras`); `table.tsx` removido; página refeita.
+- `src/lib/shipments/board.ts` (`shipmentBoard`: contagens, atrasados no Olist, produtos do mês com frete, contexto
+  por creator); `staffShipments` traz `olistSentAt` e o frete (só na tela da equipe).
+- Novo envio abre dentro da faixa; etiquetas de todos ou só dos marcados; planilha mantida.
+- Tutorial `en-*` atualizado. Teste de integração em `shipments.test.ts`.
+- Próxima: Configurações (Marcas, Contratos, Termo, Shopify, Importar, Claude).
+
 ### CP-294 — 2026-11-12 — Pagamentos: Saques em fila com painel, Abertura com a conta, Conferência por creator, ID do Pix (D-PAYBOARD, D-PIXREF; aguarda OK)
 - Saques (`src/app/admin/saques/board.tsx`): faixa com janela, quadros do caminho do dinheiro, "Copiar resumo para o
   WhatsApp"; lista compacta + painel em modo fila (nota em prévia, saldo antes/depois, Pix, ações, atalhos); selo de

@@ -223,20 +223,20 @@ export const HELP = {
     text: "Confira a dona sugerida (ou escolha outra) e a comissão num clique só. Vários sem tipo viram PROMO de uma vez. PROMO nunca gera comissão.",
   },
   "en-aviso": {
-    title: "Pedidos esperando aprovação",
-    text: "Pedidos que as creators fizeram pelo portal. Toque para ver só eles.",
+    title: "Caminho do envio",
+    text: "Cada quadro abre a sua lista: aguardando aprovação, preparando, a caminho, sem Recebi há 10+ dias e entregues no mês.",
   },
   "en-novo": {
     title: "Novo envio",
     text: "Para mandar produtos fora do pedido da creator. Envio criado aqui não passa pela aprovação.",
   },
   "en-situacao": {
-    title: "Situação",
-    text: "Filtre os envios pela etapa: aguardando aprovação, preparando, enviado, entregue ou cancelado.",
+    title: "Envios",
+    text: "Pedidos das creators e envios da equipe. Toque num envio para abrir o painel; ao aprovar ou enviar, abre o próximo sozinho.",
   },
   "en-cartao": {
     title: "Cada envio",
-    text: "A creator, os produtos e o endereço de entrega. Quando ela confirma no portal, aparece confirmado pela creator.",
+    text: "Produtos com foto, dias na etapa e o selo de alergia. Em Preparando, marque vários para imprimir só as etiquetas deles.",
   },
   "en-aprovar": {
     title: "Aprovar pedido",
