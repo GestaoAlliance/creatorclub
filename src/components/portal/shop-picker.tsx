@@ -167,7 +167,7 @@ export function ShopPicker({
           {state?.ok && !review && <Msg state={state} />}
 
           {count > 0 && !viewOnly && (
-            <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/90 p-3 shadow-lg backdrop-blur md:bottom-4 dark:bg-stone-900/90">
+            <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:bg-stone-900/95">
               <p className="text-sm"><strong>{count}</strong> {count === 1 ? "item" : "itens"} · <strong className="tabular-nums"><M>{formatBRL(total)}</M></strong> <span className="text-stone-500">· sobra <M>{formatBRL(Math.max(0, left))}</M></span></p>
               {review ? (
                 <button disabled={pending || left < 0 || !addrOk} className={ui.btn}>{pending ? "Enviando…" : "Fazer pedido"}</button>

@@ -126,7 +126,7 @@ export function KitPicker({
               <span>Conferi: o endereço de entrega está certo.</span>
             </label>
           )}
-          <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/85 p-3 shadow-lg backdrop-blur md:static md:bg-transparent md:p-0 md:shadow-none dark:bg-stone-900/85 md:dark:bg-transparent">
+          <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur md:static md:bg-transparent md:p-0 md:shadow-none dark:bg-stone-900/95 md:dark:bg-transparent">
             <p className={ui.hint}>{single ? "Confira o endereço e envie o pedido." : left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
             {!viewOnly && (
               <button disabled={pending || left !== 0 || !addrOk} className={ui.btn}>
