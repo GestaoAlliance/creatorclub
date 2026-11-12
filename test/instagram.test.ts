@@ -51,8 +51,8 @@ describe("API da Meta (D-INSTAGRAM)", async () => {
   it("limite da Meta vira erro para tentar de novo; perfil não profissional vira não lido", async () => {
     await expect(discoverProfile(reply({ error: { code: 4, message: "Application request limit reached" } }), "t", "1", "ana")).rejects.toBeInstanceOf(GraphError);
     expect(await discoverProfile(reply({ error: { code: 110, error_subcode: 2207013 } }), "t", "1", "ana")).toEqual({ status: "UNREADABLE" });
-    const ok = await discoverProfile(reply({ business_discovery: { followers_count: 10, media_count: 1, media: { data: [{ id: "m", timestamp: "2026-10-01T10:00:00+0000", media_type: "CAROUSEL_ALBUM", like_count: 3, permalink: "https://x" }, { id: "sem-data" }] } } }), "t", "1", "ana");
-    expect(ok).toEqual({ status: "OK", followers: 10, mediaCount: 1, posts: [expect.objectContaining({ id: "m", mediaType: "CAROUSEL_ALBUM", likes: 3, comments: null, postedAt: new Date("2026-10-01T10:00:00Z") })] });
+    const ok = await discoverProfile(reply({ business_discovery: { followers_count: 10, media_count: 1, profile_picture_url: "https://cdn.test/ana.jpg", media: { data: [{ id: "m", timestamp: "2026-10-01T10:00:00+0000", media_type: "CAROUSEL_ALBUM", like_count: 3, permalink: "https://x" }, { id: "sem-data" }] } } }), "t", "1", "ana");
+    expect(ok).toEqual({ status: "OK", followers: 10, mediaCount: 1, photoUrl: "https://cdn.test/ana.jpg", posts: [expect.objectContaining({ id: "m", mediaType: "CAROUSEL_ALBUM", likes: 3, comments: null, postedAt: new Date("2026-10-01T10:00:00Z") })] });
   });
   it("posts que marcam a marca seguem as páginas", async () => {
     let calls = 0;

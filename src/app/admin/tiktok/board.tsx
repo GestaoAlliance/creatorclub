@@ -91,7 +91,7 @@ export function TikTokBoard({ rows, brandName, initial }: { rows: Row[]; brandNa
             {shown.map((r) => (
               <article key={r.key} className="liquid-tile flex flex-col gap-3 rounded-3xl p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar name={r.name} />
+                  <Avatar name={r.name} id={r.key.startsWith("c:") ? r.key.slice(2) : null} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{r.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5">

@@ -5,6 +5,8 @@ import { stopViewAsAction } from "@/app/portal/actions";
 import { signOut } from "@/app/entrar/actions";
 import { BottomNav, PORTAL_ITEMS, SideNav } from "@/components/portal/nav";
 import { ThemeToggle } from "@/components/portal/theme-toggle";
+import { Avatar } from "@/components/ui/avatar";
+import { PhotoEditor } from "@/components/ui/photo-editor";
 import { TourButton, TutorialProvider } from "@/components/ui/tour";
 import { brandCssVars, type PortalContext } from "@/lib/portal/context";
 
@@ -32,9 +34,13 @@ export function PortalShell({
       <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} hidden={hidden} counts={{ "/avisos": unread }} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-brand-2">{ctx.brand.name}</p>
-            <p className="truncate text-lg font-semibold">Olá, {ctx.name.split(" ")[0]}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            {/* D-PHOTO: foto de perfil; ela troca tocando (a equipe vendo o portal só vê). */}
+            {ctx.viewAs ? <Avatar name={ctx.name} id={ctx.creatorId} /> : <PhotoEditor creatorId={ctx.creatorId} name={ctx.name} marca={ctx.brand.slug} />}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-brand-2">{ctx.brand.name}</p>
+              <p className="truncate text-lg font-semibold">Olá, {ctx.name.split(" ")[0]}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {others.length > 0 && (

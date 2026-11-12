@@ -9,6 +9,8 @@ import type { CreatorInsights } from "@/lib/creators/insights";
 import { STATUS_LABEL } from "@/lib/creators/profile";
 import { CopyChip } from "../list-parts";
 import { ProductThumb } from "@/components/ui/product-thumb";
+import { Avatar } from "@/components/ui/avatar";
+import { PhotoEditor } from "@/components/ui/photo-editor";
 
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const MONTH = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -38,9 +40,9 @@ export function FileHero(p: {
   coupon: string | null;
   link: string | null;
   canViewAs: boolean;
+  canEditPhoto: boolean;
   tiles: HeroTile[];
 }) {
-  const ini = p.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const wa = p.phone ? whatsappChatUrl(p.phone) : null;
   const ig = p.instagram ? instagramUrl(p.instagram) : null;
   const chips = [
@@ -59,9 +61,8 @@ export function FileHero(p: {
       <div className="flex flex-col gap-5 p-5 md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
-            <span className="grid size-16 shrink-0 place-content-center rounded-[22px] bg-white/18 text-2xl font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.5),inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur md:size-20 md:text-3xl">
-              {ini}
-            </span>
+            {/* D-PHOTO: foto de perfil (Instagram ou subida); a Gestão troca ou tira. */}
+            {p.canEditPhoto ? <PhotoEditor creatorId={p.id} name={p.name} size="hero" square light /> : <Avatar name={p.name} id={p.id} size="hero" square className="ring-2 ring-white/60" />}
             <div className="min-w-0">
               <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">{p.name}</h1>
               <div className="mt-1.5 flex flex-wrap gap-1.5">

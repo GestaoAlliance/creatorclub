@@ -4,18 +4,8 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Check, Copy, Sparkles } from 
 import { useState } from "react";
 import { agoText, formatBRL, lastSaleTone, trendOf, type SaleTone } from "@/domain";
 
-/** Iniciais no círculo com a cor da marca. */
-export function Avatar({ name, size = "md" }: { name: string; size?: "md" | "lg" }) {
-  const ini = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  return (
-    <span
-      aria-hidden
-      className={`grid shrink-0 place-content-center rounded-full bg-[radial-gradient(120%_120%_at_25%_10%,color-mix(in_srgb,var(--brand)_70%,white),var(--brand)_55%,color-mix(in_srgb,var(--brand)_75%,black))] font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_4px_10px_-4px_var(--brand)] ${size === "lg" ? "size-14 text-lg" : "size-9 text-xs"}`}
-    >
-      {ini}
-    </span>
-  );
-}
+/** D-PHOTO: foto de perfil (ou as iniciais). */
+export { Avatar } from "@/components/ui/avatar";
 
 /** Mini gráfico das semanas (barras; a semana atual mais forte). */
 export function Sparkline({ weeks, className = "h-6 w-24" }: { weeks: number[]; className?: string }) {

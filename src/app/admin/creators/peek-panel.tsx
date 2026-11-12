@@ -106,7 +106,7 @@ export function PeekPanel({ row, onClose, onPrev, onNext, daysAgo }: { row: Row;
             <button type="button" onClick={onClose} aria-label="Fechar (Esc)" className="peek-btn"><X className="size-4" /></button>
           </div>
           <div className="mt-3 flex items-center gap-3">
-            <span className="rounded-full ring-2 ring-white/60"><Avatar name={row.name} size="lg" /></span>
+            <span className="rounded-full ring-2 ring-white/60"><Avatar name={row.name} id={row.id} size="lg" /></span>
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold leading-tight">{row.name}</h2>
               <p className="truncate text-xs text-white/80">

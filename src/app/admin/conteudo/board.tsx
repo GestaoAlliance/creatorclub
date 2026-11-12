@@ -28,7 +28,7 @@ function PostCard({ p, canRemove }: { p: ContentPost; canRemove: boolean }) {
   return (
     <article className={`liquid-tile flex flex-col gap-3 rounded-3xl p-4 ${hot ? "ring-2 ring-emerald-500/40" : ""}`}>
       <div className="flex items-center gap-2.5">
-        <Avatar name={p.creatorName} />
+        <Avatar name={p.creatorName} id={p.creatorId} />
         <div className="min-w-0 flex-1">
           <Link href={`/admin/creators/${p.creatorId}`} className="block truncate text-sm font-semibold hover:underline">{p.creatorName}</Link>
           <span className="flex items-center gap-1.5 text-xs text-stone-500"><Net p={p.platform} className="size-3.5" /> {br(p.postedDay)} · {p.source === "INSTAGRAM" ? "detectado" : p.byStaff ? "registrado pela equipe" : "registrado por ela"}</span>

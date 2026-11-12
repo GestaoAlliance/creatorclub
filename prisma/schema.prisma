@@ -271,6 +271,12 @@ model CreatorAccount {
   taxRegime         String?
   pixKey            String?
   instagram         String? // sem o @
+  /// D-PHOTO: foto de perfil. Subida (portal ou equipe) fica no bucket privado `fotos` (`photoPath`); sem ela, vale a
+  /// do Instagram (`igPhotoUrl`, lida todo dia). `photoHidden`: a equipe tirou a foto do Instagram (inadequada).
+  photoPath         String?
+  photoUpdatedAt    DateTime?
+  igPhotoUrl        String?
+  photoHidden       Boolean   @default(false)
   tiktok            String? // sem o @ (D-SIGNUPACCOUNT)
   /// Pedido da Vanessa (2026-10-27): respondeu no cadastro se tem TikTok Shop ativo (null = não respondeu).
   tiktokShop        Boolean?

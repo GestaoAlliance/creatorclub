@@ -69,7 +69,7 @@ describe("campanhas (M4.5, D-CAMPAIGN, banco real)", () => {
     expect(late.me).toMatchObject({ position: 2, move: -1 });
     const biaLate = (await portalCampaigns(prisma, ctx(c2.id), T("2026-10-25T22:00:00Z")))[0]!;
     expect(biaLate.me).toMatchObject({ position: 1, move: 1 });
-    expect(portal.top).toEqual([{ position: 1, name: "Bia", me: false }, { position: 2, name: account.name.split(" ")[0], me: true }]);
+    expect(portal.top).toEqual([{ position: 1, name: "Bia", me: false, id: c2.id }, { position: 2, name: account.name.split(" ")[0], me: true, id: creator.id }]);
 
     await expect(settleCampaign(prisma, gestao, id, T("2026-10-30T00:00:00Z"))).rejects.toThrow(/a partir de/);
     const r = await settleCampaign(prisma, gestao, id, T("2026-11-02T12:00:00Z"));

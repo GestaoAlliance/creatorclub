@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-308 — 2026-11-12 — Foto de perfil das creators (Instagram automático; creator e Gestão sobem, trocam e tiram) (D-PHOTO; aguarda OK)
+- Migração `20261130090000_profile_photo`: `CreatorAccount.photoPath`, `photoUpdatedAt`, `igPhotoUrl`, `photoHidden`; travas `CreatorAccount_photo_path` e `CreatorAccount_ig_photo_url`.
+- Leitura diária do Instagram guarda a foto de perfil (`profile_picture_url`). Foto subida vai para o bucket privado `fotos` (criado na primeira subida), reduzida no navegador para 512 × 512 JPEG.
+- `src/lib/photos/photos.ts` (`uploadPhoto`, `removePhoto`, `photoFor`), rota `/foto/[creatorId]` (equipe da marca ou creator da mesma marca; senão 404 e ficam as iniciais), ações em `src/app/foto/actions.ts`.
+- `Avatar` (`src/components/ui/avatar.tsx`) com a foto em todas as listas da equipe que mostravam iniciais de creator, na ficha (Gestão troca/tira), no topo do portal (ela troca ou volta para a do Instagram) e no placar das campanhas. `PhotoEditor` para trocar/tirar.
+- Testes: `photo.test.ts`, `integration/photos.test.ts`, placar com o id em `integration/campaigns.test.ts`.
+
 ### CP-307 — 2026-11-12 — Portal: Avisos com o que pede ação, recados da equipe fixados, lista por dia e onde ela recebe (D-PORTALNOTICES; aguarda OK)
 - `src/lib/portal/notices-board.ts` (`portalNoticesBoard`): o que pede ação agora (kit para escolher, saque recusado, janela de saque aberta com saldo, envio a caminho, campanha para participar), recados da equipe ainda não lidos, avisos novos, resumo do mês e onde ela recebe (WhatsApp ou e-mail, mascarado).
 - `notices-view.tsx`: faixa (novos, resumo do mês, "Precisa de você"), recados fixados com "Entendi", lista por dia (Hoje, Ontem, Esta semana, Últimos 30 dias) com ícone e cor por assunto e toque para ler tudo; avisos antigos recolhidos; cartão "onde você recebe".
