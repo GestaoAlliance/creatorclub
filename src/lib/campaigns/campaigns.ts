@@ -1,7 +1,13 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   CAMPAIGN_TOP,
+  campaignCountdown,
   campaignPhase,
+  campaignPrizeText,
+  dayKey,
+  placeMove,
+  formatBRL,
+  notices,
   campaignStandings,
   firstNameOf,
   inCampaignAudience,
@@ -16,6 +22,7 @@ import {
 } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { notify } from "@/lib/notifications/notify";
 import type { PortalContext } from "@/lib/portal/context";
 
 /**
@@ -97,7 +104,7 @@ function editor(actor: Actor | null, brandId: string): Actor {
   return actor;
 }
 
-const audit = (prisma: PrismaClient, actor: Actor, brandId: string, action: string, id: string, after: object = {}) =>
+const audit = (prisma: Pick<PrismaClient, "auditLog">, actor: Actor, brandId: string, action: string, id: string, after: object = {}) =>
   prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId: actor.userId, action, entity: "Campaign", entityId: id, after } });
 
 export async function createCampaign(prisma: PrismaClient, actor: Actor | null, brandId: string, input: CampaignInput) {
@@ -105,7 +112,7 @@ export async function createCampaign(prisma: PrismaClient, actor: Actor | null, 
   const data = await clean(prisma, brandId, input);
   return prisma.$transaction(async (tx) => {
     const c = await tx.campaign.create({ data: { brandId, ...data, createdById: who.userId }, select: { id: true } });
-    await audit(tx as unknown as PrismaClient, who, brandId, "campaign.create", c.id, { name: data.name });
+    await audit(tx, who, brandId, "campaign.create", c.id, { name: data.name });
     return c;
   });
 }
@@ -127,16 +134,29 @@ export async function publishCampaign(prisma: PrismaClient, actor: Actor | null,
   const who = editor(actor, c.brandId);
   if (c.publishedAt) return;
   if (c.endsAt <= now) throw new CampaignError("O período já acabou; ajuste as datas antes de publicar.");
-  await prisma.$transaction([prisma.campaign.update({ where: { id }, data: { publishedAt: now } }), audit(prisma, who, c.brandId, "campaign.publish", id)]);
+  const full = await prisma.campaign.findUniqueOrThrow({ where: { id } });
+  // D-PORTALCAMPAIGN: aviso para as creators ativas do público (sino, WhatsApp ou e-mail, como os outros avisos).
+  const creators = await prisma.creator.findMany({ where: { brandId: c.brandId, status: "ACTIVE" }, select: { id: true, categories: true, tagLinks: { select: { tagId: true } } } });
+  const audience = creators.filter((x) => inCampaignAudience(full, { categories: x.categories as string[], tagIds: x.tagLinks.map((t) => t.tagId) }));
+  const notice = notices.campaignNew(id, full.name, full.startDay, full.endDay, campaignPrizeText(full.rankingPrizes, full.goalCents, full.goalPrizeCents, formatBRL));
+  await prisma.$transaction(async (tx) => {
+    await tx.campaign.update({ where: { id }, data: { publishedAt: now } });
+    await audit(tx, who, c.brandId, "campaign.publish", id, { notified: audience.length });
+    await notify(tx, audience.map((x) => ({ brandId: c.brandId, creatorId: x.id, notice })));
+  });
 }
 
 /** Vendas das inscritas no período (pagas no período, régua da comissão) e o placar. */
-export async function campaignResults(prisma: PrismaClient, c: { id: string; brandId: string; startsAt: Date; endsAt: Date; rankingPrizes: number[]; goalCents: number | null; goalPrizeCents: number | null }): Promise<Standing[]> {
+export async function campaignResults(
+  prisma: PrismaClient,
+  c: { id: string; brandId: string; startsAt: Date; endsAt: Date; rankingPrizes: number[]; goalCents: number | null; goalPrizeCents: number | null },
+  until?: Date, // D-PORTALCAMPAIGN: placar até um momento (ex.: ontem, para "subiu/caiu")
+): Promise<Standing[]> {
   const entries = await prisma.campaignEntry.findMany({ where: { campaignId: c.id }, select: { creatorId: true, creator: { select: { account: { select: { name: true } } } } } });
   const ids = entries.map((e) => e.creatorId);
   const orders = ids.length
     ? await prisma.order.findMany({
-        where: { brandId: c.brandId, test: false, cancelledAt: null, financialStatus: { in: [...PAID_FINANCIAL] }, paidAt: { gte: c.startsAt, lt: c.endsAt }, attribution: { creatorId: { in: ids } } },
+        where: { brandId: c.brandId, test: false, cancelledAt: null, financialStatus: { in: [...PAID_FINANCIAL] }, paidAt: { gte: c.startsAt, lt: until && until < c.endsAt ? until : c.endsAt }, attribution: { creatorId: { in: ids } } },
         select: { subtotalCents: true, paidAt: true, attribution: { select: { creatorId: true } } },
       })
     : [];
@@ -199,28 +219,46 @@ async function creatorFacts(prisma: PrismaClient, creatorId: string) {
   return { status: c.status, categories: c.categories as string[], tagIds: c.tagLinks.map((t) => t.tagId) };
 }
 
-/** Campanhas que a creator vê no portal: publicadas, do público dela, em breve, em andamento ou encerradas há até 30 dias. */
+/**
+ * Campanhas que a creator vê no portal: publicadas, do público dela, em breve, em andamento ou encerradas há até 30 dias.
+ * D-PORTALCAMPAIGN: contagem regressiva, posts dela ligados à campanha, subiu/caiu desde ontem (início do dia de hoje)
+ * e as vendas dela só quando a campanha tem meta em R$ (o placar não mostra total de vendas sem motivo).
+ */
 export async function portalCampaigns(prisma: PrismaClient, ctx: PortalContext, now = new Date()) {
   const me = await creatorFacts(prisma, ctx.creatorId);
+  const { timezone } = await prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true } });
+  const today = startOfLocalDay(dayKey(now, timezone), timezone);
   const list = await prisma.campaign.findMany({
     where: { brandId: ctx.brand.id, publishedAt: { not: null }, endsAt: { gt: new Date(now.getTime() - 30 * 86_400_000) } },
     orderBy: { startsAt: "asc" },
-    include: { entries: { where: { creatorId: ctx.creatorId }, select: { joinedAt: true } }, prizes: { where: { creatorId: ctx.creatorId }, select: { amountCents: true, kind: true, position: true } } },
+    include: {
+      entries: { where: { creatorId: ctx.creatorId }, select: { joinedAt: true } },
+      prizes: { where: { creatorId: ctx.creatorId }, select: { amountCents: true, kind: true, position: true } },
+      posts: { where: { creatorId: ctx.creatorId, removedAt: null }, orderBy: { postedDay: "desc" }, select: { id: true, url: true, postedDay: true } },
+    },
   });
   const visible = list.filter((c) => c.entries.length > 0 || inCampaignAudience(c, me));
   return Promise.all(
     visible.map(async (c) => {
       const joined = c.entries.length > 0;
+      const phase = campaignPhase(c, now);
       const standings = joined ? await campaignResults(prisma, c) : [];
       const mine = standings.find((s) => s.creatorId === ctx.creatorId) ?? null;
       const above = mine && mine.position > 1 ? standings[mine.position - 2]! : null;
+      // Subiu/caiu: só em andamento e com pelo menos um dia de campanha antes de hoje.
+      let move: number | null = null;
+      if (mine && phase === "RUNNING" && today > c.startsAt) {
+        const before = (await campaignResults(prisma, c, today)).find((s) => s.creatorId === ctx.creatorId);
+        move = placeMove(before?.position ?? null, mine.position);
+      }
       return {
         id: c.id,
         name: c.name,
         briefing: c.briefing,
         startDay: c.startDay,
         endDay: c.endDay,
-        phase: campaignPhase(c, now),
+        countdown: campaignCountdown(now, c.startsAt, c.endsAt),
+        phase,
         rankingPrizes: c.rankingPrizes,
         goalCents: c.goalCents,
         goalPrizeCents: c.goalPrizeCents,
@@ -229,12 +267,32 @@ export async function portalCampaigns(prisma: PrismaClient, ctx: PortalContext, 
         participants: standings.length,
         // Placar: posição e primeiro nome das 10 primeiras, sem valores das outras (D-CAMPAIGN).
         top: standings.slice(0, CAMPAIGN_TOP).map((s) => ({ position: s.position, name: firstNameOf(s.name), me: s.creatorId === ctx.creatorId })),
-        me: mine ? { position: mine.position, salesCents: mine.salesCents, // Para passar quem está acima: 1 centavo a mais (no empate, fica na frente quem chegou antes).
-          toAboveCents: above ? above.salesCents - mine.salesCents + 1 : null, toGoalCents: c.goalCents ? Math.max(0, c.goalCents - mine.salesCents) : null } : null,
+        me: mine
+          ? {
+              position: mine.position,
+              move,
+              // D-PORTALCAMPAIGN: vendas dela só com meta em R$ (para a barra até a meta).
+              salesCents: c.goalCents ? mine.salesCents : null,
+              // Para passar quem está acima: 1 centavo a mais (no empate, fica na frente quem chegou antes).
+              toAboveCents: above ? above.salesCents - mine.salesCents + 1 : null,
+              toGoalCents: c.goalCents ? Math.max(0, c.goalCents - mine.salesCents) : null,
+            }
+          : null,
         prizes: c.prizes,
+        posts: c.posts,
       };
     }),
   );
+}
+
+/** D-PORTALCAMPAIGN: prêmios de campanha que ela já ganhou (todas as campanhas da marca), mais novos primeiro. */
+export async function portalCampaignPrizes(prisma: PrismaClient, ctx: PortalContext) {
+  const rows = await prisma.campaignPrize.findMany({
+    where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, amountCents: true, kind: true, position: true, createdAt: true, campaign: { select: { name: true } } },
+  });
+  return { totalCents: rows.reduce((t, r) => t + r.amountCents, 0), list: rows.map((r) => ({ id: r.id, name: r.campaign.name, amountCents: r.amountCents, kind: r.kind, position: r.position, at: r.createdAt })) };
 }
 
 /** "Quero participar": publicada, ainda não terminou, do público dela, creator ativa; nunca na visualização da equipe. */

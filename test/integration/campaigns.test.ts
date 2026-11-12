@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { campaignDetail, createCampaign, joinCampaign, portalCampaigns, publishCampaign, settleCampaign, updateCampaign, type CampaignInput } from "@/lib/campaigns/campaigns";
+import { campaignDetail, createCampaign, joinCampaign, portalCampaignPrizes, portalCampaigns, publishCampaign, settleCampaign, updateCampaign, type CampaignInput } from "@/lib/campaigns/campaigns";
 import type { PortalContext } from "@/lib/portal/context";
 import { campaignCards, campaignClock, campaignImpact, campaignInvitees, campaignMessage, duplicateCampaign } from "@/lib/campaigns/board";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
@@ -32,6 +32,13 @@ describe("campanhas (M4.5, D-CAMPAIGN, banco real)", () => {
     const ctx = (creatorId: string) => ({ creatorId, brand: { id: brand.id }, viewAs: null }) as unknown as PortalContext;
     await expect(joinCampaign(prisma, ctx(creator.id), id, T("2026-10-18T12:00:00Z"))).rejects.toThrow(/não encontrada/); // rascunho
     await publishCampaign(prisma, gestao, id, T("2026-10-18T12:00:00Z"));
+    // D-PORTALCAMPAIGN: aviso para as creators ativas do público, uma vez só.
+    await publishCampaign(prisma, gestao, id, T("2026-10-18T13:00:00Z"));
+    const notes = await prisma.notification.findMany({ where: { brandId: brand.id, kind: "CAMPAIGN_NEW" } });
+    expect(notes.map((n) => n.creatorId).sort()).toEqual([creator.id, c2.id].sort());
+    expect(notes[0]).toMatchObject({ title: "Nova campanha: Desafio Semana Rosa", href: `/portal/${brand.slug}/campanhas` });
+    expect(notes[0]!.body).toContain("Prêmios: 1º R$");
+    await expectDbError(prisma.notification.create({ data: { brandId: brand.id, creatorId: creator.id, kind: "CAMPAIGN_OLD", dedupeKey: "x", title: "t", body: "b" } }), /Notification_valid/);
     await expect(updateCampaign(prisma, gestao, id, { ...base, rankingPrizes: ["999"], name: "Novo nome" })).resolves.toBeUndefined();
     expect((await prisma.campaign.findUniqueOrThrow({ where: { id } })).rankingPrizes).toEqual([30_000, 20_000]); // publicada: prêmios não mudam
     await expect(joinCampaign(prisma, { ...ctx(creator.id), viewAs: { userId: "x" } } as PortalContext, id)).rejects.toThrow(/Visualização/);
@@ -56,13 +63,19 @@ describe("campanhas (M4.5, D-CAMPAIGN, banco real)", () => {
       [account.name, 30_000, 20_000, 0],
     ]);
     const portal = (await portalCampaigns(prisma, { ...ctx(creator.id), brand: { id: brand.id } } as PortalContext, T("2026-10-24T00:00:00Z")))[0]!;
-    expect(portal).toMatchObject({ joined: true, participants: 2, me: { position: 2, salesCents: 30_000, toAboveCents: 30_001, toGoalCents: 20_000 } });
+    expect(portal).toMatchObject({ joined: true, participants: 2, countdown: "termina em 2 dias e 3 h", me: { position: 2, salesCents: 30_000, toAboveCents: 30_001, toGoalCents: 20_000 } });
+    // Subiu/caiu desde ontem: em 25/10 à noite a Bia passou (antes de hoje ela estava atrás).
+    const late = (await portalCampaigns(prisma, ctx(creator.id), T("2026-10-25T22:00:00Z")))[0]!;
+    expect(late.me).toMatchObject({ position: 2, move: -1 });
+    const biaLate = (await portalCampaigns(prisma, ctx(c2.id), T("2026-10-25T22:00:00Z")))[0]!;
+    expect(biaLate.me).toMatchObject({ position: 1, move: 1 });
     expect(portal.top).toEqual([{ position: 1, name: "Bia", me: false }, { position: 2, name: account.name.split(" ")[0], me: true }]);
 
     await expect(settleCampaign(prisma, gestao, id, T("2026-10-30T00:00:00Z"))).rejects.toThrow(/a partir de/);
     const r = await settleCampaign(prisma, gestao, id, T("2026-11-02T12:00:00Z"));
     expect(r).toEqual({ prizes: 3, totalCents: 55_000 });
     await expect(settleCampaign(prisma, gestao, id, T("2026-11-03T12:00:00Z"))).rejects.toThrow(/já foram confirmados/);
+    expect(await portalCampaignPrizes(prisma, ctx(c2.id))).toMatchObject({ totalCents: 35_000, list: [{ name: "Novo nome" }, { name: "Novo nome" }] });
     const prizes = await prisma.ledgerEntry.findMany({ where: { type: "PRIZE", brandId: brand.id }, orderBy: { amountCents: "desc" } });
     expect(prizes.map((p) => [p.creatorId, p.amountCents, p.note])).toEqual([
       [c2.id, 30_000, "Prêmio: Novo nome (1º lugar)"],

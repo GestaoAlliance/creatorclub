@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-305 — 2026-11-12 — Portal: Campanhas com faixa da campanha da vez, grupos por momento, posts e aviso de campanha nova (D-PORTALCAMPAIGN; aguarda OK)
+- `campaigns-view.tsx` refeito: faixa (campanha acontecendo, de preferência a dela; senão a próxima) com contagem regressiva, posição, quanto falta para passar quem está acima, barra da meta, subiu/caiu desde ontem e compartilhar o cupom; quadro "Você já ganhou R$ X em campanhas"; Acontecendo agora / Em breve / Encerradas (uma linha, abre com placar).
+- Cartão: briefing recolhido em 3 linhas com "Ler tudo" e links em botões; posts dela na campanha e "Registrar post" ali mesmo.
+- Placar: vendas dela só em campanha com meta em R$ (barra da meta); das outras só posição e primeiro nome.
+- Publicar campanha avisa as creators ativas do público (`CAMPAIGN_NEW`, sino + WhatsApp/e-mail como os outros avisos). Migração `20261129090000_campaign_notice` (tipo novo em `Notification_valid`).
+- Domínio: `campaignCountdown`, `briefingParts`, `placeMove`, `campaignPrizeText`, `notices.campaignNew`; `campaignResults(..., until)`; `portalCampaignPrizes`. Testes em `campaign.test.ts` e `integration/campaigns.test.ts`.
+
 ### CP-304 — 2026-11-12 — Tema escuro legível em todas as telas (D-DARKFIX; aguarda OK)
 - `globals.css`: as regras escuras usavam `.dark` (classe que o app nunca põe); agora seguem `data-theme="dark"` e o tema do aparelho (`prefers-color-scheme`), como o resto do app. Quadros `liquid-tile` e `frost-tile` ganharam fundo, brilho e sombra escuros.
 - Barras fixas da Loja e da escolha do kit ficam opacas no escuro (o texto de baixo não aparece através).
