@@ -883,6 +883,8 @@ model Product {
   stockSyncedAt DateTime?
   /// D-OLIST: por que a última leitura não achou o produto (ex.: SKU não existe no Olist).
   stockError    String?
+  /// D-PRODUCTTHUMB: foto em destaque do produto na Shopify (miniatura dos rankings); null = sem foto.
+  imageUrl      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

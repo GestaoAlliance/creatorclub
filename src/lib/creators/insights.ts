@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { dayKey } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { productImages } from "@/lib/reports/product-images";
 
 /**
  * Resumo da ficha da creator (D-CREATORFILE, pedido do responsável em 2026-11-11): vendas por mês (12 meses), produtos
@@ -16,7 +17,7 @@ export const FILE_MONTHS = 12;
 export type CreatorInsights = {
   money: {
     months: { month: string; cents: number; orders: number }[];
-    products: { title: string; quantity: number; cents: number }[];
+    products: { title: string; quantity: number; cents: number; image: string | null }[];
     compare: { sales30Cents: number; averageCents: number; rank: number | null; active: number };
     opening: { approved: boolean; paidCents: number | null; note: string | null };
   } | null;
@@ -81,6 +82,7 @@ export async function creatorInsights(prisma: PrismaClient, actor: Actor, creato
               GROUP BY cr.id`),
             prisma.openingPaid.findUnique({ where: { creatorId: c.id }, select: { paidCents: true, note: true } }),
           ]);
+          const imageOf = await productImages(prisma, c.brandId);
           const byMonth = new Map(months.map((m) => [m, { cents: 0, orders: 0 }]));
           for (const o of orders) {
             const b = o.paidAt ? byMonth.get(dayKey(o.paidAt, c.brand.timezone).slice(0, 7)) : undefined;
@@ -93,7 +95,7 @@ export async function creatorInsights(prisma: PrismaClient, actor: Actor, creato
           const sorted = [...sales].sort((x, y) => y.cents - x.cents);
           return {
             months: months.map((m) => ({ month: m, ...byMonth.get(m)! })),
-            products: lines.map((l) => ({ title: l.title, quantity: l._sum.quantity ?? 0, cents: l._sum.discountedTotalCents ?? 0 })),
+            products: lines.map((l) => ({ title: l.title, quantity: l._sum.quantity ?? 0, cents: l._sum.discountedTotalCents ?? 0, image: imageOf(l.title) })),
             compare: {
               sales30Cents: mine?.cents ?? 0,
               averageCents: sales.length ? Math.round(sales.reduce((s, r) => s + r.cents, 0) / sales.length) : 0,

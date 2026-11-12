@@ -8,6 +8,7 @@ import { birthdayLabel, CREATOR_CATEGORY_LABEL, formatBRL, instagramUrl, shortBR
 import type { CreatorInsights } from "@/lib/creators/insights";
 import { STATUS_LABEL } from "@/lib/creators/profile";
 import { CopyChip } from "../list-parts";
+import { ProductThumb } from "@/components/ui/product-thumb";
 
 const ext = { target: "_blank", rel: "noopener noreferrer" } as const;
 const MONTH = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -233,7 +234,7 @@ export function ProductsCard({ products }: { products: NonNullable<CreatorInsigh
           {products.map((x, i) => (
             <li key={x.title} className="flex flex-col gap-1">
               <span className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate"><span className="mr-1.5 text-xs text-stone-400 tabular-nums">{i + 1}</span>{x.title}</span>
+                <span className="flex min-w-0 items-center gap-2"><span className="w-3 shrink-0 text-right text-xs text-stone-400 tabular-nums">{i + 1}</span><ProductThumb src={x.image} title={x.title} size="sm" /><span className="truncate">{x.title}</span></span>
                 <span className="shrink-0 text-xs tabular-nums text-stone-500">{x.quantity} un. · {shortBRL(x.cents)}</span>
               </span>
               <span className="h-1.5 overflow-hidden rounded-full bg-stone-500/10"><span className="block h-full rounded-full bg-brand/70 dark:bg-brand-2/70" style={{ width: `${(x.quantity / max) * 100}%` }} /></span>

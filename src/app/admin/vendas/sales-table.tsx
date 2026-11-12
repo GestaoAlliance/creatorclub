@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, ChevronUp, ExternalLink, X } from "lucide-re
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ProductThumb } from "@/components/ui/product-thumb";
 import { formatBRL, SALE_STATUS_LABEL, type SaleStatus } from "@/domain";
 import type { SaleRow } from "@/lib/sales/list";
 import { orderDetailAction } from "./actions";
@@ -107,8 +108,8 @@ function OrderPanel({ id, onClose, onPrev, onNext }: { id: string; onClose: () =
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Itens</p>
                   <ul className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10">
                     {d.lines.map((l, i) => (
-                      <li key={i} className="flex items-baseline justify-between gap-3 py-1.5">
-                        <span className="min-w-0"><span className="text-stone-500 tabular-nums">{l.quantity}×</span> {l.title}</span>
+                      <li key={i} className="flex items-center justify-between gap-3 py-1.5">
+                        <span className="flex min-w-0 items-center gap-2"><ProductThumb src={l.image} title={l.title} size="sm" /><span className="min-w-0"><span className="text-stone-500 tabular-nums">{l.quantity}×</span> {l.title}</span></span>
                         <span className="shrink-0 tabular-nums">{l.discountedTotalCents ? <M>{formatBRL(l.discountedTotalCents)}</M> : <span className="text-[11px] text-stone-500">brinde</span>}</span>
                       </li>
                     ))}
