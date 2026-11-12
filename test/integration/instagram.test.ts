@@ -93,6 +93,21 @@ describe("Instagram (D-INSTAGRAM, banco real)", () => {
     expect(await enqueueDueInstagram(prisma, NOW, { META_SYSTEM_TOKEN: "x" })).toBeGreaterThan(0);
     expect(await prisma.job.count({ where: { type: INSTAGRAM_PROFILE_JOB, dedupeKey: `ig:profile:${s.account.id}:2026-10-28` } })).toBe(1);
     expect(await enqueueDueInstagram(prisma, NOW, { META_SYSTEM_TOKEN: "x" })).toBe(0);
+    // D-PHOTO: sem foto do Instagram, uma leitura extra (uma vez por pessoa).
+    expect(await prisma.job.count({ where: { type: INSTAGRAM_PROFILE_JOB, dedupeKey: `ig:photo:${s.account.id}` } })).toBe(1);
+  });
+
+  it("D-PHOTO: guarda a foto de perfil; já lido hoje sem foto, lê só a foto", async () => {
+    const h = `foto${randomUUID().slice(0, 6)}`;
+    const s = await world(h);
+    await prisma.instagramSnapshot.create({ data: { accountId: s.account.id, day: new Date(`${NOW.toISOString().slice(0, 10)}T00:00:00Z`), handle: h, status: "OK", followers: 10, mediaCount: 1 } });
+    const meta = fakeMeta({ [h]: { business_discovery: { followers_count: 11, media_count: 1, profile_picture_url: "https://cdn.test/foto.jpg", media: { data: [] } } } });
+    expect(await readProfile(prisma, s.account.id, meta, "tok", NOW)).toBe("SKIPPED"); // leitura do dia: já leu
+    expect(await readProfile(prisma, s.account.id, meta, "tok", NOW, { photo: true })).toBe("OK");
+    expect((await prisma.creatorAccount.findUniqueOrThrow({ where: { id: s.account.id } })).igPhotoUrl).toBe("https://cdn.test/foto.jpg");
+    expect(await prisma.instagramSnapshot.count({ where: { accountId: s.account.id } })).toBe(1); // não grava outra leitura
+    expect(await readProfile(prisma, s.account.id, meta, "tok", NOW, { photo: true })).toBe("SKIPPED"); // já tem foto
+    expect(meta.urls).toHaveLength(1);
   });
 
   it("travas: leitura não muda nem some; @ e números válidos", async () => {
