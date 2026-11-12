@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, CalendarClock, Package, ShoppingBag, UserPlus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarClock, ChevronRight, Package, UserPlus } from "lucide-react";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import { formatBRL, shortBRL } from "@/domain";
 import type { portalSalesExtras } from "@/lib/portal/sales-extras";
@@ -149,51 +149,56 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
         </div>
       )}
 
-      <section data-tour="vendas-lista" className="flex flex-col gap-3">
+      {/* D-PORTALSALES (ajuste do responsável): um cartão só; cada dia é uma linha (abre ao tocar, só o mais recente vem
+          aberto) e cada pedido uma linha fina; tocar no pedido mostra os produtos. */}
+      <section data-tour="vendas-lista" className="glass overflow-hidden rounded-3xl">
         {page.sales.length === 0 ? (
-          <p className="glass rounded-3xl py-10 text-center text-sm text-stone-500">Nenhuma venda paga com seu cupom neste período.</p>
+          <p className="py-10 text-center text-sm text-stone-500">Nenhuma venda paga com seu cupom neste período.</p>
         ) : (
-          <DayGroups groups={[...groups]} render={([dk, list]) => (
-            <div key={dk} className="glass overflow-hidden rounded-3xl">
-              <div className="flex items-baseline justify-between gap-2 px-4 pb-1 pt-3">
-                <h3 className="text-sm font-semibold">{dayLabel(dk, today)}</h3>
-                <span className="text-xs text-stone-500">{list.length} {list.length === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(list.reduce((a, x) => a + (noCommission ? x.baseCents : x.commissionCents), 0))}</M>{noCommission ? "" : " de comissão"}</span>
-              </div>
-              <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
-                {list.map((x) => {
-                  const its = extras.items[x.orderId] ?? [];
-                  return (
-                    <li key={x.orderId}>
-                      <details className="group">
-                        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
-                          <span className="flex -space-x-2">
-                            {its.slice(0, 2).map((it) => <span key={it.title} className="rounded-xl ring-2 ring-white dark:ring-stone-900"><ProductThumb src={it.image} title={it.title} size="sm" /></span>)}
-                            {its.length === 0 && <span className="grid size-8 place-content-center rounded-xl bg-stone-200 dark:bg-stone-700"><ShoppingBag className="size-4 text-stone-500" /></span>}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium">Pedido {x.orderName}</span>
-                            <span className="block text-xs text-stone-500">{x.paidAt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })} · <M>{formatBRL(x.baseCents)}</M>{!noCommission && ` × ${pct(x.rateBps)}`}</span>
-                          </span>
-                          <span className="flex shrink-0 flex-col items-end gap-1">
-                            <span className={`text-sm font-semibold tabular-nums ${x.commissionCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}><M>{formatBRL(noCommission ? x.baseCents : x.commissionCents)}</M></span>
-                            <Badge status={x.status} noCommission={noCommission} />
-                          </span>
-                        </summary>
-                        <div className="flex flex-col gap-1.5 px-4 pb-3">
-                          {its.length === 0 ? <p className="text-xs text-stone-500">Sem os produtos deste pedido.</p> : its.map((it) => (
-                            <span key={it.title} className="flex items-center gap-2 text-sm"><ProductThumb src={it.image} title={it.title} size="sm" /><span className="min-w-0 flex-1 truncate">{it.title}</span><span className="tabular-nums text-stone-500">{it.quantity}×</span></span>
-                          ))}
-                          <p className="text-[11px] text-stone-500">Pago em {day(x.paidAt)}. {noCommission ? "" : `Comissão de ${pct(x.rateBps)} sobre os produtos com desconto, sem frete.`}</p>
-                        </div>
-                      </details>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )} />
+          <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
+            {[...groups].map(([dk, list], gi) => (
+              <li key={dk}>
+                <details className="group/day" open={gi === 0}>
+                  <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 hover:bg-stone-500/5">
+                    <ChevronRight className="size-4 shrink-0 text-stone-400 transition group-open/day:rotate-90" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">{dayLabel(dk, today)}</span>
+                    <span className="shrink-0 text-xs text-stone-500">{list.length} {list.length === 1 ? "pedido" : "pedidos"}</span>
+                    <span className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums"><M>{formatBRL(list.reduce((a, x) => a + (noCommission ? x.baseCents : x.commissionCents), 0))}</M></span>
+                  </summary>
+                  <ul className="border-t border-stone-200/60 bg-stone-500/[0.03] dark:border-white/10">
+                    {list.map((x) => {
+                      const its = extras.items[x.orderId] ?? [];
+                      return (
+                        <li key={x.orderId}>
+                          <details className="group/o">
+                            <summary className="flex cursor-pointer list-none items-center gap-2 py-2 pl-10 pr-4 text-sm hover:bg-stone-500/5">
+                              <span className="w-11 shrink-0 tabular-nums text-xs text-stone-500">{x.paidAt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}</span>
+                              <span className="min-w-0 flex-1 truncate">{x.orderName}{!noCommission && <span className="text-xs text-stone-500"> · <M>{formatBRL(x.baseCents)}</M> × {pct(x.rateBps)}</span>}</span>
+                              <Dot status={x.status} noCommission={noCommission} />
+                              <span className={`w-20 shrink-0 text-right font-semibold tabular-nums ${x.commissionCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}><M>{formatBRL(noCommission ? x.baseCents : x.commissionCents)}</M></span>
+                            </summary>
+                            <div className="flex flex-col gap-1.5 pb-3 pl-10 pr-4">
+                              {its.length === 0 ? <p className="text-xs text-stone-500">Sem os produtos deste pedido.</p> : its.map((it) => (
+                                <span key={it.title} className="flex items-center gap-2 text-sm"><ProductThumb src={it.image} title={it.title} size="sm" /><span className="min-w-0 flex-1 truncate">{it.title}</span><span className="tabular-nums text-stone-500">{it.quantity}×</span></span>
+                              ))}
+                              <span className="flex items-center gap-2 text-[11px] text-stone-500"><Badge status={x.status} noCommission={noCommission} />Pago em {day(x.paidAt)}{noCommission ? "" : ` · comissão de ${pct(x.rateBps)} sobre os produtos com desconto, sem frete`}</span>
+                            </div>
+                          </details>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
+      {!noCommission && page.sales.length > 0 && (
+        <p className="flex flex-wrap gap-x-3 gap-y-1 px-1 text-[11px] text-stone-500">
+          {(["HELD", "RELEASED", "PARTIAL_REFUND", "REVERSED"] as const).map((k) => <span key={k} className="inline-flex items-center gap-1"><Dot status={k} noCommission={false} />{SALE_STATUS_LABEL[k]}</span>)}
+        </p>
+      )}
       <p className="px-1 text-xs text-stone-500">
         {noCommission ? "Valor" : "Base"} = valor dos produtos com desconto, sem frete. A venda conta no dia em que o pedido foi pago.
         {!noCommission && page.release.minCents !== null &&
@@ -203,20 +208,11 @@ export function SalesView({ page, base, noCommission = false, extras, today }: {
   );
 }
 
-/** Os 5 dias mais recentes abertos; os outros num "Ver os outros dias" (a lista do mês fica longa no celular). */
-function DayGroups({ groups, render }: { groups: [string, Sale[]][]; render: (g: [string, Sale[]]) => React.ReactNode }) {
-  const SHOW = 5;
-  return (
-    <>
-      {groups.slice(0, SHOW).map((g) => <div key={g[0]}>{render(g)}</div>)}
-      {groups.length > SHOW && (
-        <details className="group flex flex-col gap-3">
-          <summary className="glass cursor-pointer list-none rounded-full px-4 py-2.5 text-center text-sm font-medium group-open:hidden">Ver os outros {groups.length - SHOW} dias</summary>
-          <div className="flex flex-col gap-3">{groups.slice(SHOW).map((g) => <div key={g[0]}>{render(g)}</div>)}</div>
-        </details>
-      )}
-    </>
-  );
+/** Bolinha da situação na linha fina (o selo completo fica no detalhe do pedido). */
+function Dot({ status, noCommission }: { status: SaleStatus; noCommission: boolean }) {
+  const label = noCommission && status !== "REVERSED" && status !== "PARTIAL_REFUND" ? "Paga" : SALE_STATUS_LABEL[status];
+  const color = { HELD: "bg-amber-500", RELEASED: "bg-emerald-500", PARTIAL_REFUND: "bg-orange-500", REVERSED: "bg-red-500", PENDING_RATE: "bg-stone-400" }[status];
+  return <span title={label} aria-label={label} className={`size-2 shrink-0 rounded-full ${noCommission && label === "Paga" ? "bg-emerald-500" : color}`} />;
 }
 
 const fullDay = (key: string) => `${key.slice(8, 10)}/${key.slice(5, 7)}/${key.slice(0, 4)}`;

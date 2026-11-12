@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-301 — 2026-11-12 — Portal: listas de Vendas e de Movimentações do Saque compactas, por dia (D-PORTALCOMPACT; aguarda OK)
+- `sales-view.tsx`: dias recolhidos (só o mais recente aberto), pedidos em linha fina com bolinha da situação e legenda;
+  `DayGroups` removido. `withdrawal-view.tsx`: movimentações agrupadas por dia (`byDay`), mesmo formato.
+- Próxima: portal, tela Pedidos.
+
 ### CP-300 — 2026-11-12 — Portal: Saque com faixa, janela, passo a passo, conferência da nota antes de pedir e linha do tempo (D-PORTALWD; aguarda OK)
 - `src/lib/portal/withdrawal-extras.ts` (`portalWithdrawalExtras`, `maskPix`); `previewNf` em `withdrawals/request.ts` e
   `checkNfAction` no portal; `withdrawal-form.tsx` mostra o resultado e troca o botão quando a nota vai voltar;
