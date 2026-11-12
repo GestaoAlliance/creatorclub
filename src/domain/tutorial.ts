@@ -215,12 +215,12 @@ export const HELP = {
     text: "Quantas creators ativas já têm cupom, dona e taxa confirmados, e quantos cupons há de cada tipo.",
   },
   "cp-abas": {
-    title: "Abas e busca",
-    text: "A conferir é o trabalho a fazer; Creators e Promocionais são para consulta. A busca acha pelo cupom ou pelo nome da dona.",
+    title: "Quadros e busca",
+    text: "Cada quadro abre uma lista: a conferir, de creator, promocionais, parados (60+ dias sem uso) e creators sem cupom. A busca acha cupom ou dona.",
   },
   "cp-conferir": {
     title: "Conferir um cupom",
-    text: "Primeiro diga se é de creator ou promocional, depois confirme a dona e a taxa. Cupom promocional nunca gera comissão.",
+    text: "Confira a dona sugerida (ou escolha outra) e a comissão num clique só. Vários sem tipo viram PROMO de uma vez. PROMO nunca gera comissão.",
   },
   "en-aviso": {
     title: "Pedidos esperando aprovação",
