@@ -50,3 +50,4 @@ export * from "./withdrawal-days";
 export * from "./creator-list";
 export * from "./payouts";
 export * from "./settings";
+export * from "./portal-home";
