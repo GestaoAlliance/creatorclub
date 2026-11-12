@@ -232,3 +232,20 @@ describe("Pagamentos (D-PIXREF, D-PAYBOARD, banco real)", () => {
     await expect(payoutBoard(prisma, await userWith("GESTAO", outside.brand.id), s.brand.id, IN_WINDOW)).rejects.toThrow(/permissão/);
   });
 });
+
+describe("Saque do portal (D-PORTALWD, banco real)", () => {
+  it("total recebido, Pix com parte escondida, janela e só os motivos de recusa repetidos", async () => {
+    const { portalWithdrawalExtras } = await import("@/lib/portal/withdrawal-extras");
+    const s = await approved();
+    await payWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW);
+    const x = await portalWithdrawalExtras(prisma, s.ctx, IN_WINDOW);
+    expect(x.received).toMatchObject({ totalCents: 80_000, count: 1, year: "2026", yearCents: 80_000 });
+    expect(x.pixKey).toBe("pix•••com");
+    expect(x.window).toEqual({ open: true, daysLeft: 6, opensIn: null });
+    // Duas recusas iguais (genéricas) e uma única (pode ter dado de alguém): só a repetida aparece.
+    for (const note of ["CNPJ errado.", "cnpj errado", "Nota da Fulana com valor X"])
+      await prisma.withdrawal.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, amountCents: 100, status: "REJECTED", idempotencyKey: randomUUID(), decidedAt: IN_WINDOW, decidedById: "x", note } });
+    const y = await portalWithdrawalExtras(prisma, s.ctx, IN_WINDOW);
+    expect(y.reasons).toEqual([{ reason: "CNPJ errado", count: 2 }]);
+  });
+});

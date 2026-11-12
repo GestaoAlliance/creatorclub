@@ -257,3 +257,19 @@ export async function requestWithdrawalWithReceipt(
     now,
   );
 }
+
+/**
+ * D-PORTALWD: confere a nota logo depois do envio, antes de pedir (a mesma conferência do pedido: tomadora, valor, CNPJ
+ * de quem emitiu, código do serviço e nota já usada). Só mostra; quem decide continua sendo o pedido.
+ */
+export async function previewNf(prisma: PrismaClient, ctx: PortalContext, pdf: Uint8Array, amountCents: number) {
+  checkPdf(pdf);
+  const c = await prisma.creator.findUniqueOrThrow({
+    where: { id: ctx.creatorId },
+    select: { account: { select: { cnpj: true } }, brand: { select: { name: true, nfTakerDocument: true, nfServiceCode: true } } },
+  });
+  const fields = parseNfseText(await pdfText(pdf));
+  const nf = checkNf(fields, { takerDoc: c.brand.nfTakerDocument, takerName: c.brand.name, amountCents, issuerDoc: c.account.cnpj, serviceCode: c.brand.nfServiceCode });
+  const used = fields.accessKey ? (await prisma.withdrawal.count({ where: { nfAccessKey: fields.accessKey, status: { in: ["REQUESTED", "APPROVED", "PAID"] } } })) > 0 : false;
+  return { status: nf.status, problems: used ? [...nf.problems, NF_USED] : nf.problems, amountCents: fields.amountCents };
+}

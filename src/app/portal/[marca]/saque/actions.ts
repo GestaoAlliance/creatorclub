@@ -18,6 +18,7 @@ import {
   MAX_NF_BYTES,
   NF_BUCKET,
   nfPath,
+  previewNf,
   requestWithdrawal,
   requestWithdrawalWithReceipt,
   WithdrawalRequestError,
@@ -38,6 +39,25 @@ export async function prepareNfUpload(marca: string, requestId: string): Promise
     if (error instanceof WithdrawalRequestError) return { ok: false, error: error.message };
     console.error("withdrawal.prepare", error);
     return { ok: false, error: "Não foi possível preparar o envio. Tente de novo em instantes." };
+  }
+}
+
+export type NfPreview = { ok: true; status: "OK" | "MANUAL"; problems: string[] } | { ok: false; error: string };
+
+/** D-PORTALWD: confere a nota enviada antes do pedido (mesma régua do pedido; nada é gravado). */
+export async function checkNfAction(marca: string, requestId: string, amountCents: number): Promise<NfPreview> {
+  try {
+    assertRequestId(requestId);
+    const ctx = await currentPortalContext(marca);
+    const { data, error } = await supabaseAdmin().storage.from(NF_BUCKET).download(nfPath(ctx.brand.id, ctx.creatorId, requestId));
+    if (error || !data) return { ok: false, error: "A nota fiscal não chegou. Envie o PDF de novo." };
+    if (data.size > MAX_NF_BYTES) return { ok: false, error: "A nota fiscal passa de 10 MB." };
+    const r = await previewNf(db(), ctx, new Uint8Array(await data.arrayBuffer()), amountCents);
+    return { ok: true, status: r.status, problems: r.problems };
+  } catch (error) {
+    if (error instanceof WithdrawalRequestError) return { ok: false, error: error.message };
+    console.error("withdrawal.preview", error);
+    return { ok: false, error: "Não deu para conferir a nota agora. Você ainda pode pedir: a equipe confere." };
   }
 }
 
