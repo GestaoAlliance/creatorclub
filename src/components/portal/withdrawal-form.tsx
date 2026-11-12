@@ -1,8 +1,8 @@
 "use client";
 
-import { FileUp, Loader2 } from "lucide-react";
+import { CheckCircle2, FileUp, Loader2, TriangleAlert } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
-import { prepareNfUpload, submitWithdrawal, type SubmitState } from "@/app/portal/[marca]/saque/actions";
+import { checkNfAction, prepareNfUpload, submitWithdrawal, type NfPreview, type SubmitState } from "@/app/portal/[marca]/saque/actions";
 import type { NfData } from "@/domain";
 import { NfDataList } from "./nf-data";
 
@@ -25,6 +25,7 @@ export function WithdrawalForm(p: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, startUpload] = useTransition();
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitWithdrawal, undefined);
+  const [check, setCheck] = useState<NfPreview | null>(null);
 
   function upload() {
     if (!file) return;
@@ -37,6 +38,8 @@ export function WithdrawalForm(p: Props) {
       const res = await fetch(ticket.signedUrl, { method: "PUT", headers: { "content-type": "application/pdf", "x-upsert": "true" }, body: file });
       if (!res.ok) return setUploadError("O envio falhou. Tente de novo.");
       setUploaded(true);
+      // D-PORTALWD: confere a nota antes de pedir (tomadora, valor, CNPJ, serviço).
+      setCheck(await checkNfAction(p.marca, p.requestId, cents));
       setStep(2);
     });
   }
@@ -97,11 +100,29 @@ export function WithdrawalForm(p: Props) {
               </label>
             )}
           </dl>
+          {check?.ok && check.problems.length > 0 && (
+            <div role="alert" className="flex flex-col gap-1.5 rounded-2xl bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-300">
+              <p className="flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-4" />Esta nota vai ser recusada:</p>
+              <ul className="list-disc pl-5">{check.problems.map((x) => <li key={x}>{x}</li>)}</ul>
+              <p>Emita a nota de novo e envie o PDF certo.</p>
+            </div>
+          )}
+          {check?.ok && check.problems.length === 0 && check.status === "OK" && (
+            <p className="flex items-center gap-1.5 rounded-2xl bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" />Nota conferida: valor, CNPJ e serviço batem.</p>
+          )}
+          {check?.ok && check.problems.length === 0 && check.status === "MANUAL" && (
+            <p className="rounded-2xl bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">Não conseguimos ler tudo desta nota (foto ou fora do padrão nacional). Pode pedir: a equipe confere à mão.</p>
+          )}
+          {check && !check.ok && <p className="text-sm text-amber-900 dark:text-amber-200">{check.error}</p>}
           <p className="text-xs text-stone-500">O valor fica "em saque" até o pagamento. A equipe confere a nota e paga por Pix.</p>
           {state?.error && <p className="text-sm text-red-700 dark:text-red-400">{state.error}</p>}
           <div className="flex justify-between">
             <button type="button" className={ghost} onClick={() => setStep(1)}>Voltar</button>
-            <button className={primary} disabled={pending}>{pending ? <Loader2 className="inline size-4 animate-spin" /> : "Pedir saque"}</button>
+            {check?.ok && check.problems.length > 0 ? (
+              <button type="button" className={primary} onClick={() => { setStep(1); setFile(null); setUploaded(false); setCheck(null); }}>Enviar outra nota</button>
+            ) : (
+              <button className={primary} disabled={pending}>{pending ? <Loader2 className="inline size-4 animate-spin" /> : "Pedir saque"}</button>
+            )}
           </div>
         </form>
       )}

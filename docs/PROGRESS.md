@@ -315,6 +315,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-300 — 2026-11-12 — Portal: Saque com faixa, janela, passo a passo, conferência da nota antes de pedir e linha do tempo (D-PORTALWD; aguarda OK)
+- `src/lib/portal/withdrawal-extras.ts` (`portalWithdrawalExtras`, `maskPix`); `previewNf` em `withdrawals/request.ts` e
+  `checkNfAction` no portal; `withdrawal-form.tsx` mostra o resultado e troca o botão quando a nota vai voltar;
+  `withdrawal-view.tsx` refeita; `approvedAt` nos saques do portal.
+- Teste de integração em `withdrawal-decide.test.ts`.
+- Próxima: portal, tela Pedidos.
+
 ### CP-299 — 2026-11-12 — Portal Vendas: comissão em destaque no lugar do total de vendas (D-PORTALCOMMISSION; aguarda OK)
 - Faixa com "Sua comissão" e comparação em comissão; quadros pedidos e comissão por pedido; `SalesChart` ganhou
   `metric` (comissão por dia no portal); `previousCommission` em `portalSalesExtras`; total do dia em comissão.

@@ -1,3 +1,4 @@
+import { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
 import { notFound } from "next/navigation";
 import { WithdrawalView } from "@/components/portal/withdrawal-view";
 import { db } from "@/lib/db";
@@ -20,5 +21,6 @@ export default async function PortalWithdrawals({ params, searchParams }: { para
     if (!(error instanceof PortalError)) throw error;
     tab = await portalWithdrawalTab(db(), ctx);
   }
-  return <WithdrawalView tab={tab} base={`/portal/${ctx.brand.slug}`} justRequested={pedido === "enviado"} days={ctx.withdrawalDays} />;
+  const extras = await portalWithdrawalExtras(db(), ctx);
+  return <WithdrawalView extras={extras} tab={tab} base={`/portal/${ctx.brand.slug}`} justRequested={pedido === "enviado"} days={ctx.withdrawalDays} />;
 }

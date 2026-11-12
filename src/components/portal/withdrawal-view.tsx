@@ -1,11 +1,12 @@
-import { ArrowDownLeft, ArrowUpRight, Clock, FileText, Receipt, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BellRing, Check, Clock, FileText, KeyRound, Receipt, TriangleAlert, Wallet, X } from "lucide-react";
+import type { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
 import Link from "next/link";
 import { formatBRL, payDaysText, type WithdrawalDays } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { NfDataList } from "./nf-data";
 import { HelpTip } from "@/components/ui/tour";
-import { ReleaseProgressBar, releaseNote, releaseWhat } from "@/components/ui/release-progress";
+import { releaseNote, releaseWhat } from "@/components/ui/release-progress";
 import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, type WithdrawalTab } from "@/lib/portal/withdrawals";
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -22,7 +23,7 @@ const STATUS_STYLE = {
 } as const;
 
 /** Aba Saque (D-WDTAB): saldo e botão, meus saques, movimentações por mês. Só exibe. */
-export function WithdrawalView({ tab, base, justRequested = false, days }: { tab: WithdrawalTab; base: string; justRequested?: boolean; /** D-REVITARULES */ days?: WithdrawalDays }) {
+export function WithdrawalView({ tab, base, justRequested = false, days, extras }: { tab: WithdrawalTab; base: string; justRequested?: boolean; /** D-REVITARULES */ days?: WithdrawalDays; extras: Awaited<ReturnType<typeof portalWithdrawalExtras>> }) {
   const { balance, policy } = tab;
   const block = ORDER.find((b) => tab.blocks.includes(b));
   const blockText = block
@@ -41,45 +42,66 @@ export function WithdrawalView({ tab, base, justRequested = false, days }: { tab
           Pedido de saque enviado! A equipe confere {tab.individual ? "o recibo" : "a nota fiscal"} e paga por Pix. Você acompanha em "Meus saques".
         </p>
       )}
-      <section data-tour="saque-saldo" className="glass flex flex-col gap-5 rounded-3xl p-5 md:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-stone-500">
-              <Wallet className="size-4" /> Disponível para saque <HelpTip id="saque-saldo" className="-my-1" />
-            </p>
-            <p className={`mt-1 text-4xl font-semibold tabular-nums ${balance.availableCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatBRL(balance.availableCents)}</p>
-          </div>
-          {blockText ? (
-            <span aria-disabled className="cursor-not-allowed rounded-full bg-stone-300/60 px-6 py-3 text-sm font-semibold text-stone-500 dark:bg-white/10">
-              Solicitar saque
+      {/* D-PORTALWD: faixa com o saldo, o botão (ou o motivo), a janela e o que vem no dia 1. */}
+      <section data-tour="saque-saldo" className="@container relative isolate overflow-hidden rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
+        <div aria-hidden className="brand-art absolute inset-0 -z-10" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
+        <div className="flex flex-col gap-4 p-5 md:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-white/75"><Wallet className="size-4" />Disponível para saque <HelpTip id="saque-saldo" className="-my-1" /></p>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${extras.window.open ? "bg-emerald-400/25" : "bg-white/15"}`}>
+              {extras.window.open ? `Janela aberta · ${extras.window.daysLeft === 1 ? "último dia" : `até o dia ${policy.windowEndDay}`}` : `Janela abre em ${extras.window.opensIn} ${extras.window.opensIn === 1 ? "dia" : "dias"} (dia ${policy.windowStartDay})`}
             </span>
+          </div>
+          <p className={`text-4xl font-semibold tabular-nums ${balance.availableCents < 0 ? "text-red-200" : ""}`}><span className="money">{formatBRL(balance.availableCents)}</span></p>
+          {blockText ? (
+            <p className="rounded-2xl bg-white/15 px-4 py-3 text-sm">{blockText}</p>
           ) : (
-            <Link href={`${base}/saque/novo`} className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow-sm">
-              Solicitar saque
-            </Link>
+            <Link href={`${base}/saque/novo`} className="self-start rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 shadow-sm">Solicitar saque</Link>
+          )}
+          {!extras.window.open && !tab.blocks.includes("VIEW_ONLY") && (
+            <p className="flex items-center gap-2 text-xs text-white/85"><BellRing className="size-3.5 shrink-0" />Você recebe um aviso no dia {policy.windowStartDay}, aqui no portal e no WhatsApp, se tiver saldo para sacar.</p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="frost-tile flex min-w-0 flex-col rounded-2xl px-3 py-2.5 text-stone-900 dark:text-white">
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><Clock className="size-3" />A liberar</span>
+              <span className="truncate text-lg font-semibold tabular-nums"><span className="money">{formatBRL(balance.heldCents)}</span></span>
+              <span className="truncate text-[11px] text-stone-500 dark:text-stone-300">{balance.heldCents > 0 ? releaseNote(tab.release) : "nada em espera"}</span>
+            </div>
+            <div className="frost-tile flex min-w-0 flex-col rounded-2xl px-3 py-2.5 text-stone-900 dark:text-white">
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><FileText className="size-3" />Em saque</span>
+              <span className="truncate text-lg font-semibold tabular-nums"><span className="money">{formatBRL(balance.reservedCents)}</span></span>
+              <span className="truncate text-[11px] text-stone-500 dark:text-stone-300">pedidos em andamento</span>
+            </div>
+          </div>
+          {tab.release.minCents !== null && balance.heldCents > 0 && (
+            <p className="rounded-2xl bg-white/15 px-4 py-2.5 text-sm">
+              {tab.release.accumulatedCents >= tab.release.minCents
+                ? <>Em {day(tab.release.nextClosingAt)} libera <strong className="money">{formatBRL(balance.heldCents)}</strong>: você já bateu o mínimo.</>
+                : <><strong className="money">{formatBRL(balance.heldCents)}</strong> libera quando a sua {releaseWhat(tab.release)} chegar a {formatBRL(tab.release.minCents)} (faltam {formatBRL(tab.release.minCents - tab.release.accumulatedCents)}).</>}
+            </p>
           )}
         </div>
-        {blockText && <p className="rounded-2xl bg-white/50 px-4 py-3 text-sm text-stone-700 dark:bg-white/5 dark:text-stone-300">{blockText}</p>}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-white/40 px-4 py-3 dark:bg-white/5">
-            <p className="flex items-center gap-1.5 text-xs text-stone-500"><Clock className="size-3.5" /> A liberar</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">{formatBRL(balance.heldCents)}</p>
-            <p className="text-xs text-stone-500">{balance.heldCents > 0 ? releaseNote(tab.release) : "nada em espera"}</p>
-          </div>
-          <div className="rounded-2xl bg-white/40 px-4 py-3 dark:bg-white/5">
-            <p className="flex items-center gap-1.5 text-xs text-stone-500"><FileText className="size-3.5" /> Em saque</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">{formatBRL(balance.reservedCents)}</p>
-            <p className="text-xs text-stone-500">pedidos em análise</p>
-          </div>
-        </div>
-        <ReleaseProgressBar r={tab.release} />
-        <p className="text-xs text-stone-500">
-          {tab.release.minCents !== null &&
-            `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
-          Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
-          liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix {payDaysText(days)}.
-        </p>
       </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4" />Sua chave Pix</h2>
+          <p className="font-mono text-lg">{extras.pixKey ?? "não cadastrada"}</p>
+          <p className="text-xs text-stone-500">{extras.pixKey ? "O Pix do saque cai nesta chave. Para trocar, fale com a equipe da marca." : "Você informa a chave no pedido de saque."}</p>
+        </section>
+        <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
+          <h2 className="text-sm font-semibold">Total recebido</h2>
+          <p className="text-lg font-semibold tabular-nums"><span className="money">{formatBRL(extras.received.totalCents)}</span></p>
+          <p className="text-xs text-stone-500">{extras.received.count} {extras.received.count === 1 ? "saque pago" : "saques pagos"} · em {extras.received.year}: <span className="money">{formatBRL(extras.received.yearCents)}</span></p>
+        </section>
+      </div>
+      <p className="px-1 text-xs text-stone-500">
+        {tab.release.minCents !== null &&
+          `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
+        Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
+        liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix {payDaysText(days)}.
+      </p>
 
       {tab.individual ? (
         <section data-tour="saque-recibo" className="glass flex flex-col gap-3 rounded-3xl p-5">
@@ -93,15 +115,34 @@ export function WithdrawalView({ tab, base, justRequested = false, days }: { tab
           </p>
         </section>
       ) : (
-      <section data-tour="saque-nf" className="glass flex flex-col gap-3 rounded-3xl p-5">
+      <section data-tour="saque-nf" className="glass flex flex-col gap-4 rounded-3xl p-5">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Antes de pedir: emita a nota fiscal</h2>
+          <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> Como pedir: 3 passos</h2>
           <HelpTip id="saque-nf" />
         </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          O pedido só é feito com a nota já emitida, no valor total disponível para saque, pelo CNPJ do seu cadastro. Use estes dados:
-        </p>
-        <NfDataList nf={tab.nf} />
+        <ol className="flex flex-col gap-3">
+          <li className="flex gap-3">
+            <span className="grid size-7 shrink-0 place-content-center rounded-full bg-brand text-xs font-semibold text-white dark:bg-brand-2 dark:text-stone-900">1</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Emita a nota fiscal do <strong>valor total disponível</strong>, pelo CNPJ do seu cadastro, com estes dados:</p>
+              <div className="mt-2"><NfDataList nf={tab.nf} /></div>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <span className="grid size-7 shrink-0 place-content-center rounded-full bg-brand text-xs font-semibold text-white dark:bg-brand-2 dark:text-stone-900">2</span>
+            <p className="text-sm font-medium">Baixe o PDF da nota no site da prefeitura (ou no emissor nacional).</p>
+          </li>
+          <li className="flex gap-3">
+            <span className="grid size-7 shrink-0 place-content-center rounded-full bg-brand text-xs font-semibold text-white dark:bg-brand-2 dark:text-stone-900">3</span>
+            <p className="text-sm font-medium">Toque em <strong>Solicitar saque</strong> e envie o PDF. O sistema confere a nota na hora e avisa se algo não bate.</p>
+          </li>
+        </ol>
+        {extras.reasons.length > 0 && (
+          <div className="rounded-2xl bg-amber-500/10 p-3 text-sm">
+            <p className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-200"><TriangleAlert className="size-4" />O que mais faz a nota voltar</p>
+            <ul className="mt-1 list-disc pl-5 text-stone-700 dark:text-stone-300">{extras.reasons.map((r) => <li key={r.reason}>{r.reason}</li>)}</ul>
+          </div>
+        )}
       </section>
       )}
 
@@ -114,24 +155,43 @@ export function WithdrawalView({ tab, base, justRequested = false, days }: { tab
           <p className="py-4 text-sm text-stone-500">Nenhum pedido de saque ainda.</p>
         ) : (
           <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
-            {tab.withdrawals.map((w) => (
-              <li key={w.id} className="flex items-center justify-between gap-3 py-3">
-                <div>
-                  <p className="text-sm font-medium tabular-nums">{formatBRL(w.amountCents)}</p>
-                  <p className="text-xs text-stone-500">
-                    pedido em {day(w.requestedAt)}
-                    {w.decidedAt && ` · concluído em ${day(w.decidedAt)}`}
-                    {w.status === "APPROVED" && " · aprovado, aguardando o Pix"}
-                    {w.status === "REJECTED" && w.note && ` · motivo: ${w.note}`}
-                  </p>
+            {tab.withdrawals.map((w) => {
+              // D-PORTALWD: linha do tempo do pedido (pedido → aprovado → Pix feito, ou recusado/cancelado).
+              const steps: { label: string; at: Date | null; state: "done" | "todo" | "bad" }[] =
+                w.status === "REJECTED" || w.status === "CANCELLED"
+                  ? [{ label: "Pedido", at: w.requestedAt, state: "done" }, { label: w.status === "REJECTED" ? "Recusado" : "Cancelado", at: w.decidedAt, state: "bad" }]
+                  : [
+                      { label: "Pedido", at: w.requestedAt, state: "done" },
+                      { label: tab.individual ? "Recibo conferido" : "Nota conferida", at: w.approvedAt ?? (w.status === "PAID" ? w.decidedAt : null), state: w.approvedAt || w.status === "PAID" ? "done" : "todo" },
+                      { label: "Pix feito", at: w.status === "PAID" ? w.decidedAt : null, state: w.status === "PAID" ? "done" : "todo" },
+                    ];
+              return (
+                <li key={w.id} className="flex flex-col gap-2 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold tabular-nums"><span className="money">{formatBRL(w.amountCents)}</span></p>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[w.status]}`}>{WITHDRAWAL_STATUS_LABEL[w.status]}</span>
+                      {w.status === "REQUESTED" && !tab.blocks.includes("VIEW_ONLY") && <CancelWithdrawalButton marca={base.split("/")[2]!} withdrawalId={w.id} />}
+                    </span>
+                  </div>
+                  <ol className="flex items-start">
+                    {steps.map((st, i) => (
+                      <li key={st.label} className="relative flex flex-1 flex-col items-center gap-1 text-center">
+                        {i > 0 && <span aria-hidden className={`absolute right-1/2 top-2.5 h-0.5 w-full -translate-x-0 ${st.state === "todo" ? "bg-stone-300/70 dark:bg-white/10" : st.state === "bad" ? "bg-red-400/60" : "bg-brand/50"}`} style={{ right: "50%" }} />}
+                        <span className={`relative z-10 grid size-5 place-content-center rounded-full ${st.state === "done" ? "bg-brand text-white dark:bg-brand-2 dark:text-stone-900" : st.state === "bad" ? "bg-red-500 text-white" : "border-2 border-stone-300 bg-white dark:border-white/20 dark:bg-stone-900"}`}>
+                          {st.state === "done" && <Check className="size-3" />}
+                          {st.state === "bad" && <X className="size-3" />}
+                        </span>
+                        <span className={`text-[11px] ${st.state === "todo" ? "text-stone-400" : "font-medium"}`}>{st.label}</span>
+                        <span className="text-[10px] text-stone-500">{st.at ? day(st.at) : "—"}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {w.status === "REJECTED" && w.note && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-800 dark:text-red-300">Motivo: {w.note}</p>}
                   {w.status === "PAID" && w.pixReference && <p className="font-mono text-[11px] text-stone-500">ID do Pix: {w.pixReference}</p>}
-                </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[w.status]}`}>{WITHDRAWAL_STATUS_LABEL[w.status]}</span>
-                  {w.status === "REQUESTED" && !tab.blocks.includes("VIEW_ONLY") && <CancelWithdrawalButton marca={base.split("/")[2]!} withdrawalId={w.id} />}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
