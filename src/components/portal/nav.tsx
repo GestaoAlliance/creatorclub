@@ -2,6 +2,7 @@
 
 import {
   Banknote,
+  Bell,
   ChevronsLeft,
   ClipboardCheck,
   Download,
@@ -54,6 +55,7 @@ const ICONS = {
   hunter: Target,
   settings: Settings,
   phone: Smartphone,
+  bell: Bell,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;
@@ -68,6 +70,8 @@ export const PORTAL_ITEMS: NavItem[] = [
   { href: "/envios", label: "Pedidos", icon: "package" },
   // D-SHOPTAB: comprar com o saldo em aba própria.
   { href: "/loja", label: "Loja", icon: "store" },
+  // D-PORTALNOTICES: avisos também no menu (no celular, dentro de "Mais", com a contagem de novos).
+  { href: "/avisos", label: "Avisos", icon: "bell" },
   // D-INSTALLAPP: some quando o portal já está aberto pelo ícone (como app).
   { href: "/app", label: "Instalar", icon: "phone" },
 ];
@@ -85,8 +89,14 @@ function useActive(base: string, items: NavItem[]) {
   return (href: string) => (best === undefined ? hit(href) : href === best);
 }
 
+/** Contagem de novos num item do menu (ex.: avisos). */
+function Count({ n, className = "" }: { n: number | undefined; className?: string }) {
+  if (!n) return null;
+  return <span className={`grid min-w-5 place-content-center rounded-full bg-rose-600 px-1 text-[11px] font-semibold leading-5 text-white ${className}`}>{n > 9 ? "9+" : n}</span>;
+}
+
 /** Computador: barra lateral de vidro, recolhível (lembra a escolha neste navegador). */
-export function SideNav({ base, brandName, items: all, hidden = [] }: { base: string; brandName: string; items: NavItem[]; hidden?: string[] }) {
+export function SideNav({ base, brandName, items: all, hidden = [], counts = {} }: { base: string; brandName: string; items: NavItem[]; hidden?: string[]; counts?: Record<string, number> }) {
   const standalone = useStandalone();
   const items = all.filter((i) => !hidden.includes(i.href) && !(standalone && i.href === "/app"));
   const [open, setOpen] = useState(true);
@@ -125,10 +135,12 @@ export function SideNav({ base, brandName, items: all, hidden = [] }: { base: st
                 isActive(href) ? "bg-brand text-white shadow-sm" : "text-stone-600 hover:bg-white/60 dark:text-stone-300 dark:hover:bg-white/10"
               }`}
             >
-              <span className="grid w-14 shrink-0 place-content-center">
+              <span className="relative grid w-14 shrink-0 place-content-center">
                 <Icon className="size-5" />
+                {!open && <Count n={counts[href]} className="absolute -top-2 right-2" />}
               </span>
-              {open && <span className="truncate text-sm font-medium">{label}</span>}
+              {open && <span className="flex-1 truncate text-sm font-medium">{label}</span>}
+              {open && <Count n={counts[href]} className="mr-3" />}
             </Link>
           );
         })}
@@ -149,7 +161,7 @@ export function SideNav({ base, brandName, items: all, hidden = [] }: { base: st
 }
 
 /** Celular: barra de vidro fixa embaixo, tipo app. Mais de 5 itens: os 4 primeiros e "Mais" com o resto. */
-export function BottomNav({ base, items: all, hidden = [] }: { base: string; items: NavItem[]; hidden?: string[] }) {
+export function BottomNav({ base, items: all, hidden = [], counts = {} }: { base: string; items: NavItem[]; hidden?: string[]; counts?: Record<string, number> }) {
   const standalone = useStandalone();
   const items = all.filter((i) => !hidden.includes(i.href) && !(standalone && i.href === "/app"));
   const isActive = useActive(base, items);
@@ -168,7 +180,8 @@ export function BottomNav({ base, items: all, hidden = [] }: { base: string; ite
             const Icon = ICONS[icon];
             return (
               <Link key={href} href={`${base}${href}`} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${isActive(href) ? "bg-brand text-white" : ""}`}>
-                <Icon className="size-5" /> {label}
+                <Icon className="size-5" /> <span className="flex-1">{label}</span>
+                <Count n={counts[href]} />
               </Link>
             );
           })}
@@ -178,15 +191,17 @@ export function BottomNav({ base, items: all, hidden = [] }: { base: string; ite
         {main.map(({ href, label, icon }) => {
           const Icon = ICONS[icon];
           return (
-            <Link key={href} href={`${base}${href}`} className={cls(isActive(href))}>
+            <Link key={href} href={`${base}${href}`} className={`relative ${cls(isActive(href))}`}>
               <Icon className="size-5" />
+              <Count n={counts[href]} className="absolute right-2 top-0.5" />
               <span className="max-w-full truncate">{label}</span>
             </Link>
           );
         })}
         {rest.length > 0 && (
-          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={cls(more || rest.some((i) => isActive(i.href)))}>
+          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`relative ${cls(more || rest.some((i) => isActive(i.href)))}`}>
             <Ellipsis className="size-5" />
+            <Count n={rest.reduce((t, i) => t + (counts[i.href] ?? 0), 0)} className="absolute right-2 top-0.5" />
             Mais
           </button>
         )}

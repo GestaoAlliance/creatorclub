@@ -51,3 +51,5 @@ export * from "./creator-list";
 export * from "./payouts";
 export * from "./settings";
 export * from "./portal-home";
+export * from "./portal-posts";
+export * from "./portal-notices";

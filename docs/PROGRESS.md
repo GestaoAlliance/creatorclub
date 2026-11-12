@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-307 — 2026-11-12 — Portal: Avisos com o que pede ação, recados da equipe fixados, lista por dia e onde ela recebe (D-PORTALNOTICES; aguarda OK)
+- `src/lib/portal/notices-board.ts` (`portalNoticesBoard`): o que pede ação agora (kit para escolher, saque recusado, janela de saque aberta com saldo, envio a caminho, campanha para participar), recados da equipe ainda não lidos, avisos novos, resumo do mês e onde ela recebe (WhatsApp ou e-mail, mascarado).
+- `notices-view.tsx`: faixa (novos, resumo do mês, "Precisa de você"), recados fixados com "Entendi", lista por dia (Hoje, Ontem, Esta semana, Últimos 30 dias) com ícone e cor por assunto e toque para ler tudo; avisos antigos recolhidos; cartão "onde você recebe".
+- `markAllRead` não marca mais o recado da equipe; `ackNotice` + ação "Entendi". "Avisos" entrou no menu (no celular em "Mais", com a contagem também no botão "Mais").
+- Domínio `portal-notices.ts`: `noticeTopic`, `noticeGroup`, `noticeMonthSummary`, `maskPhone`, `maskEmail`. Testes em `portal-notices.test.ts` e `integration/portal-notices.test.ts`.
+- Com isso a revisão do portal das creators (Início → Avisos) está completa; próxima tarefa: perguntar ao responsável.
+
+### CP-306 — 2026-11-12 — Portal: Meus posts com resumo do mês, colar e pronto, o que mais vende, campeões, ideias e lista por mês (D-PORTALPOSTS; aguarda OK)
+- `src/lib/portal/posts-board.ts` (`portalPostsBoard`): posts registrados + detectados no Instagram (@ do cadastro), sem repetir o mesmo post; cada post com **comissão** e pedidos nos 3 dias e o normal em comissão (o total vendido não aparece).
+- `posts-view.tsx`: faixa (posts no mês, último post, melhor post, sequência e as últimas 8 semanas; aviso amarelo com 7+ dias sem postar e comissão das semanas com post x sem post), registrar com reconhecimento da rede, aviso de post repetido e dia do TikTok pelo link; "O que mais vende para você" (formato e dia), 3 campeões, ideias da semana; lista compacta por mês (mês atual aberto; toque abre link, curtidas, acima do normal e tirar).
+- Domínio `portal-posts.ts`: `postFormat`, `igShortcode`, `postInsights`, `weekStart`, `weekStreak`, `postingWeeks`, `postIdeas`, `tiktokDay`. Testes em `portal-posts.test.ts` e `integration/portal-posts.test.ts`.
+
 ### CP-305 — 2026-11-12 — Portal: Campanhas com faixa da campanha da vez, grupos por momento, posts e aviso de campanha nova (D-PORTALCAMPAIGN; aguarda OK)
 - `campaigns-view.tsx` refeito: faixa (campanha acontecendo, de preferência a dela; senão a próxima) com contagem regressiva, posição, quanto falta para passar quem está acima, barra da meta, subiu/caiu desde ontem e compartilhar o cupom; quadro "Você já ganhou R$ X em campanhas"; Acontecendo agora / Em breve / Encerradas (uma linha, abre com placar).
 - Cartão: briefing recolhido em 3 linhas com "Ler tudo" e links em botões; posts dela na campanha e "Registrar post" ali mesmo.

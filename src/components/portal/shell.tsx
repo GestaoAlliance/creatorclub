@@ -29,7 +29,7 @@ export function PortalShell({
 
   return (
     <div style={brandCssVars(ctx.brand) as CSSProperties} className="portal-bg flex min-h-screen">
-      <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} hidden={hidden} />
+      <SideNav base={base} brandName={ctx.brand.name} items={PORTAL_ITEMS} hidden={hidden} counts={{ "/avisos": unread }} />
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-28 pt-4 md:px-6 md:pb-8">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -94,7 +94,7 @@ export function PortalShell({
           <main className="flex-1">{children}</main>
         </TutorialProvider>
       </div>
-      <BottomNav base={base} items={PORTAL_ITEMS} hidden={hidden} />
+      <BottomNav base={base} items={PORTAL_ITEMS} hidden={hidden} counts={{ "/avisos": unread }} />
     </div>
   );
 }

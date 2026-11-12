@@ -34,7 +34,7 @@ export async function myNotifications(prisma: PrismaClient, ctx: Pick<PortalCont
   return prisma.notification.findMany({
     where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 100,
     select: { id: true, kind: true, title: true, body: true, href: true, createdAt: true, readAt: true },
   });
 }
@@ -43,9 +43,19 @@ export async function unreadCount(prisma: PrismaClient, ctx: Pick<PortalContext,
   return prisma.notification.count({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, readAt: null } });
 }
 
-/** Abrir a lista marca tudo como lido. A equipe vendo o portal (D-VIEWAS) não marca nada. */
+/**
+ * Abrir a lista marca tudo como lido. A equipe vendo o portal (D-VIEWAS) não marca nada. D-PORTALNOTICES: recado da
+ * equipe (TEAM_MESSAGE) fica fixado até ela tocar "Entendi" (`ackNotice`).
+ */
 export async function markAllRead(prisma: PrismaClient, ctx: Pick<PortalContext, "creatorId" | "brand" | "viewAs">, now = new Date()) {
   if (ctx.viewAs) return 0;
-  const { count } = await prisma.notification.updateMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, readAt: null }, data: { readAt: now } });
+  const { count } = await prisma.notification.updateMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, readAt: null, kind: { not: "TEAM_MESSAGE" } }, data: { readAt: now } });
+  return count;
+}
+
+/** "Entendi" num recado da equipe: marca só ele como lido (dela e da marca do portal). */
+export async function ackNotice(prisma: PrismaClient, ctx: Pick<PortalContext, "creatorId" | "brand" | "viewAs">, id: string, now = new Date()) {
+  if (ctx.viewAs) return 0;
+  const { count } = await prisma.notification.updateMany({ where: { id, creatorId: ctx.creatorId, brandId: ctx.brand.id, readAt: null }, data: { readAt: now } });
   return count;
 }
