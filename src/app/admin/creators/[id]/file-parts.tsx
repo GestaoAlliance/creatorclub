@@ -283,6 +283,7 @@ export function ShipmentCard({ s, count }: { s: CreatorInsights["shipment"]; cou
           </ol>
           {s.status === "SHIPPED" && !s.deliveredAt && <p className="text-xs text-stone-500">Ela ainda não tocou em "Recebi" no portal.</p>}
           {s.trackingCode && <p className="text-xs text-stone-500">Rastreio: <span className="font-mono">{s.trackingCode}</span>{s.carrier ? ` (${s.carrier})` : ""}</p>}
+          {s.review && <p className="text-sm"><span className="text-amber-500">{"★".repeat(s.review.rating)}</span><span className="text-stone-300">{"★".repeat(5 - s.review.rating)}</span>{s.review.comment && <span className="text-stone-600 dark:text-stone-300"> · “{s.review.comment}”</span>}</p>}
         </>
       )}
       <Link href="/admin/envios" className="self-start text-xs font-semibold text-brand hover:underline dark:text-brand-2">Ver envios →</Link>

@@ -270,3 +270,44 @@ describe("tela de Envios (D-SHIPBOARD, banco real)", () => {
     await expect(shipmentBoard(prisma, outra.envio, s.brand.id, [], now)).rejects.toThrow(/permissão/);
   });
 });
+
+describe("Pedidos do portal (D-SHIPREVIEW, D-SHIPETA, banco real)", () => {
+  it("avalia só o próprio envio recebido, uma vez; trava de nota e de só inserção", async () => {
+    const { reviewShipment } = await import("@/lib/shipments/review");
+    const s = await setup();
+    const base = { brandId: s.brand.id, creatorId: s.creator.id, address: {}, createdById: "x" };
+    const sent = await prisma.shipment.create({ data: { ...base, status: "SHIPPED", shippedAt: new Date(), shippedById: "x", carrier: "Correios", trackingCode: "AA123456789BR" } });
+    await expect(reviewShipment(prisma, s.ctx, s.userId, { shipmentId: sent.id, rating: 5 })).rejects.toThrow(/depois de receber/);
+    await confirmReceived(prisma, s.ctx, s.userId, sent.id);
+    await expect(reviewShipment(prisma, s.ctx, s.userId, { shipmentId: sent.id, rating: 6 })).rejects.toThrow(/1 a 5/);
+    await reviewShipment(prisma, s.ctx, s.userId, { shipmentId: sent.id, rating: 4, comment: "  Amei   o whey " });
+    expect(await prisma.shipmentReview.findUniqueOrThrow({ where: { shipmentId: sent.id } })).toMatchObject({ rating: 4, comment: "Amei o whey" });
+    await expect(reviewShipment(prisma, s.ctx, s.userId, { shipmentId: sent.id, rating: 5 })).rejects.toThrow(/já avaliou/);
+    expect((await myShipments(prisma, s.ctx)).find((x) => x.id === sent.id)?.review).toEqual({ rating: 4, comment: "Amei o whey" });
+
+    const other = await setup();
+    await expect(reviewShipment(prisma, other.ctx, other.userId, { shipmentId: sent.id, rating: 3 })).rejects.toThrow(/não encontrado/);
+    const r = await prisma.shipmentReview.findUniqueOrThrow({ where: { shipmentId: sent.id } });
+    await expectDbError(prisma.shipmentReview.update({ where: { id: r.id }, data: { rating: 1 } }), /somente inserção/);
+    const second = await prisma.shipment.create({ data: { ...base, status: "DELIVERED", shippedAt: new Date(), shippedById: "x", carrier: "Correios", trackingCode: "AA123456780BR", deliveredAt: new Date(), deliveredBy: "STAFF", deliveredById: "x" } });
+    await expectDbError(prisma.shipmentReview.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, shipmentId: second.id, rating: 0, createdById: "x" } }), /ShipmentReview_rating_range/);
+    await expectDbError(prisma.shipmentReview.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, shipmentId: second.id, rating: 3, comment: "  ", createdById: "x" } }), /ShipmentReview_comment_size/);
+  });
+
+  it("previsão de chegada: mediana do mesmo estado (3+), senão de todos, senão nada", async () => {
+    const { shipmentEtas } = await import("@/lib/shipments/review");
+    const s = await setup();
+    const now = new Date("2026-11-12T12:00:00Z");
+    const done = async (state: string, days: number) => {
+      const shippedAt = new Date(now.getTime() - 20 * 86_400_000);
+      await prisma.shipment.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, address: { state }, createdById: "x", status: "DELIVERED", shippedAt, shippedById: "x", carrier: "Correios", trackingCode: `AA${Math.floor(Math.random() * 1e9)}BR`, deliveredAt: new Date(shippedAt.getTime() + days * 86_400_000), deliveredBy: "STAFF", deliveredById: "x" } });
+    };
+    const shippedAt = new Date("2026-11-10T12:00:00Z");
+    expect((await shipmentEtas(prisma, s.brand.id, [{ id: "a", shippedAt, address: { state: "SP" } }], now)).size).toBe(0);
+    for (const d of [4, 5, 9]) await done("SP", d);
+    await done("BA", 12);
+    const m = await shipmentEtas(prisma, s.brand.id, [{ id: "sp", shippedAt, address: { state: "SP" } }, { id: "ba", shippedAt, address: { state: "BA" } }], now);
+    expect(m.get("sp")!.toISOString().slice(0, 10)).toBe("2026-11-15"); // mediana 5 dias
+    expect(m.get("ba")!.toISOString().slice(0, 10)).toBe("2026-11-17"); // BA só 1: usa todos (4,5,9,12 → 7)
+  });
+});

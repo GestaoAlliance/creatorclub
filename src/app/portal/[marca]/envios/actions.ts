@@ -8,6 +8,7 @@ import { AddressError } from "@/lib/shipments/address";
 import { chooseKit } from "@/lib/shipments/kits";
 import { buyWithBalance } from "@/lib/shipments/shop";
 import { confirmReceived, ShipmentError, updateMyAddress } from "@/lib/shipments/shipments";
+import { reviewShipment } from "@/lib/shipments/review";
 
 export type EnviosState = { error?: string; ok?: string } | undefined;
 
@@ -95,5 +96,18 @@ export async function buyAction(_prev: EnviosState, form: FormData): Promise<Env
       await buyWithBalance(db(), ctx, userId, items);
     },
     "Pedido enviado! A equipe aprova e o valor sai do seu saldo.",
+  );
+}
+
+/** D-SHIPREVIEW: avaliação do envio recebido. */
+export async function reviewAction(_prev: EnviosState, form: FormData): Promise<EnviosState> {
+  const marca = String(form.get("marca") ?? "");
+  return run(
+    marca,
+    async (userId) => {
+      const ctx = await currentPortalContext(marca);
+      await reviewShipment(db(), ctx, userId, { shipmentId: String(form.get("shipmentId") ?? ""), rating: Number(form.get("rating") ?? 0), comment: String(form.get("comment") ?? "") });
+    },
+    "Obrigada pela avaliação!",
   );
 }

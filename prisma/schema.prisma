@@ -144,6 +144,7 @@ model Brand {
   campaignPrizes     CampaignPrize[]
   creatorPosts       CreatorPost[]
   prospects          Prospect[]
+  shipmentReviews    ShipmentReview[]
 }
 
 enum IntegrationKind {
@@ -424,6 +425,7 @@ model Creator {
   campaignPrizes     CampaignPrize[]
   posts              CreatorPost[]
 
+  shipmentReviews    ShipmentReview[]
   @@unique([brandId, accountId])
   @@unique([id, brandId])
   @@unique([brandId, legacyId])
@@ -947,6 +949,7 @@ model Shipment {
   creator Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   items   ShipmentItem[]
   kit     KitGrant?
+  review  ShipmentReview?
 
   @@unique([id, brandId])
   @@index([brandId, status, createdAt])
@@ -1805,4 +1808,23 @@ model InstagramTag {
 
   @@unique([brandId, mediaId])
   @@index([brandId, postedAt])
+}
+
+/// D-SHIPREVIEW: avaliação do envio pela creator depois do "Recebi" (1 a 5 e comentário curto). Uma por envio; só inserção.
+model ShipmentReview {
+  id          String   @id @default(uuid())
+  brandId     String
+  creatorId   String
+  shipmentId  String   @unique
+  rating      Int
+  comment     String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  shipment Shipment @relation(fields: [shipmentId, brandId], references: [id, brandId], onDelete: Restrict)
+  creator  Creator  @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@unique([shipmentId, brandId])
+  @@index([brandId, createdAt])
 }

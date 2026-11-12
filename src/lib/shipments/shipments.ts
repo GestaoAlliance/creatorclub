@@ -244,6 +244,8 @@ const SHIPMENT_SELECT = {
   // D-SHOPTAB: etiqueta "Loja" ou "Prêmio" nos envios da creator.
   balanceCents: true,
   kit: { select: { kind: true } },
+  // D-SHIPREVIEW: a avaliação dela depois do "Recebi".
+  review: { select: { rating: true, comment: true } },
 } as const;
 
 export async function myShipments(prisma: PrismaClient, ctx: PortalContext) {
