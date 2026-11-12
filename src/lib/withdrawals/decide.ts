@@ -57,13 +57,22 @@ async function load(prisma: PrismaClient, id: string) {
 
 const CHANGED = "Este saque mudou de situação. Atualize a página.";
 
-export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, now = new Date()) {
+/** D-PIXREF: ID do Pix como veio do app do banco (sem espaços); vazio = sem ID. */
+export function normalizePixReference(input: string | null | undefined): string | null {
+  const v = (input ?? "").replace(/\s+/g, "");
+  if (!v) return null;
+  if (!/^[A-Za-z0-9-]{4,64}$/.test(v)) throw new WithdrawalDecisionError("ID do Pix inválido: use só letras, números e hífen (como aparece no comprovante).");
+  return v;
+}
+
+export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, now = new Date(), pixReference: string | null = null) {
   const w = await load(prisma, withdrawalId);
   assertManage(actor, w.brandId);
+  const ref = normalizePixReference(pixReference);
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.withdrawal.updateMany({
       where: { id: w.id, status: "APPROVED" },
-      data: { status: "PAID", decidedAt: now, decidedById: actor.userId },
+      data: { status: "PAID", decidedAt: now, decidedById: actor.userId, pixReference: ref },
     });
     if (count === 0) throw new WithdrawalDecisionError(CHANGED);
     await tx.ledgerEntry.create({
@@ -79,7 +88,7 @@ export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, w
       },
     });
     await tx.auditLog.create({
-      data: { brandId: w.brandId, actorType: "USER", actorId: actor.userId, action: "withdrawal.paid", entity: "Withdrawal", entityId: w.id, after: { amountCents: w.amountCents } },
+      data: { brandId: w.brandId, actorType: "USER", actorId: actor.userId, action: "withdrawal.paid", entity: "Withdrawal", entityId: w.id, after: { amountCents: w.amountCents, pixReference: ref } },
     });
     await notify(tx, [{ brandId: w.brandId, creatorId: w.creatorId, notice: notices.withdrawalPaid(w.id, w.amountCents) }]);
   });
@@ -176,6 +185,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       remittance: { select: { nsa: true, payDay: true } },
       bankResult: true,
       bankNote: true,
+      pixReference: true,
       creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
     },
   });
@@ -217,6 +227,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       decidedAt: r.decidedAt,
       approvedAt: r.approvedAt,
       note: r.note,
+      pixReference: r.pixReference,
       hasNf: r.nfFileId !== null,
       nfCheck: r.nfCheck,
       individual: r.method === "RECEIPT_PIX",

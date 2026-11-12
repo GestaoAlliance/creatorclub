@@ -124,6 +124,7 @@ export function WithdrawalView({ tab, base, justRequested = false, days }: { tab
                     {w.status === "APPROVED" && " · aprovado, aguardando o Pix"}
                     {w.status === "REJECTED" && w.note && ` · motivo: ${w.note}`}
                   </p>
+                  {w.status === "PAID" && w.pixReference && <p className="font-mono text-[11px] text-stone-500">ID do Pix: {w.pixReference}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[w.status]}`}>{WITHDRAWAL_STATUS_LABEL[w.status]}</span>

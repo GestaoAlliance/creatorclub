@@ -4,6 +4,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
 import { approveWithdrawal, cancelMyWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, withdrawalQueue } from "@/lib/withdrawals/decide";
 import { payoutSummary } from "@/lib/withdrawals/summary";
+import { payoutBoard } from "@/lib/withdrawals/board";
 import { staffHome } from "@/lib/staff/home";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
 import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
@@ -195,5 +196,39 @@ describe("decisão do saque (banco real)", () => {
       prisma.ledgerEntry.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, type: "WITHDRAWAL", amountCents: -1, withdrawalId: s.withdrawalId, availableAt: now, idempotencyKey: randomUUID() } }),
       /LedgerEntry_one_payment_per_withdrawal/,
     );
+  });
+});
+
+describe("Pagamentos (D-PIXREF, D-PAYBOARD, banco real)", () => {
+  it("ID do Pix opcional ao pagar: guardado e auditado; inválido recusa; a trava só aceita em saque pago", async () => {
+    const s = await approved();
+    await expect(payWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW, "E2E com espaço!")).rejects.toThrow(/ID do Pix inválido/);
+    await payWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW, " E1234567 8901234567890ABCDEF ");
+    expect(await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).toMatchObject({ status: "PAID", pixReference: "E12345678901234567890ABCDEF" });
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { entityId: s.withdrawalId, action: "withdrawal.paid" } });
+    expect(audit.after).toMatchObject({ pixReference: "E12345678901234567890ABCDEF" });
+
+    const other = await requested();
+    await expectDbError(prisma.withdrawal.update({ where: { id: other.withdrawalId }, data: { pixReference: "E123456" } }), /Withdrawal_pix_reference/);
+  });
+
+  it("faixa: janela, quem tem saldo e não pediu, pagos por mês e motivos de recusa; outra marca não vê", async () => {
+    const s = await requested();
+    // Outra creator da marca, liberada, com saldo e sem pedido.
+    const acc = await prisma.creatorAccount.create({ data: { name: "Sem Pedido", email: `${randomUUID()}@x.com` } });
+    const c2 = await prisma.creator.create({ data: { brandId: s.brand.id, accountId: acc.id, categories: ["INFLUENCER"], withdrawalsUnlockedAt: T("2026-10-01T00:00:00Z"), withdrawalsUnlockedById: "pagamento" } });
+    await prisma.ledgerEntry.create({ data: { brandId: s.brand.id, creatorId: c2.id, type: "ADJUSTMENT", amountCents: 12_300, availableAt: T("2026-09-01T00:00:00Z"), idempotencyKey: `adj:${randomUUID()}`, createdById: "seed", note: "teste" } });
+    await rejectWithdrawal(prisma, s.gestao, s.withdrawalId, "CNPJ errado.", IN_WINDOW);
+
+    const b = await payoutBoard(prisma, s.gestao, s.brand.id, IN_WINDOW);
+    expect(b.window).toEqual({ open: true, daysLeft: 6, opensIn: null });
+    expect(b.notRequested.map((c) => c.id)).toContain(c2.id);
+    expect(b.notRequested.find((c) => c.id === c2.id)?.availableCents).toBe(12_300);
+    expect(b.reasons).toEqual([{ reason: "CNPJ errado", count: 1 }]);
+    expect(b.paidByMonth).toHaveLength(6);
+    expect(b.paidByMonth.at(-1)!.month).toBe("2026-10");
+
+    const outside = await seedBrand(prisma);
+    await expect(payoutBoard(prisma, await userWith("GESTAO", outside.brand.id), s.brand.id, IN_WINDOW)).rejects.toThrow(/permissão/);
   });
 });

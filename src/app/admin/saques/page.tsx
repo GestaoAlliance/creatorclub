@@ -1,32 +1,24 @@
-import Link from "next/link";
-import { HelpTip } from "@/components/ui/tour";
 import { redirect } from "next/navigation";
-import { brandsWith } from "@/lib/auth/permissions";
-import { currentActor } from "@/lib/auth/current";
-import { scopedActor, staffContext } from "@/lib/staff/context";
-import { db } from "@/lib/db";
-import { WITHDRAWAL_STATUS_LABEL } from "@/lib/portal/withdrawals";
-import { withdrawalQueue, type QueueFilter } from "@/lib/withdrawals/decide";
-import { payoutSummary } from "@/lib/withdrawals/summary";
-import { Card, Kpi, PageHeader } from "@/components/ui/page";
+import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { dayKey, formatBRL } from "@/domain";
-import { can } from "@/lib/auth/permissions";
-import { remessaPreview } from "@/lib/withdrawals/remessa";
-import { BatchBar, RemessaBar, RetornoForm } from "./forms";
-import { SaquesTable } from "./table";
-import { AleloCardBox } from "./alelo-card";
+import { brandsWith, can } from "@/lib/auth/permissions";
+import { currentActor } from "@/lib/auth/current";
+import { db } from "@/lib/db";
+import { scopedActor, staffContext } from "@/lib/staff/context";
 import { aleloCardStatus } from "@/lib/withdrawals/alelo";
+import { payoutBoard } from "@/lib/withdrawals/board";
+import { withdrawalQueue, type QueueFilter } from "@/lib/withdrawals/decide";
+import { remessaPreview } from "@/lib/withdrawals/remessa";
+import { payoutSummary } from "@/lib/withdrawals/summary";
+import { AleloCardBox } from "./alelo-card";
+import { SaquesExtras, SaquesHero, SaquesQueue } from "./board";
+import { BatchBar, RemessaBar, RetornoForm } from "./forms";
 
 export const dynamic = "force-dynamic";
 
-const TABS: { id: QueueFilter; ver: string | null; label: string }[] = [
-  { id: "REQUESTED", ver: "analise", label: WITHDRAWAL_STATUS_LABEL.REQUESTED },
-  { id: "APPROVED", ver: "aprovados", label: "Aprovados" },
-  { id: "DECIDED", ver: "decididos", label: "Decididos" },
-];
+const VER: Record<string, QueueFilter> = { analise: "REQUESTED", aprovados: "APPROVED", decididos: "DECIDED" };
 
-// Saques em duas etapas (M1.1, D-WDAPPROVE): a Gestão aprova, o Pagamento faz o Pix. Tela da equipe (D-ADMINUI).
+// Saques em duas etapas (M1.1, D-WDAPPROVE): a Gestão aprova, o Pagamento faz o Pix. Visual D-PAYBOARD.
 export default async function SaquesPage({ searchParams }: { searchParams: Promise<{ ver?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/saques");
@@ -34,50 +26,36 @@ export default async function SaquesPage({ searchParams }: { searchParams: Promi
   if (allowed !== "ALL" && allowed.length === 0) redirect("/conta");
   const { ver } = await searchParams;
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
-  const brandId = (await staffContext(actor)).brand?.id;
-  const inBrand = scopedActor(actor, brandId);
+  const { brand } = await staffContext(actor);
+  if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
+  const inBrand = scopedActor(actor, brand.id);
   // Sem escolher aba: quem só paga (Pagamento) abre nos aprovados; quem aprova, em análise.
   const approves = brandsWith(inBrand.grants, "withdrawals.approve");
-  const defaultTab: QueueFilter = approves !== "ALL" && approves.length === 0 ? "APPROVED" : "REQUESTED";
-  const tab = TABS.find((t) => t.ver === ver)?.id ?? defaultTab;
-  const [rows, sum] = await Promise.all([withdrawalQueue(db(), inBrand, tab), payoutSummary(db(), inBrand, brandId ? [brandId] : undefined)]);
-  const today = dayKey(new Date(), "America/Sao_Paulo");
-  const remessa = tab === "APPROVED" && brandId && can(actor.grants, "withdrawals.manage", brandId) ? await remessaPreview(db(), actor, brandId, today) : null;
-  // D-ALELOCARD: pedido do cartão Alelo de quem recebe como pessoa física (para quem paga).
-  const alelo = brandId && can(actor.grants, "withdrawals.manage", brandId) ? await aleloCardStatus(db(), actor, brandId) : null;
+  const tab: QueueFilter = (ver && VER[ver]) || (approves !== "ALL" && approves.length === 0 ? "APPROVED" : "REQUESTED");
+  const manage = can(actor.grants, "withdrawals.manage", brand.id);
+  const [requested, approved, decided, sum, board, alelo] = await Promise.all([
+    withdrawalQueue(db(), inBrand, "REQUESTED"),
+    withdrawalQueue(db(), inBrand, "APPROVED"),
+    tab === "DECIDED" ? withdrawalQueue(db(), inBrand, "DECIDED") : Promise.resolve([]),
+    payoutSummary(db(), inBrand, [brand.id]),
+    payoutBoard(db(), actor, brand.id),
+    // D-ALELOCARD: pedido do cartão Alelo de quem recebe como pessoa física (para quem paga).
+    manage ? aleloCardStatus(db(), actor, brand.id) : Promise.resolve(null),
+  ]);
+  const remessa = tab === "APPROVED" && manage ? await remessaPreview(db(), actor, brand.id, board.today) : null;
+  const rows = tab === "REQUESTED" ? requested : tab === "APPROVED" ? approved : decided;
+  const thisMonth = board.paidByMonth.at(-1)!;
 
   return (
-    <>
-      <PageHeader title="Saques">
-        Em duas etapas: a Gestão confere a nota (valor e CNPJ do tomador) e aprova; o Pagamento faz o Pix e marca como pago. Se algo não bate,
-        recuse com o motivo: a creator vê e pode pedir de novo.
-      </PageHeader>
-      <Card title="Comissão a pagar" help="sq-resumo">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <Kpi label="Sacável" value={formatBRL(sum.availableCents)} hint="liberado e ainda não pedido" />
-          <Kpi label="Em análise" value={formatBRL(sum.requested.cents)} hint={`${sum.requested.count} ${sum.requested.count === 1 ? "pedido" : "pedidos"} · a Gestão aprova`} tone={sum.requested.count ? "amber" : undefined} />
-          <Kpi label="Aprovados" value={formatBRL(sum.approved.cents)} hint={`${sum.approved.count} ${sum.approved.count === 1 ? "pedido" : "pedidos"} · o Pagamento faz o Pix`} tone={sum.approved.count ? "amber" : undefined} />
-          <Kpi label="A liberar" value={formatBRL(sum.heldCents)} hint="espera o fechamento do mês e o mínimo" />
-          <Kpi label="Aguardando" value={formatBRL(sum.awaiting.salesCents)} hint={`em vendas sem pagamento ainda (${sum.awaiting.orders})`} />
-        </div>
-      </Card>
-      {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}
-      <nav aria-label="Situação" data-tour="sq-abas" className="flex flex-wrap items-center gap-2">
-        {TABS.map((t) => (
-          <Link key={t.id} href={`/admin/saques?ver=${t.ver}`} className={tab === t.id ? ui.pillOn : ui.pill}>
-            {t.label}
-            {t.id === "REQUESTED" && sum.requested.count > 0 && ` (${sum.requested.count})`}
-            {t.id === "APPROVED" && sum.approved.count > 0 && ` (${sum.approved.count})`}
-          </Link>
-        ))}
-        <HelpTip id="sq-abas" />
-        <Link href="/admin/saques/conferencia" className={`${ui.link} ml-auto text-sm`}>Conferir a planilha de pagamentos →</Link>
-      </nav>
+    <GlassLight className="dash flex flex-col gap-4">
+      <SaquesHero brandName={brand.name} tab={tab} sum={sum} board={board} requested={requested} approved={approved} paidThisMonth={{ count: thisMonth.count, cents: thisMonth.cents }} />
       {/* D-REMESSA: arquivo do SICOOB para quem paga (marca escolhida no topo). */}
-      {tab === "APPROVED" && remessa && brandId && <RemessaBar brandId={brandId} count={remessa.count} cents={remessa.totalCents} today={today} problems={remessa.problems} />}
-      {tab === "APPROVED" && remessa && brandId && <RetornoForm brandId={brandId} />}
+      {tab === "APPROVED" && remessa && <RemessaBar brandId={brand.id} count={remessa.count} cents={remessa.totalCents} today={board.today} problems={remessa.problems} />}
+      {tab === "APPROVED" && remessa && <RetornoForm brandId={brand.id} />}
       {tab === "APPROVED" && rows.some((r) => r.canPay) && <BatchBar count={rows.filter((r) => r.canPay).length} />}
-      <SaquesTable rows={rows} />
-    </>
+      <SaquesQueue key={tab} rows={rows} tab={tab} />
+      <SaquesExtras board={board} canMessage={can(actor.grants, "creators.edit", brand.id)} />
+      {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}
+    </GlassLight>
   );
 }

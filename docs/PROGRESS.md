@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-294 — 2026-11-12 — Pagamentos: Saques em fila com painel, Abertura com a conta, Conferência por creator, ID do Pix (D-PAYBOARD, D-PIXREF; aguarda OK)
+- Saques (`src/app/admin/saques/board.tsx`): faixa com janela, quadros do caminho do dinheiro, "Copiar resumo para o
+  WhatsApp"; lista compacta + painel em modo fila (nota em prévia, saldo antes/depois, Pix, ações, atalhos); selo de
+  dias esperando; "Ainda não pediram" com lembrete; pagos por mês; motivos de recusa. `table.tsx` removido.
+  `src/lib/withdrawals/board.ts` (`payoutBoard`); domínio `src/domain/payouts.ts` (`withdrawalWindow`, `waitingTone`,
+  `rejectReasons`, `payoutWhatsapp`, `groupPaymentCheck`).
+- Abertura: faixa (a aprovar, saldo hoje, saldo previsto, ficam negativas) e cartões com a conta e o aviso de negativo.
+- Conferência: faixa e cartões por creator com a diferença planilha − sistema; filtros.
+- D-PIXREF: migração `20261127090000_pix_reference` (trava `Withdrawal_pix_reference`); campo opcional no "Pix feito";
+  a creator vê no portal. Tutorial `sq-*` refeito.
+- Testes: `payouts.test.ts`; integração em `withdrawal-decide.test.ts` (ID do Pix, trava, faixa).
+- Próxima: Envios.
+
 ### CP-293 — 2026-11-12 — Desempenho: Instagram, UGC e Origem com faixa e quadros; mínimo e kit no painel de Creators (D-PERFBOARD; aguarda OK)
 - Ranking de vendas saiu do Desempenho (está no Início). `view.tsx` removido; página nova em `board.tsx` (faixa com
   quadros Instagram/UGC/Origem, `?aba=`), `instagram.tsx`, `ugc.tsx`, `origin.tsx`, `parts.tsx` (painel lateral em portal,
