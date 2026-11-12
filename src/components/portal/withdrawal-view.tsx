@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, BellRing, Check, Clock, FileText, KeyRound, Receipt, TriangleAlert, Wallet, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BellRing, Check, ChevronRight, Clock, FileText, KeyRound, Receipt, TriangleAlert, Wallet, X } from "lucide-react";
 import type { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
 import Link from "next/link";
 import { formatBRL, payDaysText, type WithdrawalDays } from "@/domain";
@@ -12,6 +12,16 @@ import { WITHDRAWAL_BLOCK_TEXT, WITHDRAWAL_STATUS_LABEL, type WithdrawalBlock, t
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
 const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
+/** Lançamentos agrupados pelo dia (do pagamento do pedido ou do lançamento), o mais recente primeiro. */
+function byDay<T extends { orderPaidAt: Date | null; createdAt: Date }>(lines: readonly T[]): [string, T[]][] {
+  const m = new Map<string, T[]>();
+  for (const l of lines) {
+    const k = (l.orderPaidAt ?? l.createdAt).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+    m.set(k, [...(m.get(k) ?? []), l]);
+  }
+  return [...m].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+}
+
 const ORDER: WithdrawalBlock[] = ["VIEW_ONLY", "LOCKED", "OPEN_REQUEST", "OUTSIDE_WINDOW", "NOTHING_AVAILABLE"];
 
 const STATUS_STYLE = {
@@ -212,23 +222,27 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         {st.lines.length === 0 ? (
           <p className="py-4 text-sm text-stone-500">Nenhuma movimentação neste mês.</p>
         ) : (
-          <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
-            {st.lines.map((l) => (
-              <li key={l.id} className="flex items-center gap-3 py-3">
-                <span className={`grid size-9 shrink-0 place-content-center rounded-2xl ${l.amountCents < 0 ? "bg-red-500/10 text-red-600" : "bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"}`}>
-                  {l.amountCents < 0 ? <ArrowDownLeft className="size-4" /> : <ArrowUpRight className="size-4" />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {LEDGER_LABEL[l.type]}
-                    {l.orderName && <span className="text-stone-500"> · pedido {l.orderName}</span>}
-                  </p>
-                  <p className="text-xs text-stone-500">
-                    {day(l.orderPaidAt ?? l.createdAt)}
-                    {l.held && " · a liberar"}
-                  </p>
-                </div>
-                <span className={`text-sm font-semibold tabular-nums ${l.amountCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatBRL(l.amountCents)}</span>
+          // Ajuste do responsável: cada dia numa linha (abre ao tocar; só o mais recente vem aberto), lançamentos em linhas finas.
+          <ul className="-mx-5 divide-y divide-stone-200/70 border-y border-stone-200/70 dark:divide-white/10 dark:border-white/10">
+            {byDay(st.lines).map(([dk, lines], gi) => (
+              <li key={dk}>
+                <details className="group/day" open={gi === 0}>
+                  <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-3 hover:bg-stone-500/5">
+                    <ChevronRight className="size-4 shrink-0 text-stone-400 transition group-open/day:rotate-90" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">{dk.slice(8, 10)}/{dk.slice(5, 7)}</span>
+                    <span className="shrink-0 text-xs text-stone-500">{lines.length} {lines.length === 1 ? "lançamento" : "lançamentos"}</span>
+                    {(() => { const t = lines.reduce((a, l) => a + l.amountCents, 0); return <span className={`w-24 shrink-0 text-right text-sm font-semibold tabular-nums ${t < 0 ? "text-red-700 dark:text-red-400" : ""}`}><span className="money">{formatBRL(t)}</span></span>; })()}
+                  </summary>
+                  <ul className="border-t border-stone-200/60 bg-stone-500/[0.03] dark:border-white/10">
+                    {lines.map((l) => (
+                      <li key={l.id} className="flex items-center gap-2 py-2 pl-11 pr-5 text-sm">
+                        {l.amountCents < 0 ? <ArrowDownLeft className="size-3.5 shrink-0 text-red-600" /> : <ArrowUpRight className="size-3.5 shrink-0 text-brand dark:text-brand-2" />}
+                        <span className="min-w-0 flex-1 truncate">{LEDGER_LABEL[l.type]}{l.orderName && <span className="text-xs text-stone-500"> · {l.orderName}</span>}{l.held && <span className="text-xs text-amber-700 dark:text-amber-300"> · a liberar</span>}</span>
+                        <span className={`w-20 shrink-0 text-right font-semibold tabular-nums ${l.amountCents < 0 ? "text-red-700 dark:text-red-400" : ""}`}><span className="money">{formatBRL(l.amountCents)}</span></span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </li>
             ))}
           </ul>
