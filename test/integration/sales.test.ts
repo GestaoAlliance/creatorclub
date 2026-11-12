@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { listSales, salesForCsv } from "@/lib/sales/list";
+import { listSales, orderDetail, salesForCsv, salesReview } from "@/lib/sales/list";
 import { commissionEntry, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -46,5 +46,40 @@ describe("vendas da equipe (M0.1, banco real)", () => {
     const csv = await salesForCsv(prisma, brand.id, { status: "PAID" });
     expect(csv.map((r) => r.order).sort()).toEqual(["#P1", order.name].sort());
     expect(csv.find((r) => r.order === order.name)).toMatchObject({ creator: account.name, commissionCents: 3000, subtotalCents: 20_000 });
+  });
+});
+
+describe("conferência das vendas (D-SALESREVIEW, banco real)", () => {
+  it("motivos dos pedidos sem creator, aguardando, estornadas, pedidos grandes, códigos fora do sistema, mapa e painel do pedido", async () => {
+    const { brand, creator, coupon, order } = await seedBrand(prisma);
+    await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: order.id, creatorId: creator.id, couponId: coupon.id, rateBps: 1500, rule: "first", evidenceCodes: [coupon.code] } });
+    await prisma.coupon.create({ data: { brandId: brand.id, code: "SEMTIPO", kind: null } });
+    await prisma.coupon.create({ data: { brandId: brand.id, code: "PROMO10", kind: "PROMO", classifiedAt: new Date(), classifiedById: "seed" } });
+    const at = new Date("2026-09-01T15:00:00Z");
+    const mk = (name: string, cents: number, extra: object) =>
+      prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name, createdAtShop: at, paidAt: at, financialStatus: "PAID", subtotalCents: cents, totalCents: cents, discountCodes: [], shopifyUpdatedAt: at, ...extra } });
+    const big = await mk("#B", 200_000, { discountCodes: ["xyz"] });
+    await mk("#U", 1_000, { discountCodes: ["semtipo"] });
+    await mk("#X", 1_000, { discountCodes: ["XYZ"] });
+    await mk("#M", 1_000, { discountCodes: ["promo10"] });
+    await mk("#N", 1_000, {});
+    await mk("#W", 1_000, { financialStatus: "PENDING", paidAt: null });
+    await mk("#R", 1_000, { financialStatus: "REFUNDED" });
+    await prisma.orderLine.create({ data: { brandId: brand.id, orderId: big.id, shopifyId: "l1", title: "Sérum", quantity: 2, discountedTotalCents: 200_000 } });
+
+    const r = await salesReview(prisma, brand.id, { from: "2026-09-01", to: "2026-09-01" });
+    expect(r.all.n).toBe(8);
+    expect(r.withCreator.n).toBe(1);
+    expect(Object.fromEntries(Object.entries(r.kinds).map(([k, v]) => [k, v.n]))).toEqual({ nocode: 2, untyped: 1, noowner: 0, promo: 1, unknown: 2, big: 1 });
+    expect(r.pending.n).toBe(1);
+    expect(r.lost.n).toBe(1);
+    expect(r.unknownCodes).toEqual([{ code: "XYZ", orders: 2, cents: 201_000 }]);
+    expect(r.heat.flat().reduce((s, v) => s + v, 0)).toBe(1);
+
+    const filtered = await listSales(prisma, brand.id, { from: "2026-09-01", to: "2026-09-01", ids: r.kinds.unknown.ids });
+    expect(filtered.rows.map((x) => x.name).sort()).toEqual(["#B", "#X"]);
+    const d = await orderDetail(prisma, brand.id, big.id);
+    expect(d).toMatchObject({ name: "#B", reason: "cupom fora do sistema", lines: [{ title: "Sérum", quantity: 2, discountedTotalCents: 200_000 }] });
+    expect(await orderDetail(prisma, (await seedBrand(prisma)).brand.id, big.id)).toBeNull();
   });
 });

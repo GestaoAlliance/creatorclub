@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleReason, saleStatus, startOfLocalDay, type SaleStatus } from "@/domain";
+import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleReason, saleReasonKind, saleStatus, startOfLocalDay, type SaleReasonKind, type SaleStatus } from "@/domain";
 
 /**
  * Vendas da marca para a equipe (M0.1): todos os pedidos que chegaram da Shopify, com a situação, a creator que levou
@@ -8,7 +8,7 @@ import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleR
 
 export const SALES_PAGE_SIZE = 10;
 
-export type SalesFilters = { q?: string; status?: SaleStatus | ""; owner?: "creator" | "none" | ""; from?: string; to?: string };
+export type SalesFilters = { q?: string; status?: SaleStatus | ""; owner?: "creator" | "none" | ""; from?: string; to?: string; /** D-SALESREVIEW: só estes pedidos (quadro da conferência). */ ids?: string[] };
 
 const paid = [...PAID_FINANCIAL];
 const refunded = [...REFUNDED_FINANCIAL];
@@ -37,6 +37,7 @@ function baseWhere(brandId: string, f: SalesFilters, timeZone: string): Prisma.O
       ],
     });
   }
+  if (f.ids) and.push({ id: { in: f.ids } });
   if (f.owner === "creator") and.push({ attribution: { isNot: null } });
   if (f.owner === "none") and.push({ attribution: { is: null } });
   if (f.from && isDayKey(f.from)) and.push({ createdAtShop: { gte: startOfLocalDay(f.from, timeZone) } });
@@ -140,4 +141,105 @@ export async function salesForCsv(prisma: PrismaClient, brandId: string, f: Sale
     reason: r.reason,
     commissionCents: r.commissionCents,
   }));
+}
+
+export type ReviewKey = Exclude<SaleReasonKind, "creator"> | "big";
+type Bucket = { n: number; cents: number; ids: string[] };
+const bucket = (): Bucket => ({ n: 0, cents: 0, ids: [] });
+export const BIG_ORDER_FACTOR = 3;
+
+/**
+ * Conferência das vendas (D-SALESREVIEW, pedido do responsável em 2026-11-11): no período, pedidos com e sem creator,
+ * o motivo de cada pedido sem creator (sem cupom, cupom sem tipo, cupom de creator sem dona na data, PROMO, fora do
+ * sistema), aguardando pagamento, estornadas/canceladas (com a comissão devolvida), pedidos grandes (pagos com 3× o
+ * ticket médio ou mais), os códigos fora do sistema agrupados e o mapa de dia × hora das vendas com creator.
+ * Teste não conta; cancelada não entra nos motivos.
+ */
+export async function salesReview(prisma: PrismaClient, brandId: string, f: SalesFilters) {
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
+  const tz = brand.timezone;
+  const orders = await prisma.order.findMany({
+    where: { AND: [baseWhere(brandId, { ...f, owner: "", status: "" }, tz), { test: false }] },
+    select: { id: true, discountCodes: true, subtotalCents: true, createdAtShop: true, paidAt: true, financialStatus: true, cancelledAt: true, test: true, attribution: { select: { creatorId: true, coupon: { select: { code: true } } } } },
+  });
+  const codes = [...new Set(orders.flatMap((o) => o.discountCodes.map((c) => c.toUpperCase())))];
+  const coupons = codes.length ? await prisma.coupon.findMany({ where: { brandId, code: { in: codes } }, select: { code: true, kind: true } }) : [];
+  const kindOf = new Map(coupons.map((c) => [c.code, c.kind]));
+  const kinds: Record<ReviewKey, Bucket> = { nocode: bucket(), untyped: bucket(), noowner: bucket(), promo: bucket(), unknown: bucket(), big: bucket() };
+  const all = bucket();
+  const withCreator = bucket();
+  const pending = bucket();
+  const lost = bucket();
+  const unknownCodes = new Map<string, { orders: number; cents: number }>();
+  const heat = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
+  const paidRows: { id: string; cents: number }[] = [];
+  const add = (b: Bucket, o: { id: string; subtotalCents: number }) => { b.n++; b.cents += o.subtotalCents; b.ids.push(o.id); };
+  for (const o of orders) {
+    const st = saleStatus(o);
+    add(all, o);
+    if (st === "CANCELLED" || st === "REFUNDED") { add(lost, o); continue; }
+    if (st === "PENDING") add(pending, o);
+    if (st === "PAID") paidRows.push({ id: o.id, cents: o.subtotalCents });
+    const upper = o.discountCodes.map((c) => c.toUpperCase());
+    const k = saleReasonKind({ creatorCoupon: o.attribution?.coupon.code ?? null, codes: upper, coupons: upper.map((c) => (kindOf.has(c) ? { code: c, kind: kindOf.get(c) ?? null } : null)) });
+    if (k === "creator") {
+      add(withCreator, o);
+      if (st === "PAID" && o.paidAt) {
+        const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(o.paidAt);
+        const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.find((p) => p.type === "weekday")!.value);
+        const h = Number(parts.find((p) => p.type === "hour")!.value);
+        heat[wd]![h]!++;
+      }
+      continue;
+    }
+    add(kinds[k], o);
+    if (k === "unknown") for (const c of upper) if (!kindOf.has(c)) {
+      const g = unknownCodes.get(c) ?? { orders: 0, cents: 0 };
+      g.orders++;
+      g.cents += o.subtotalCents;
+      unknownCodes.set(c, g);
+    }
+  }
+  const avg = paidRows.length ? paidRows.reduce((s2, r) => s2 + r.cents, 0) / paidRows.length : 0;
+  for (const r of paidRows) if (avg > 0 && r.cents >= avg * BIG_ORDER_FACTOR) add(kinds.big, { id: r.id, subtotalCents: r.cents });
+  const reversed = lost.ids.length ? await prisma.ledgerEntry.aggregate({ where: { brandId, orderId: { in: lost.ids }, type: "REVERSAL" }, _sum: { amountCents: true } }) : null;
+  return {
+    all: { n: all.n, cents: all.cents },
+    withCreator: { n: withCreator.n, cents: withCreator.cents },
+    pending: { n: pending.n, cents: pending.cents, ids: pending.ids },
+    lost: { n: lost.n, cents: lost.cents, ids: lost.ids, reversedCents: Math.abs(reversed?._sum.amountCents ?? 0) },
+    kinds,
+    avgTicketCents: Math.round(avg),
+    unknownCodes: [...unknownCodes].map(([code, g]) => ({ code, ...g })).sort((a, b) => b.cents - a.cents),
+    heat,
+  };
+}
+
+/** D-SALESREVIEW: o pedido no painel lateral (produtos, cupons, motivo, taxa, comissão e datas). */
+export async function orderDetail(prisma: PrismaClient, brandId: string, orderId: string) {
+  const o = await prisma.order.findFirst({
+    where: { id: orderId, brandId },
+    select: {
+      ...SELECT,
+      shopifyId: true,
+      lines: { select: { title: true, quantity: true, discountedTotalCents: true } },
+      attribution: { select: { creatorId: true, rateBps: true, rule: true, evidenceCodes: true, decidedAt: true, coupon: { select: { code: true } }, creator: { select: { account: { select: { name: true } } } } } },
+    },
+  });
+  if (!o) return null;
+  const [row] = await decorate(prisma, brandId, [o]);
+  const [ledger, shop] = await Promise.all([
+    prisma.ledgerEntry.findMany({ where: { brandId, orderId }, orderBy: { createdAt: "asc" }, select: { type: true, amountCents: true, createdAt: true, note: true } }),
+    prisma.brandIntegration.findFirst({ where: { brandId, kind: "SHOPIFY" }, select: { externalId: true } }),
+  ]);
+  const numeric = o.shopifyId.split("/").pop();
+  return {
+    ...row!,
+    cancelledAt: o.cancelledAt,
+    lines: o.lines,
+    evidence: o.attribution?.evidenceCodes ?? [],
+    decidedAt: o.attribution?.decidedAt ?? null,
+    ledger,
+    shopifyUrl: shop?.externalId && numeric ? `https://${shop.externalId}/admin/orders/${numeric}` : null,
+  };
 }

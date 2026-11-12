@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-290 — 2026-11-12 — Vendas vira a conferência dos pedidos (D-SALESREVIEW; aguarda OK)
+- Pedido do responsável: o Início já tem os números de vendas; a aba Vendas não deve repetir. Saem os 4 números, o
+  gráfico por dia e o ranking de creators (estão no Início).
+- Faixa da marca com o período (7/30/90 dias, este mês) e 8 quadros que filtram a lista (`salesReview`): aguardando
+  pagamento, estornadas/canceladas (com a comissão devolvida), cupom sem tipo, cupom de creator sem dona na data, fora
+  do sistema, pedidos grandes (pagos com 3× o ticket médio ou mais), cupom da marca (PROMO) e sem cupom. O motivo de cada
+  pedido sai de `saleReasonKind` (a mesma regra da frase de antes). O CSV respeita o quadro escolhido.
+- Lista compacta (data, pedido, situação, creator ou motivo com o cupom, produtos, comissão); clique abre o painel do
+  pedido (`orderDetail`): creator e por quê (códigos da decisão), produtos e comissão com a taxa, itens, linha do tempo
+  (feito, pago, comissão/estorno, cancelado) e "Abrir na Shopify"; ↑/↓ e Esc. O painel abre por cima da página
+  (portal), com as cores da marca.
+- Coluna: mapa de dia × hora das vendas com creator (pico), cupons fora do sistema agrupados (pedidos e valor; link
+  para Cupons) e o ticket médio com o limite de "pedido grande". Extras escolhidos pelo responsável.
+- Sem estouro em 1920–390. Teste em `test/integration/sales.test.ts`. Próxima: OK das capturas → merge → Produtos.
+
 ### CP-289 — 2026-11-11 — Hunters: ranking com funil, parados e cartões; Prospecção no mesmo padrão (D-HUNTERBOARD; aguarda OK)
 - Plano do responsável para antes do portal: Hunters → Vendas → Pagamentos → Envios → Configurações. Decidido também:
   Início = painel, Vendas = conferência dos pedidos (sem os números repetidos); Desempenho perde o que repete o Início

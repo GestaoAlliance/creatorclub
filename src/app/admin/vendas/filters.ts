@@ -2,7 +2,7 @@ import { SALE_STATUSES } from "@/domain";
 import type { SalesFilters } from "@/lib/sales/list";
 import { dashPeriod, type DashPeriod } from "@/lib/staff/dashboard";
 
-export type Search = { q?: string; situacao?: string; dona?: string; de?: string; ate?: string; periodo?: string; pagina?: string };
+export type Search = { q?: string; situacao?: string; dona?: string; de?: string; ate?: string; periodo?: string; pagina?: string; motivo?: string };
 
 /** Período da tela (o mesmo do gráfico e da lista): 7, 30 ou 90 dias, este mês ou de–até. Padrão: 30 dias. */
 export function salesPeriod(sp: Search, timeZone: string, now = new Date()): DashPeriod {
