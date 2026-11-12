@@ -1,7 +1,10 @@
+import { GlassLight } from "@/components/ui/glass-light";
+import { HistoryCard, SettingsHero } from "@/components/staff/settings-hero";
+import { HISTORY_ACTIONS } from "@/lib/settings/health";
 import { FilePen, Hourglass, ScrollText } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, PageHeader } from "@/components/ui/page";
+import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { CONTRACT_FIELDS, CONTRACT_TEXT_LABEL } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
@@ -24,11 +27,11 @@ export default async function ContratosPage() {
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   const o = await contractsOverview(db(), actor, brand.id);
   return (
-    <>
-      <PageHeader title="Contratos">
+    <GlassLight className="dash flex flex-col gap-4">
+      <SettingsHero actor={actor} brandId={brand?.id ?? null} brandName={brand?.name ?? ""} active="contratos" title="Contratos">
         Quem é aprovada em Candidatas assina o contrato no primeiro acesso ao portal da {brand.name}, com os dados dela já
         preenchidos. O tipo de texto vem da versão de contrato escolhida na aprovação. Quem já assinou guarda o texto que assinou.
-      </PageHeader>
+      </SettingsHero>
       <Card title={`Falta assinar (${o.waiting.length})`} icon={<Hourglass className="size-4" />}>
         {o.waiting.length === 0 ? (
           <p className={ui.muted}>Ninguém esperando assinatura.</p>
@@ -67,6 +70,7 @@ export default async function ContratosPage() {
           </details>
         </Card>
       ))}
-    </>
+      <HistoryCard brandId={brand?.id ?? null} prefixes={HISTORY_ACTIONS.contratos} />
+    </GlassLight>
   );
 }

@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { brandList, createBrand, slugFrom, updateBrand } from "@/lib/brands/manage";
 import { changeRoleGrant, grantRole } from "@/lib/team/invites";
+import { recentChanges, settingsHealth } from "@/lib/settings/health";
 import { expectDbError, letters, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
@@ -81,5 +82,24 @@ describe("marcas e papéis por marca (A1b, banco real)", () => {
     const superGrant = await prisma.roleGrant.findFirstOrThrow({ where: { userId: sa.userId } });
     await expect(changeRoleGrant(prisma, sa, { grantId: superGrant.id, role: "GESTAO" })).rejects.toThrow(/Super admin/);
     await expect(changeRoleGrant(prisma, analise, { grantId: grant.id, role: "ENVIO" })).rejects.toThrow(/permissão/);
+  });
+});
+
+describe("faixa das Configurações (D-SETTINGSBOARD, banco real)", () => {
+  it("saúde da marca e histórico com o nome de quem mudou; Gestão não vê equipe nem loja", async () => {
+    const sa = await userWith("SUPER_ADMIN", null);
+    const b = await createBrand(prisma, sa, { name: `Cfg ${letters(5)}`, primaryColor: "#0f766e", legalName: "Cfg LTDA", cnpj: "11.222.333/0001-81" });
+    await updateBrand(prisma, sa, b.id, { name: b.name, primaryColor: "#0F766E", legalName: "Cfg LTDA", cnpj: "11.222.333/0001-81", storeUrl: "cfg.com.br" });
+    const h = await settingsHealth(prisma, sa, b.id);
+    expect(h.checklist.find((c) => c.id === "dados")?.done).toBe(true);
+    expect(h.checklist.find((c) => c.id === "loja")?.done).toBe(false);
+    expect(h).toMatchObject({ admin: true, integrations: true, shopify: { connected: false, failed24h: 0 }, terms: { version: null }, contracts: { kinds: 0 } });
+
+    const changes = await recentChanges(prisma, b.id, ["brand."]);
+    expect(changes.map((c) => c.action)).toEqual(["brand.update", "brand.create"]);
+    expect(changes[0]!.who).toBe("SUPER_ADMIN");
+
+    const gestao = await userWith("GESTAO", b.id);
+    expect(await settingsHealth(prisma, gestao, b.id)).toMatchObject({ admin: false, integrations: false, team: { people: 0, invites: 0 } });
   });
 });

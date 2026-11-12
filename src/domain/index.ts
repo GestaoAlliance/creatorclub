@@ -49,3 +49,4 @@ export * from "./tracking";
 export * from "./withdrawal-days";
 export * from "./creator-list";
 export * from "./payouts";
+export * from "./settings";

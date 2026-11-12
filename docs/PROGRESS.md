@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-296 — 2026-11-12 — Configurações: faixa de saúde, Marca em seções, Equipe com painel, histórico, prévia do termo e contrato (D-SETTINGSBOARD; aguarda OK)
+- `src/lib/settings/health.ts` (`settingsHealth`, `brandChecklist`, `recentChanges`, `HISTORY_ACTIONS`);
+  `src/components/staff/settings-hero.tsx` (`SettingsHero`, `HistoryCard`); `src/domain/settings.ts` (nomes das
+  mudanças e das permissões).
+- Marcas: `sections.tsx` (índice com ✓/falta) e `BrandForm` com `section`. Equipe: `board.tsx` (lista, painel, convite,
+  "Quem pode o quê"). Termo e Contratos: `TextWithPreview` (`src/components/staff/text-preview.tsx`). Shopify, Importar e
+  Claude com a faixa nova.
+- Testes: `settings.test.ts`; integração em `brands.test.ts`.
+- Próxima: portal das creators.
+
 ### CP-295 — 2026-11-12 — Envios: faixa por etapa, fila com painel, linha do tempo, alergia, Olist atrasado, próximo kit (D-SHIPBOARD; aguarda OK)
 - `src/app/admin/envios/board.tsx` (`ShipHero`, `ShipQueue`, `ShipExtras`); `table.tsx` removido; página refeita.
 - `src/lib/shipments/board.ts` (`shipmentBoard`: contagens, atrasados no Olist, produtos do mês com frete, contexto

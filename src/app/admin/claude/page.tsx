@@ -1,8 +1,11 @@
+import { GlassLight } from "@/components/ui/glass-light";
+import { SettingsHero } from "@/components/staff/settings-hero";
+import { staffContext as __staffContext } from "@/lib/staff/context";
 import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { redirect } from "next/navigation";
 import { CopyButton } from "@/components/portal/copy-button";
-import { Card, PageHeader } from "@/components/ui/page";
+import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
@@ -25,12 +28,13 @@ export default async function ClaudePage() {
     select: { createdAt: true, client: { select: { name: true } } },
   });
   const lastUse = await db().mcpToken.findFirst({ where: { userId: actor.userId, kind: "ACCESS" }, orderBy: { lastUsedAt: { sort: "desc", nulls: "last" } }, select: { lastUsedAt: true } });
+  const { brand: __b } = await __staffContext(actor);
   return (
-    <>
-      <PageHeader title="Perguntar ao Claude">
+    <GlassLight className="dash flex flex-col gap-4">
+      <SettingsHero actor={actor} brandId={__b?.id ?? null} brandName={__b?.name ?? ""} active="claude" title="Perguntar ao Claude">
         Ligue o Creator Club no seu Claude e pergunte sobre vendas, creators, saques e pendências das suas marcas. Só leitura, com o que você já vê
         no painel.
-      </PageHeader>
+      </SettingsHero>
       <Card title="Como ligar">
         <ol className="list-decimal space-y-2 pl-5 text-sm">
           <li>No Claude (claude.ai ou app), abra <strong>Configurações → Conectores → Adicionar conector personalizado</strong>.</li>
@@ -62,6 +66,6 @@ export default async function ClaudePage() {
           </>
         )}
       </Card>
-    </>
+    </GlassLight>
   );
 }

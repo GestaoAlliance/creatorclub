@@ -1,3 +1,7 @@
+import { GlassLight } from "@/components/ui/glass-light";
+import { HistoryCard, SettingsHero } from "@/components/staff/settings-hero";
+import { HISTORY_ACTIONS } from "@/lib/settings/health";
+import { staffContext as __staffContext } from "@/lib/staff/context";
 import { redirect } from "next/navigation";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
@@ -8,7 +12,7 @@ import { sheetSyncStatus } from "@/lib/sheets/central";
 import { SHEET_COVERAGE, SHEET_LABEL, SHEETS } from "@/lib/sheets/switch";
 import { sheetSwitchAction } from "./actions";
 import { missingRecommendedScopes, SCOPE_PURPOSE } from "@/lib/shopify/connect";
-import { Card, Kpi, PageHeader } from "@/components/ui/page";
+import { Card, Kpi } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
 import { envAutentiqueToken } from "@/lib/autentique/credentials";
 import { AutentiqueForm, BackfillForm, ConnectForm, ProductSyncForm, SyncNowForm } from "./forms";
@@ -34,9 +38,10 @@ export default async function SyncPage() {
     (await db().brandIntegration.findMany({ where: { kind: "AUTENTIQUE", brandId: { in: health.map((h) => h.brand.id) } }, select: { brandId: true, status: true, externalId: true, scopes: true } })).map((r) => [r.brandId, r]),
   );
 
+  const { brand: __b } = await __staffContext(actor);
   return (
-    <>
-      <PageHeader title="Shopify">Conexão com a loja, reconciliação de pedidos e o que falhou nas últimas 24 horas.</PageHeader>
+    <GlassLight className="dash flex flex-col gap-4">
+      <SettingsHero actor={actor} brandId={__b?.id ?? null} brandName={__b?.name ?? ""} active="sync" title="Shopify">Conexão com a loja, reconciliação de pedidos e o que falhou nas últimas 24 horas.</SettingsHero>
       {health.length === 0 && <p className={ui.muted}>Nenhuma marca cadastrada.</p>}
       {health.map((h) => (
         <div key={h.brand.id} className="flex flex-col gap-6">
@@ -197,6 +202,7 @@ export default async function SyncPage() {
           </details>
         </div>
       ))}
-    </>
+      <HistoryCard brandId={__b?.id ?? null} prefixes={HISTORY_ACTIONS.sync} />
+    </GlassLight>
   );
 }
