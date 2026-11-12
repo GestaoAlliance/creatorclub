@@ -81,3 +81,28 @@ export function groupPaymentCheck<T extends CheckLine>(rows: readonly T[]) {
   }
   return [...by.values()].sort((a, b) => b.absDiffCents - a.absDiffCents || b.issues - a.issues || a.name.localeCompare(b.name, "pt-BR"));
 }
+
+/**
+ * Loja do portal (D-PORTALSHOP): quanto ela já economizou (preço cheio de hoje − o que pagou, só nas compras não
+ * canceladas em que todos os produtos ainda existem) e os 3 produtos que ela mais comprou (para "comprar de novo").
+ */
+export function shopStats(
+  purchases: readonly { status: string; balanceCents: number | null; items: readonly { title: string; quantity: number }[] }[],
+  products: readonly { id: string; title: string; priceCents: number }[],
+): { savedCents: number; favorites: string[] } {
+  const byTitle = new Map(products.map((p) => [p.title, p]));
+  let savedCents = 0;
+  const bought = new Map<string, number>();
+  for (const s of purchases) {
+    if (s.status === "CANCELLED") continue;
+    if (s.items.every((it) => byTitle.has(it.title))) {
+      const full = s.items.reduce((a, it) => a + byTitle.get(it.title)!.priceCents * it.quantity, 0);
+      savedCents += Math.max(0, full - (s.balanceCents ?? 0));
+    }
+    for (const it of s.items) {
+      const p = byTitle.get(it.title);
+      if (p) bought.set(p.id, (bought.get(p.id) ?? 0) + it.quantity);
+    }
+  }
+  return { savedCents, favorites: [...bought].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id) };
+}

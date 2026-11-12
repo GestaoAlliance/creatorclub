@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_WITHDRAWAL_DAYS, groupPaymentCheck, payoutWhatsapp, rejectReasons, waitingTone, withdrawalWindow } from "../src/domain";
+import { DEFAULT_WITHDRAWAL_DAYS, groupPaymentCheck, payoutWhatsapp, rejectReasons, shopStats, waitingTone, withdrawalWindow } from "../src/domain";
 
 describe("Pagamentos (D-PAYBOARD)", () => {
   it("janela de pedido: aberta com os dias que faltam (contando hoje) ou quando abre", () => {
@@ -32,5 +32,21 @@ describe("Pagamentos (D-PAYBOARD)", () => {
     const line = (coupon: string, creatorId: string | null, pay: number | null, sys: number | null, issues: string[] = []) => ({ coupon, name: coupon, creatorId, creatorName: creatorId ? `C ${creatorId}` : null, payCents: pay, system: sys === null ? null : { commissionCents: sys }, issues });
     const g = groupPaymentCheck([line("A10", "a", 1000, 1000), line("A10", "a", 2000, 1500, ["valor"]), line("B10", "b", 9000, 1000, ["valor"]), line("X1", null, 300, null, ["cupom não está no sistema"])]);
     expect(g.map((x) => [x.key, x.diffCents, x.issues])).toEqual([["b", 8000, 1], ["a", 500, 1], ["cupom:X1", 0, 1]]);
+  });
+});
+
+describe("Loja do portal (D-PORTALSHOP)", () => {
+  it("economia só das compras válidas com todos os produtos ainda na loja; mais comprados", () => {
+    const products = [{ id: "a", title: "Whey", priceCents: 10_000 }, { id: "b", title: "Creatina", priceCents: 5_000 }];
+    const r = shopStats(
+      [
+        { status: "DELIVERED", balanceCents: 16_000, items: [{ title: "Whey", quantity: 2 }] }, // cheio 20.000 → 4.000
+        { status: "CANCELLED", balanceCents: 4_000, items: [{ title: "Creatina", quantity: 5 }] },
+        { status: "AWAITING_APPROVAL", balanceCents: 4_000, items: [{ title: "Creatina", quantity: 1 }] }, // 1.000
+        { status: "DELIVERED", balanceCents: 1, items: [{ title: "Antigo", quantity: 1 }] }, // fora da loja: não conta
+      ],
+      products,
+    );
+    expect(r).toEqual({ savedCents: 5_000, favorites: ["a", "b"] });
   });
 });

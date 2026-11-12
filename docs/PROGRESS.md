@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-303 — 2026-11-12 — Portal: Loja em vitrine com carrinho, economia, comprar de novo e meta sem saldo (D-PORTALSHOP; aguarda OK)
+- `shop-picker.tsx` refeito; página da Loja com fotos, `shopStats` (domínio) e a meta; compras compactas com foto.
+- Teste em `payouts.test.ts`.
+- Próxima: portal, Campanhas, Posts e Avisos.
+
 ### CP-302 — 2026-11-12 — Portal: Pedidos com faixa, kit em cartões com foto, envios compactos, avaliação e previsão de chegada (D-PORTALSHIP, D-SHIPREVIEW, D-SHIPETA; aguarda OK)
 - Migração `20261128090000_shipment_review` (`ShipmentReview`, RLS, travas e só inserção). `src/lib/shipments/review.ts`
   (`reviewShipment`, `shipmentEtas`); `reviewAction`; `review-form.tsx`; `shipments-view.tsx` e `kit-picker.tsx` refeitos;
