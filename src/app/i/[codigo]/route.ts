@@ -8,7 +8,11 @@ export const dynamic = "force-dynamic";
 // desconhecido (ou de quem não é mais hunter): abre a escolha de marca, sem contar clique.
 export async function GET(request: NextRequest, ctx: RouteContext<"/i/[codigo]">) {
   const { codigo } = await ctx.params;
-  const links = await signupLinksFor(db(), codigo);
+  const all = await signupLinksFor(db(), codigo);
+  // D-HUNTERMULTI: hunter de mais de uma marca: primeiro a escolha da marca; a escolha volta aqui com ?m=marca para
+  // contar o clique na marca escolhida.
+  const m = request.nextUrl.searchParams.get("m");
+  const links = all.length > 1 && m ? all.filter((l) => l.slug === m) : all;
   if (links.length !== 1) {
     const code = links[0]?.code;
     return NextResponse.redirect(new URL(code ? `/inscricao?h=${encodeURIComponent(code)}` : "/inscricao", request.url), 302);

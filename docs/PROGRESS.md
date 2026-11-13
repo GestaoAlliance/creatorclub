@@ -318,6 +318,7 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 ### CP-311 — 2026-11-13 — Hunter em mais de uma marca (D-HUNTERMULTI)
 - Pedido do responsável (a Fátima virou hunter das três marcas): `createHunterLink` não trava mais quem já é hunter de outra marca. O código continua sem poder ser de outra pessoa em outra marca; o mesmo código da mesma pessoa em várias marcas faz /i/código abrir a escolha da marca (já existia em `signupLinksFor`).
 - Teste em `integration/hunters.test.ts`.
+- Clique contado também quando a hunter tem várias marcas: a escolha da marca volta por `/i/código?m=marca`, que conta o clique na marca escolhida e abre o formulário dela (conferido na prévia).
 
 ### CP-310 — 2026-11-13 — Pagamento também aprova o saque (D-WDPAYAPPROVE)
 - Pedido do responsável (a fila parava esperando a Gestão): o papel Pagamento ganhou `withdrawals.approve`; confere a nota, aprova e paga na mesma tela de Saques. A Gestão continua podendo aprovar.

@@ -59,7 +59,7 @@ export default async function SignupChooserPage({ searchParams }: { searchParams
             {shown.map((b) => (
               <Link
                 key={b.slug}
-                href={code ? `/inscricao/${b.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${b.slug}`}
+                href={links.length > 1 ? `/i/${encodeURIComponent(code!)}?m=${b.slug}` : code ? `/inscricao/${b.slug}?h=${encodeURIComponent(code)}` : `/inscricao/${b.slug}`}
                 style={{ background: `linear-gradient(140deg, ${b.color}, color-mix(in srgb, ${b.color} 55%, black))` }}
                 className="group flex min-h-36 flex-col justify-between rounded-3xl p-5 text-white shadow-md transition hover:-translate-y-1 hover:shadow-xl"
               >
