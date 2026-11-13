@@ -60,6 +60,9 @@ export function overlapsAnother(postedDay: string, others: readonly string[]): b
   return others.some((d) => d < addDaysKey(postedDay, POST_WINDOW_DAYS) && postedDay < addDaysKey(d, POST_WINDOW_DAYS));
 }
 
+/** D-HUNTERLINKBRAND: link do hunter numa marca (/i/código/marca). */
+export const hunterUrl = (origin: string, code: string, brandSlug: string) => `${origin}/i/${encodeURIComponent(code)}/${brandSlug}`;
+
 /** D-CONTENTBOARD: @ do Instagram comparável (sem @, minúsculo, sem espaço). */
 export const igKey = (h: string | null | undefined) => (h ? h.trim().replace(/^@+/, "").toLowerCase() : "");
 

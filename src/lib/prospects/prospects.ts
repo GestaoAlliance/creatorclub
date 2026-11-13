@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  hunterUrl,
   dayKey,
   isDayKey,
   MAX_HANDLES_PER_ADD,
@@ -194,7 +195,7 @@ export async function myProspectMessages(prisma: PrismaClient, actor: Actor | nu
   ]);
   return {
     ...prospectMessages(brand),
-    vars: { me: user.name ?? user.email, brand: brand.name, link: link ? `${origin}/i/${link.code}` : `${origin}/inscricao`, discountBps: brand.defaultDiscountBps, commissionBps: brand.defaultCommissionBps },
+    vars: { me: user.name ?? user.email, brand: brand.name, link: link ? hunterUrl(origin, link.code, brand.slug) : `${origin}/inscricao/${brand.slug}`, discountBps: brand.defaultDiscountBps, commissionBps: brand.defaultCommissionBps },
     canEdit: a.all,
   };
 }

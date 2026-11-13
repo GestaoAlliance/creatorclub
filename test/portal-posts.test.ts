@@ -45,3 +45,10 @@ describe("Meus posts no portal (D-PORTALPOSTS)", () => {
     expect(tiktokDay("https://vm.tiktok.com/ZMabc/", "America/Sao_Paulo")).toBeNull();
   });
 });
+
+describe("link do hunter por marca (D-HUNTERLINKBRAND)", () => {
+  it("/i/código/marca", async () => {
+    const { hunterUrl } = await import("@/domain");
+    expect(hunterUrl("https://creatorclub.app.br", "fatima", "revita-derma")).toBe("https://creatorclub.app.br/i/fatima/revita-derma");
+  });
+});

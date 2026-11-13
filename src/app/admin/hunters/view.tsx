@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/portal/copy-button";
 import { WhatsAppIcon } from "@/components/ui/social-icons";
 import { ui } from "@/components/ui/styles";
-import { hunterCodeFrom, shortBRL, whatsappLink } from "@/domain";
+import { hunterCodeFrom, hunterUrl, shortBRL, whatsappLink } from "@/domain";
 import type { HunterRow, hunterBoard } from "@/lib/onboarding/hunter-board";
 import { Avatar, Sparkline } from "../creators/list-parts";
 import { CreateLinkForm, PhoneEdit } from "./forms";
@@ -89,7 +89,7 @@ export function HuntersView({ data, brandId, origin, period }: { data: Awaited<R
             <ol className="grid gap-3 @3xl:grid-cols-2">
               {rows.map((r, i) => {
                 const wa = r.phone ? whatsappLink(r.phone, `Oi, ${r.name.split(" ")[0]}!`) : null;
-                const url = r.link ? `${origin}/i/${r.link.code}` : null;
+                const url = r.link ? hunterUrl(origin, r.link.code, brand.slug) : null;
                 return (
                   <li key={r.userId} className={`liquid-tile flex flex-col gap-3 rounded-3xl p-4 ${i === 0 && r.salesCents > 0 ? "ring-2 ring-amber-400/50" : ""}`}>
                     <div className="flex items-start gap-3">
@@ -144,7 +144,7 @@ export function HuntersView({ data, brandId, origin, period }: { data: Awaited<R
             ) : (
               <ul className="flex flex-col gap-2">
                 {idle.map((r) => {
-                  const wa = r.phone ? whatsappLink(r.phone, `Oi, ${r.name.split(" ")[0]}! Tudo bem? Passando para saber como estão as indicações para a ${brand.name}. Seu link: ${r.link ? `${origin}/i/${r.link.code}` : ""}`) : null;
+                  const wa = r.phone ? whatsappLink(r.phone, `Oi, ${r.name.split(" ")[0]}! Tudo bem? Passando para saber como estão as indicações para a ${brand.name}. Seu link: ${r.link ? hunterUrl(origin, r.link.code, brand.slug) : ""}`) : null;
                   return (
                     <li key={r.userId} className="flex items-center gap-2 text-sm">
                       <span className="min-w-0 flex-1 truncate">{r.name}</span>

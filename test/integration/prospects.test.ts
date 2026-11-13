@@ -86,8 +86,8 @@ describe("prospecção antes do formulário (U6, D-PROSPECT, banco real)", () =>
     const dani = await person(brand.id, "HUNTER", "Dani");
     const code = letters(6).toLowerCase();
     await prisma.hunterLink.create({ data: { brandId: brand.id, userId: dani.userId, code } });
-    expect((await myProspectMessages(prisma, dani, brand.id, "https://cc")).vars).toMatchObject({ me: "Dani", link: `https://cc/i/${code}` });
-    expect((await myProspectMessages(prisma, ana, brand.id, "https://cc")).vars.link).toBe("https://cc/inscricao");
+    expect((await myProspectMessages(prisma, dani, brand.id, "https://cc")).vars).toMatchObject({ me: "Dani", link: `https://cc/i/${code}/${brand.slug}` });
+    expect((await myProspectMessages(prisma, ana, brand.id, "https://cc")).vars.link).toBe(`https://cc/inscricao/${brand.slug}`);
     await expect(saveProspectMessages(prisma, dani, brand.id, { first: "Oi", proposal: "" })).rejects.toThrow(ProspectError);
     await saveProspectMessages(prisma, ana, brand.id, { first: "Oi, (Nome)! Sou a {EU}.", proposal: "" });
     const m = await myProspectMessages(prisma, dani, brand.id, "https://cc");

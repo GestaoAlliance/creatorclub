@@ -239,7 +239,7 @@ export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, n
     select: {
       id: true,
       code: true,
-      brand: { select: { name: true } },
+      brand: { select: { name: true, slug: true } },
       _count: { select: { clicks: true } },
       applications: {
         orderBy: { submittedAt: "desc" },
@@ -256,6 +256,7 @@ export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, n
   return links.map((l) => ({
     code: l.code,
     brandName: l.brand.name,
+    brandSlug: l.brand.slug,
     clicks: l._count.clicks,
     clicks30: recentBy.get(l.id) ?? 0,
     counts: {
