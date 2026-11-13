@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const VER: Record<string, QueueFilter> = { analise: "REQUESTED", aprovados: "APPROVED", decididos: "DECIDED" };
 
-// Saques em duas etapas (M1.1, D-WDAPPROVE): a Gestão aprova, o Pagamento faz o Pix. Visual D-PAYBOARD.
+// Saques em duas etapas (M1.1, D-WDAPPROVE): a Gestão ou o Pagamento (D-WDPAYAPPROVE) aprova, o Pagamento faz o Pix. Visual D-PAYBOARD.
 export default async function SaquesPage({ searchParams }: { searchParams: Promise<{ ver?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/saques");

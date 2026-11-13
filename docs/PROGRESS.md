@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-311 — 2026-11-13 — Hunter em mais de uma marca (D-HUNTERMULTI)
+- Pedido do responsável (a Fátima virou hunter das três marcas): `createHunterLink` não trava mais quem já é hunter de outra marca. O código continua sem poder ser de outra pessoa em outra marca; o mesmo código da mesma pessoa em várias marcas faz /i/código abrir a escolha da marca (já existia em `signupLinksFor`).
+- Teste em `integration/hunters.test.ts`.
+
+### CP-310 — 2026-11-13 — Pagamento também aprova o saque (D-WDPAYAPPROVE)
+- Pedido do responsável (a fila parava esperando a Gestão): o papel Pagamento ganhou `withdrawals.approve`; confere a nota, aprova e paga na mesma tela de Saques. A Gestão continua podendo aprovar.
+- Textos das telas, do tutorial e do e-mail ajustados ("a Gestão ou o Pagamento aprova"). Testes: `permissions.test.ts`, `integration/withdrawal-decide.test.ts` (Pagamento aprova e paga sozinho).
+
+### CP-309 — 2026-11-13 — Produção: saldo de abertura aprovado em lote (D-OPENINGBYPAY)
+- Pedido do responsável (creators sem conseguir pedir saque; janela da Botanika até 15/11): SQL rodado pelo responsável no Supabase, igual a `approveOpening` para todas as travadas (não desligadas, não arquivadas; conta de teste da loja de fora), em uma transação.
+- Liberadas: Botanika 37 (4 com abatimento do "já pago": Victoria R$ 23.428,62, Julia R$ 3.547,32, Joingle R$ 1.357,20, Fernanda R$ 31,22; total R$ 28.364,36), Revita Derma 1, VermeFree 65. Lançamentos `OPENING_BALANCE` (`opening:<creator>`) e AuditLog `creator.opening_approved` com `em_lote: true`.
+- Correção posterior: ajuste no extrato (nada apagado).
+
 ### CP-308 — 2026-11-12 — Foto de perfil das creators (Instagram automático; creator e Gestão sobem, trocam e tiram) (D-PHOTO; aguarda OK)
 - Migração `20261130090000_profile_photo`: `CreatorAccount.photoPath`, `photoUpdatedAt`, `igPhotoUrl`, `photoHidden`; travas `CreatorAccount_photo_path` e `CreatorAccount_ig_photo_url`.
 - Leitura diária do Instagram guarda a foto de perfil (`profile_picture_url`). Foto subida vai para o bucket privado `fotos` (criado na primeira subida), reduzida no navegador para 512 × 512 JPEG.

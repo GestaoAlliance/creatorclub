@@ -70,7 +70,7 @@ export function SaquesHero({ brandName, tab, sum, board, requested, approved, pa
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
             <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-3xl">Saques <HelpTip id="sq-abas" /></h1>
-            <p className="mt-1 max-w-xl text-sm text-white/80">A Gestão confere a nota e aprova; o Pagamento faz o Pix e marca como pago. Recusa sempre com o motivo: a creator vê.</p>
+            <p className="mt-1 max-w-xl text-sm text-white/80">A Gestão ou o Pagamento confere a nota e aprova; o Pagamento faz o Pix e marca como pago. Recusa sempre com o motivo: a creator vê.</p>
           </div>
           <div className="flex flex-col items-start gap-2 @2xl:items-end">
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${w.open ? "bg-emerald-400/25 text-white" : "bg-white/15 text-white/90"}`}>
@@ -236,7 +236,7 @@ function Panel({ r, now }: { r: QRow; now: number }) {
       {r.individual && <a href={`/admin/saques/recibo/${r.id}`} target="_blank" rel="noopener noreferrer" className={`${ui.ghostSm} self-start`}><FileText className="size-3.5" />Recibo</a>}
       {r.status === "REJECTED" && r.note && <p className="text-sm text-stone-600 dark:text-stone-300">Motivo: {r.note}</p>}
       {r.status === "PAID" && r.pixReference && <p className="font-mono text-xs text-stone-500">ID do Pix: {r.pixReference}</p>}
-      {r.status === "REQUESTED" && !r.canApprove && <p className={ui.hint}>Esperando a aprovação da Gestão.</p>}
+      {r.status === "REQUESTED" && !r.canApprove && <p className={ui.hint}>Esperando a aprovação (Gestão ou Pagamento).</p>}
       {r.status === "APPROVED" && !r.canPay && <p className={ui.hint}>Aprovado: esperando o Pix do Pagamento.</p>}
       {r.status === "APPROVED" && r.remittance && (
         <p className="text-sm text-sky-800 dark:text-sky-300">

@@ -256,7 +256,7 @@ export const HELP = {
   },
   "sq-abas": {
     title: "Caminho do dinheiro",
-    text: "Em análise: a Gestão aprova. Aprovados: o Pagamento faz o Pix. Pagos no mês abre os decididos. O resumo copia tudo para o WhatsApp.",
+    text: "Em análise: a Gestão ou o Pagamento aprova. Aprovados: o Pagamento faz o Pix. Pagos no mês abre os decididos. O resumo copia tudo para o WhatsApp.",
   },
   "sq-cartao": {
     title: "Fila de saques",
@@ -264,7 +264,7 @@ export const HELP = {
   },
   "sq-pagar": {
     title: "Aprovar ou pagar",
-    text: "A Gestão aprova; o Pagamento marca como pago só depois do Pix. Se algo não bate, recuse com o motivo: a creator vê.",
+    text: "A Gestão ou o Pagamento aprova; o Pagamento marca como pago só depois do Pix. Se algo não bate, recuse com o motivo: a creator vê.",
   },
   "de-grupos": {
     title: "Três vistas",

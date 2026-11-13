@@ -51,7 +51,9 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view", "performance.view"],
   ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
   // D-ADJUST: ajuste manual de saldo é só do SUPER_ADMIN.
-  PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
+  // D-WDPAYAPPROVE (responsável, 2026-11-13): o Pagamento também aprova o pedido em análise (confere a nota, aprova e
+  // paga), sem esperar a Gestão.
+  PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.approve", "withdrawals.manage", "personal.fiscal"],
   HUNTER: ["prospects.own"],
   // D-TIKTOKLIST: só a lista do TikTok (ex.: a Mafe), sem vendas, saldo, CPF ou pagamentos.
   TIKTOK: ["tiktok.view"],

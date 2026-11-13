@@ -99,13 +99,13 @@ export async function createHunterLink(prisma: PrismaClient, actor: Actor | null
   if (!isValidHunterCode(code)) throw new HunterError("O código precisa ter de 2 a 20 letras ou números.");
   const phone = parsePhone(input.phone);
   await assertHunter(prisma, input.brandId, input.userId);
-  // D-SIGNUPBRAND: cada hunter representa uma marca só, e o código é único entre as marcas (o link curto /i/código
-  // não diz a marca).
+  // D-SIGNUPBRAND + D-HUNTERMULTI (responsável, 2026-11-13): a mesma pessoa pode ser hunter de mais de uma marca. O
+  // código não pode ser de outra pessoa em outra marca (o link curto /i/código não diz a marca); o mesmo código da
+  // mesma pessoa em várias marcas abre a escolha da marca.
   const other = await prisma.hunterLink.findFirst({
-    where: { OR: [{ userId: input.userId }, { code }], brandId: { not: input.brandId } },
-    select: { userId: true, brand: { select: { name: true } } },
+    where: { code, brandId: { not: input.brandId }, userId: { not: input.userId } },
+    select: { id: true },
   });
-  if (other?.userId === input.userId) throw new HunterError(`Esta pessoa já é hunter da ${other.brand.name}. Cada hunter representa uma marca só.`);
   if (other) throw new HunterError("Este código já é de outro hunter (ou o hunter já tem link).");
   try {
     const link = await prisma.hunterLink.create({ data: { brandId: input.brandId, userId: input.userId, code } });

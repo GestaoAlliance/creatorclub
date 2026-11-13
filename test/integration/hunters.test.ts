@@ -107,9 +107,8 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     const gestaoA = await userWith("GESTAO", a.brand.id);
     const gestaoB = await userWith("GESTAO", b.brand.id);
     await createHunterLink(prisma, gestaoA, { brandId: a.brand.id, userId: id, code: "dania" });
-    // D-SIGNUPBRAND: um hunter, uma marca. O link na outra marca é de antes da regra (gravado direto).
-    await expect(createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" })).rejects.toThrow(/já é hunter da .*uma marca só/);
-    await prisma.hunterLink.create({ data: { brandId: b.brand.id, userId: id, code: "danib" } });
+    // D-HUNTERMULTI: a mesma pessoa pode ser hunter de mais de uma marca.
+    await createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" });
     expect((await myHunterPanel(prisma, (await loadActor(prisma, id))!)).map((p) => p.code).sort()).toEqual(["dania", "danib"]);
 
     await prisma.roleGrant.deleteMany({ where: { userId: id, brandId: b.brand.id } });
@@ -127,6 +126,11 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     const lia = await userWith("HUNTER", b.brand.id, "Lia");
     await createHunterLink(prisma, gestaoA, { brandId: a.brand.id, userId: eva.userId, code: "evaunica" });
     await expect(createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: lia.userId, code: "evaunica" })).rejects.toThrow(/código já é de outro hunter/);
+    // D-HUNTERMULTI: o mesmo código da mesma pessoa em outra marca vale; /i/código abre a escolha da marca.
+    await prisma.roleGrant.create({ data: { userId: eva.userId, role: "HUNTER", brandId: b.brand.id } });
+    await createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: eva.userId, code: "evaunica" });
+    expect((await signupLinksFor(prisma, "evaunica")).map((l) => l.slug).sort()).toEqual([a.brand.slug, b.brand.slug].sort());
+    await prisma.hunterLink.deleteMany({ where: { brandId: b.brand.id, userId: eva.userId } });
 
     const [only] = await signupLinksFor(prisma, "EVAUNICA");
     expect(only).toMatchObject({ code: "evaunica", slug: a.brand.slug, click: { brandId: a.brand.id, form: "inscricao" } });

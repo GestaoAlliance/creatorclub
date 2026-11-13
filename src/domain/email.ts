@@ -144,7 +144,7 @@ export function financeNfEmail(input: { brandName: string; creatorName: string; 
       paragraphs: [
         "Uma creator enviou a nota fiscal do saque. O PDF está anexo.",
         lines.map((l) => escapeHtml(l)).join("<br>"),
-        "A Gestão aprova o pedido e o Pagamento paga pela tela de Saques.",
+        "A Gestão ou o Pagamento aprova o pedido e o Pagamento paga pela tela de Saques.",
       ],
       button: { label: "Abrir Saques", href: input.link },
       footer: [`E-mail automático do Creator Club ${escapeHtml(input.brandName)}, um por nota enviada.`],
