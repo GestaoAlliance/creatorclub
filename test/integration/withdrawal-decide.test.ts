@@ -90,16 +90,21 @@ describe("decisão do saque (banco real)", () => {
     await expect(cancelMyWithdrawal(prisma, s.ctx, s.userId, s.withdrawalId)).rejects.toThrow(/mudou de situação/);
   });
 
+  it("D-WDPAYAPPROVE: o Pagamento aprova e paga sozinho, sem esperar a Gestão", async () => {
+    const s = await requested();
+    await approveWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW);
+    await payWithdrawal(prisma, s.pagamento, s.withdrawalId, IN_WINDOW);
+    expect((await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).status).toBe("PAID");
+  });
+
   it("duas etapas: Gestão aprova, Pagamento paga; cada um só o seu passo; outra marca não vê", async () => {
     const s = await requested();
     const otherBrand = await seedBrand(prisma);
     const pagOutra = await userWith("PAGAMENTO", otherBrand.brand.id);
-    // Em análise: o Pagamento não aprova nem paga; a Gestão vê a fila e aprova.
-    await expect(approveWithdrawal(prisma, s.pagamento, s.withdrawalId)).rejects.toThrow(/permissão para aprovar/);
-    await expect(rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, "não")).rejects.toThrow(/permissão para aprovar/);
+    // Em análise: ninguém paga antes de aprovar; a Gestão e (D-WDPAYAPPROVE) o Pagamento podem aprovar.
     await expect(payWithdrawal(prisma, s.pagamento, s.withdrawalId)).rejects.toThrow(/mudou de situação/);
     expect((await withdrawalQueue(prisma, s.gestao, "REQUESTED", IN_WINDOW)).find((r) => r.id === s.withdrawalId)).toMatchObject({ canApprove: true, canPay: false });
-    expect((await withdrawalQueue(prisma, s.pagamento, "REQUESTED", IN_WINDOW)).find((r) => r.id === s.withdrawalId)).toMatchObject({ canApprove: false, canPay: false });
+    expect((await withdrawalQueue(prisma, s.pagamento, "REQUESTED", IN_WINDOW)).find((r) => r.id === s.withdrawalId)).toMatchObject({ canApprove: true, canPay: false });
     expect((await staffHome(prisma, s.gestao)).withdrawals).toMatchObject({ mine: { approve: true, pay: false }, openingsPending: null });
 
     await approveWithdrawal(prisma, s.gestao, s.withdrawalId, IN_WINDOW);

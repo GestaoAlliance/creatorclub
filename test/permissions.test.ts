@@ -13,7 +13,7 @@ describe("matriz de permissões (D-ROLES)", () => {
     ],
     GESTAO: ["creators.view", "creators.edit", "money.view", "withdrawals.view", "withdrawals.approve", "personal.address", "personal.fiscal", "shipping.view", "shipping.manage", "prospects.own", "tiktok.view", "performance.view"],
     ENVIO: ["shipping.view", "shipping.manage", "personal.address"],
-    PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.manage", "personal.fiscal"],
+    PAGAMENTO: ["creators.view", "money.view", "withdrawals.view", "withdrawals.approve", "withdrawals.manage", "personal.fiscal"],
     HUNTER: ["prospects.own"],
     TIKTOK: ["tiktok.view"],
     VIEWER: ["creators.view", "money.view", "withdrawals.view", "shipping.view", "personal.address", "personal.fiscal", "performance.view"],

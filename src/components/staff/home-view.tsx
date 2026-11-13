@@ -65,7 +65,7 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
         )}
         {h.withdrawals && (
           <Tile href="/admin/saques" icon={<Banknote className="size-4" />} title="Saques" help="eq-saques">
-            <Kpi label="Para aprovar" value={h.withdrawals.toApprove} hint={`${formatBRL(h.withdrawals.toApproveCents)} · a Gestão aprova`} tone={h.withdrawals.mine.approve && h.withdrawals.toApprove ? "amber" : undefined} />
+            <Kpi label="Para aprovar" value={h.withdrawals.toApprove} hint={`${formatBRL(h.withdrawals.toApproveCents)} · Gestão ou Pagamento aprova`} tone={h.withdrawals.mine.approve && h.withdrawals.toApprove ? "amber" : undefined} />
             <Kpi label="Para pagar" value={h.withdrawals.toPay} hint={`${formatBRL(h.withdrawals.toPayCents)} · o Pagamento faz o Pix`} tone={h.withdrawals.mine.pay && h.withdrawals.toPay ? "amber" : undefined} />
             {h.withdrawals.openingsPending !== null && <Kpi label="Aberturas a aprovar" value={h.withdrawals.openingsPending} hint="saque travado até aprovar" />}
           </Tile>

@@ -315,6 +315,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-310 — 2026-11-13 — Pagamento também aprova o saque (D-WDPAYAPPROVE)
+- Pedido do responsável (a fila parava esperando a Gestão): o papel Pagamento ganhou `withdrawals.approve`; confere a nota, aprova e paga na mesma tela de Saques. A Gestão continua podendo aprovar.
+- Textos das telas, do tutorial e do e-mail ajustados ("a Gestão ou o Pagamento aprova"). Testes: `permissions.test.ts`, `integration/withdrawal-decide.test.ts` (Pagamento aprova e paga sozinho).
+
 ### CP-309 — 2026-11-13 — Produção: saldo de abertura aprovado em lote (D-OPENINGBYPAY)
 - Pedido do responsável (creators sem conseguir pedir saque; janela da Botanika até 15/11): SQL rodado pelo responsável no Supabase, igual a `approveOpening` para todas as travadas (não desligadas, não arquivadas; conta de teste da loja de fora), em uma transação.
 - Liberadas: Botanika 37 (4 com abatimento do "já pago": Victoria R$ 23.428,62, Julia R$ 3.547,32, Joingle R$ 1.357,20, Fernanda R$ 31,22; total R$ 28.364,36), Revita Derma 1, VermeFree 65. Lançamentos `OPENING_BALANCE` (`opening:<creator>`) e AuditLog `creator.opening_approved` com `em_lote: true`.
