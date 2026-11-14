@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-312 — 2026-11-13 — Link do hunter por marca (D-HUNTERLINKBRAND)
+- Pedido do responsável: cada hunter divulga um link por marca, `/i/<código>/<marca>` (rota `src/app/i/[codigo]/[marca]`): conta o clique na marca e abre o formulário dela. Código desconhecido na marca: formulário sem hunter; marca desconhecida: escolha de marca.
+- Tela Hunters (link e WhatsApp), Minhas indicações (um link por marca) e mensagens de prospecção usam o link da marca (`hunterUrl`). O link antigo `/i/<código>` continua: uma marca vai direto; várias abrem a escolha, que leva ao link de cada marca.
+- Conferido na prévia; testes em `integration/prospects.test.ts` e `portal-posts.test.ts`.
+
 ### CP-311 — 2026-11-13 — Hunter em mais de uma marca (D-HUNTERMULTI)
 - Pedido do responsável (a Fátima virou hunter das três marcas): `createHunterLink` não trava mais quem já é hunter de outra marca. O código continua sem poder ser de outra pessoa em outra marca; o mesmo código da mesma pessoa em várias marcas faz /i/código abrir a escolha da marca (já existia em `signupLinksFor`).
 - Teste em `integration/hunters.test.ts`.

@@ -2,7 +2,7 @@ import { Link2, Users } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
 import { Card, Kpi, PageHeader } from "@/components/ui/page";
 import { badge, ui } from "@/components/ui/styles";
-import { parseFollowers } from "@/domain";
+import { hunterUrl, parseFollowers } from "@/domain";
 import type { myHunterPanel } from "@/lib/onboarding/hunters";
 
 type Links = Awaited<ReturnType<typeof myHunterPanel>>;
@@ -36,7 +36,7 @@ export function IndicacoesView({ links, origin }: { links: Links; origin: string
       </PageHeader>
       {links.length === 0 && <p className={ui.muted}>A equipe ainda não criou o seu link. Fale com a Gestão.</p>}
       {links.map((l) => {
-        const url = `${origin}/i/${l.code}`;
+        const url = hunterUrl(origin, l.code, l.brandSlug);
         return (
           <div key={l.code} className="flex flex-col gap-6">
             {links.length > 1 && <h2 className={ui.title}>{l.brandName}</h2>}
