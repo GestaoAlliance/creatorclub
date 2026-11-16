@@ -57,7 +57,7 @@ export function SaquesHero({ brandName, tab, sum, board, requested, approved, pa
   const tiles = [
     { href: "/admin/saques?ver=analise", on: tab === "REQUESTED", label: "Em análise", value: <M>{shortBRL(sum.requested.cents)}</M>, hint: sum.requested.count ? `${sum.requested.count} ${sum.requested.count === 1 ? "pedido" : "pedidos"} · mais antigo há ${oldest}d` : "nada para aprovar", dot: sum.requested.count ? "seg-warn" : "seg-good" },
     { href: "/admin/saques?ver=aprovados", on: tab === "APPROVED", label: "Aprovados", value: <M>{shortBRL(sum.approved.cents)}</M>, hint: sum.approved.count ? `${sum.approved.count} esperando o Pix${board.inBank.count ? ` · ${board.inBank.count} no banco` : ""}` : "nada para pagar", dot: sum.approved.count ? "seg-warn" : "seg-good" },
-    { href: "/admin/saques?ver=decididos", on: tab === "DECIDED", label: "Pagos no mês", value: <M>{shortBRL(paidThisMonth.cents)}</M>, hint: `${paidThisMonth.count} ${paidThisMonth.count === 1 ? "saque" : "saques"}`, dot: "seg-good" },
+    { href: "/admin/saques/pagos", on: false, label: "Pagos no mês", value: <M>{shortBRL(paidThisMonth.cents)}</M>, hint: `${paidThisMonth.count} ${paidThisMonth.count === 1 ? "saque" : "saques"}`, dot: "seg-good" },
     { href: null, on: false, label: "Sacável sem pedido", value: <M>{shortBRL(sum.availableCents)}</M>, hint: `${board.notRequested.length} ${board.notRequested.length === 1 ? "creator" : "creators"} com saldo`, dot: "seg-info" },
     { href: null, on: false, label: "A liberar", value: <M>{shortBRL(sum.heldCents)}</M>, hint: "no fechamento do mês", dot: "seg-info" },
   ];
@@ -110,7 +110,9 @@ export function SaquesHero({ brandName, tab, sum, board, requested, approved, pa
 }
 
 /** Fila de saques: lista compacta + painel em modo fila (abre o próximo sozinho), com a nota em prévia e atalhos. */
-export function SaquesQueue({ rows, tab }: { rows: QRow[]; tab: Tab }) {
+export function SaquesQueue({ rows: all, tab }: { rows: QRow[]; tab: Tab }) {
+  // D-PAYKIND: dois blocos, CNPJ (nota fiscal) primeiro e CPF (recibo) depois; o painel segue a mesma ordem.
+  const rows = useMemo(() => [...all.filter((r) => !r.individual), ...all.filter((r) => r.individual)], [all]);
   const [openId, setOpenId] = useState<string | null>(null);
   const lastIdx = useRef(0);
   const now = useMemo(() => Date.now(), []);
@@ -145,9 +147,18 @@ export function SaquesQueue({ rows, tab }: { rows: QRow[]; tab: Tab }) {
   return (
     <section className="@container glass overflow-hidden rounded-3xl !p-0">
       <ul className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10" data-tour="sq-cartao">
-        {rows.map((r) => {
+        {rows.map((r, i) => {
+          const head = i === 0 || rows[i - 1]!.individual !== r.individual ? (() => {
+            const group = rows.filter((x) => x.individual === r.individual);
+            return (
+              <li key={`h-${r.individual}`} className="flex items-center justify-between gap-3 bg-stone-500/5 px-4 py-2 @3xl:px-5">
+                <span className="text-xs font-semibold uppercase tracking-wide text-stone-600 dark:text-stone-300">{r.individual ? "CPF · recibo" : "CNPJ · nota fiscal"} <span className="font-normal normal-case text-stone-500">· {group.length} {group.length === 1 ? "pedido" : "pedidos"}</span></span>
+                <span className="text-xs font-semibold tabular-nums"><M>{formatBRL(group.reduce((s2, x) => s2 + x.amountCents, 0))}</M></span>
+              </li>
+            );
+          })() : null;
           const over = r.availableBeforeCents !== null && r.amountCents > r.availableBeforeCents;
-          return (
+          return [head, (
             <li key={r.id} className={`flex items-center gap-3 px-4 py-3 transition @3xl:px-5 ${openId === r.id ? "bg-brand/8" : "hover:bg-stone-500/5"}`}>
               {r.canPay && <span className="shrink-0" onClick={(e) => e.stopPropagation()}><BatchCheck withdrawalId={r.id} cents={r.amountCents} name={r.name} /></span>}
               <button type="button" onClick={() => setOpenId(r.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
@@ -167,7 +178,7 @@ export function SaquesQueue({ rows, tab }: { rows: QRow[]; tab: Tab }) {
                 </span>
               </button>
             </li>
-          );
+          )];
         })}
       </ul>
       {open && (

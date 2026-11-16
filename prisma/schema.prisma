@@ -146,6 +146,7 @@ model Brand {
   prospects          Prospect[]
   shipmentReviews    ShipmentReview[]
   dataFixRequests    DataFixRequest[]
+  legacyPayouts      LegacyPayout[]
 }
 
 enum IntegrationKind {
@@ -436,6 +437,7 @@ model Creator {
 
   shipmentReviews ShipmentReview[]
   dataFixRequests DataFixRequest[]
+  legacyPayouts   LegacyPayout[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -1855,4 +1857,22 @@ model DataFixRequest {
   creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([brandId, createdAt])
+}
+
+/// D-PAIDLIST: pagamento feito antes do Creator Club (Pix do Sicoob, comprovantes), um por Pix, para o histórico de
+/// pagos por mês. Não mexe no saldo (o abatimento já está no extrato como "Saldo de abertura"). Só inserção.
+model LegacyPayout {
+  id          String   @id @default(uuid())
+  brandId     String
+  creatorId   String
+  amountCents Int
+  paidOn      DateTime @db.Date
+  note        String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([brandId, paidOn])
 }

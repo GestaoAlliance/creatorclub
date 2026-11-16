@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-317 — 2026-11-16 — Saques separados em CNPJ e CPF e aba "Pagos" por mês (D-PAYKIND, D-PAIDLIST)
+- Pedido do responsável: separar na fila os saques de CNPJ e de CPF e conseguir filtrar o que já foi pago, quando e por quem.
+- Saques: a fila mostra dois blocos, "CNPJ · nota fiscal" e "CPF · recibo", com quantidade e total; o painel segue a ordem.
+- Nova aba Pagamentos → **Pagos** (`/admin/saques/pagos`, `src/lib/withdrawals/paid.ts`): mês do pagamento (fuso da marca),
+  quadros Pago no mês / CNPJ / CPF, busca, blocos CNPJ e CPF, cada linha com pago em, pedido em, quem pagou, ID do Pix,
+  CPF/CNPJ (só com `personal.fiscal`), nota ou recibo; planilha do mês. O quadro "Pagos no mês" de Saques leva para cá.
+- Pagamentos de antes do Creator Club: tabela `LegacyPayout` (um por Pix, só inserção, RLS, trava `LegacyPayout_valid`);
+  aparecem no mês em que foram pagos com a etiqueta "antes do Creator Club". Não mexe no saldo (o abatimento já está no
+  extrato). Os 8 Pix dos comprovantes do Guilherme entram em produção por SQL com histórico, depois do merge.
+- Testes: `test/integration/paid-list.test.ts`.
+
 ### CP-316 — 2026-11-16 — Aba "Meu cadastro" no portal e pedido de correção à equipe (D-PORTALPROFILE, D-DATAFIX)
 - Pedido do responsável (print do portal da Victoria): uma aba para a creator ver o próprio cadastro.
 - `/portal/[marca]/cadastro` (`src/lib/portal/profile.ts`, `src/components/portal/profile-view.tsx`): faixa da marca com a foto
