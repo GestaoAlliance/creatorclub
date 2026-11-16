@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { isInsideWithdrawalWindow, isMonthKey, monthKey, nfData, type Balance, type NfData } from "@/domain";
+import { isInsideWithdrawalWindow, isMonthKey, monthKey, nfBreakdown, nfData, type Balance, type NfData } from "@/domain";
 import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import { readLedger, statementForMonth, type Statement } from "@/lib/commission/statement";
 import { PortalError, type PortalContext } from "./context";
@@ -34,6 +34,8 @@ export type WithdrawalTab = {
   blocks: WithdrawalBlock[];
   withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; approvedAt: Date | null; decidedAt: Date | null; note: string | null; pixReference: string | null }[];
   statement: Statement;
+  /** D-NFAMOUNT: valor da nota com a conta aberta (comissão por mês, já pago, saques) e o que entra na próxima. */
+  nfAmount: ReturnType<typeof nfBreakdown> & { legacy: { day: string; cents: number }[] };
 };
 
 export async function portalWithdrawalTab(
@@ -64,9 +66,10 @@ export async function portalWithdrawalTab(
       select: { id: true, requestedAt: true, amountCents: true, status: true, approvedAt: true, decidedAt: true, note: true, pixReference: true },
     }),
   ]);
-  const [ledger, release] = await Promise.all([
+  const [ledger, release, legacy] = await Promise.all([
     readLedger(prisma, { id: ctx.creatorId, brandId: ctx.brand.id, brand: { timezone: brand.timezone } }, now),
     releaseProgress(prisma, ctx.creatorId, now),
+    prisma.legacyPayout.findMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id }, orderBy: { paidOn: "asc" }, select: { paidOn: true, amountCents: true } }),
   ]);
   const policy = { windowStartDay: brand.withdrawalWindowStartDay, windowEndDay: brand.withdrawalWindowEndDay };
 
@@ -86,5 +89,9 @@ export async function portalWithdrawalTab(
     blocks,
     withdrawals,
     statement: statementForMonth(ledger, opts.month, monthKey(now, brand.timezone)),
+    nfAmount: {
+      ...nfBreakdown(ledger.lines, ledger.releasedThrough, ledger.balance.reservedCents, ledger.balance.availableCents),
+      legacy: legacy.map((l) => ({ day: l.paidOn.toISOString().slice(0, 10), cents: l.amountCents })),
+    },
   };
 }

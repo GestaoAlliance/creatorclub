@@ -14,6 +14,7 @@ async function run(fn: () => Promise<string | void>, ok: string): Promise<Action
   try {
     const msg = await fn();
     revalidatePath("/admin/saques");
+    revalidatePath("/admin/pagamentos", "layout");
     return { ok: msg || ok };
   } catch (error) {
     if (error instanceof WithdrawalDecisionError) return { error: error.message };
@@ -65,6 +66,7 @@ export async function remessaAction(_prev: RemessaState, form: FormData): Promis
   try {
     const r = await generateRemessa(db(), await currentActor(), String(form.get("brandId") ?? ""), String(form.get("payDay") ?? ""));
     revalidatePath("/admin/saques");
+    revalidatePath("/admin/pagamentos", "layout");
     return { file: { name: r.fileName, content: r.content }, ok: `Remessa nº ${r.nsa}: ${r.count} ${r.count === 1 ? "saque" : "saques"}. Envie o arquivo no Internet Banking do SICOOB.` };
   } catch (error) {
     if (error instanceof RemessaError) return { error: error.message, problems: error.problems.map((p) => p.problem) };
@@ -76,6 +78,7 @@ export async function removeRemessaAction(_prev: ActionState, form: FormData): P
   try {
     await removeFromRemessa(db(), await currentActor(), String(form.get("withdrawalId") ?? ""));
     revalidatePath("/admin/saques");
+    revalidatePath("/admin/pagamentos", "layout");
     return { ok: "Saque fora da remessa: entra na próxima." };
   } catch (error) {
     if (error instanceof RemessaError) return { error: error.message };
@@ -95,6 +98,7 @@ export async function retornoAction(_prev: RetornoState, form: FormData): Promis
     if (form.get("mode") === "apply") {
       const r = await applyRetorno(db(), actor, brandId, String(form.get("content") ?? ""));
       revalidatePath("/admin/saques");
+    revalidatePath("/admin/pagamentos", "layout");
       const parts = [
         r.paid && `${r.paid} ${r.paid === 1 ? "pago" : "pagos"}`,
         r.scheduled && `${r.scheduled} ${r.scheduled === 1 ? "agendado" : "agendados"}`,

@@ -82,8 +82,8 @@ export function AllianceBrandCards({ brands }: { brands: Brands }) {
                 )}
                 {k && k.unclassified + k.ownerPending > 0 && <Go slug={b.slug} next="/admin/cupons" label="Cupons a conferir" value={k.unclassified + k.ownerPending} tone="amber" />}
                 {s && <Go slug={b.slug} next="/admin/envios" label="Envios preparando" value={s.preparing} tone={s.preparing ? "amber" : undefined} />}
-                {w && <Go slug={b.slug} next="/admin/saques" label="Saques para aprovar" value={w.toApprove} tone={w.toApprove ? "amber" : undefined} />}
-                {w && <Go slug={b.slug} next="/admin/saques?ver=aprovados" label="Saques para pagar" value={w.toPay} tone={w.toPay ? "amber" : undefined} />}
+                {w && <Go slug={b.slug} next="/admin/pagamentos/cnpj" label="Saques para aprovar" value={w.toApprove} tone={w.toApprove ? "amber" : undefined} />}
+                {w && <Go slug={b.slug} next="/admin/pagamentos/cnpj?aba=realizar" label="Saques para pagar" value={w.toPay} tone={w.toPay ? "amber" : undefined} />}
                 {!b.store?.connected && <Go slug={b.slug} next="/admin/sync" label="Conectar a loja Shopify" value="abrir" />}
               </div>
             </section>

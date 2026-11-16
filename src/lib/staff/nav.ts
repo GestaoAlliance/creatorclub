@@ -46,11 +46,9 @@ const GROUPS: Group[] = [
     label: "Pagamentos",
     icon: "payout",
     tabs: [
-      { href: "/saques", label: "Saques", needs: "withdrawals.view" },
-      // D-PAIDLIST: o que já foi pago, por mês.
-      { href: "/saques/pagos", label: "Pagos", needs: "withdrawals.view" },
-      { href: "/abertura", label: "Abertura", needs: "withdrawals.manage" },
-      { href: "/saques/conferencia", label: "Conferência da planilha", needs: "withdrawals.manage" },
+      // D-PAYFLOW: NF para aprovar → Saques a realizar → Saques realizados, separado por CNPJ e CPF.
+      { href: "/pagamentos/cnpj", label: "Pagamentos CNPJ", needs: "withdrawals.view" },
+      { href: "/pagamentos/cpf", label: "Pagamentos CPF", needs: "withdrawals.view" },
     ],
   },
   { label: "Envios", icon: "package", tabs: [{ href: "/envios", label: "Envios", needs: "shipping.view" }] },
@@ -66,6 +64,9 @@ const GROUPS: Group[] = [
       { href: "/importar", label: "Importar", needs: "integrations.manage", global: true },
       // M3.4b (D-MCP): cada pessoa liga o próprio Claude.
       { href: "/claude", label: "Claude", needs: "creators.view" },
+      // D-PAYFLOW: consultas de pagamento (saíram do menu de Pagamentos).
+      { href: "/abertura", label: "Saldo de abertura", needs: "withdrawals.manage" },
+      { href: "/saques/conferencia", label: "Conferência da planilha", needs: "withdrawals.manage" },
     ],
   },
 ];
