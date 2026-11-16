@@ -26,6 +26,7 @@ export const NOTICE_TOPIC: Record<NoticeKind, NoticeTopic> = {
   TEAM_MESSAGE: "team",
   PARTNERSHIP_ACTIVE: "account",
   CONTRACT_ENDING: "account",
+  PIX_CHANGED: "money",
 };
 
 export const noticeTopic = (kind: string): NoticeTopic => NOTICE_TOPIC[kind as NoticeKind] ?? "account";

@@ -1,3 +1,4 @@
+import { AddressForm, PixForm } from "./data-forms";
 import type { CreatorReturn } from "@/lib/reports/creator-return";
 import { ArrowLeft, ClipboardCheck, FileSignature, Eye, History, Mail, MapPin, Percent, Receipt, Scale, Ticket, TrendingUp, UserRound, Sparkles, FileText, Play, KeyRound } from "lucide-react";
 import { CopyButton } from "@/components/portal/copy-button";
@@ -425,7 +426,11 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               <div className={`${ui.inset} grid gap-1 text-sm`}>
                 <p><span className="text-stone-500">CPF</span> {p.fiscal.cpf ?? "—"}</p>
                 <p><span className="text-stone-500">CNPJ</span> {p.fiscal.cnpj ?? "—"}</p>
-                <p><span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}</p>
+                <p className="flex flex-wrap items-center gap-x-2">
+                  <span className="text-stone-500">Pix</span> {p.fiscal.pixKey ?? "—"}
+                  {p.fiscal.pixKeyChangedAt && <span className="text-xs text-stone-500">(trocada em {date(p.fiscal.pixKeyChangedAt)})</span>}
+                </p>
+                {p.canEditPix && <PixForm creatorId={p.id} current={p.fiscal.pixKey} />}
                 {/* D-ALELOCARD: dados do cartão Alelo (pessoa física). */}
                 <p><span className="text-stone-500">Nome da mãe</span> {p.fiscal.motherName ?? "—"}</p>
                 {p.fiscal.aleloCardRequestedAt && <p><span className="text-stone-500">Cartão Alelo</span> pedido em {date(p.fiscal.aleloCardRequestedAt)}</p>}
@@ -439,6 +444,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                   {p.address.lines.length > 0 && !p.address.confirmed && <span className={badge.amber}>a confirmar pela creator</span>}
                 </p>
                 {p.address.lines.length ? p.address.lines.map((l) => <p key={l}>{l}</p>) : <p className="text-stone-500">Nenhum endereço no sistema.</p>}
+                {p.addressFull && <AddressForm creatorId={p.id} address={p.addressFull} />}
               </div>
             )}
           </Card>
