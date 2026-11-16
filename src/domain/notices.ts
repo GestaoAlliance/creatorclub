@@ -26,7 +26,9 @@ export type NoticeKind =
   /** D-BULKMSG: mensagem que a equipe escreve para várias creators de uma vez. */
   | "TEAM_MESSAGE"
   /** D-PORTALCAMPAIGN: a equipe publicou uma campanha para o público dela. */
-  | "CAMPAIGN_NEW";
+  | "CAMPAIGN_NEW"
+  /** D-PIXCHANGE: a chave Pix foi trocada (aviso contra golpe). */
+  | "PIX_CHANGED";
 
 export type Notice = { kind: NoticeKind; dedupeKey: string; title: string; body: string; path: string | null };
 
@@ -180,5 +182,13 @@ export const notices = {
     title: `Nova campanha: ${name}`,
     body: `De ${startDay.slice(8, 10)}/${startDay.slice(5, 7)} a ${endDay.slice(8, 10)}/${endDay.slice(5, 7)}. ${prizes} Veja o briefing e toque em "Quero participar".`,
     path: "/campanhas",
+  }),
+  /** D-PIXCHANGE: chave Pix trocada (por ela ou pela equipe). A chave aparece mascarada; `at` faz cada troca avisar. */
+  pixChanged: (masked: string, byTeam: boolean, at: Date): Notice => ({
+    kind: "PIX_CHANGED",
+    dedupeKey: `pix:${at.getTime()}`,
+    title: "Sua chave Pix foi alterada",
+    body: `${byTeam ? "A equipe trocou" : "Você trocou"} a chave Pix onde recebe os saques para ${masked}. Se não foi você nem um pedido seu, fale com a equipe da marca agora.`,
+    path: "/saque",
   }),
 };

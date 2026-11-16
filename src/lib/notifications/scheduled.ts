@@ -17,6 +17,8 @@ const FIRST_HOUR = 9;
 const NEAR_MIN_SHARE = 0.7;
 const CONTRACT_WARN_DAYS = 30;
 const DAY = 86_400_000;
+/** D-WHATSAPPFALLBACK: espera pelo WhatsApp antes de mandar o aviso por e-mail. */
+export const WHATSAPP_GRACE_MS = 30 * 60_000;
 
 const hourIn = (now: Date, tz: string) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hourCycle: "h23" }).format(now));
 
@@ -132,8 +134,11 @@ export async function emailPendingNotices(
       emailedAt: null,
       createdAt: { gte: new Date(now.getTime() - DAY) },
       creator: { account: { email: { not: { endsWith: FAKE_EMAIL_DOMAIN } } } },
-      // D-CONTRACTFLOW: "parceria ativa" vai também por e-mail.
-      ...(opts.whatsappOn ? { OR: [{ brand: { whatsappInstance: null } }, { kind: "PARTNERSHIP_ACTIVE" }] } : {}),
+      // D-CONTRACTFLOW: "parceria ativa" vai também por e-mail. D-WHATSAPPFALLBACK: aviso que o WhatsApp não entregou
+      // em 30 minutos vai por e-mail (o WhatsApp da marca caiu ou o fluxo do n8n parou).
+      ...(opts.whatsappOn
+        ? { OR: [{ brand: { whatsappInstance: null } }, { kind: "PARTNERSHIP_ACTIVE" }, { whatsappAt: null, createdAt: { lt: new Date(now.getTime() - WHATSAPP_GRACE_MS) } }] }
+        : {}),
     },
     orderBy: { createdAt: "asc" },
     take: 20,

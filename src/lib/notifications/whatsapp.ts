@@ -60,7 +60,9 @@ export function whatsappText(n: { title: string; body: string }, link: string | 
 export async function whatsappPendingNotices(prisma: PrismaClient, sender: WhatsAppSender | null, origin: string | null, now = new Date()): Promise<number> {
   if (!sender || !inWhatsAppHours(now)) return 0;
   const pending = await prisma.notification.findMany({
-    where: { whatsappAt: null, createdAt: { gte: new Date(now.getTime() - DAY) }, brand: { whatsappInstance: { not: null } }, creator: { account: { phone: { not: null } } } },
+    // D-WHATSAPPFALLBACK: o que já saiu por e-mail (WhatsApp fora do ar) não vai mais pelo WhatsApp; "parceria ativa"
+    // vai pelos dois (D-CONTRACTFLOW).
+    where: { whatsappAt: null, OR: [{ emailedAt: null }, { kind: "PARTNERSHIP_ACTIVE" }], createdAt: { gte: new Date(now.getTime() - DAY) }, brand: { whatsappInstance: { not: null } }, creator: { account: { phone: { not: null } } } },
     orderBy: { createdAt: "asc" },
     take: 30,
     select: {

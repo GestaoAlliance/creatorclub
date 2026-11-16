@@ -26,6 +26,8 @@ import { OriginError, setCreatorOrigin } from "@/lib/creators/origin";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { assertCanAttach, assertUploadId, attachAndRelease, CONTRACT_BUCKET, ContractFileError, contractFilePath, MAX_CONTRACT_BYTES } from "@/lib/contracts/attachment";
 import { ContractSendError } from "@/lib/autentique/applications";
+import { changePixKey, PixError } from "@/lib/creators/pix";
+import { ShipmentError, staffUpdateAddress } from "@/lib/shipments/shipments";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -35,7 +37,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError || error instanceof ContractSendError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError || error instanceof ContractSendError || error instanceof PixError || error instanceof ShipmentError) {
       return { error: error.message };
     }
     throw error;
@@ -279,4 +281,23 @@ export async function attachContractAction(_p: State, form: FormData): Promise<S
         : { ok: `Contrato anexado e marcado como assinado. A ativação falhou agora (${r.error}); o sistema tenta de novo em 5 minutos.` };
     }
   }, "Contrato anexado. Ela já vê no portal.");
+}
+
+/** D-PIXCHANGE: a equipe troca a chave Pix, com o motivo. */
+export async function pixAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => {
+    const r = await changePixKey(db(), { kind: "staff", actor: await currentActor(), reason: String(form.get("reason") ?? "") }, id, String(form.get("pixKey") ?? ""));
+    return { ok: `Chave trocada para ${r.masked}. A creator recebe um aviso.` };
+  }, "Chave trocada.");
+}
+
+/** D-ADDRSTAFF: a Gestão ou o Envio corrige o endereço. */
+export async function addressAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  const f = (k: string) => String(form.get(k) ?? "");
+  return run(id, async () => {
+    const r = await staffUpdateAddress(db(), await currentActor(), id, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") }, form.get("alsoPending") === "on");
+    return { ok: r.pendingUpdated ? `Endereço salvo e trocado em ${r.pendingUpdated} ${r.pendingUpdated === 1 ? "envio ainda não enviado" : "envios ainda não enviados"}.` : "Endereço salvo." };
+  }, "Endereço salvo.");
 }

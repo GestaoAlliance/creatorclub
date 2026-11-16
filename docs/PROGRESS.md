@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-315 — 2026-11-16 — Trocar chave Pix (creator e equipe) e endereço pela equipe (D-PIXCHANGE, D-ADDRSTAFF)
+- Migração `20261201090000_pix_change`: `CreatorAccount.pixKeyChangedAt`; tipo de aviso `PIX_CHANGED` em `Notification_valid` (sem trava de formato da chave: há 2 chaves antigas fora do padrão em produção).
+- `src/lib/creators/pix.ts` (`changePixKey`): a creator troca no portal (Saque, digitando duas vezes) e a equipe na ficha (quem vê dados fiscais e edita creators ou paga), com motivo; aviso "Sua chave Pix foi alterada", auditoria `creator.pix_change`; não troca com saque aprovado esperando o Pix. Saques: alerta "chave Pix trocada há X dias" (30 dias) para conferir o titular.
+- `staffUpdateAddress`: Gestão e Envio corrigem o endereço na ficha; opção de trocar nos envios ainda não enviados ao Olist.
+- Nome, CPF, CNPJ, telefone e e-mail seguem só pela equipe (contato já editável na ficha). Testes em `integration/data-change.test.ts`.
+
+### CP-314 — 2026-11-16 — Aviso vai por e-mail quando o WhatsApp não entrega (D-WHATSAPPFALLBACK)
+- Achado em produção: com o WhatsApp ligado, a Botanika não mandava e-mail e o WhatsApp falhava desde 05/11 (0 entregas em 30 dias; último e-mail 05/11): os avisos ficavam só no portal.
+- `emailPendingNotices`: aviso sem WhatsApp entregue depois de 30 min (`WHATSAPP_GRACE_MS`) vai por e-mail; `whatsappPendingNotices` não manda o que já saiu por e-mail (menos "parceria ativa", que vai pelos dois). Teste em `integration/whatsapp.test.ts`.
+- Falta: descobrir por que o fluxo do n8n / a instância da Evolution da Botanika parou (precisa do conector do n8n).
+
+### CP-313 — 2026-11-16 — Produção: janela de saque da Botanika reaberta até 22/11
+- Pedido do responsável (saques liberados em 13/11, guia chegando em 16/11, só 1 pedido no mês): `Brand.withdrawalWindowEndDay` da Botanika 15 → 22 por SQL, com AuditLog `brand.update`. Pagamento continua de 20 a 25. Voltar para 15 em 23/11 (lembrete agendado, com o OK do responsável).
+- Achados para rodar mês a mês: avisos da Botanika não saem no WhatsApp (0 em 30 dias com o WhatsApp ligado, e com ele ligado o e-mail não sai); pedido da Ludimilla em análise desde 13/11.
+
 ### CP-312 — 2026-11-13 — Link do hunter por marca (D-HUNTERLINKBRAND)
 - Pedido do responsável: cada hunter divulga um link por marca, `/i/<código>/<marca>` (rota `src/app/i/[codigo]/[marca]`): conta o clique na marca e abre o formulário dela. Código desconhecido na marca: formulário sem hunter; marca desconhecida: escolha de marca.
 - Tela Hunters (link e WhatsApp), Minhas indicações (um link por marca) e mensagens de prospecção usam o link da marca (`hunterUrl`). O link antigo `/i/<código>` continua: uma marca vai direto; várias abrem a escolha, que leva ao link de cada marca.

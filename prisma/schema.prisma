@@ -270,6 +270,8 @@ model CreatorAccount {
   /// D-PJADDR: regime do CNPJ (MEI, SIMPLES, OUTRO); fora do MEI os produtos vão para o endereço do CNPJ.
   taxRegime         String?
   pixKey            String?
+  /// D-PIXCHANGE: quando a chave Pix foi trocada pela última vez (o saque mostra "chave trocada há X dias").
+  pixKeyChangedAt   DateTime?
   instagram         String? // sem o @
   /// D-PHOTO: foto de perfil. Subida (portal ou equipe) fica no bucket privado `fotos` (`photoPath`); sem ela, vale a
   /// do Instagram (`igPhotoUrl`, lida todo dia). `photoHidden`: a equipe tirou a foto do Instagram (inadequada).

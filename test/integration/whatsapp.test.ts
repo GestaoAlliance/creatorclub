@@ -50,6 +50,15 @@ describe("avisos pelo WhatsApp da marca (M2.2, D-WHATSAPP, banco real)", () => {
     expect(emails.some((m) => m.idempotencyKey === `notice-${recent.id}`)).toBe(false);
     expect(emails.some((m) => m.idempotencyKey === `notice-${elsewhere.id}`)).toBe(true);
 
+    // D-WHATSAPPFALLBACK: o WhatsApp não entregou em 30 minutos: vai por e-mail e o WhatsApp não manda mais.
+    const stuck = await prisma.notification.create({ data: { ...base, dedupeKey: `w-${randomUUID()}`, createdAt: new Date(Date.now() - 40 * 60_000) } });
+    while ((await emailPendingNotices(prisma, mail, "https://x.test", new Date(), { whatsappOn: true })) > 0);
+    expect(emails.some((m) => m.idempotencyKey === `notice-${stuck.id}`)).toBe(true);
+    expect(emails.some((m) => m.idempotencyKey === `notice-${recent.id}`)).toBe(false); // ainda na espera
+    const late: WhatsAppMessage[] = [];
+    while ((await whatsappPendingNotices(prisma, async (m) => void late.push(m), "https://x.test", new Date(new Date().setUTCHours(15, 0, 0, 0)))) > 0);
+    expect(late.some((m) => m.notificationId === stuck.id)).toBe(false);
+
     await expectDbError(prisma.brand.update({ where: { id: a.brand.id }, data: { whatsappInstance: " ruim" } }), /Brand_whatsapp_instance_format/);
   });
 });

@@ -1,5 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight, BellRing, Check, ChevronRight, Clock, FileText, KeyRound, Receipt, TriangleAlert, Wallet, X } from "lucide-react";
 import type { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
+import { PixChange } from "./pix-change";
 import Link from "next/link";
 import { formatBRL, payDaysText, type WithdrawalDays } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
@@ -98,7 +99,9 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4" />Sua chave Pix</h2>
           <p className="font-mono text-lg">{extras.pixKey ?? "não cadastrada"}</p>
-          <p className="text-xs text-stone-500">{extras.pixKey ? "O Pix do saque cai nesta chave. Para trocar, fale com a equipe da marca." : "Você informa a chave no pedido de saque."}</p>
+          <p className="text-xs text-stone-500">{extras.pixKey ? "O Pix do saque cai nesta chave." : "Você informa a chave no pedido de saque."}</p>
+          {/* D-PIXCHANGE: ela mesma troca (a equipe também, na ficha). */}
+          {extras.pixKey && !tab.blocks.includes("VIEW_ONLY") && <PixChange marca={base.split("/")[2]!} />}
         </section>
         <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
           <h2 className="text-sm font-semibold">Total recebido</h2>

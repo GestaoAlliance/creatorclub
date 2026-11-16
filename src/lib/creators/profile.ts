@@ -4,6 +4,7 @@ import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
 import { addressOf, formatAddress } from "@/lib/shipments/address";
+import { canEditPix } from "./pix";
 import { informedAddressFor } from "@/lib/shipments/shipments";
 import { ugcCyclesFor, ugcVideosOf } from "./ugc";
 import type { Actor } from "@/lib/auth/actor";
@@ -179,8 +180,12 @@ export async function creatorProfile(prisma: PrismaClient, actor: Actor | null, 
     canViewAs: can(actor.grants, "portal.viewAs", creator.brandId),
     adjustments: money ? adjustments.map((e) => ({ at: e.createdAt, amountCents: e.amountCents, reason: e.note ?? "" })) : null,
     contact: { name: a.name, email: a.email, phone: a.phone, fakeEmail: a.email.endsWith(FAKE_EMAIL_DOMAIN) },
-    fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey, motherName: a.motherName, aleloCardRequestedAt: creator.aleloCardRequestedAt } : null,
+    fiscal: fiscal ? { cpf: a.cpf, cnpj: a.cnpj, pixKey: a.pixKey, pixKeyChangedAt: a.pixKeyChangedAt, motherName: a.motherName, aleloCardRequestedAt: creator.aleloCardRequestedAt } : null,
     address,
+    /** D-ADDRSTAFF: endereço completo para corrigir (quem vê endereço e cuida de envios ou edita creators). */
+    addressFull: seeAddress && (can(actor.grants, "shipping.manage", creator.brandId) || can(actor.grants, "creators.edit", creator.brandId)) ? (full ?? { zip: "", street: "", number: "", complement: "", district: "", city: "", state: "" }) : null,
+    /** D-PIXCHANGE: pode trocar a chave Pix na ficha. */
+    canEditPix: canEditPix(actor, creator.brandId),
     hasLogin: a.userId !== null,
     /** M4.4b (D-ACCESS): login dela e o último acesso. */
     userId: a.userId,

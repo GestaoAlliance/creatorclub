@@ -218,6 +218,8 @@ function Panel({ r, now }: { r: QRow; now: number }) {
         </span>
         {r.pixKey && <CopyButton value={r.pixKey} label="Copiar" />}
       </div>
+      {/* D-PIXCHANGE: chave trocada há pouco: conferir o titular no banco antes do Pix. */}
+      {r.pixChangedDays !== null && <p className="flex items-start gap-2 rounded-2xl bg-amber-400/15 p-3 text-sm text-amber-900 dark:text-amber-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" />Chave Pix trocada {r.pixChangedDays === 0 ? "hoje" : r.pixChangedDays === 1 ? "ontem" : `há ${r.pixChangedDays} dias`}: confira no app do banco se o titular é a creator antes de pagar.</p>}
       {open && r.individual && <p className="text-sm text-sky-800 dark:text-sky-300">Pessoa física: antes de pagar, confira no app do banco se o nome da chave Pix é o da creator.</p>}
       {open && r.nfCheck === "MANUAL" && <p className="text-sm text-amber-800 dark:text-amber-300">O sistema não conseguiu ler esta nota. Confira tomadora, valor e CNPJ antes de aprovar.</p>}
       {r.hasNf && (

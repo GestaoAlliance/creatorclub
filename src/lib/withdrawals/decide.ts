@@ -186,7 +186,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       bankResult: true,
       bankNote: true,
       pixReference: true,
-      creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
+      creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true, pixKeyChangedAt: true } } } },
     },
   });
   const isOpen = (s: string) => s === "REQUESTED" || s === "APPROVED";
@@ -221,6 +221,8 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       name: a.name,
       document: fiscal ? (a.cnpj ?? a.cpf) : null,
       pixKey: fiscal ? a.pixKey : null,
+      // D-PIXCHANGE: chave trocada nos últimos 30 dias (quem paga confere antes do Pix).
+      pixChangedDays: a.pixKeyChangedAt && now.getTime() - a.pixKeyChangedAt.getTime() < 30 * 86_400_000 ? Math.floor((now.getTime() - a.pixKeyChangedAt.getTime()) / 86_400_000) : null,
       amountCents: r.amountCents,
       status: r.status,
       requestedAt: r.requestedAt,

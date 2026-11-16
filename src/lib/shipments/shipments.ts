@@ -54,6 +54,36 @@ export async function updateMyAddress(prisma: PrismaClient, ctx: PortalContext, 
   return address;
 }
 
+/**
+ * D-ADDRSTAFF (responsável, 2026-11-16): a Gestão ou o Envio corrige o endereço da creator na ficha. Vale para os
+ * próximos envios; com `alsoPending`, troca também nos envios ainda não mandados ao Olist (esperando aprovação ou em
+ * preparo). Fica no histórico.
+ */
+export async function staffUpdateAddress(prisma: PrismaClient, actor: Actor | null, creatorId: string, input: AddressInput, alsoPending: boolean) {
+  const creator = await prisma.creator.findUnique({ where: { id: creatorId }, select: { accountId: true, brandId: true } });
+  if (!creator) throw new ShipmentError("Creator não encontrada.");
+  if (!actor || !can(actor.grants, "personal.address", creator.brandId) || !(can(actor.grants, "shipping.manage", creator.brandId) || can(actor.grants, "creators.edit", creator.brandId))) {
+    throw new ShipmentError("Sem permissão para alterar o endereço.");
+  }
+  let address: Address;
+  try {
+    address = normalizeAddress(input);
+  } catch (error) {
+    if (error instanceof AddressError) throw new ShipmentError(error.message);
+    throw error;
+  }
+  return prisma.$transaction(async (tx) => {
+    await tx.creatorAccount.update({ where: { id: creator.accountId }, data: addressColumns(address) });
+    const pending = alsoPending
+      ? await tx.shipment.updateMany({ where: { creator: { accountId: creator.accountId }, status: { in: ["AWAITING_APPROVAL", "PREPARING"] }, olistSentAt: null }, data: { address } })
+      : { count: 0 };
+    await tx.auditLog.create({
+      data: { brandId: creator.brandId, actorType: "USER", actorId: actor.userId, action: "creator.address", entity: "CreatorAccount", entityId: creator.accountId, after: { city: address.city, state: address.state, by: "staff", pendingUpdated: pending.count } },
+    });
+    return { pendingUpdated: pending.count };
+  });
+}
+
 // ───── Equipe ─────
 
 export async function createShipment(
