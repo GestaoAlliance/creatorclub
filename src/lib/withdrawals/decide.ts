@@ -50,7 +50,7 @@ export async function approveWithdrawal(prisma: PrismaClient, actor: Actor | nul
 }
 
 async function load(prisma: PrismaClient, id: string) {
-  const w = await prisma.withdrawal.findUnique({ where: { id }, select: { id: true, brandId: true, creatorId: true, amountCents: true, status: true } });
+  const w = await prisma.withdrawal.findUnique({ where: { id }, select: { id: true, brandId: true, creatorId: true, amountCents: true, status: true, remittance: { select: { nsa: true } } } });
   if (!w) throw new WithdrawalDecisionError("Saque não encontrado.");
   return w;
 }
@@ -65,13 +65,21 @@ export function normalizePixReference(input: string | null | undefined): string 
   return v;
 }
 
-export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, now = new Date(), pixReference: string | null = null) {
+/**
+ * D-NODOUBLEPAY: saque que está numa remessa do SICOOB só é dado como pago pelo retorno do banco (`viaBank`). Marcar à
+ * mão (um ou em lote) deixaria o Pix manual e o do banco saírem os dois.
+ */
+export const IN_BANK = (nsa: number) => `Este saque está na remessa nº ${nsa} do SICOOB: ele é dado como pago pelo retorno do banco. Suba o arquivo de retorno (não faça Pix à mão).`;
+
+export async function payWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, now = new Date(), pixReference: string | null = null, opts: { viaBank?: boolean } = {}) {
   const w = await load(prisma, withdrawalId);
   assertManage(actor, w.brandId);
+  if (w.remittance && !opts.viaBank) throw new WithdrawalDecisionError(IN_BANK(w.remittance.nsa));
   const ref = normalizePixReference(pixReference);
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.withdrawal.updateMany({
-      where: { id: w.id, status: "APPROVED" },
+      // Fora da remessa (pagamento à mão) ou ainda na mesma remessa (retorno do banco): nunca os dois.
+      where: { id: w.id, status: "APPROVED", ...(opts.viaBank ? { remittanceId: { not: null } } : { remittanceId: null }) },
       data: { status: "PAID", decidedAt: now, decidedById: actor.userId, pixReference: ref },
     });
     if (count === 0) throw new WithdrawalDecisionError(CHANGED);
@@ -123,9 +131,11 @@ export async function rejectWithdrawal(prisma: PrismaClient, actor: Actor | null
   if (w.status !== "REQUESTED" && w.status !== "APPROVED") throw new WithdrawalDecisionError(CHANGED);
   if (w.status === "APPROVED") assertManage(actor, w.brandId);
   else assertApprove(actor, w.brandId);
+  // D-NODOUBLEPAY: saque no banco não volta ao saldo por recusa (o banco pode pagar mesmo assim).
+  if (w.remittance) throw new WithdrawalDecisionError(`Este saque está na remessa nº ${w.remittance.nsa} do SICOOB. Só dá para recusar depois que o banco recusar (o retorno tira da remessa sozinho).`);
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.withdrawal.updateMany({
-      where: { id: w.id, status: w.status },
+      where: { id: w.id, status: w.status, remittanceId: null },
       data: { status: "REJECTED", decidedAt: now, decidedById: actor.userId, note },
     });
     if (count === 0) throw new WithdrawalDecisionError(CHANGED);
@@ -241,7 +251,7 @@ export async function withdrawalQueue(prisma: PrismaClient, actor: Actor | null,
       availableBeforeCents,
       // O que esta pessoa pode fazer neste saque (a tela só mostra os botões certos; a regra vale de novo no servidor).
       canApprove: r.status === "REQUESTED" && can(actor.grants, "withdrawals.approve", r.brandId),
-      canPay: r.status === "APPROVED" && can(actor.grants, "withdrawals.manage", r.brandId),
+      canPay: r.status === "APPROVED" && !r.remittance && can(actor.grants, "withdrawals.manage", r.brandId),
       canRecheck: isOpen(r.status) && r.nfFileId !== null && (can(actor.grants, "withdrawals.approve", r.brandId) || can(actor.grants, "withdrawals.manage", r.brandId)),
     };
   });

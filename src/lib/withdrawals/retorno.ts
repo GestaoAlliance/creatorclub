@@ -22,8 +22,9 @@ export type RetornoRow = {
   result: RetornoResult;
   reason: string;
   withdrawalId: string | null;
-  /** ok = será aplicado; done = já está assim; notfound = não é saque desta remessa; amount = valor diferente do saque. */
-  state: "ok" | "done" | "notfound" | "amount";
+  /** ok = será aplicado; done = já está assim; notfound = não é saque desta remessa; amount = valor diferente do saque;
+   * alert = o banco diz que pagou, mas no sistema o saque não está mais nesta remessa (D-NODOUBLEPAY): conferir. */
+  state: "ok" | "done" | "notfound" | "amount" | "alert";
 };
 
 export const reasonOf = (codes: readonly string[]) => (codes.length ? codes.map((c) => RETORNO_CODES[c] ?? `Código ${c} do banco`).join("; ") : "Sem código do banco");
@@ -45,15 +46,20 @@ export async function retornoPreview(prisma: PrismaClient, actor: Actor | null, 
     select: { id: true, amountCents: true, status: true, remittanceId: true, bankResult: true },
   });
   const byRef = new Map(sent.map((w) => [remessaRef(w.id), w]));
+  // D-NODOUBLEPAY: saques da marca que saíram desta remessa (recusados, tirados à mão) também são procurados.
+  const others = new Map(
+    (await prisma.withdrawal.findMany({ where: { brandId, status: { not: "PAID" } }, select: { id: true, status: true, remittanceId: true } })).map((w) => [remessaRef(w.id), w]),
+  );
   const rows: RetornoRow[] = parsed.items.map((i) => {
     const w = byRef.get(i.ref);
     const base = { ref: i.ref, name: i.name, amountCents: i.amountCents, result: i.result, reason: reasonOf(i.codes), withdrawalId: w?.id ?? null };
-    if (!w) return { ...base, state: "notfound" };
+    if (!w) return { ...base, withdrawalId: others.get(i.ref)?.id ?? null, state: i.result === "PAID" && others.has(i.ref) ? "alert" : "notfound" };
     if (w.amountCents !== i.amountCents) return { ...base, state: "amount" };
     const inThis = w.status === "APPROVED" && w.remittanceId === remittance.id;
     const done =
       i.result === "PAID" ? w.status === "PAID" : i.result === "REJECTED" ? !inThis : inThis && w.bankResult === i.result;
     if (done) return { ...base, state: "done" };
+    if (!inThis && i.result === "PAID") return { ...base, state: "alert" };
     return { ...base, state: inThis ? "ok" : "done" };
   });
   return { nsa: remittance.nsa, remittanceId: remittance.id, rows };
@@ -72,7 +78,7 @@ export async function applyRetorno(prisma: PrismaClient, actor: Actor | null, br
     const id = row.withdrawalId;
     if (row.result === "PAID") {
       try {
-        await payWithdrawal(prisma, actor, id, now);
+        await payWithdrawal(prisma, actor, id, now, null, { viaBank: true });
         counts.paid++;
       } catch (error) {
         if (!(error instanceof WithdrawalDecisionError)) throw error;

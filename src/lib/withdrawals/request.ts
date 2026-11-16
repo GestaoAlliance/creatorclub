@@ -37,6 +37,14 @@ export function nfPath(brandId: string, creatorId: string, requestId: string): s
   return `${brandId}/${creatorId}/${requestId}.pdf`;
 }
 
+/**
+ * D-NODOUBLEPAY: cópia da nota que o servidor conferiu, gravada só pelo servidor no pedido. A equipe abre esta (o
+ * caminho de envio da creator pode receber outro arquivo depois; este não).
+ */
+export function nfFinalPath(brandId: string, creatorId: string, requestId: string): string {
+  return `${brandId}/${creatorId}/${requestId}.conferida.pdf`;
+}
+
 export function assertRequestId(requestId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(requestId)) throw new WithdrawalRequestError("Pedido inválido. Recarregue a página.");
 }
@@ -202,7 +210,7 @@ export async function requestWithdrawal(
           data: {
             brandId: creator.brandId,
             bucket: NF_BUCKET,
-            path: nfPath(creator.brandId, creator.id, input.requestId),
+            path: nfFinalPath(creator.brandId, creator.id, input.requestId),
             mime: "application/pdf",
             sizeBytes: input.pdf.byteLength,
             sha256: createHash("sha256").update(input.pdf).digest("hex"),

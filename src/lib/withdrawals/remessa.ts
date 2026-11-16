@@ -80,7 +80,9 @@ export async function generateRemessa(prisma: PrismaClient, actor: Actor | null,
     const remittance = await tx.paymentRemittance.create({
       data: { brandId, nsa, payDay: new Date(`${payDay}T00:00:00Z`), count: payments.length, totalCents, sha256: createHash("sha256").update(content).digest("hex"), createdById: actor.userId, createdAt: now },
     });
-    await tx.withdrawal.updateMany({ where: { id: { in: payments.map((p) => p.id) }, remittanceId: null, status: "APPROVED" }, data: { remittanceId: remittance.id, bankResult: null, bankNote: null, bankAt: null } });
+    const marked = await tx.withdrawal.updateMany({ where: { id: { in: payments.map((p) => p.id) }, remittanceId: null, status: "APPROVED" }, data: { remittanceId: remittance.id, bankResult: null, bankNote: null, bankAt: null } });
+    // D-NODOUBLEPAY: algum saque foi pago ou recusado no meio do caminho: nada é gerado (o arquivo teria um Pix a mais).
+    if (marked.count !== payments.length) throw new RemessaError("Um saque mudou de situação enquanto a remessa era gerada. Gere de novo.");
     await tx.brand.update({ where: { id: brandId }, data: { remittanceSeq: nsa } });
     await tx.auditLog.create({
       data: { brandId, actorType: "USER", actorId: actor.userId, action: "remittance.generated", entity: "PaymentRemittance", entityId: remittance.id, after: { nsa, payDay, count: payments.length, totalCents } },
@@ -90,11 +92,14 @@ export async function generateRemessa(prisma: PrismaClient, actor: Actor | null,
 }
 
 /** Tira um saque da remessa (o banco recusou): ele volta para a próxima. */
-export async function removeFromRemessa(prisma: PrismaClient, actor: Actor | null, withdrawalId: string) {
-  const w = await prisma.withdrawal.findUnique({ where: { id: withdrawalId }, select: { brandId: true, status: true, remittanceId: true } });
+export async function removeFromRemessa(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, confirmNotPaid = false) {
+  const w = await prisma.withdrawal.findUnique({ where: { id: withdrawalId }, select: { brandId: true, status: true, remittanceId: true, bankResult: true } });
   if (!w) throw new RemessaError("Saque não encontrado.");
   assertPay(actor, w.brandId);
   if (w.status !== "APPROVED" || !w.remittanceId) throw new RemessaError("Só saque aprovado e enviado ao banco sai da remessa.");
+  // D-NODOUBLEPAY: agendado ou esperando assinatura no banco = o banco vai pagar; tirar faria pagar de novo.
+  if (w.bankResult === "SCHEDULED" || w.bankResult === "PENDING") throw new RemessaError("O banco já agendou este Pix (ou está esperando assinatura). Cancele no Internet Banking e suba o retorno; não tire da remessa.");
+  if (!confirmNotPaid) throw new RemessaError("Confirme que o arquivo desta remessa não foi enviado ao banco (ou que o banco não vai pagar este Pix).");
   await prisma.$transaction([
     prisma.withdrawal.update({ where: { id: withdrawalId }, data: { remittanceId: null } }),
     prisma.auditLog.create({ data: { brandId: w.brandId, actorType: "USER", actorId: actor.userId, action: "remittance.removed", entity: "Withdrawal", entityId: withdrawalId, before: { remittanceId: w.remittanceId } } }),

@@ -34,7 +34,8 @@ describe("pedido de saque (banco real)", () => {
     expect(await requestWithdrawal(prisma, c.ctx, input, IN_WINDOW)).toEqual({ withdrawalId: r.withdrawalId, created: false });
     const w = await prisma.withdrawal.findUniqueOrThrow({ where: { id: r.withdrawalId }, include: { nfFile: true } });
     expect(w).toMatchObject({ amountCents: 80_000, status: "REQUESTED", nfFile: { bucket: "nf", mime: "application/pdf", sizeBytes: PDF.byteLength } });
-    expect(w.nfFile!.path).toBe(`${c.brand.id}/${c.creator.id}/${requestId}.pdf`);
+    // D-NODOUBLEPAY: a equipe abre a cópia conferida (só o servidor grava), não o arquivo que a creator enviou.
+    expect(w.nfFile!.path).toBe(`${c.brand.id}/${c.creator.id}/${requestId}.conferida.pdf`);
     expect(await prisma.auditLog.count({ where: { action: "withdrawal.request", entityId: r.withdrawalId } })).toBe(1);
   });
 

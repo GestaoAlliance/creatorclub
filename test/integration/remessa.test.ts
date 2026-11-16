@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
-import { approveWithdrawal, payWithdrawal } from "@/lib/withdrawals/decide";
+import { approveWithdrawal, payWithdrawal, payWithdrawals, rejectWithdrawal } from "@/lib/withdrawals/decide";
 import { generateRemessa, remessaPreview, removeFromRemessa } from "@/lib/withdrawals/remessa";
 import { applyRetorno, retornoPreview } from "@/lib/withdrawals/retorno";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
@@ -62,12 +62,21 @@ describe("remessa SICOOB (D-REMESSA, banco real)", () => {
 
     // Já enviado: a próxima remessa não pega de novo.
     await expect(generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now)).rejects.toThrow(/pendências/);
-    // Banco recusou: sai da remessa e entra na próxima, com o número seguinte.
-    await removeFromRemessa(prisma, s.pagamento, s.withdrawalId);
+    // D-NODOUBLEPAY: no banco, não se recusa, não se paga à mão e só sai da remessa com confirmação.
+    await expect(rejectWithdrawal(prisma, s.pagamento, s.withdrawalId, "chave errada")).rejects.toThrow(/remessa nº 1 do SICOOB/);
+    await expect(payWithdrawal(prisma, s.pagamento, s.withdrawalId, now)).rejects.toThrow(/retorno do banco/);
+    expect((await payWithdrawals(prisma, s.pagamento, [s.withdrawalId], now)).failed).toHaveLength(1);
+    await expect(removeFromRemessa(prisma, s.pagamento, s.withdrawalId)).rejects.toThrow(/Confirme/);
+    await prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: "SCHEDULED", bankAt: now, bankNote: "Agendado" } });
+    await expect(removeFromRemessa(prisma, s.pagamento, s.withdrawalId, true)).rejects.toThrow(/já agendou/);
+    await prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: null, bankAt: null, bankNote: null } });
+    // Arquivo não enviado ao banco: sai da remessa (confirmado) e entra na próxima, com o número seguinte.
+    await removeFromRemessa(prisma, s.pagamento, s.withdrawalId, true);
     expect((await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-21", now)).nsa).toBe(2);
-    // Pago: não sai mais da remessa.
+    // Tirado de novo (confirmado) e pago à mão: não sai mais da remessa.
+    await removeFromRemessa(prisma, s.pagamento, s.withdrawalId, true);
     await payWithdrawal(prisma, s.pagamento, s.withdrawalId, now);
-    await expect(removeFromRemessa(prisma, s.pagamento, s.withdrawalId)).rejects.toThrow(/aprovado/);
+    await expect(removeFromRemessa(prisma, s.pagamento, s.withdrawalId, true)).rejects.toThrow(/aprovado/);
     expect(await prisma.auditLog.count({ where: { brandId: s.brand.id, action: "remittance.generated" } })).toBe(2);
   });
 
@@ -131,6 +140,17 @@ describe("retorno SICOOB (D-RETORNO, banco real)", () => {
     // Retorno de remessa de outra marca não serve.
     const other = await seedBrand(prisma);
     await expect(retornoPreview(prisma, s.pagamento, other.brand.id, bankReturn(r.content, "00"))).rejects.toThrow(/permissão/);
+  });
+
+  it("D-NODOUBLEPAY: banco pagou um saque que saiu da remessa → alerta na prévia, nada é aplicado", async () => {
+    const s = await world();
+    const now = T("2026-10-06T13:00:00Z");
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now);
+    await removeFromRemessa(prisma, s.pagamento, s.withdrawalId, true);
+    const prev = await retornoPreview(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "00"));
+    expect(prev.rows).toEqual([expect.objectContaining({ withdrawalId: s.withdrawalId, result: "PAID", state: "alert" })]);
+    expect(await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "00"), now)).toMatchObject({ paid: 0, skipped: 1 });
+    expect((await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } })).status).toBe("APPROVED");
   });
 
   it("trava: recusa do banco sempre com motivo", async () => {

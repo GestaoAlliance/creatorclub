@@ -43,6 +43,8 @@ export type PayRow = {
   remittanceNsa: number | null;
   canApprove: boolean;
   canPay: boolean;
+  /** D-NODOUBLEPAY: aprovado e no banco: só o retorno paga; "tirar da remessa" com confirmação. */
+  inBank: boolean;
 };
 
 const ORDER_TYPES = new Set(["COMMISSION", "REVERSAL"]);
@@ -139,7 +141,9 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
       paidBy: r.decidedById ? (payer.get(r.decidedById) ?? null) : null, pixReference: r.pixReference, hasNf: r.nfFileId !== null, nfCheck: r.nfCheck,
       legacy: false, note: null, remittanceNsa: r.remittance?.nsa ?? null,
       canApprove: status === "REQUESTED" && can(actor.grants, "withdrawals.approve", brandId),
-      canPay: status === "APPROVED" && can(actor.grants, "withdrawals.manage", brandId),
+      // D-NODOUBLEPAY: no banco (remessa) = pago pelo retorno, não pelo botão.
+      canPay: status === "APPROVED" && !r.remittance && can(actor.grants, "withdrawals.manage", brandId),
+      inBank: status === "APPROVED" && r.remittance !== null && can(actor.grants, "withdrawals.manage", brandId),
     });
   }
   for (const l of legacy) {
@@ -147,7 +151,7 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
       key: `l:${l.id}`, withdrawalId: null, creatorId: l.creatorId, name: l.creator.account.name, document: doc(l.creator.account), pixKey: null,
       salesCents: 0, rateBps: null, commissionCents: 0, nfCents: l.amountCents, diff: [], requestedAt: null, approvedAt: null, paidAt: null,
       paidDay: l.paidOn.toISOString().slice(0, 10), paidBy: null, pixReference: null, hasNf: false, nfCheck: null, legacy: true, note: l.note,
-      remittanceNsa: null, canApprove: false, canPay: false,
+      remittanceNsa: null, canApprove: false, canPay: false, inBank: false,
     });
   }
 

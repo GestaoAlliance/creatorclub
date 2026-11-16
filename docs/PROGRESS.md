@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-323 — 2026-11-16 — Trava contra pagamento em dobro (D-NODOUBLEPAY), achados da auditoria
+- Auditoria de dinheiro (4 agentes, só leitura; relatório publicado para o responsável): conta e saldo corretos; três
+  caminhos de o banco pagar o mesmo saque duas vezes, agora travados no código:
+  1. **Recusar** saque que está numa remessa do SICOOB: bloqueado (só depois que o retorno do banco recusar).
+  2. **Pagar à mão** (um ou em lote, "Pagamento feito", planilha do lote) saque que está na remessa: bloqueado; quem
+     paga é o retorno (`payWithdrawal(..., { viaBank: true })`). Em Pagamentos CNPJ/CPF esses saques não são
+     selecionáveis e o painel explica.
+  3. **Tirar da remessa**: só com confirmação de que o arquivo não foi enviado (ou que o banco não vai pagar) e nunca
+     com o banco agendado/pendente.
+  - Retorno: "pago" pelo banco de um saque que saiu da remessa vira **alerta** na prévia (nada é aplicado).
+  - Gerar remessa: se um saque mudar de situação no meio, nada é gerado.
+- Nota fiscal: depois do pedido, o link de envio é negado; a equipe abre a **cópia conferida** que só o servidor grava
+  (`nfFinalPath`), não o arquivo do envio.
+- Testes: `test/integration/remessa.test.ts` (novos casos), `withdrawal-request`, `withdrawal-pdf`.
+
 ### CP-322 — 2026-11-16 — Calendário de pagamentos: telas (D-CALENDAR, parte 2)
 - Peça `src/components/ui/pay-calendar.tsx`: o mês com o fechamento (dia 1), o pedido de saque, a extensão do mês e o
   pagamento, "hoje" marcado, "Hoje: …/Depois: …" e a legenda (texto da equipe ou da creator).
