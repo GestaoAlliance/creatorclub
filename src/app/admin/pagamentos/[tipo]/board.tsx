@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { formatBRL, monthNamePt, shortBRL, UNEXPLAINED } from "@/domain";
 import { Msg } from "@/components/ui/msg";
+import { PayCalendar } from "@/components/ui/pay-calendar";
 import { ui } from "@/components/ui/styles";
 import type { PayKind, payMonthBoard, PayRow, PayTab } from "@/lib/payouts/month-board";
 import { Avatar } from "../../creators/list-parts";
@@ -28,7 +29,7 @@ const REMIND = {
 };
 
 /** D-PAYFLOW: faixa com o mês e as 3 etapas (abas), e a lista da etapa. */
-export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay }: { brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean }) {
+export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay, canEditCalendar = false }: { brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean; canEditCalendar?: boolean }) {
   const router = useRouter();
   const doc = kind === "CNPJ" ? "nota" : "recibo";
   const url = (t: PayTab, m = data.month) => `/admin/pagamentos/${tipo}?aba=${t}&mes=${m}`;
@@ -69,6 +70,18 @@ export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay 
           </nav>
         </div>
       </section>
+
+      {/* D-CALENDAR: o mês com os prazos e "hoje". */}
+      <details className="glass group rounded-3xl p-4 md:p-5" open={data.calendar.today >= data.calendar.days.start - 2 && data.calendar.today <= data.calendar.days.payBy}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold">
+          <span>Calendário do mês{data.calendar.extended ? ` · pedido estendido até o dia ${data.calendar.days.end}` : ""}</span>
+          <span className="flex items-center gap-3 text-xs font-normal text-stone-500">
+            {canEditCalendar && <Link href="/admin/marcas" className="underline" onClick={(e) => e.stopPropagation()}>Mudar datas</Link>}
+            <span className="group-open:hidden">Ver</span><span className="hidden group-open:inline">Fechar</span>
+          </span>
+        </summary>
+        <div className="@container mt-3"><PayCalendar month={data.calendar.month} days={data.calendar.days} normalEnd={data.calendar.normalEnd} today={data.calendar.today} /></div>
+      </details>
 
       <PayList key={`${tab}-${data.month}`} kind={kind} tipo={tipo} tab={tab} data={data} canPay={canPay} />
 
