@@ -3,7 +3,7 @@
  * mensagem pronta para mandar pelo WhatsApp. Regra pura (testada): quem decide o que entra é `src/lib/actions/queue.ts`.
  */
 
-export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS" | "UNSIGNED";
+export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS" | "UNSIGNED" | "FIX_DATA";
 
 /** Quem cuida de cada tipo (decisão 3 do plano): por enquanto a Gestão (Ana) da marca; envio parado é de quem envia. */
 export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
@@ -16,6 +16,7 @@ export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
   NO_POST: "GESTAO",
   ACCESS: "GESTAO",
   UNSIGNED: "GESTAO",
+  FIX_DATA: "GESTAO",
 };
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -28,6 +29,7 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   NO_POST: "Sem post",
   ACCESS: "Pediu acesso",
   UNSIGNED: "Contrato sem assinar",
+  FIX_DATA: "Pediu correção",
 };
 
 /** Prazos do kit parado (pedido do responsável em 2026-10-22). */
@@ -49,7 +51,8 @@ export type ActionFacts =
   | { kind: "BIRTHDAY"; day: string; days: number }
   | { kind: "NO_POST"; days: number; never: boolean }
   | { kind: "ACCESS"; day: string }
-  | { kind: "UNSIGNED"; days: number; link: string | null };
+  | { kind: "UNSIGNED"; days: number; link: string | null }
+  | { kind: "FIX_DATA"; day: string; field: string; message: string };
 
 /** O motivo curto que a equipe lê na fila. */
 export function actionDetail(f: ActionFacts): string {
@@ -68,6 +71,8 @@ export function actionDetail(f: ActionFacts): string {
       return f.never ? `nenhum post registrado há ${f.days} dias` : `último post registrado há ${f.days} dias`;
     case "UNSIGNED":
       return `contrato sem assinar há ${f.days} dias: ligue para ela ou desfaça a aprovação em Candidatas`;
+    case "FIX_DATA":
+      return `pediu em ${br(f.day)} para corrigir ${DATA_FIX_LABEL[f.field as DataFixField] ?? "um dado"}: "${f.message}". Corrija na ficha (Cadastro) e marque Feito`;
     case "ACCESS":
       return `pediu o link de acesso ao portal em ${br(f.day)} (já tinha cadastro): gere o convite na ficha`;
     case "BIRTHDAY":
@@ -92,6 +97,8 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
     case "SHIP_STUCK":
     case "ACCESS":
       return null;
+    case "FIX_DATA":
+      return `${oi} Recebemos o seu pedido para corrigir ${DATA_FIX_LABEL[f.field as DataFixField] ?? "o seu cadastro"}. Já corrigimos por aqui; confira em "Meu cadastro" no portal. 💜`;
     case "UNSIGNED":
       return `${oi} Seu contrato de parceria ainda está esperando a sua assinatura${f.link ? `: ${f.link}` : "."} Ficou alguma dúvida? Me conta que eu te ajudo!`;
     case "NO_POST":
@@ -122,6 +129,8 @@ export function actionRank(f: ActionFacts): { rank: number; tone: "urgent" | "wa
       return f.days === 0 ? { rank: 15, tone: "warn" } : { rank: 90 + f.days, tone: "info" };
     case "ACCESS":
       return { rank: 40, tone: "warn" };
+    case "FIX_DATA":
+      return { rank: 35, tone: "warn" };
     case "KIT_PENDING":
       return { rank: 50, tone: "warn" };
     case "SHIP_STUCK":
@@ -144,4 +153,19 @@ export const ACTION_TITLE: Record<ActionKind, string> = {
   NO_POST: "Registre seus posts",
   ACCESS: "Seu acesso ao portal",
   UNSIGNED: "Contrato esperando sua assinatura",
+  FIX_DATA: "Seu cadastro",
 };
+
+/** D-DATAFIX: dados que só a equipe corrige; a creator pede pelo portal. */
+export type DataFixField = "NAME" | "CPF" | "CNPJ" | "PHONE" | "EMAIL" | "OTHER";
+export const DATA_FIX_LABEL: Record<DataFixField, string> = { NAME: "o nome", CPF: "o CPF", CNPJ: "o CNPJ", PHONE: "o telefone", EMAIL: "o e-mail", OTHER: "o cadastro" };
+
+/**
+ * D-PORTALPROFILE: quanto do cadastro está completo, com o que falta (o que ela mesma pode preencher primeiro).
+ * Pix, endereço, Instagram, TikTok, aniversário e foto.
+ */
+export function profileCompleteness(p: { pix: boolean; address: boolean; instagram: boolean; tiktok: boolean; birthDate: boolean; photo: boolean }): { pct: number; missing: string[] } {
+  const items: [boolean, string][] = [[p.pix, "chave Pix"], [p.address, "endereço"], [p.instagram, "Instagram"], [p.tiktok, "TikTok"], [p.birthDate, "aniversário"], [p.photo, "foto"]];
+  const done = items.filter(([ok]) => ok).length;
+  return { pct: Math.round((done / items.length) * 100), missing: items.filter(([ok]) => !ok).map(([, l]) => l) };
+}

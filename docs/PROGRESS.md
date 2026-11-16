@@ -315,6 +315,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-316 — 2026-11-16 — Aba "Meu cadastro" no portal e pedido de correção à equipe (D-PORTALPROFILE, D-DATAFIX)
+- Pedido do responsável (print do portal da Victoria): uma aba para a creator ver o próprio cadastro.
+- `/portal/[marca]/cadastro` (`src/lib/portal/profile.ts`, `src/components/portal/profile-view.tsx`): faixa da marca com a foto
+  (toca para trocar) e "Cadastro X% completo" (Pix, endereço, Instagram, TikTok, aniversário, foto; mostra o que falta);
+  Dados pessoais só leitura (nome, e-mail, telefone, CPF/CNPJ mascarados) com "Pedir correção"; Redes e aniversário
+  editáveis (Instagram, TikTok, aniversário, com histórico); Chave Pix (troca do CP-315); Endereço; Minha parceria (tipo,
+  comissão, cupom e desconto, desde quando, contrato, como recebe, mínimo do mês, PDF do contrato).
+- Menu: "Meu cadastro" (no celular, dentro de "Mais"); a foto do topo ganhou "Ver meu cadastro".
+- Pedido de correção: tabela `DataFixRequest` (só inserção, RLS, trava `DataFixRequest_valid`); vira a tarefa "Pediu
+  correção" na fila de ações da Gestão (com "Corrigir na ficha" e mensagem pronta); a creator vê "com a equipe" / "corrigido".
+- Correção achada no caminho: a trava `ActionDone_key_format` só aceitava 5 tipos, então "Feito" dava erro em Aniversário,
+  Sem post, Pediu acesso e Contrato sem assinar (em produção só havia "Feito" de kit). Agora aceita todos.
+- Testes: `test/portal-profile.test.ts`, `test/integration/portal-profile.test.ts`.
+
 ### CP-315 — 2026-11-16 — Trocar chave Pix (creator e equipe) e endereço pela equipe (D-PIXCHANGE, D-ADDRSTAFF)
 - Migração `20261201090000_pix_change`: `CreatorAccount.pixKeyChangedAt`; tipo de aviso `PIX_CHANGED` em `Notification_valid` (sem trava de formato da chave: há 2 chaves antigas fora do padrão em produção).
 - `src/lib/creators/pix.ts` (`changePixKey`): a creator troca no portal (Saque, digitando duas vezes) e a equipe na ficha (quem vê dados fiscais e edita creators ou paga), com motivo; aviso "Sua chave Pix foi alterada", auditoria `creator.pix_change`; não troca com saque aprovado esperando o Pix. Saques: alerta "chave Pix trocada há X dias" (30 dias) para conferir o titular.

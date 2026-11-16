@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Target,
   Ticket,
+  UserRound,
   Users,
   UsersRound,
   Wallet,
@@ -56,6 +57,7 @@ const ICONS = {
   settings: Settings,
   phone: Smartphone,
   bell: Bell,
+  user: UserRound,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;
@@ -72,6 +74,8 @@ export const PORTAL_ITEMS: NavItem[] = [
   { href: "/loja", label: "Loja", icon: "store" },
   // D-PORTALNOTICES: avisos também no menu (no celular, dentro de "Mais", com a contagem de novos).
   { href: "/avisos", label: "Avisos", icon: "bell" },
+  // D-PORTALPROFILE: os dados dela (no celular, dentro de "Mais"; tocar na foto do topo também leva).
+  { href: "/cadastro", label: "Meu cadastro", icon: "user" },
   // D-INSTALLAPP: some quando o portal já está aberto pelo ícone (como app).
   { href: "/app", label: "Instalar", icon: "phone" },
 ];

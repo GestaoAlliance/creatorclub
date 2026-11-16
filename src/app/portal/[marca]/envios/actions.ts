@@ -19,6 +19,7 @@ async function run(marca: string, fn: (userId: string) => Promise<void>, ok: str
     await fn(actor.userId);
     revalidatePath(`/portal/${marca}/envios`);
     revalidatePath(`/portal/${marca}/loja`);
+    revalidatePath(`/portal/${marca}/cadastro`);
     return { ok };
   } catch (error) {
     if (error instanceof ShipmentError || error instanceof AddressError) return { error: error.message };
