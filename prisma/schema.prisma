@@ -40,6 +40,9 @@ model Brand {
   withdrawalMinCents        Int                 @default(1) // D-CONTRACT: sem mínimo por pedido (o mínimo é de vendas no mês)
   withdrawalWindowStartDay  Int                 @default(1) // D-CONTRACT: NF do dia 1 ao 10, pagamento até o dia 15
   withdrawalWindowEndDay    Int                 @default(10)
+  /// D-CALENDAR: janela estendida só neste mês ("AAAA-MM"); no mês seguinte volta sozinha a `windowNormalEndDay`.
+  windowExtensionMonth      String?
+  windowNormalEndDay        Int?
   /// D-REVITARULES: dias do pagamento do saque nos textos (null = "até o dia" do fim).
   withdrawalPayFromDay      Int?
   withdrawalPayByDay        Int                 @default(15)

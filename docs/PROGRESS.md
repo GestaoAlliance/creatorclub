@@ -315,6 +315,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-321 — 2026-11-16 — Calendário de pagamentos: base (D-CALENDAR, parte 1)
+- Resposta do responsável: datas da marca e janela estendida mudadas só pelo super admin, com histórico.
+- Migração `20261206090000_payout_calendar`: `Brand.windowExtensionMonth/windowNormalEndDay` (trava
+  `Brand_window_extension_valid`); a reabertura da Botanika até o dia 22 em novembro vira extensão do mês e **volta
+  sozinha ao dia 15 em 01/12** (substitui a conferência manual de 23/11).
+- `src/domain/payout-calendar.ts` (conferências: dias 1 a 28, pedido antes do pagamento, extensão depois do fim normal
+  e antes do fim do pagamento; marcos do mês; "o que acontece hoje") e `src/lib/brands/calendar.ts` (`updateCalendar`,
+  `extendWindow`, `cancelExtension`, `revertWindowExtensions` no worker, antes do fechamento).
+- **Próxima (parte 2):** telas: seção "Calendário de pagamentos" em Marcas, faixa do mês em Pagamentos e as datas da
+  creator no portal. Em aberto: conferência planilha do Guilherme × sistema (diferenças na virada ago/set) e o saque
+  da Joingle (não pagar até fechar).
+- Testes: `test/payout-calendar.test.ts`, `test/integration/payout-calendar.test.ts`.
+
 ### CP-320 — 2026-11-16 — VermeFree com as regras da Botanika e da Revita (D-VFRULES)
 - Resposta do responsável ("contrato novo para todas, como na Revita"): migração `20261205090000_vermefree_rules`. A
   VermeFree libera com **R$ 100 de comissão** acumulada (influencer e prescritor; versões de contrato com comissão

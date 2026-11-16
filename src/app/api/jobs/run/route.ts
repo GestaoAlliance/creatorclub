@@ -19,6 +19,7 @@ import { enqueueDueContractChecks, remindUnsignedContracts } from "@/lib/autenti
 import { enqueueDueOlistStock, runStockAlerts } from "@/lib/olist/stock";
 import { enqueueDueOlistTracking } from "@/lib/olist/orders";
 import { enqueueDueSignedFiles } from "@/lib/autentique/signed-file";
+import { revertWindowExtensions } from "@/lib/brands/calendar";
 
 // Worker da fila: chamado a cada minuto pelo pg_cron do Supabase (D-CRON), com o segredo JOBS_SECRET.
 // Também agenda a reconciliação de cada loja a cada 15 min, o catálogo de produtos uma vez por dia, roda o fechamento do mês no dia 1 (D-CONTRACT) e os avisos.
@@ -33,6 +34,8 @@ export async function POST(request: Request): Promise<Response> {
     const prisma = db();
     // D-INSTAGRAM: leitura diária do Instagram (a partir das 4h). D-AUTENTIQUE2: contratos das candidatas a cada 5 min.
     const scheduled = (await enqueueDueReconciles(prisma)) + (await enqueueDueProductSyncs(prisma)) + (await enqueueDueInstagram(prisma)) + (await enqueueDueContractChecks(prisma)) + (await enqueueDueOlistStock(prisma)) + (await enqueueDueOlistTracking(prisma)) + (await enqueueDueSignedFiles(prisma));
+    // D-CALENDAR: janela estendida num mês que passou volta ao fim normal (antes dos avisos do dia).
+    const windowsRestored = await revertWindowExtensions(prisma);
     const released = await closeDueMonths(prisma);
     // D-GOALKIT: produto liberado assim que a creator bate R$ 1.000 na janela da meta.
     const goalKits = await grantGoalKits(prisma);
@@ -57,7 +60,7 @@ export async function POST(request: Request): Promise<Response> {
     // D-CONTRACTREMIND: contrato sem assinar há 3 e há 7 dias (WhatsApp da marca para a creator, com o link).
     const contractReminders = await remindUnsignedContracts(prisma, whatsapp);
     const result = await runJobs(prisma, jobHandlers(), { budgetMs: 35_000 });
-    return Response.json({ ok: true, scheduled, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, contractReminders, stockAlerts, receipts, goalKits, tierKits, ...result });
+    return Response.json({ ok: true, scheduled, windowsRestored, released, notices, emailed, whatsapped, weekly, shipping, withdrawalReminders, contractReminders, stockAlerts, receipts, goalKits, tierKits, ...result });
   } catch {
     return Response.json({ ok: false, error: "erro" }, { status: 500 });
   }
