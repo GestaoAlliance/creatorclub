@@ -315,6 +315,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-320 — 2026-11-16 — VermeFree com as regras da Botanika e da Revita (D-VFRULES)
+- Resposta do responsável ("contrato novo para todas, como na Revita"): migração `20261205090000_vermefree_rules`. A
+  VermeFree libera com **R$ 100 de comissão** acumulada (influencer e prescritor; versões de contrato com comissão
+  também), saque pedido **do dia 5 ao 15** e pagamento **do dia 20 ao 25**. Antes: R$ 300 em vendas, pedido do dia 1 ao
+  15, pagamento até o dia 15. Vale no fechamento de 01/12. Kits não mudam. Antes e depois no histórico (AuditLog).
+
 ### CP-319 — 2026-11-16 — Arquivos do banco e da Alelo conferidos com os modelos do Guilherme (D-REMESSA, D-ALELOCARD)
 - O responsável reenviou os arquivos do grupo (modelo CNAB 240 do SICOOB, guia atualizado e planilha da Alelo).
 - Remessa SICOOB conferida campo a campo: o modelo é de TED para conta (câmara 018, forma 41); a nossa é Pix por chave
