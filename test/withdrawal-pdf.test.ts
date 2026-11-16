@@ -15,3 +15,11 @@ describe("nota fiscal do saque", () => {
     expect(nfPath("b", "c", "r")).toBe("b/c/r.pdf");
   });
 });
+
+describe("cópia conferida da nota (D-NODOUBLEPAY)", () => {
+  it("fica num caminho diferente do envio da creator", async () => {
+    const { nfFinalPath, nfPath: p } = await import("../src/lib/withdrawals/request");
+    expect(nfFinalPath("b", "c", "r")).toBe("b/c/r.conferida.pdf");
+    expect(nfFinalPath("b", "c", "r")).not.toBe(p("b", "c", "r"));
+  });
+});

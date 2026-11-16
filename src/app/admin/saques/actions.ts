@@ -76,7 +76,7 @@ export async function remessaAction(_prev: RemessaState, form: FormData): Promis
 
 export async function removeRemessaAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   try {
-    await removeFromRemessa(db(), await currentActor(), String(form.get("withdrawalId") ?? ""));
+    await removeFromRemessa(db(), await currentActor(), String(form.get("withdrawalId") ?? ""), form.get("confirmNotPaid") === "on");
     revalidatePath("/admin/saques");
     revalidatePath("/admin/pagamentos", "layout");
     return { ok: "Saque fora da remessa: entra na próxima." };

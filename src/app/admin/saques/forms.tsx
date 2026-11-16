@@ -167,17 +167,20 @@ export function RemessaBar({ brandId, count, cents, today, problems }: { brandId
 /** Saque recusado pelo banco: tira da remessa para ir na próxima. */
 export function RemoveRemessaForm({ withdrawalId }: { withdrawalId: string }) {
   const [state, action, pending] = useActionState(removeRemessaAction, undefined);
+  const [ok, setOk] = useState(false);
   return (
     <form action={action} className="flex flex-col gap-1.5">
       <input type="hidden" name="withdrawalId" value={withdrawalId} />
-      <button className={`${ui.ghostSm} self-start`} disabled={pending}>Banco recusou: tirar da remessa</button>
+      {/* D-NODOUBLEPAY: só sai da remessa se o banco não vai pagar. */}
+      <label className="flex items-start gap-2 text-xs"><input type="checkbox" name="confirmNotPaid" checked={ok} onChange={(e) => setOk(e.target.checked)} className="mt-0.5" />Confirmo que o arquivo desta remessa não foi enviado ao banco (ou que o banco não vai pagar este Pix).</label>
+      <button className={`${ui.ghostSm} self-start`} disabled={pending || !ok}>Tirar da remessa</button>
       <Msg state={state} />
     </form>
   );
 }
 
 const RESULT_LABEL = { PAID: "Pago", SCHEDULED: "Agendado", PENDING: "Pendente de assinatura", REJECTED: "Recusado" } as const;
-const STATE_LABEL = { ok: "", done: "Já está assim", notfound: "Não é saque desta remessa", amount: "Valor diferente do saque: confira" } as const;
+const STATE_LABEL = { ok: "", done: "Já está assim", notfound: "Não é saque desta remessa", amount: "Valor diferente do saque: confira", alert: "ATENÇÃO: o banco pagou, mas no sistema este saque não está mais nesta remessa (recusado ou tirado). Confira antes de pagar de novo." } as const;
 
 /** D-RETORNO: sobe o retorno do SICOOB, mostra a prévia e o Pagamento confirma. */
 export function RetornoForm({ brandId }: { brandId: string }) {
@@ -209,7 +212,7 @@ export function RetornoForm({ brandId }: { brandId: string }) {
                 <span className={r.result === "PAID" ? "text-emerald-700 dark:text-emerald-400" : r.result === "REJECTED" ? "text-red-700 dark:text-red-400" : "text-sky-800 dark:text-sky-300"}>
                   {RESULT_LABEL[r.result]}
                   {r.result === "REJECTED" || r.result === "PENDING" ? `: ${r.reason}` : ""}
-                  {r.state !== "ok" && <span className={ui.hint}> ({STATE_LABEL[r.state]})</span>}
+                  {r.state === "alert" ? <strong className="block text-red-700 dark:text-red-400">{STATE_LABEL.alert}</strong> : r.state !== "ok" && <span className={ui.hint}> ({STATE_LABEL[r.state]})</span>}
                 </span>
               </li>
             ))}

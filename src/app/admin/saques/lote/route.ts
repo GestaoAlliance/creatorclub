@@ -18,7 +18,8 @@ export async function GET() {
   const inBrand = scopedActor(actor, ctx.brand?.id);
   const pays = brandsWith(inBrand.grants, "withdrawals.manage");
   if (pays !== "ALL" && pays.length === 0) return new Response("Sem permissão.", { status: 403 });
-  const rows = (await withdrawalQueue(db(), inBrand, "APPROVED")).filter((r) => r.canPay);
+  // D-NODOUBLEPAY: saque na remessa do SICOOB não entra no Pix manual.
+  const rows = (await withdrawalQueue(db(), inBrand, "APPROVED")).filter((r) => r.canPay && !r.remittance);
   const brands = new Map((await db().brand.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.brandId))] } }, select: { id: true, name: true } })).map((b) => [b.id, b.name]));
   const csv = payoutCsv(
     rows.map((r) => ({

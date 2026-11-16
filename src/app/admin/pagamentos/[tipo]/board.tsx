@@ -12,7 +12,7 @@ import type { PayKind, payMonthBoard, PayRow, PayTab } from "@/lib/payouts/month
 import { Avatar } from "../../creators/list-parts";
 import { MessageSheet, SidePanel } from "../../desempenho/parts";
 import { payBatchAction } from "../../saques/actions";
-import { ApproveForm, PayForm, RecheckForm, RejectForm } from "../../saques/forms";
+import { ApproveForm, PayForm, RecheckForm, RejectForm, RemoveRemessaForm } from "../../saques/forms";
 
 type Data = Awaited<ReturnType<typeof payMonthBoard>>;
 const M = ({ children }: { children: React.ReactNode }) => <span className="money">{children}</span>;
@@ -272,6 +272,12 @@ function Panel({ r, doc, month }: { r: PayRow; doc: string; month: string }) {
       {doc === "recibo" && <a href={`/admin/saques/recibo/${r.withdrawalId}`} target="_blank" rel="noopener noreferrer" className={`${ui.ghostSm} self-start`}><FileText className="size-3.5" />Recibo</a>}
       <p className="text-xs text-stone-500">Pedido em {day(r.requestedAt)}{r.approvedAt ? ` · aprovado em ${day(r.approvedAt)}` : ""}{r.paidDay ? ` · pago em ${br(r.paidDay)}${r.paidBy ? ` por ${r.paidBy}` : ""}` : ""}</p>
       {r.pixReference && <p className="font-mono text-xs text-stone-500">ID do Pix: {r.pixReference}</p>}
+      {r.inBank && (
+        <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
+          <p className="text-sm text-sky-800 dark:text-sky-300">No banco (remessa nº {r.remittanceNsa}): este saque é dado como pago quando você sobe o retorno do SICOOB. Não faça Pix à mão.</p>
+          <RemoveRemessaForm withdrawalId={r.withdrawalId!} />
+        </div>
+      )}
       {(r.canApprove || r.canPay) && (
         <div className="flex flex-col gap-3 border-t border-stone-200/70 pt-4 dark:border-white/10">
           {r.canApprove && <ApproveForm withdrawalId={r.withdrawalId!} label={formatBRL(r.nfCents)} />}
