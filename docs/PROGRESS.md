@@ -315,6 +315,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-313 — 2026-11-16 — Produção: janela de saque da Botanika reaberta até 22/11
+- Pedido do responsável (saques liberados em 13/11, guia chegando em 16/11, só 1 pedido no mês): `Brand.withdrawalWindowEndDay` da Botanika 15 → 22 por SQL, com AuditLog `brand.update`. Pagamento continua de 20 a 25. Voltar para 15 em 23/11 (lembrete agendado, com o OK do responsável).
+- Achados para rodar mês a mês: avisos da Botanika não saem no WhatsApp (0 em 30 dias com o WhatsApp ligado, e com ele ligado o e-mail não sai); pedido da Ludimilla em análise desde 13/11.
+
 ### CP-312 — 2026-11-13 — Link do hunter por marca (D-HUNTERLINKBRAND)
 - Pedido do responsável: cada hunter divulga um link por marca, `/i/<código>/<marca>` (rota `src/app/i/[codigo]/[marca]`): conta o clique na marca e abre o formulário dela. Código desconhecido na marca: formulário sem hunter; marca desconhecida: escolha de marca.
 - Tela Hunters (link e WhatsApp), Minhas indicações (um link por marca) e mensagens de prospecção usam o link da marca (`hunterUrl`). O link antigo `/i/<código>` continua: uma marca vai direto; várias abrem a escolha, que leva ao link de cada marca.
