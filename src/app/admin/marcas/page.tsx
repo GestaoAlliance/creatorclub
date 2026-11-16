@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GlassLight } from "@/components/ui/glass-light";
 import { HistoryCard, SettingsHero } from "@/components/staff/settings-hero";
-import { formatCnpj } from "@/domain";
+import { dayKey, formatCnpj, monthKey } from "@/domain";
+import { calendarOf } from "@/lib/brands/calendar";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { brandList } from "@/lib/brands/manage";
@@ -45,6 +46,8 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
         const zip = shipFromInitial(b.shipFrom)?.zip;
         const items: SectionItem[] = [
           { id: "dados", label: "Dados da empresa", done: Boolean(b.legalName && b.nfTakerDocument && b.storeUrl), hint: "Nome, razão social, CNPJ (tomador da nota), site da loja e a cor da marca." },
+          // D-CALENDAR: pedido de saque, pagamento e a extensão do mês.
+          { id: "calendario", label: "Calendário de pagamentos", done: null, hint: "Quando a creator manda a nota, quando a marca paga e a extensão do prazo só neste mês." },
           { id: "padroes", label: "Comissão e desconto", done: null, hint: "Padrões para novas creators, desconto na loja com o saldo e o produto sugerido na aprovação." },
           { id: "financeiro", label: "Financeiro e SICOOB", done: Boolean(b.financeEmail && b.bankConvenio && b.bankAccount), hint: "E-mail que recebe cada nota fiscal e a conta do SICOOB para a remessa de Pix." },
           { id: "envio", label: "Remetente das etiquetas", done: Boolean(zip), hint: "Endereço que sai como remetente nas etiquetas e declarações de conteúdo." },
@@ -62,6 +65,10 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
               form={{ initial: { brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom), welcomeOneIds: b.welcomeOneIds, welcomeTwoIds: b.welcomeTwoIds }, products: b.products }}
               lock={{ brandId: b.id, on: b.contractLock, waiting: b.awaitingContract }}
               logo={{ brandId: b.id, slug: b.slug, version: b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null }}
+              calendar={(() => {
+                const c = calendarOf(b);
+                return { brandId: b.id, month: monthKey(new Date(), b.timezone), days: c.days, normalEnd: c.normalEnd, extended: c.extended, today: Number(dayKey(new Date(), b.timezone).slice(8, 10)) };
+              })()}
             />
           </div>
         );

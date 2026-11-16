@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { computeBalance, isMonthKey, monthKey, monthNamePt, previousMonthKey, UNEXPLAINED, type NfLine } from "@/domain";
+import { computeBalance, dayKey, isMonthKey, monthKey, monthNamePt, previousMonthKey, UNEXPLAINED, type NfLine } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
+import { calendarOf } from "@/lib/brands/calendar";
 import { ledgerEntriesWithMonth, nfSnapshot, openReservations, releasedThroughFor, salesByMonth } from "@/lib/commission/release";
 
 /**
@@ -55,7 +56,10 @@ export function diffFromLines(lines: readonly NfLine[], month: string): { label:
 
 export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, kind: PayKind, tab: PayTab, rawMonth: string | undefined, now = new Date()) {
   if (!actor || !can(actor.grants, "withdrawals.view", brandId)) throw new PayFlowError("Sem permissão para pagamentos.");
-  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true } });
+  const brand = await prisma.brand.findUniqueOrThrow({
+    where: { id: brandId },
+    select: { timezone: true, withdrawalWindowStartDay: true, withdrawalWindowEndDay: true, withdrawalPayFromDay: true, withdrawalPayByDay: true, windowExtensionMonth: true, windowNormalEndDay: true },
+  });
   const tz = brand.timezone;
   const lastClosed = previousMonthKey(monthKey(now, tz));
   const month = rawMonth && isMonthKey(rawMonth) ? rawMonth : lastClosed;
@@ -164,6 +168,8 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
     rows: out,
     waiting,
     window: { start: brand.withdrawalWindowStartDay, end: brand.withdrawalWindowEndDay },
+    // D-CALENDAR: o mês corrente com os marcos e "hoje".
+    calendar: { month: monthKey(now, tz), today: Number(dayKey(now, tz).slice(8, 10)), ...calendarOf(brand, now) },
     stages: {
       aprovar: { count: stage("REQUESTED").length, cents: sum(stage("REQUESTED")), waiting: waiting.length },
       realizar: { count: stage("APPROVED").length, cents: sum(stage("APPROVED")) },

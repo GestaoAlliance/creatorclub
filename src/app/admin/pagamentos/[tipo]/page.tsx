@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { can } from "@/lib/auth/permissions";
+import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
@@ -38,7 +38,7 @@ export default async function PaymentsPage({ params, searchParams }: { params: P
   const alelo = kind === "CPF" && manage ? await aleloCardStatus(db(), actor, brand.id) : null;
   return (
     <GlassLight className="dash flex flex-col gap-4">
-      <PayBoard brandName={brand.name} kind={kind} tipo={tipo} tab={tab} data={data} canMessage={can(actor.grants, "creators.edit", brand.id)} canPay={manage} />
+      <PayBoard brandName={brand.name} kind={kind} tipo={tipo} tab={tab} data={data} canMessage={can(actor.grants, "creators.edit", brand.id)} canPay={manage} canEditCalendar={brandsWith(actor.grants, "staff.manage") === "ALL"} />
       {remessa && remessa.count > 0 && <RemessaBar brandId={brand.id} count={remessa.count} cents={remessa.totalCents} today={today} problems={remessa.problems} />}
       {remessa && <RetornoForm brandId={brand.id} />}
       {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}

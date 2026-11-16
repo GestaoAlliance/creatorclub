@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { isInsideWithdrawalWindow, isMonthKey, monthKey, nfBreakdown, nfData, type Balance, type NfData } from "@/domain";
+import { dayKey, isInsideWithdrawalWindow, isMonthKey, monthKey, nfBreakdown, nfData, type Balance, type NfData } from "@/domain";
 import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
+import { calendarOf } from "@/lib/brands/calendar";
 import { readLedger, statementForMonth, type Statement } from "@/lib/commission/statement";
 import { PortalError, type PortalContext } from "./context";
 
@@ -36,6 +37,8 @@ export type WithdrawalTab = {
   statement: Statement;
   /** D-NFAMOUNT: valor da nota com a conta aberta (comissão por mês, já pago, saques) e o que entra na próxima. */
   nfAmount: ReturnType<typeof nfBreakdown> & { legacy: { day: string; cents: number }[] };
+  /** D-CALENDAR: o mês da creator (enviar a nota, receber, liberar a próxima comissão). */
+  calendar: { month: string; today: number } & ReturnType<typeof calendarOf>;
 };
 
 export async function portalWithdrawalTab(
@@ -52,6 +55,10 @@ export async function portalWithdrawalTab(
         timezone: true,
         withdrawalWindowStartDay: true,
         withdrawalWindowEndDay: true,
+        withdrawalPayFromDay: true,
+        withdrawalPayByDay: true,
+        windowExtensionMonth: true,
+        windowNormalEndDay: true,
         legalName: true,
         nfTakerDocument: true,
         nfServiceCode: true,
@@ -89,6 +96,7 @@ export async function portalWithdrawalTab(
     blocks,
     withdrawals,
     statement: statementForMonth(ledger, opts.month, monthKey(now, brand.timezone)),
+    calendar: { month: monthKey(now, brand.timezone), today: Number(dayKey(now, brand.timezone).slice(8, 10)), ...calendarOf(brand, now) },
     nfAmount: {
       ...nfBreakdown(ledger.lines, ledger.releasedThrough, ledger.balance.reservedCents, ledger.balance.availableCents),
       legacy: legacy.map((l) => ({ day: l.paidOn.toISOString().slice(0, 10), cents: l.amountCents })),

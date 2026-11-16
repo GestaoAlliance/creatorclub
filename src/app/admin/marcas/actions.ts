@@ -7,6 +7,7 @@ import { removeBrandAsset, setBrandAsset } from "@/lib/brands/assets";
 import type { BrandAssetKind } from "@/domain";
 import { db } from "@/lib/db";
 import { ContractSendError, setContractLock } from "@/lib/autentique/applications";
+import { CalendarError, cancelExtension, extendWindow, updateCalendar } from "@/lib/brands/calendar";
 
 export type BrandState = { error?: string; ok?: string } | undefined;
 
@@ -95,4 +96,32 @@ export async function contractLockAction(_prev: BrandState, form: FormData): Pro
     if (error instanceof ContractSendError) return { error: error.message };
     throw error;
   }
+}
+
+/** D-CALENDAR: datas de pagamento da marca, estender a janela do mês e voltar ao normal (só super admin). */
+async function calendarRun(fn: () => Promise<void>, ok: string): Promise<BrandState> {
+  try {
+    await fn();
+    revalidatePath("/admin", "layout");
+    return { ok };
+  } catch (error) {
+    if (error instanceof CalendarError) return { error: error.message };
+    throw error;
+  }
+}
+const day = (form: FormData, k: string) => (String(form.get(k) ?? "").trim() === "" ? null : Number(form.get(k)));
+
+export async function calendarAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  return calendarRun(
+    async () => updateCalendar(db(), await currentActor(), String(form.get("brandId")), { start: day(form, "start") ?? 0, end: day(form, "end") ?? 0, payFrom: day(form, "payFrom"), payBy: day(form, "payBy") ?? 0 }),
+    "Datas salvas. Portal, avisos e pedidos de saque já seguem as novas datas.",
+  );
+}
+
+export async function extendWindowAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  return calendarRun(async () => extendWindow(db(), await currentActor(), String(form.get("brandId")), day(form, "endDay") ?? 0), "Janela estendida só neste mês. No dia 1 volta sozinha ao normal.");
+}
+
+export async function cancelExtensionAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  return calendarRun(async () => cancelExtension(db(), await currentActor(), String(form.get("brandId"))), "A janela voltou ao fim normal.");
 }

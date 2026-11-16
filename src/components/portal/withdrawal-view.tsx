@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight, BellRing, Check, ChevronRight, Clock, File
 import type { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
 import { PixChange } from "./pix-change";
 import { CopyButton } from "./copy-button";
+import { PayCalendar } from "@/components/ui/pay-calendar";
 import Link from "next/link";
 import { formatBRL, monthNamePt, payDaysText, type WithdrawalDays } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
@@ -108,6 +109,13 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
       </section>
 
       {(tab.nfAmount.lines.length > 0 || tab.nfAmount.next.length > 0) && <NfAmountCard tab={tab} doc={doc} />}
+
+      {/* D-CALENDAR: as datas do mês dela (enviar a nota, receber, liberar a próxima comissão). */}
+      <section className="@container glass flex flex-col gap-3 rounded-3xl p-5">
+        <h2 className="font-semibold">Seu calendário do mês</h2>
+        <PayCalendar month={tab.calendar.month} days={tab.calendar.days} normalEnd={tab.calendar.normalEnd} today={tab.calendar.today} who="creator" />
+        {tab.calendar.extended && <p className="text-xs text-amber-800 dark:text-amber-300">Neste mês o prazo para enviar a {doc} foi estendido até o dia {tab.calendar.days.end}.</p>}
+      </section>
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">

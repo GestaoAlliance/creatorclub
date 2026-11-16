@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-322 — 2026-11-16 — Calendário de pagamentos: telas (D-CALENDAR, parte 2)
+- Peça `src/components/ui/pay-calendar.tsx`: o mês com o fechamento (dia 1), o pedido de saque, a extensão do mês e o
+  pagamento, "hoje" marcado, "Hoje: …/Depois: …" e a legenda (texto da equipe ou da creator).
+- Configurações → Marcas → **Calendário de pagamentos** (só super admin): prévia do mês ao digitar, as conferências
+  antes de salvar (dias 1 a 28, pagamento depois do pedido), confirmação, e "Só este mês": estender o pedido até o dia
+  X ou voltar ao normal agora (volta sozinho no dia 1).
+- Pagamentos CNPJ/CPF: "Calendário do mês" (aberto perto dos prazos; "Mudar datas" para o super admin).
+- Portal → Saque: "Seu calendário do mês" (enviar a nota, você recebe, libera a comissão) e o aviso quando o prazo do
+  mês foi estendido.
+
 ### CP-321 — 2026-11-16 — Calendário de pagamentos: base (D-CALENDAR, parte 1)
 - Resposta do responsável: datas da marca e janela estendida mudadas só pelo super admin, com histórico.
 - Migração `20261206090000_payout_calendar`: `Brand.windowExtensionMonth/windowNormalEndDay` (trava
