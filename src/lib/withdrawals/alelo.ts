@@ -16,6 +16,11 @@ export class AleloError extends Error {}
 export const ALELO_CARD_HEADER = ["Nome Completo", "Data de Nascimento", "CPF", "Matricula", "E-mail", "Nome da Mãe", "DDD Telefone Fixo", "Telefone Fixo", "DDD Telefone Celular", "Telefone Celular", "Centro de Custo"] as const;
 const SHEET = "Solicitacao_de_Cartao_Personali";
 
+/** Texto como a Alelo pede: sem caracteres especiais (&%$@# etc.) e, no nome da mãe, sem números. */
+export function aleloText(v: string, noDigits = false): string {
+  return v.replace(noDigits ? /[^\p{L} '.-]/gu : /[^\p{L}\d '.-]/gu, " ").replace(/\s+/g, " ").trim();
+}
+
 /** Celular do cadastro → [DDD, número] (sem o +55). */
 export function splitPhone(raw: string | null | undefined): [string, string] | null {
   let d = (raw ?? "").replace(/\D/g, "");
@@ -52,7 +57,7 @@ export async function aleloCardSheet(prisma: PrismaClient, actor: Actor | null, 
   for (const c of ready) {
     const a = c.account;
     const phone = splitPhone(a.phone);
-    rows.push([a.name, a.birthDate, a.cpf!.replace(/\D/g, ""), null, a.email, a.motherName, null, null, phone?.[0] ?? null, phone?.[1] ?? null, null]);
+    rows.push([aleloText(a.name), a.birthDate, a.cpf!.replace(/\D/g, ""), null, a.email, aleloText(a.motherName ?? "", true), null, null, phone?.[0] ?? null, phone?.[1] ?? null, null]);
   }
   const ids = ready.map((c) => c.id);
   await prisma.$transaction([

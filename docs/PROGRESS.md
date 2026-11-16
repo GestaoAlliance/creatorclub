@@ -315,6 +315,35 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-321 — 2026-11-16 — Calendário de pagamentos: base (D-CALENDAR, parte 1)
+- Resposta do responsável: datas da marca e janela estendida mudadas só pelo super admin, com histórico.
+- Migração `20261206090000_payout_calendar`: `Brand.windowExtensionMonth/windowNormalEndDay` (trava
+  `Brand_window_extension_valid`); a reabertura da Botanika até o dia 22 em novembro vira extensão do mês e **volta
+  sozinha ao dia 15 em 01/12** (substitui a conferência manual de 23/11).
+- `src/domain/payout-calendar.ts` (conferências: dias 1 a 28, pedido antes do pagamento, extensão depois do fim normal
+  e antes do fim do pagamento; marcos do mês; "o que acontece hoje") e `src/lib/brands/calendar.ts` (`updateCalendar`,
+  `extendWindow`, `cancelExtension`, `revertWindowExtensions` no worker, antes do fechamento).
+- **Próxima (parte 2):** telas: seção "Calendário de pagamentos" em Marcas, faixa do mês em Pagamentos e as datas da
+  creator no portal. Em aberto: conferência planilha do Guilherme × sistema (diferenças na virada ago/set) e o saque
+  da Joingle (não pagar até fechar).
+- Testes: `test/payout-calendar.test.ts`, `test/integration/payout-calendar.test.ts`.
+
+### CP-320 — 2026-11-16 — VermeFree com as regras da Botanika e da Revita (D-VFRULES)
+- Resposta do responsável ("contrato novo para todas, como na Revita"): migração `20261205090000_vermefree_rules`. A
+  VermeFree libera com **R$ 100 de comissão** acumulada (influencer e prescritor; versões de contrato com comissão
+  também), saque pedido **do dia 5 ao 15** e pagamento **do dia 20 ao 25**. Antes: R$ 300 em vendas, pedido do dia 1 ao
+  15, pagamento até o dia 15. Vale no fechamento de 01/12. Kits não mudam. Antes e depois no histórico (AuditLog).
+
+### CP-319 — 2026-11-16 — Arquivos do banco e da Alelo conferidos com os modelos do Guilherme (D-REMESSA, D-ALELOCARD)
+- O responsável reenviou os arquivos do grupo (modelo CNAB 240 do SICOOB, guia atualizado e planilha da Alelo).
+- Remessa SICOOB conferida campo a campo: o modelo é de TED para conta (câmara 018, forma 41); a nossa é Pix por chave
+  (câmara 009, forma 45, G100 no segmento B), como o guia manda. Dois ajustes pela versão 3.4 do guia: a chave Pix
+  CPF/CNPJ também vai na Informação 12 do segmento B; "forma de pagamento" do header do lote = 01 (débito em conta),
+  como no modelo. Só a Botanika tem convênio, agência e conta cadastrados (VermeFree e Revita ainda não).
+- Planilha de pedido de cartão Alelo igual ao modelo (11 colunas, aba, data DD/MM/AAAA); nomes agora sem caracteres
+  especiais (e o nome da mãe sem números), como a Alelo pede. O arquivo de **crédito** da Alelo ainda não veio.
+- Testes: `test/cnab240.test.ts`.
+
 ### CP-318 — 2026-11-16 — Pagamentos CNPJ e CPF pelo mês da comissão (D-PAYFLOW) e valor da nota no portal (D-NFAMOUNT)
 - Pedido do responsável (fluxo desenhado por ele): a tela de pagamentos não deixava claro quem foi pago, quando e quanto.
 - Menu Pagamentos → **Pagamentos CNPJ** e **Pagamentos CPF** (`/admin/pagamentos/[tipo]`, `src/lib/payouts/month-board.ts`),
