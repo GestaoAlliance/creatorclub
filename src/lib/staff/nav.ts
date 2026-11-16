@@ -47,6 +47,8 @@ const GROUPS: Group[] = [
     icon: "payout",
     tabs: [
       { href: "/saques", label: "Saques", needs: "withdrawals.view" },
+      // D-PAIDLIST: o que já foi pago, por mês.
+      { href: "/saques/pagos", label: "Pagos", needs: "withdrawals.view" },
       { href: "/abertura", label: "Abertura", needs: "withdrawals.manage" },
       { href: "/saques/conferencia", label: "Conferência da planilha", needs: "withdrawals.manage" },
     ],

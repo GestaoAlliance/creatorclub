@@ -23,7 +23,7 @@ describe("menu da equipe por papel", () => {
     expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas", "Campanhas", "Conteúdo"]);
     expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);
     expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Produtos", "Cupons", "Desempenho"]);
-    expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques"]);
+    expect(tabs("GESTAO", "Pagamentos")).toEqual(["Saques", "Pagos"]);
     expect(tabs("GESTAO", "Hunters")).toEqual(["Hunters", "Prospecção"]);
     expect(staffNav([{ role: "GESTAO", brandId: "b" }]).find((i) => i.label === "Vendas")?.href).toBe("/vendas");
   });
