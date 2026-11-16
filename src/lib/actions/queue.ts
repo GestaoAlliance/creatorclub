@@ -177,6 +177,9 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });
   for (const u of unsigned) if (u.creatorId) push(u.creatorId, `UNSIGNED:${u.id}`, { kind: "UNSIGNED", days: days(u.sentAt), link: u.signLink });
   for (const s of ships) push(s.creatorId, `SHIP_STUCK:${s.id}`, { kind: "SHIP_STUCK", days: days(s.approvedAt ?? s.createdAt) });
+  // D-DATAFIX: pedidos de correção feitos no portal (até "Feito").
+  const fixes = await prisma.dataFixRequest.findMany({ where: { brandId, createdAt: { gte: new Date(now.getTime() - 90 * DAY) } }, select: { id: true, creatorId: true, field: true, message: true, createdAt: true } });
+  for (const f of fixes) push(f.creatorId, `FIX_DATA:${f.id}`, { kind: "FIX_DATA", day: dayKey(f.createdAt, tz), field: f.field, message: f.message });
 
   return out.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "pt-BR"));
 }

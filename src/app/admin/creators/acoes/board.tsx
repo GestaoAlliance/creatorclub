@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, KeyRound, MessageCircle, Package, Send, X } from "lucide-react";
+import { Check, KeyRound, MessageCircle, Package, Pencil, Send, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -178,7 +178,7 @@ export function ActionsBoard({ tasks, doneToday, brandName, canSend, whatsappOn 
                   <button key={k} type="button" aria-pressed={on} onClick={() => setKind(on ? "" : k)} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white ${on ? "is-on" : ""}`}>
                     <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">{ACTION_LABEL[k]}</span><span className={`seg-dot ${TONE_DOT[tone]}`} /></span>
                     <span className="text-2xl font-semibold tabular-nums leading-tight">{list.length}</span>
-                    <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{k === "ACCESS" ? "gerar o convite na ficha" : k === "SHIP_STUCK" ? "para quem envia" : "com mensagem pronta"}</span>
+                    <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{k === "ACCESS" ? "gerar o convite na ficha" : k === "SHIP_STUCK" ? "para quem envia" : k === "FIX_DATA" ? "corrigir na ficha" : "com mensagem pronta"}</span>
                   </button>
                 );
               })}
@@ -213,6 +213,7 @@ export function ActionsBoard({ tasks, doneToday, brandName, canSend, whatsappOn 
                     <p className="text-sm text-stone-600 dark:text-stone-300">{t.detail}</p>
                   </div>
                   <div className="ml-12 flex shrink-0 flex-wrap items-center gap-2 sm:ml-0">
+                    {t.kind === "FIX_DATA" && <Link href={`/admin/creators/${t.creatorId}#cadastro`} className={ui.ghostSm}><Pencil className="size-3.5" /> Corrigir na ficha</Link>}
                     {t.message ? (
                       <button type="button" onClick={() => setOpen(open === t.key ? null : t.key)} aria-expanded={open === t.key} className={`${ui.btnSm} ${t.whatsappUrl || canSend ? "" : "opacity-60"}`}>
                         <MessageCircle className="size-3.5" /> Mensagem

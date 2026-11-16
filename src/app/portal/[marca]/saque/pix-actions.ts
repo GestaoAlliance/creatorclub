@@ -17,6 +17,7 @@ export async function changeMyPixAction(_p: PixState, f: FormData): Promise<PixS
     const ctx = await currentPortalContext(marca);
     const r = await changePixKey(db(), { kind: "creator", ctx, userId: actor.userId }, ctx.creatorId, String(f.get("pixKey") ?? ""));
     revalidatePath(`/portal/${marca}/saque`);
+    revalidatePath(`/portal/${marca}/cadastro`);
     return { ok: `Chave trocada para ${r.masked}. Você recebe um aviso de confirmação.` };
   } catch (error) {
     if (error instanceof PixError) return { error: error.message };

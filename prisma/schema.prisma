@@ -145,6 +145,7 @@ model Brand {
   creatorPosts       CreatorPost[]
   prospects          Prospect[]
   shipmentReviews    ShipmentReview[]
+  dataFixRequests    DataFixRequest[]
 }
 
 enum IntegrationKind {
@@ -433,7 +434,9 @@ model Creator {
   campaignPrizes     CampaignPrize[]
   posts              CreatorPost[]
 
-  shipmentReviews    ShipmentReview[]
+  shipmentReviews ShipmentReview[]
+  dataFixRequests DataFixRequest[]
+
   @@unique([brandId, accountId])
   @@unique([id, brandId])
   @@unique([brandId, legacyId])
@@ -953,8 +956,8 @@ model Shipment {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  brand   Brand          @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  creator Creator        @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+  brand   Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator         @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   items   ShipmentItem[]
   kit     KitGrant?
   review  ShipmentReview?
@@ -1834,5 +1837,22 @@ model ShipmentReview {
   creator  Creator  @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@unique([shipmentId, brandId])
+  @@index([brandId, createdAt])
+}
+
+/// D-DATAFIX: a creator pede à equipe a correção de um dado que ela não muda sozinha (nome, CPF, CNPJ, telefone,
+/// e-mail). Vira tarefa na fila de Ações da Gestão; "Feito" fica em `ActionDone`. Só inserção.
+model DataFixRequest {
+  id          String   @id @default(uuid())
+  brandId     String
+  creatorId   String
+  field       String // NAME | CPF | CNPJ | PHONE | EMAIL | OTHER
+  message     String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
   @@index([brandId, createdAt])
 }

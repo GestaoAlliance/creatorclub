@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { removePhotoAction, uploadPhotoAction } from "@/app/foto/actions";
 import { Avatar } from "./avatar";
@@ -70,6 +71,7 @@ export function PhotoEditor({ creatorId, name, marca = null, size = "md", square
         <span className="absolute left-0 top-full z-30 mt-2 flex w-56 flex-col gap-1 rounded-2xl bg-white/95 p-1.5 text-sm text-stone-800 shadow-lg ring-1 ring-black/5 backdrop-blur dark:bg-stone-900/95 dark:text-stone-100 dark:ring-white/10">
           <button type="button" disabled={pending} onClick={() => input.current?.click()} className="rounded-xl px-3 py-2 text-left font-medium hover:bg-stone-500/10">Trocar foto</button>
           <button type="button" disabled={pending} onClick={remove} className="rounded-xl px-3 py-2 text-left hover:bg-stone-500/10">{marca ? "Usar a foto do Instagram" : "Tirar foto"}</button>
+          {marca && <Link href={`/portal/${marca}/cadastro`} onClick={() => setOpen(false)} className="rounded-xl px-3 py-2 text-left hover:bg-stone-500/10">Ver meu cadastro</Link>}
           <span className="px-3 pb-1 text-[11px] text-stone-500">{marca ? "Sem foto aqui, usamos a do seu Instagram." : "Sem foto subida, vale a do Instagram; tirar de novo esconde a do Instagram."}</span>
         </span>
       )}
