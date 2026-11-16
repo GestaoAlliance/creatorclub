@@ -5,6 +5,7 @@ import { notices,
   computeBalance,
   entryMonth,
   monthClosesAt,
+  nfBreakdown,
   monthKey,
   planReleases,
   previousMonthKey,
@@ -111,6 +112,28 @@ export async function creatorBalance(prisma: Db, creator: { id: string; brandId:
     releasedThroughFor(prisma, [creator.id]),
   ]);
   return computeBalance(entries, open, now, { releasedThrough: released.get(creator.id) ?? null });
+}
+
+/**
+ * D-PAYFLOW: a conta da nota de uma creator agora (o que entra no valor da nota, linha a linha) e o mês de referência
+ * (último mês liberado). Gravada no pedido de saque; as telas de pagamento mostram a conta do pedido.
+ */
+export async function nfSnapshot(prisma: Db, creator: { id: string; brandId: string }, timeZone: string, now: Date) {
+  const [entries, open, released] = await Promise.all([
+    ledgerEntriesWithMonth(prisma, [creator.id], timeZone),
+    openReservations(prisma, { creatorId: creator.id, brandId: creator.brandId }),
+    releasedThroughFor(prisma, [creator.id]),
+  ]);
+  const releasedThrough = released.get(creator.id) ?? null;
+  const balance = computeBalance(entries, open, now, { releasedThrough });
+  const reserved = open.reduce((sum, o) => sum + o.amountCents, 0);
+  const nf = nfBreakdown(
+    entries.map((e) => ({ type: e.type, amountCents: e.amountCents, month: e.month!, held: e.type !== "COMMISSION" && e.type !== "REVERSAL" && e.amountCents > 0 && e.availableAt > now })),
+    releasedThrough,
+    reserved,
+    balance.availableCents,
+  );
+  return { referenceMonth: releasedThrough, balance, ...nf };
 }
 
 export type ReleaseProgress = {

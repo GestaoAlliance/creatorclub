@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { checkNf, checkWithdrawalRequest, dayKey, parseNfseText, receiptText, type WithdrawalError } from "@/domain";
-import { creatorBalance, releasedThroughFor } from "@/lib/commission/release";
+import { creatorBalance, nfSnapshot, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { isValidCpf, pendingTerms } from "@/lib/terms/terms";
 import { pendingContract } from "@/lib/contracts/sign";
@@ -136,8 +136,19 @@ async function createRequest(
         await tx.creatorAccount.update({ where: { id: creator.account.id }, data: { pixKey: pix.slice(0, 140) } });
       }
 
+      // D-PAYFLOW: mês de referência e a conta da nota no momento do pedido.
+      const snap = await nfSnapshot(tx, creator, creator.brand.timezone, now);
       const withdrawal = await tx.withdrawal.create({
-        data: { brandId: creator.brandId, creatorId: creator.id, amountCents: input.amountCents, idempotencyKey: key, requestedAt: now, ...document.data },
+        data: {
+          brandId: creator.brandId,
+          creatorId: creator.id,
+          amountCents: input.amountCents,
+          idempotencyKey: key,
+          requestedAt: now,
+          referenceMonth: snap.referenceMonth,
+          breakdown: snap.lines,
+          ...document.data,
+        },
       });
       await document.after?.(withdrawal.id);
       await tx.auditLog.create({

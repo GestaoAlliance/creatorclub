@@ -315,6 +315,27 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-318 — 2026-11-16 — Pagamentos CNPJ e CPF pelo mês da comissão (D-PAYFLOW) e valor da nota no portal (D-NFAMOUNT)
+- Pedido do responsável (fluxo desenhado por ele): a tela de pagamentos não deixava claro quem foi pago, quando e quanto.
+- Menu Pagamentos → **Pagamentos CNPJ** e **Pagamentos CPF** (`/admin/pagamentos/[tipo]`, `src/lib/payouts/month-board.ts`),
+  cada um com o **mês da comissão** e 3 abas: 1) NF (ou recibo) para aprovar, com o bloco "Ainda não enviaram" e o
+  lembrete; 2) Saques a realizar, com seleção (uma ou todas), exportar planilha, remessa SICOOB e **Pagamento feito**
+  (sai do saldo e avisa a creator); 3) Saques realizados (data, quem pagou, ID do Pix e os Pix de antes do Creator Club
+  pelo mês do Pix). Colunas: nome completo, valor vendido, % de comissão, comissão do mês e valor da nota; quando a nota
+  difere da comissão do mês, a linha diz por quê (outros meses, já pago antes, ajustes) e o que não fecha aparece em
+  vermelho ("diferença sem explicação"). Total no fim e planilha da aba.
+- O pedido de saque grava `referenceMonth` (último mês liberado) e `breakdown` (a conta da nota, `nfSnapshot`); os
+  pedidos antigos ganham o mês de referência na migração (mês anterior ao pedido, fuso de São Paulo). Trava
+  `Withdrawal_reference_month`.
+- Saques, Pagos (CP-317) viraram redirecionamentos; Saldo de abertura e Conferência da planilha foram para Configurações.
+- Portal, aba Saque: o número do topo virou "Valor da sua nota deste mês" (ou "previsto da próxima"), com Copiar valor;
+  o cartão "De onde vem o valor da sua nota" mostra a comissão liberada mês a mês, o já pago (com os Pix), saques e
+  ajustes, e o que fica para a próxima nota (`nfBreakdown`, `src/domain/nf-amount.ts`). O passo 1 cita o valor.
+- Conferência de produção: os 8 Pix dos comprovantes (reenviados) batem com os abatimentos; valores da nota hoje:
+  Victoria R$ 6.280,95, Julia R$ 2.183,70, Fernanda R$ 2.041,85, Joingle R$ 325,17 (pedido aberto). Erro meu de fuso
+  numa consulta manual (não no app) corrigido na resposta.
+- Testes: `test/nf-amount.test.ts`, `test/integration/pay-flow.test.ts`.
+
 ### CP-317 — 2026-11-16 — Saques separados em CNPJ e CPF e aba "Pagos" por mês (D-PAYKIND, D-PAIDLIST)
 - Pedido do responsável: separar na fila os saques de CNPJ e de CPF e conseguir filtrar o que já foi pago, quando e por quem.
 - Saques: a fila mostra dois blocos, "CNPJ · nota fiscal" e "CPF · recibo", com quantidade e total; o painel segue a ordem.

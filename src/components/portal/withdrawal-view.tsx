@@ -1,8 +1,9 @@
 import { ArrowDownLeft, ArrowUpRight, BellRing, Check, ChevronRight, Clock, FileText, KeyRound, Receipt, TriangleAlert, Wallet, X } from "lucide-react";
 import type { portalWithdrawalExtras } from "@/lib/portal/withdrawal-extras";
 import { PixChange } from "./pix-change";
+import { CopyButton } from "./copy-button";
 import Link from "next/link";
-import { formatBRL, payDaysText, type WithdrawalDays } from "@/domain";
+import { formatBRL, monthNamePt, payDaysText, type WithdrawalDays } from "@/domain";
 import { LEDGER_LABEL } from "@/lib/commission/statement";
 import { CancelWithdrawalButton } from "./cancel-withdrawal";
 import { NfDataList } from "./nf-data";
@@ -45,6 +46,10 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         .replace("{min}", tab.release.minCents === null ? "o mínimo do contrato" : formatBRL(tab.release.minCents))
     : null;
   const st = tab.statement;
+  // D-NFAMOUNT: com saldo liberado, o número do topo é o valor da nota do mês (prévia fora da janela).
+  const showNf = balance.availableCents > 0 && !tab.blocks.includes("OPEN_REQUEST") && !tab.blocks.includes("LOCKED");
+  const doc = tab.individual ? "recibo" : "nota";
+  const heroLabel = !showNf ? "Disponível para saque" : extras.window.open ? `Valor da sua ${doc} deste mês` : `Valor previsto da sua próxima ${doc}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,12 +64,19 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
         <div className="flex flex-col gap-4 p-5 md:p-7">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-white/75"><Wallet className="size-4" />Disponível para saque <HelpTip id="saque-saldo" className="-my-1" /></p>
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-white/75"><Wallet className="size-4" />{heroLabel} <HelpTip id="saque-saldo" className="-my-1" /></p>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${extras.window.open ? "bg-emerald-400/25" : "bg-white/15"}`}>
               {extras.window.open ? `Janela aberta · ${extras.window.daysLeft === 1 ? "último dia" : `até o dia ${policy.windowEndDay}`}` : `Janela abre em ${extras.window.opensIn} ${extras.window.opensIn === 1 ? "dia" : "dias"} (dia ${policy.windowStartDay})`}
             </span>
           </div>
           <p className={`text-4xl font-semibold tabular-nums ${balance.availableCents < 0 ? "text-red-200" : ""}`}><span className="money">{formatBRL(balance.availableCents)}</span></p>
+          {/* D-NFAMOUNT: o valor exato da nota (ou do recibo), para copiar. */}
+          {showNf && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-white/90">
+              <span>{tab.individual ? "O recibo sai exatamente deste valor." : <>Emita a nota <strong>exatamente deste valor</strong>.</>}</span>
+              <CopyButton value={(balance.availableCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} label="Copiar valor" />
+            </div>
+          )}
           {blockText ? (
             <p className="rounded-2xl bg-white/15 px-4 py-3 text-sm">{blockText}</p>
           ) : (
@@ -94,6 +106,8 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
           )}
         </div>
       </section>
+
+      {(tab.nfAmount.lines.length > 0 || tab.nfAmount.next.length > 0) && <NfAmountCard tab={tab} doc={doc} />}
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
@@ -137,7 +151,7 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
           <li className="flex gap-3">
             <span className="grid size-7 shrink-0 place-content-center rounded-full bg-brand text-xs font-semibold text-white dark:bg-brand-2 dark:text-stone-900">1</span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Emita a nota fiscal do <strong>valor total disponível</strong>, pelo CNPJ do seu cadastro, com estes dados:</p>
+              <p className="text-sm font-medium">Emita a nota fiscal de <strong className="money">{formatBRL(Math.max(0, balance.availableCents))}</strong> (o valor total disponível), pelo CNPJ do seu cadastro, com estes dados:</p>
               <div className="mt-2"><NfDataList nf={tab.nf} /></div>
             </div>
           </li>
@@ -257,5 +271,49 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         )}
       </section>
     </div>
+  );
+}
+
+const brDay = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+
+/** D-NFAMOUNT: de onde vem o valor da nota, linha a linha, e o que fica para a próxima. */
+function NfAmountCard({ tab, doc }: { tab: WithdrawalTab; doc: string }) {
+  const n = tab.nfAmount;
+  const legacyTotal = n.legacy.reduce((s, l) => s + l.cents, 0);
+  const opening = n.lines.find((l) => l.key === "OPENING_BALANCE");
+  return (
+    <section className="glass flex flex-col gap-3 rounded-3xl p-5">
+      <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> De onde vem o valor da sua {doc}</h2>
+      {n.lines.length > 0 && (
+        <ul className="flex flex-col divide-y divide-stone-200/70 text-sm dark:divide-white/10">
+          {n.lines.map((l) => (
+            <li key={l.key} className="flex flex-col gap-1 py-2">
+              <span className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2">{l.cents < 0 ? <ArrowUpRight className="size-3.5 text-stone-400" /> : <ArrowDownLeft className="size-3.5 text-emerald-600" />}{l.label}</span>
+                <span className={`font-medium tabular-nums ${l.cents < 0 ? "text-stone-600 dark:text-stone-300" : ""}`}><span className="money">{l.cents < 0 ? `− ${formatBRL(-l.cents)}` : formatBRL(l.cents)}</span></span>
+              </span>
+              {l.key === "OPENING_BALANCE" && opening && legacyTotal === -opening.cents && n.legacy.length > 0 && (
+                <span className="pl-5 text-xs text-stone-500">Pix que você já recebeu: {n.legacy.map((x) => `${brDay(x.day)} (${formatBRL(x.cents)})`).join(", ")}</span>
+              )}
+            </li>
+          ))}
+          <li className="flex items-center justify-between gap-3 pt-2.5 font-semibold">
+            <span>= Valor da {doc}</span>
+            <span className="tabular-nums"><span className="money">{formatBRL(n.totalCents)}</span></span>
+          </li>
+        </ul>
+      )}
+      {n.next.length > 0 && (
+        <div className="rounded-2xl bg-stone-500/8 px-4 py-3 text-sm">
+          <p className="font-medium">Fica para a próxima {doc}</p>
+          {n.next.map((x) => (
+            <p key={x.month} className="flex items-center justify-between gap-3 text-stone-600 dark:text-stone-300">
+              <span>Comissão de {monthNamePt(x.month)} (libera no fechamento do mês)</span>
+              <span className="tabular-nums"><span className="money">{formatBRL(x.cents)}</span></span>
+            </p>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

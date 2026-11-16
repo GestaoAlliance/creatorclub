@@ -54,3 +54,4 @@ export * from "./portal-home";
 export * from "./portal-posts";
 export * from "./portal-notices";
 export * from "./photo";
+export * from "./nf-amount";

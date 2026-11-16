@@ -685,6 +685,10 @@ model Withdrawal {
   bankAt         DateTime?
   /// D-PIXREF: ID da transação do Pix (E2E) informado por quem pagou; opcional; só em saque pago.
   pixReference   String?
+  /// D-PAYFLOW: mês da comissão que a nota paga (o último mês liberado no pedido, "AAAA-MM").
+  referenceMonth String?
+  /// D-PAYFLOW: a conta da nota no momento do pedido (linhas de `nfBreakdown`: comissão por mês, já pago, saques).
+  breakdown      Json?
 
   brand         Brand              @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator       Creator            @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
@@ -696,6 +700,7 @@ model Withdrawal {
   @@unique([id, brandId])
   @@index([brandId, status])
   @@index([creatorId])
+  @@index([brandId, referenceMonth])
 }
 
 /// D-RETORNO: resultado do saque no retorno do banco (agendado, pendente de assinatura ou recusado).
