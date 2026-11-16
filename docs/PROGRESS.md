@@ -315,6 +315,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-324 — 2026-11-16 — Comissão da Revita sobre o valor com imposto incluso (D-REVITATAX)
+- Achado da auditoria: a loja da Revita manda todos os pedidos com `taxesIncluded = true`, e a regra D-TAX bloqueava a
+  comissão (5 pedidos de novembro, cerca de R$ 137,60). Resposta do responsável: comissão sobre o valor dos produtos
+  como vem da loja. Migração `20261207090000_revita_tax`: `Brand.commissionOnTaxIncluded` (verdadeiro só na Revita,
+  com histórico); `postCommission` respeita. Os pedidos parados entram sozinhos na próxima reconciliação (rede de
+  segurança `sweepUnpostedCommissions`). Botanika e VermeFree seguem bloqueando imposto incluso.
+- Teste: `test/integration/ledger.test.ts`.
+
 ### CP-323 — 2026-11-16 — Trava contra pagamento em dobro (D-NODOUBLEPAY), achados da auditoria
 - Auditoria de dinheiro (4 agentes, só leitura; relatório publicado para o responsável): conta e saldo corretos; três
   caminhos de o banco pagar o mesmo saque duas vezes, agora travados no código:
