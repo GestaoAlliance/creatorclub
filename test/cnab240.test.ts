@@ -32,6 +32,7 @@ describe("remessa SICOOB CNAB 240 Pix (D-REMESSA)", () => {
     expect(at(l[0]!, 143, 166)).toBe("1" + "28102026" + "153015" + "000007" + "087");
     // Header do lote: crédito, fornecedor, Pix 45, layout 045
     expect(at(l[1]!, 1, 16)).toBe("75600011C2045045");
+    expect(at(l[1]!, 223, 224)).toBe("01"); // P014: débito em conta corrente, como no modelo do SICOOB
     // Segmento A
     expect(at(l[2]!, 9, 14)).toBe("00001A");
     expect(at(l[2]!, 18, 20)).toBe("009");
@@ -46,6 +47,8 @@ describe("remessa SICOOB CNAB 240 Pix (D-REMESSA)", () => {
     // Segundo saque: chave CPF (03) vai no número de inscrição; PF
     expect(at(l[5]!, 14, 18)).toBe("B03 1");
     expect(at(l[5]!, 19, 32)).toBe("00052998224725");
+    // Guia 3.4: a chave CPF/CNPJ também vai na Informação 12
+    expect(at(l[5]!, 128, 226).trimEnd()).toBe("52998224725");
     // Trailer do lote: 6 registros, total R$ 124,45
     expect(at(l[6]!, 1, 8)).toBe("75600015");
     expect(at(l[6]!, 18, 23)).toBe("000006");
@@ -104,5 +107,14 @@ describe("retorno SICOOB (G059)", () => {
     expect(parseRetorno(sent).problems).toContain("O arquivo não é de retorno (é a remessa enviada).");
     expect(parseRetorno("756abc").problems[0]).toMatch(/com 6 posições/);
     expect(parseRetorno("").problems).toEqual(["Nenhum pagamento no arquivo."]);
+  });
+});
+
+describe("planilha de cartão Alelo (D-ALELOCARD)", () => {
+  it("nome e nome da mãe sem caracteres especiais (a Alelo recusa &%$@#; nome da mãe sem números)", async () => {
+    const { aleloText } = await import("@/lib/withdrawals/alelo");
+    expect(aleloText("Maria & José   da Silva")).toBe("Maria José da Silva");
+    expect(aleloText("Ana d'Ávila #2")).toBe("Ana d'Ávila 2");
+    expect(aleloText("Joana 2 Souza", true)).toBe("Joana Souza");
   });
 });

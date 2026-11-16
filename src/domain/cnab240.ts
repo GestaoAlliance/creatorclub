@@ -156,7 +156,8 @@ export function buildRemessa(input: { company: CnabCompany; payments: readonly C
   lines.push(
     line([
       SICOOB_BANK, "0001", "1", "C", "20", "45", "045", blank(1), "2", num(cnpj, 14), alfa(c.convenio, 20), ...company, alfa(c.name, 30), blank(40),
-      blank(30), num(0, 5), blank(15), blank(20), num(0, 5), blank(3), blank(2), num(0, 2), blank(6), blank(10),
+      // Forma de pagamento do serviço (P014): 01 = débito em conta corrente, como no modelo do SICOOB.
+      blank(30), num(0, 5), blank(15), blank(20), num(0, 5), blank(3), blank(2), "01", blank(6), blank(10),
     ]),
   );
   let seq = 0;
@@ -177,7 +178,8 @@ export function buildRemessa(input: { company: CnabCompany; payments: readonly C
     lines.push(
       line([
         SICOOB_BANK, "0001", "3", num(++seq, 5), "B", alfa(k.kind, 3), doc.length === 14 ? "2" : "1",
-        num(k.kind === "03" ? k.value : doc, 14), blank(35), blank(60), k.kind === "03" ? blank(99) : key(k.value, 99), num(0, 6), blank(8),
+        // Guia 3.4 (out/2025): a Informação 12 leva a chave em todos os tipos, inclusive CPF/CNPJ.
+        num(k.kind === "03" ? k.value : doc, 14), blank(35), blank(60), key(k.value, 99), num(0, 6), blank(8),
       ]),
     );
   }

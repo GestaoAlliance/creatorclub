@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-319 — 2026-11-16 — Arquivos do banco e da Alelo conferidos com os modelos do Guilherme (D-REMESSA, D-ALELOCARD)
+- O responsável reenviou os arquivos do grupo (modelo CNAB 240 do SICOOB, guia atualizado e planilha da Alelo).
+- Remessa SICOOB conferida campo a campo: o modelo é de TED para conta (câmara 018, forma 41); a nossa é Pix por chave
+  (câmara 009, forma 45, G100 no segmento B), como o guia manda. Dois ajustes pela versão 3.4 do guia: a chave Pix
+  CPF/CNPJ também vai na Informação 12 do segmento B; "forma de pagamento" do header do lote = 01 (débito em conta),
+  como no modelo. Só a Botanika tem convênio, agência e conta cadastrados (VermeFree e Revita ainda não).
+- Planilha de pedido de cartão Alelo igual ao modelo (11 colunas, aba, data DD/MM/AAAA); nomes agora sem caracteres
+  especiais (e o nome da mãe sem números), como a Alelo pede. O arquivo de **crédito** da Alelo ainda não veio.
+- Testes: `test/cnab240.test.ts`.
+
 ### CP-318 — 2026-11-16 — Pagamentos CNPJ e CPF pelo mês da comissão (D-PAYFLOW) e valor da nota no portal (D-NFAMOUNT)
 - Pedido do responsável (fluxo desenhado por ele): a tela de pagamentos não deixava claro quem foi pago, quando e quanto.
 - Menu Pagamentos → **Pagamentos CNPJ** e **Pagamentos CPF** (`/admin/pagamentos/[tipo]`, `src/lib/payouts/month-board.ts`),
