@@ -315,6 +315,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-314 — 2026-11-16 — Aviso vai por e-mail quando o WhatsApp não entrega (D-WHATSAPPFALLBACK)
+- Achado em produção: com o WhatsApp ligado, a Botanika não mandava e-mail e o WhatsApp falhava desde 05/11 (0 entregas em 30 dias; último e-mail 05/11): os avisos ficavam só no portal.
+- `emailPendingNotices`: aviso sem WhatsApp entregue depois de 30 min (`WHATSAPP_GRACE_MS`) vai por e-mail; `whatsappPendingNotices` não manda o que já saiu por e-mail (menos "parceria ativa", que vai pelos dois). Teste em `integration/whatsapp.test.ts`.
+- Falta: descobrir por que o fluxo do n8n / a instância da Evolution da Botanika parou (precisa do conector do n8n).
+
 ### CP-313 — 2026-11-16 — Produção: janela de saque da Botanika reaberta até 22/11
 - Pedido do responsável (saques liberados em 13/11, guia chegando em 16/11, só 1 pedido no mês): `Brand.withdrawalWindowEndDay` da Botanika 15 → 22 por SQL, com AuditLog `brand.update`. Pagamento continua de 20 a 25. Voltar para 15 em 23/11 (lembrete agendado, com o OK do responsável).
 - Achados para rodar mês a mês: avisos da Botanika não saem no WhatsApp (0 em 30 dias com o WhatsApp ligado, e com ele ligado o e-mail não sai); pedido da Ludimilla em análise desde 13/11.
