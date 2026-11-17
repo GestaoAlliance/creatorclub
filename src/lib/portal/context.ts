@@ -37,7 +37,8 @@ const INCLUDE = { brand: { select: BRAND_SELECT }, account: { select: { name: tr
 async function participations(prisma: PrismaClient, actor: Actor) {
   const ids = Object.values(actor.creatorIds);
   if (ids.length === 0) return [];
-  return prisma.creator.findMany({ where: { id: { in: ids } }, include: INCLUDE, orderBy: { brand: { name: "asc" } } });
+  // Marca arquivada (D-ARCHIVE) some do portal.
+  return prisma.creator.findMany({ where: { id: { in: ids }, brand: { archivedAt: null } }, include: INCLUDE, orderBy: { brand: { name: "asc" } } });
 }
 
 const brandOf = (b: PortalBrand) => ({ slug: b.slug, name: b.name, primaryColor: b.primaryColor, secondaryColor: b.secondaryColor });

@@ -18,7 +18,7 @@ export async function portalWithdrawalExtras(prisma: PrismaClient, ctx: PortalCo
   const [paid, account, rejected] = await Promise.all([
     prisma.withdrawal.findMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PAID" }, select: { amountCents: true, decidedAt: true } }),
     prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { pixKey: true } } } }),
-    prisma.withdrawal.findMany({ where: { brandId: ctx.brand.id, status: "REJECTED", decidedAt: { gte: new Date(now.getTime() - 180 * DAY) } }, select: { note: true } }),
+    prisma.withdrawal.findMany({ where: { brandId: ctx.brand.id, status: "REJECTED", decidedAt: { gte: new Date(now.getTime() - 180 * DAY) } }, select: { note: true, creatorId: true } }),
   ]);
   return {
     today,
@@ -30,6 +30,20 @@ export async function portalWithdrawalExtras(prisma: PrismaClient, ctx: PortalCo
       count: paid.length,
     },
     pixKey: account.account.pixKey ? maskPix(account.account.pixKey) : null,
-    reasons: rejectReasons(rejected.map((r) => r.note), 8).filter((r) => r.count >= 2 && r.reason.length <= 80).slice(0, 4),
+    // Motivo comum de verdade: de 3 creators ou mais (uma por motivo) e sem números (CPF, CNPJ, valores de alguém).
+    reasons: rejectReasons(uniqueByCreator(rejected), 8).filter((r) => r.count >= 3 && r.reason.length <= 80 && !/\d{3}/.test(r.reason)).slice(0, 4),
   };
+}
+
+/** Um motivo por creator: a mesma creator recusada duas vezes pelo mesmo motivo conta uma vez. */
+function uniqueByCreator(rows: readonly { note: string | null; creatorId: string }[]): (string | null)[] {
+  const seen = new Set<string>();
+  const out: (string | null)[] = [];
+  for (const r of rows) {
+    const key = `${r.creatorId}:${(r.note ?? "").trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ").replace(/[.!;]+$/, "")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r.note);
+  }
+  return out;
 }

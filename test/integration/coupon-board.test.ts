@@ -25,7 +25,8 @@ describe("tela Cupons (D-COUPONBOARD, banco real)", () => {
   it("contexto, comissão parada, sugestão de dona, parados e creators sem cupom", async () => {
     const { brand, creator, account, coupon } = await seedBrand(prisma); // cupom CREATOR sem dona confirmada, 1 pedido em 01/09
     const now = new Date("2026-11-12T15:00:00Z");
-    const solta = await prisma.coupon.create({ data: { brandId: brand.id, code: `${account.name.split(" ")[1]!.toUpperCase()}${letters().slice(0, 2)}` } });
+    // Só letras: a sugestão compara as letras do código (um sufixo com muitos dígitos ficava curto demais e o teste falhava às vezes).
+    const solta = await prisma.coupon.create({ data: { brandId: brand.id, code: `PERFIL${letters(6)}` } });
     await prisma.creatorAccount.update({ where: { id: account.id }, data: { instagram: `@${solta.code.toLowerCase()}` } });
     await order(brand.id, solta.code, "2026-11-01T15:00:00Z", 10_000);
     await order(brand.id, solta.code, "2026-11-05T15:00:00Z", 30_000);

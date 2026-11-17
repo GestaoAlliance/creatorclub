@@ -200,7 +200,7 @@ function Board({ c }: { c: PortalCampaign }) {
         <span>Você está em <strong>{c.me.position}º</strong> de {c.participants}</span>
         <Move n={c.me.move} />
       </div>
-      {c.phase === "RUNNING" && c.me.toAboveCents !== null && <p className={ui.hint}>Faltam <span className="money">{formatBRL(c.me.toAboveCents)}</span> em vendas para passar a {c.me.position - 1}ª.</p>}
+      {c.phase === "RUNNING" && c.me.toAboveCents !== null && <p className={ui.hint}>Faltam cerca de <span className="money">{formatBRL(c.me.toAboveCents)}</span> em vendas para passar a {c.me.position - 1}ª.</p>}
       <GoalBar c={c} />
       <ol className="flex flex-col gap-1 text-sm">
         {c.top.map((t) => (

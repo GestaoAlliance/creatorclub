@@ -31,7 +31,7 @@ export async function portalHomeExtras(prisma: PrismaClient, ctx: PortalContext,
     }),
     prisma.creator.findUniqueOrThrow({
       where: { id: ctx.creatorId },
-      select: { receivesAsIndividual: true, accountId: true, account: { select: { tiktok: true, birthDate: true, motherName: true } } },
+      select: { receivesAsIndividual: true, accountId: true, account: { select: { tiktok: true, birthDate: true, motherName: true, instagram: true } } },
     }),
     prisma.kitGrant.count({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" } }),
     prisma.creatorPost.findFirst({ where: { creatorId: ctx.creatorId, removedAt: null }, orderBy: { postedDay: "desc" }, select: { postedDay: true } }),
@@ -45,6 +45,10 @@ export async function portalHomeExtras(prisma: PrismaClient, ctx: PortalContext,
     prisma.creator.findMany({ where: { brandId: ctx.brand.id, status: "ACTIVE" }, select: { id: true } }),
   ]);
 
+  // Post desta marca (marcou a marca no Instagram); post de outra marca dela não conta aqui.
+  const brandTagged = me.account.instagram
+    ? (await prisma.instagramTag.count({ where: { brandId: ctx.brand.id, username: { equals: me.account.instagram, mode: "insensitive" } } })) > 0
+    : false;
   // Conquistas.
   const salesMonths = mine.map((a) => monthKey(a.order.paidAt!, tz));
   const badges = achievements({ paidOrders: mine.length, releases, salesMonths });
@@ -75,7 +79,7 @@ export async function portalHomeExtras(prisma: PrismaClient, ctx: PortalContext,
     { id: "tiktok", label: "Informar o seu TikTok", href: "#pergunta-tiktok", done: Boolean(me.account.tiktok) },
     { id: "birthday", label: "Contar o seu aniversário", href: "#pergunta-aniversario", done: Boolean(me.account.birthDate) },
     ...(me.receivesAsIndividual ? [{ id: "mother" as const, label: "Informar o nome da sua mãe (cartão Alelo)", href: "#pergunta-mae", done: Boolean(me.account.motherName) }] : []),
-    { id: "post", label: "Registrar o seu primeiro post", href: `${base}/posts`, done: Boolean(posts) || igPosts.length > 0 },
+    { id: "post", label: "Registrar o seu primeiro post", href: `${base}/posts`, done: Boolean(posts) || brandTagged },
   ];
 
   return {

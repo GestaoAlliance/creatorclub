@@ -110,6 +110,8 @@ describe("links dos hunters (D-HUNTERLINK, banco real)", () => {
     // D-HUNTERMULTI: a mesma pessoa pode ser hunter de mais de uma marca.
     await createHunterLink(prisma, gestaoB, { brandId: b.brand.id, userId: id, code: "danib" });
     expect((await myHunterPanel(prisma, (await loadActor(prisma, id))!)).map((p) => p.code).sort()).toEqual(["dania", "danib"]);
+    // D-ALLIANCE: com a marca do topo escolhida, só a dela.
+    expect((await myHunterPanel(prisma, (await loadActor(prisma, id))!, new Date(), b.brand.id)).map((p) => p.code)).toEqual(["danib"]);
 
     await prisma.roleGrant.deleteMany({ where: { userId: id, brandId: b.brand.id } });
     const dani = (await loadActor(prisma, id))!;

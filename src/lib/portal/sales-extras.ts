@@ -30,11 +30,15 @@ export async function portalSalesExtras(prisma: PrismaClient, ctx: PortalContext
       where: { ...paid, brandId: ctx.brand.id, attribution: { creatorId: ctx.creatorId }, paidAt: { gte: new Date(period.from.getTime() - span), lt: period.from } },
       select: { paidAt: true, subtotalCents: true, ledgerEntries: { where: { creatorId: ctx.creatorId, type: { in: ["COMMISSION", "REVERSAL"] } }, select: { amountCents: true } } },
     }),
-    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true } }),
+    prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { accountId: true, account: { select: { instagram: true } } } }),
     prisma.creatorPost.findMany({ where: { creatorId: ctx.creatorId, removedAt: null, postedDay: { gte: period.firstDay, lte: period.lastDay } }, select: { postedDay: true } }),
     productImages(prisma, ctx.brand.id),
   ]);
-  const igPosts = await prisma.instagramPost.findMany({ where: { accountId: account.accountId, postedAt: { gte: period.from, lt: period.to } }, select: { postedAt: true } });
+  // Só os posts que marcaram ESTA marca (D-ALLIANCE): post de outra marca dela não vira "dia de post" aqui.
+  const handle = account.account.instagram;
+  const igPosts = handle
+    ? await prisma.instagramTag.findMany({ where: { brandId: ctx.brand.id, username: { equals: handle, mode: "insensitive" }, postedAt: { gte: period.from, lt: period.to } }, select: { postedAt: true } })
+    : [];
 
   // Período anterior, dia a dia na mesma posição.
   const previous = Array<number>(len).fill(0);

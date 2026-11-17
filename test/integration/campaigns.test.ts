@@ -63,7 +63,7 @@ describe("campanhas (M4.5, D-CAMPAIGN, banco real)", () => {
       [account.name, 30_000, 20_000, 0],
     ]);
     const portal = (await portalCampaigns(prisma, { ...ctx(creator.id), brand: { id: brand.id } } as PortalContext, T("2026-10-24T00:00:00Z")))[0]!;
-    expect(portal).toMatchObject({ joined: true, participants: 2, countdown: "termina em 2 dias e 3 h", me: { position: 2, salesCents: 30_000, toAboveCents: 30_001, toGoalCents: 20_000 } });
+    expect(portal).toMatchObject({ joined: true, participants: 2, countdown: "termina em 2 dias e 3 h", me: { position: 2, salesCents: 30_000, toAboveCents: 31_000, toGoalCents: 20_000 } });
     // Subiu/caiu desde ontem: em 25/10 à noite a Bia passou (antes de hoje ela estava atrás).
     const late = (await portalCampaigns(prisma, ctx(creator.id), T("2026-10-25T22:00:00Z")))[0]!;
     expect(late.me).toMatchObject({ position: 2, move: -1 });

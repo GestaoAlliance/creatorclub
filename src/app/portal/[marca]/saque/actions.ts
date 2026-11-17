@@ -81,14 +81,17 @@ export async function submitWithdrawal(_prev: SubmitState, form: FormData): Prom
     } catch {
       return { error: "Valor inválido." };
     }
+    // Visualização da equipe, saque travado ou sem contrato: recusa antes de gravar qualquer arquivo.
+    await assertCanStart(db(), ctx);
     const { data, error } = await supabaseAdmin().storage.from(NF_BUCKET).download(nfPath(ctx.brand.id, ctx.creatorId, requestId));
     if (error || !data) return { error: "A nota fiscal não chegou. Envie o PDF de novo." };
     if (data.size > MAX_NF_BYTES) return { error: "A nota fiscal passa de 10 MB." };
     const pdf = new Uint8Array(await data.arrayBuffer());
     // D-NODOUBLEPAY: guarda a cópia exata que será conferida, num caminho que só o servidor escreve (só no 1º envio).
+    // Sem sobrescrever: num envio duplo, a primeira cópia gravada é a que fica.
     if (!(await db().withdrawal.findUnique({ where: { idempotencyKey: `withdrawal:${requestId}` }, select: { id: true } }))) {
-      const up = await supabaseAdmin().storage.from(NF_BUCKET).upload(nfFinalPath(ctx.brand.id, ctx.creatorId, requestId), pdf, { contentType: "application/pdf", upsert: true });
-      if (up.error) return { error: "Não foi possível guardar a nota agora. Tente de novo em instantes." };
+      const up = await supabaseAdmin().storage.from(NF_BUCKET).upload(nfFinalPath(ctx.brand.id, ctx.creatorId, requestId), pdf, { contentType: "application/pdf", upsert: false });
+      if (up.error && !/exist|duplicate/i.test(up.error.message)) return { error: "Não foi possível guardar a nota agora. Tente de novo em instantes." };
     }
     const pixKey = String(form.get("pixKey") ?? "");
     const r = await requestWithdrawal(db(), ctx, { actorUserId: actor.userId, requestId, amountCents, pdf, ...(pixKey ? { pixKey } : {}) });

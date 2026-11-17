@@ -35,7 +35,8 @@ export async function acceptInviteAction(_prev: AcceptState, form: FormData): Pr
       email_confirm: true,
     });
     if (created.error || !created.data.user) {
-      return { error: "Já existe uma conta com este e-mail. Entre com ela e abra o convite de novo." };
+      // Mensagem neutra: não diz se o e-mail já tem conta (auditoria de 2026-11-17).
+      return { error: "Não foi possível criar a conta com este e-mail. Se você já tem login, entre com ele e abra o convite de novo." };
     }
     const signedIn = await supabase.auth.signInWithPassword({ email: loginEmail, password: password as string });
     if (signedIn.error) return { error: "Conta criada, mas não foi possível entrar. Tente pelo login." };

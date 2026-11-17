@@ -46,7 +46,7 @@ export default async function ClaudePage() {
             </span>
           </li>
           <li>Clique em <strong>Conectar</strong>: abre esta página de login; entre e clique em <strong>Permitir</strong>.</li>
-          <li>Pronto. Pergunte, por exemplo: &quot;quem mais vendeu na Botanika este mês?&quot; ou &quot;quanto falta pagar de saque?&quot;.</li>
+          <li>Pronto. Pergunte, por exemplo: &quot;quem mais vendeu este mês?&quot; ou &quot;quanto falta pagar de saque?&quot;.</li>
         </ol>
       </Card>
       <Card title="Sua conexão">

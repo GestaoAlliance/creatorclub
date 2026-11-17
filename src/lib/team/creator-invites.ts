@@ -133,7 +133,8 @@ export async function inviteCreatorsInBulk(
   if (ids.length === 0) throw new TeamError("Marque pelo menos uma creator.");
   if (ids.length > BULK_INVITE_MAX) throw new TeamError(`No máximo ${BULK_INVITE_MAX} convites de uma vez.`);
   const creators = await prisma.creator.findMany({
-    where: { id: { in: ids }, brandId },
+    // Arquivada ou desligada não recebe convite do portal.
+    where: { id: { in: ids }, brandId, archivedAt: null, status: { not: "DEACTIVATED" } },
     select: { id: true, brand: { select: { name: true } }, account: { select: { id: true, name: true, email: true, phone: true, userId: true } } },
     orderBy: { account: { name: "asc" } },
   });

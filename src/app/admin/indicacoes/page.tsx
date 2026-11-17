@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { myHunterPanel } from "@/lib/onboarding/hunters";
+import { staffContext } from "@/lib/staff/context";
 import { IndicacoesView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,8 @@ export default async function IndicacoesPage() {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/indicacoes");
   if (!actor.grants.some((g) => g.role === "HUNTER")) redirect("/admin");
-  const links = await myHunterPanel(db(), actor);
+  const { brand } = await staffContext(actor);
+  const links = await myHunterPanel(db(), actor, new Date(), brand?.id);
   const h = await headers();
   return <IndicacoesView links={links} origin={publicOrigin(h)} />;
 }

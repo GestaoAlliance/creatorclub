@@ -231,10 +231,11 @@ export function hunterBrandWhere(grants: Actor["grants"]): { brandId?: { in: str
   return { brandId: { in: hunter.map((g) => g.brandId!) } };
 }
 
-export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, now = new Date()) {
+export async function myHunterPanel(prisma: PrismaClient, actor: Actor | null, now = new Date(), brandId?: string) {
   if (!actor || !actor.grants.some((g) => g.role === "HUNTER")) throw new HunterError("Sem permissão.");
   const links = await prisma.hunterLink.findMany({
-    where: { userId: actor.userId, brand: { archivedAt: null }, ...hunterBrandWhere(actor.grants) },
+    // D-ALLIANCE: com a marca do topo, só ela.
+    where: { userId: actor.userId, brand: { archivedAt: null }, ...hunterBrandWhere(actor.grants), ...(brandId ? { AND: [{ brandId }] } : {}) },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,

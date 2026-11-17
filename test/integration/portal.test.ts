@@ -35,6 +35,12 @@ describe("acesso ao portal (banco real)", () => {
     const stranger = await seedBrand(prisma);
     await expect(portalContext(prisma, actor, stranger.brand.slug)).rejects.toThrow(/Sem acesso/);
     await expect(portalContext(prisma, null, a.brand.slug)).rejects.toThrow(/Sem acesso/);
+
+    // Marca arquivada (D-ARCHIVE) some do portal.
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { archivedAt: new Date() } });
+    const after = await loginFor(a.account.id);
+    expect(await portalHome(prisma, after)).toBe(b.brand.slug);
+    await expect(portalContext(prisma, after, a.brand.slug)).rejects.toThrow(/Sem acesso/);
   });
 
   it("pessoa da equipe sem participação de creator não tem portal", async () => {
