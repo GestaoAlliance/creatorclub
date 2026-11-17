@@ -20,13 +20,14 @@ export async function postCommission(prisma: PrismaClient, orderId: string, now 
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`commission:${orderId}`}))`;
     const order = await tx.order.findUniqueOrThrow({
       where: { id: orderId },
-      include: { attribution: true, brand: { select: { commissionHoldDays: true } } },
+      include: { attribution: true, brand: { select: { commissionHoldDays: true, commissionOnTaxIncluded: true } } },
     });
     const a = order.attribution;
     if (!a) return { status: "skipped", reason: "no_attribution" } as const;
     if (a.rateBps === null) return { status: "skipped", reason: "no_rate" } as const;
     // D-TAX: loja sem imposto incluso; pedido que vier diferente fica bloqueado (aparece como aviso no sync).
-    if (order.taxesIncluded) return { status: "skipped", reason: "taxes_included" } as const;
+    // D-REVITATAX: a marca que aceita imposto incluso (Revita) calcula sobre o valor como vem da loja.
+    if (order.taxesIncluded && !order.brand.commissionOnTaxIncluded) return { status: "skipped", reason: "taxes_included" } as const;
     if (order.currency !== "BRL") return { status: "skipped", reason: "currency_not_brl" } as const;
 
     const posted = await tx.ledgerEntry.aggregate({

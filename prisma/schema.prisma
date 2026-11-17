@@ -47,6 +47,9 @@ model Brand {
   withdrawalPayFromDay      Int?
   withdrawalPayByDay        Int                 @default(15)
   commissionHoldDays        Int                 @default(7) // só informativo desde D-CONTRACT (a liberação é no fechamento do mês)
+  /// D-REVITATAX (resposta do responsável em 2026-11-16): comissão sobre o valor dos produtos como vem da loja, mesmo com
+  /// imposto incluso no preço. Falso = pedido com imposto incluso fica bloqueado (D-TAX).
+  commissionOnTaxIncluded   Boolean             @default(false)
   /// D-CONTRACT: mínimo acumulado para liberar a comissão no fechamento do mês (vendas ou comissão, por `releaseBasis`).
   releaseMinCents           Int                 @default(30000) // D-MIN300: R$ 300 em vendas; Botanika R$ 100 de comissão (D-MIN100)
   releaseMinPrescriberCents Int                 @default(30000)

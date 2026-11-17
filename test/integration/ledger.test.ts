@@ -97,6 +97,9 @@ describe("lançamentos de comissão (banco real)", () => {
     expect((await settleOrder(prisma, teste.id)).post).toEqual({ status: "nothing" });
     const imposto = await order(w2.brand.id, w2.coupon.code, { taxesIncluded: true });
     expect((await settleOrder(prisma, imposto.id)).post).toEqual({ status: "skipped", reason: "taxes_included" });
+    // D-REVITATAX: marca que aceita imposto incluso calcula sobre o subtotal como vem da loja.
+    await prisma.brand.update({ where: { id: w2.brand.id }, data: { commissionOnTaxIncluded: true } });
+    expect((await settleOrder(prisma, imposto.id)).post).toMatchObject({ status: "posted" });
   });
 
   it("pendente que vira confirmado é lançado pela reavaliação", async () => {
