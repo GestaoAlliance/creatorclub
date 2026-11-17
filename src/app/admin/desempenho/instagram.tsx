@@ -52,7 +52,7 @@ function Mover({ r, tone }: { r: InstagramRow; tone: "up" | "down" }) {
 }
 
 /** Aba Instagram (D-INSTAGRAM; D-PERFBOARD): cresceu/caiu, posta sem cupom, parede de cartões com painel e perfis a corrigir. */
-export function InstagramView({ data, now, canEdit }: { data: Data; now: Date; canEdit: boolean }) {
+export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data: Data; now: Date; canEdit: boolean; phrase?: string }) {
   const [sort, setSort] = useState<Sort>("seguidores");
   const [open, setOpen] = useState<InstagramRow | null>(null);
   const [msg, setMsg] = useState<{ rows: InstagramRow[]; kind: keyof typeof MSG } | null>(null);
@@ -124,7 +124,7 @@ export function InstagramView({ data, now, canEdit }: { data: Data; now: Date; c
                   <span className="grid grid-cols-3 gap-2 text-xs">
                     <span><span className="block text-stone-500">Seguidores</span><span className="block text-base font-semibold tabular-nums">{k(r.followers ?? 0)}</span>{r.growth !== null && <span className={r.growth >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}>{r.growth >= 0 ? "+" : ""}{n(r.growth)}</span>}</span>
                     <span><span className="block text-stone-500">Engaj.</span><span className="block text-base font-semibold tabular-nums">{r.engagementBps !== null ? pct(r.engagementBps) : "—"}</span>{r.drop?.alert && <span className="text-amber-700 dark:text-amber-300">caiu {pct(r.drop.dropBps)}</span>}</span>
-                    <span><span className="block text-stone-500">Por mil</span><span className="block text-base font-semibold tabular-nums"><span className="money">{r.salesPer1kCents !== null ? formatBRL(r.salesPer1kCents).replace(/,00$/, "") : "—"}</span></span><span className="text-stone-500">no mês</span></span>
+                    <span><span className="block text-stone-500">Por mil</span><span className="block text-base font-semibold tabular-nums"><span className="money">{r.salesPer1kCents !== null ? formatBRL(r.salesPer1kCents).replace(/,00$/, "") : "—"}</span></span><span className="text-stone-500">{phrase}</span></span>
                   </span>
                   <span className="flex flex-wrap gap-1 text-[11px]">
                     {r.couponPosts > 0 ? <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-emerald-800 dark:text-emerald-300">cupom em {r.couponPosts} {r.couponPosts === 1 ? "post" : "posts"}</span> : noCoupon.includes(r) ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-900 dark:text-amber-200">posta sem cupom</span> : null}
@@ -192,7 +192,7 @@ export function InstagramView({ data, now, canEdit }: { data: Data; now: Date; c
               ["Seguidores", n(open.followers ?? 0), open.growth !== null ? `${open.growth >= 0 ? "+" : ""}${n(open.growth)} no mês` : ""],
               ["Engajamento", open.engagementBps !== null ? pct(open.engagementBps) : "—", open.drop?.alert ? `caiu ${pct(open.drop.dropBps)} em 30 dias` : "estável"],
               ["Frequência", `${perWeek(open.postsPerWeekX100 ?? 0)}/semana`, ago(open.lastPostAt, now)],
-              ["Venda por mil", open.salesPer1kCents !== null ? formatBRL(open.salesPer1kCents) : "—", "seguidores, no mês"],
+              ["Venda por mil", open.salesPer1kCents !== null ? formatBRL(open.salesPer1kCents) : "—", `seguidores, ${phrase}`],
             ].map(([l, v, s]) => (
               <div key={l} className="liquid-tile rounded-2xl px-3 py-2.5">
                 <span className="block text-[11px] font-medium uppercase tracking-wide text-stone-500">{l}</span>

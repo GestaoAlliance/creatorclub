@@ -26,7 +26,7 @@ function status(c: UgcCard): { text: string; tone: "good" | "bad" | "warn" | "ne
 const TONE = { good: "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300", bad: "bg-red-500/12 text-red-800 dark:text-red-300", warn: "bg-amber-500/15 text-amber-900 dark:text-amber-200", neutral: "bg-stone-500/10 text-stone-600 dark:text-stone-300" };
 
 /** Aba UGC (D-UGCVIDEOS; D-PERFBOARD): anel de vídeos do ciclo, prazo, atrasadas no topo, cobrar em grupo e os vídeos no painel. */
-export function UgcView({ cards, canEdit }: { cards: UgcCard[]; canEdit: boolean }) {
+export function UgcView({ cards, canEdit, phrase = "no mês" }: { cards: UgcCard[]; canEdit: boolean; phrase?: string }) {
   const lateIds = cards.filter((c) => c.late).map((c) => c.id);
   const [picked, setPicked] = useState<Set<string>>(new Set(lateIds));
   const [open, setOpen] = useState<UgcCard | null>(null);
@@ -66,7 +66,7 @@ export function UgcView({ cards, canEdit }: { cards: UgcCard[]; canEdit: boolean
                 </button>
                 <span className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className={`rounded-full px-2 py-0.5 font-medium ${TONE[st.tone]}`}>{st.text}</span>
-                  <span className="text-stone-500">cupom no mês: <span className="money font-semibold text-stone-700 dark:text-stone-200">{shortBRL(c.salesCents)}</span></span>
+                  <span className="text-stone-500">cupom {phrase}: <span className="money font-semibold text-stone-700 dark:text-stone-200">{shortBRL(c.salesCents)}</span></span>
                 </span>
               </li>
             );

@@ -36,6 +36,9 @@ describe("Desempenho (D-PERFBOARD, banco real)", () => {
     const sales = await monthSalesByCreator(prisma, brand.id, "America/Sao_Paulo", new Date("2026-11-12T15:00:00Z"));
     expect(sales.get(creator.id)).toBe(7_000);
     expect(sales.get(old.id)).toBeUndefined();
+    // D-PERIODPICK: outubro (a venda de 11/10).
+    const oct = await monthSalesByCreator(prisma, brand.id, "America/Sao_Paulo", new Date("2026-11-12T15:00:00Z"), { gte: new Date("2026-10-01T03:00:00Z"), lt: new Date("2026-11-01T03:00:00Z") });
+    expect(oct.get(creator.id)).toBe(10_000);
 
     const rows = await originSummary(prisma, gestao, brand.id, sales);
     expect(rows).toEqual([expect.objectContaining({ key: "UNKNOWN", active: 2, sellers: 1, firstSales: 1, daysToFirstSale: 10 })]);

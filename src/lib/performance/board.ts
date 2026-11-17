@@ -15,12 +15,13 @@ export class BoardError extends Error {}
 const PAID = ["PAID", "PARTIALLY_REFUNDED"] as const;
 
 /** Vendas do mês atual (pela data do pagamento, D-MONTH) por creator da marca. */
-export async function monthSalesByCreator(prisma: PrismaClient, brandId: string, timeZone: string, now = new Date()): Promise<Map<string, number>> {
+/** `range` (D-PERIODPICK): vendas no período escolhido; sem ele, o mês corrente. */
+export async function monthSalesByCreator(prisma: PrismaClient, brandId: string, timeZone: string, now = new Date(), range?: { gte: Date; lt: Date }): Promise<Map<string, number>> {
   const month = monthKey(now, timeZone);
   const rows = await prisma.orderAttribution.findMany({
     where: {
       brandId,
-      order: { financialStatus: { in: [...PAID] }, cancelledAt: null, test: false, paidAt: { gte: startOfLocalDay(`${month}-01`, timeZone), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, timeZone) } },
+      order: { financialStatus: { in: [...PAID] }, cancelledAt: null, test: false, paidAt: range ?? { gte: startOfLocalDay(`${month}-01`, timeZone), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, timeZone) } },
     },
     select: { creatorId: true, order: { select: { subtotalCents: true } } },
   });

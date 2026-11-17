@@ -41,6 +41,9 @@ describe("origem das creators (D-ORIGIN, banco real)", () => {
     const rows = await originSummary(prisma, gestao.actor, s.brand.id, new Map([[s.creator.id, 20_000]]));
     expect(rows).toEqual([expect.objectContaining({ key: `HUNTER:${hunter.id}`, applications: 2, approved: 1, active: 2, sellers: 1, salesCents: 20_000 })]);
     await expect(originSummary(prisma, pag.actor, s.brand.id, new Map())).rejects.toThrow(/permissão/);
+    // D-PERIODPICK: inscrições de um período sem nenhuma não contam.
+    const none = await originSummary(prisma, gestao.actor, s.brand.id, new Map(), { gte: new Date("2000-01-01T00:00:00Z"), lt: new Date("2000-02-01T00:00:00Z") });
+    expect(none.reduce((t, r) => t + r.applications, 0)).toBe(0);
     await setCreatorOrigin(prisma, gestao.actor, old.id, { kind: "" });
     expect((await originsFor(prisma, [old.id])).get(old.id)?.kind).toBe("UNKNOWN");
   });

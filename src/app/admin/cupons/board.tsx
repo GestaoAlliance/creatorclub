@@ -116,7 +116,7 @@ function PendingCard({ r, creators, picked, onPick, defaultRate }: { r: CouponRo
  * creator, promocionais, parados, creators sem cupom). A conferir em cartões com contexto, sugestão de dona e dona +
  * comissão num clique; vários sem tipo como PROMO de uma vez; listas com vendas, último uso, desconto e comissão.
  */
-export function CouponsBoard({ rows, creators, progress, withoutCoupon, brandName, defaultRate }: { rows: CouponRow[]; creators: Creator[]; progress: { activeCreators: number; confirmed: number }; withoutCoupon: { id: string; name: string }[]; brandName: string; defaultRate: number }) {
+export function CouponsBoard({ rows, creators, progress, withoutCoupon, brandName, defaultRate, phrase = "em 30 dias", picker = null }: { phrase?: string; picker?: React.ReactNode; rows: CouponRow[]; creators: Creator[]; progress: { activeCreators: number; confirmed: number }; withoutCoupon: { id: string; name: string }[]; brandName: string; defaultRate: number }) {
   const router = useRouter();
   // Primeiro o que mais segura comissão, depois o mais usado; os nunca usados por último.
   const pending = rows.filter((r) => r.pending).sort((a, b) => b.waitingCommissionCents - a.waitingCommissionCents || b.orders - a.orders || a.code.localeCompare(b.code));
@@ -138,7 +138,7 @@ export function CouponsBoard({ rows, creators, progress, withoutCoupon, brandNam
 
   const tiles: { id: Tab; label: string; n: number; hint: React.ReactNode; dot: string }[] = [
     { id: "pending", label: "A conferir", n: pending.length, hint: waiting ? <>≈ <M>{shortBRL(waiting)}</M> de comissão parada</> : "nada parado", dot: "seg-bad" },
-    { id: "creator", label: "De creator", n: creatorRows.length, hint: <><M>{shortBRL(creatorRows.reduce((s, r) => s + r.sales30Cents, 0))}</M> em 30 dias</>, dot: "seg-good" },
+    { id: "creator", label: "De creator", n: creatorRows.length, hint: <><M>{shortBRL(creatorRows.reduce((s, r) => s + r.sales30Cents, 0))}</M> {phrase}</>, dot: "seg-good" },
     { id: "promo", label: "Promocionais", n: promoRows.length, hint: `${promoRows.reduce((s, r) => s + r.orders, 0)} pedidos`, dot: "seg-info" },
     { id: "idle", label: "Parados", n: idleRows.length, hint: "sem uso há 60+ dias", dot: "seg-warn" },
     { id: "nocoupon", label: "Sem cupom", n: withoutCoupon.length, hint: "creators ativas", dot: "seg-warn" },
@@ -156,6 +156,7 @@ export function CouponsBoard({ rows, creators, progress, withoutCoupon, brandNam
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Cupons</h1>
               <p className="mt-1 max-w-xl text-sm text-white/80">Tipo, dona e comissão de cada cupom. Cupom sem tipo ou com dona a confirmar deixa os pedidos dele sem creator; PROMO nunca leva pedido.</p>
             </div>
+            {picker}
             <div className="flex items-center gap-3" data-tour="cp-resumo">
               <Ring done={progress.confirmed} total={progress.activeCreators} />
               <div className="text-sm leading-tight">
@@ -241,7 +242,7 @@ export function CouponsBoard({ rows, creators, progress, withoutCoupon, brandNam
           ) : (
             <ul className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10">
               <li className="hidden grid-cols-[8rem_minmax(0,1fr)_4.5rem_4.5rem_4rem_6rem_5.5rem] gap-3 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-stone-500 @3xl:grid">
-                <span>Cupom</span><span>Dona</span><span className="text-right">Comissão</span><span className="text-right">Desconto</span><span className="text-right">Pedidos</span><span className="text-right">30 dias</span><span className="text-right">Último uso</span>
+                <span>Cupom</span><span>Dona</span><span className="text-right">Comissão</span><span className="text-right">Desconto</span><span className="text-right">Pedidos</span><span className="text-right" title={phrase}>No período</span><span className="text-right">Último uso</span>
               </li>
               {list.map((r) => (
                 <li key={r.id} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5 px-4 py-2.5 text-sm @3xl:grid-cols-[8rem_minmax(0,1fr)_4.5rem_4.5rem_4rem_6rem_5.5rem] @3xl:px-5">

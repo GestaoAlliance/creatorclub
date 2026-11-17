@@ -25,12 +25,12 @@ function Step({ label, value, of, rate, tone }: { label: string; value: number; 
  * Aba Origem (D-ORIGIN; D-PERFBOARD): funil por canal (inscritas → aprovadas → ativas → venderam no mês), com a taxa de
  * cada passo, as vendas do mês e o tempo médio da entrada até a 1ª venda.
  */
-export function OriginView({ rows, monthLabel }: { rows: OriginSummaryRow[]; monthLabel: string }) {
+export function OriginView({ rows, phrase }: { rows: OriginSummaryRow[]; phrase: string }) {
   if (rows.length === 0) return <section className="glass rounded-3xl p-8 text-center text-sm text-stone-500">Nenhuma creator ou inscrição ainda.</section>;
   return (
     <div className="flex flex-col gap-4">
       <section className="glass rounded-3xl p-3 text-sm text-stone-600 md:p-4 dark:text-stone-300">
-        Inscrições e aprovações contam desde o início; ativas é hoje; vendas e &quot;venderam&quot; são de {monthLabel}. Importadas sem origem aparecem como &quot;Não informada&quot;: marque na ficha. A 1ª venda conta da entrada da creator no sistema.
+        Inscrições, aprovações, vendas e &quot;venderam&quot; contam {phrase}; ativas é hoje. Importadas sem origem aparecem como &quot;Não informada&quot;: marque na ficha. A 1ª venda conta da entrada da creator no sistema.
       </section>
       <ul className="flex flex-col gap-3">
         {rows.map((r) => {
@@ -53,7 +53,7 @@ export function OriginView({ rows, monthLabel }: { rows: OriginSummaryRow[]; mon
                 <div className="flex items-end justify-between gap-3 @3xl:flex-col @3xl:items-end">
                   <span className="text-right">
                     <span className="block text-lg font-semibold tabular-nums"><span className="money">{shortBRL(r.salesCents)}</span></span>
-                    <span className="block text-[11px] text-stone-500">vendas no mês</span>
+                    <span className="block text-[11px] text-stone-500">vendas {phrase}</span>
                   </span>
                   {r.active > 0 && <span className="inline-flex items-center gap-1 text-xs text-stone-600 dark:text-stone-300" title={r.firstSales ? `média de ${r.firstSales} creator${r.firstSales === 1 ? "" : "s"}` : undefined}>
                     <Clock className="size-3.5" />

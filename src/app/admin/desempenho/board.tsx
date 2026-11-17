@@ -19,7 +19,7 @@ const n = (v: number) => v.toLocaleString("pt-BR");
  * Desempenho (D-PERFBOARD): faixa da marca com três quadros que trocam a vista (Instagram, UGC, Origem). O ranking de
  * vendas saiu (está no Início); mínimo e kit estão no painel da lista de Creators; o lucro, na ficha.
  */
-export function PerformanceBoard({ brandName, monthLabel, ig, ugc, origin, initial, now, canEdit }: { brandName: string; monthLabel: string; ig: Ig; ugc: UgcCard[]; origin: OriginSummaryRow[]; initial: Tab; now: Date; canEdit: boolean }) {
+export function PerformanceBoard({ brandName, phrase, picker, ig, ugc, origin, initial, now, canEdit }: { brandName: string; /** D-PERIODPICK: "em novembro de 2026", "nos últimos 30 dias"... */ phrase: string; picker: React.ReactNode; ig: Ig; ugc: UgcCard[]; origin: OriginSummaryRow[]; initial: Tab; now: Date; canEdit: boolean }) {
   const [tab, setTab] = useState<Tab>(initial);
   const go = (t: Tab) => {
     setTab(t);
@@ -50,7 +50,7 @@ export function PerformanceBoard({ brandName, monthLabel, ig, ugc, origin, initi
       id: "origem",
       label: "Origem",
       value: best ? <span className="money">{shortBRL(best.salesCents)}</span> : "—",
-      hint: best ? `melhor canal: ${ORIGIN_LABEL[best.origin.kind]}${best.origin.hunter ? ` · ${best.origin.hunter.name.split(/\s+/)[0]}` : ""}` : `sem vendas em ${monthLabel}`,
+      hint: best ? `melhor canal: ${ORIGIN_LABEL[best.origin.kind]}${best.origin.hunter ? ` · ${best.origin.hunter.name.split(/\s+/)[0]}` : ""}` : `sem vendas ${phrase}`,
       dot: "seg-warn",
     },
   ];
@@ -61,10 +61,13 @@ export function PerformanceBoard({ brandName, monthLabel, ig, ugc, origin, initi
         <div aria-hidden className="brand-art absolute inset-0 -z-10" />
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
         <div className="flex flex-col gap-5 p-5 md:p-7">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Desempenho</h1>
-            <p className="mt-1 max-w-2xl text-sm text-white/80">Instagram das creators, vídeos das UGC e de onde vêm as creators. As vendas e o ranking estão no Início.</p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Desempenho</h1>
+              <p className="mt-1 max-w-2xl text-sm text-white/80">Instagram das creators, vídeos das UGC e de onde vêm as creators. Vendas e entradas {phrase}.</p>
+            </div>
+            {picker}
           </div>
           <div className="grid grid-cols-3 gap-2" data-tour="de-grupos">
             {tiles.map((t) => (
@@ -79,7 +82,7 @@ export function PerformanceBoard({ brandName, monthLabel, ig, ugc, origin, initi
         <HelpTip id="de-grupos" className="absolute right-4 top-4" />
       </section>
 
-      {tab === "instagram" ? <InstagramView data={ig} now={now} canEdit={canEdit} /> : tab === "ugc" ? <UgcView cards={ugc} canEdit={canEdit} /> : <OriginView rows={origin} monthLabel={monthLabel} />}
+      {tab === "instagram" ? <InstagramView data={ig} now={now} canEdit={canEdit} phrase={phrase} /> : tab === "ugc" ? <UgcView cards={ugc} canEdit={canEdit} phrase={phrase} /> : <OriginView rows={origin} phrase={phrase} />}
     </div>
   );
 }
