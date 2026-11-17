@@ -3,7 +3,7 @@
 import { AlertTriangle, CheckCircle2, ClipboardCopy, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatBRL, monthNamePt } from "@/domain";
 import { ui } from "@/components/ui/styles";
 import type { payCheckBoard, CheckRow } from "@/lib/payouts/check";
@@ -29,10 +29,15 @@ export function CheckList({ data, kind, brandName, canCheck, canMessage }: { dat
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ id: string; name: string; body: string } | null>(null);
   const [res, setRes] = useState<{ id: string; ok?: string; error?: string } | null>(null);
+  // Trava o clique duplo antes de a tela atualizar (o estado só muda no próximo desenho).
+  const sending = useRef(false);
 
   const act = async (r: CheckRow, status: "CHECKED" | "REVIEW") => {
+    if (sending.current) return;
+    sending.current = true;
     setBusy(r.creatorId);
     const out = await payCheckAction(r.creatorId, status, brandName);
+    sending.current = false;
     setBusy(null);
     if (out.error) return setRes({ id: r.creatorId, error: out.error });
     if (out.text) {
@@ -74,7 +79,10 @@ export function CheckList({ data, kind, brandName, canCheck, canMessage }: { dat
                     <Avatar name={r.name} id={r.creatorId} />
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{r.name}</span>
-                      <span className="block text-[11px] text-stone-500">{r.withdrawal ? (r.withdrawal.status === "REQUESTED" ? "saque pedido" : "saque aprovado") : "ainda não pediu"}</span>
+                      <span className="block text-[11px] text-stone-500">
+                        {r.withdrawal ? (r.withdrawal.status === "REQUESTED" ? "saque pedido" : "saque aprovado") : "ainda não pediu"}
+                        {!r.hasPix && <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-900 dark:text-amber-200" title="Ela informa a chave na aba Saque do portal (o pedido não sai sem ela)">sem chave Pix</span>}
+                      </span>
                     </span>
                   </Link>
                   <Num label={`Vendas ${monthNamePt(r.month).slice(0, 3)}`} v={<M>{formatBRL(r.salesCents)}</M>} />

@@ -29,8 +29,13 @@ describe("conferência do saque (D-PAYCHECK, banco real)", () => {
 
     await expect(recordPayCheck(prisma, await staff("ENVIO", a.brand.id), a.creator.id, "CHECKED", null, now)).rejects.toThrow(/Só quem aprova/);
     const gestao = await staff("GESTAO", a.brand.id);
+    expect(rows[0]!.hasPix).toBe(false);
     await recordPayCheck(prisma, gestao, a.creator.id, "CHECKED", null, now);
+    await recordPayCheck(prisma, gestao, a.creator.id, "CHECKED", null, now); // clique duplo: não grava de novo
+    expect(await prisma.payoutCheck.count({ where: { creatorId: a.creator.id } })).toBe(1);
+    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { pixKey: "pix@exemplo.com" } });
     rows = (await payCheckRows(prisma, a.brand.id, null, now)).rows;
+    expect(rows[0]!.hasPix).toBe(true);
     expect(rows[0]!.check).toMatchObject({ status: "CHECKED", amountCents: 3_000, stale: false, by: "GESTAO Teste" });
 
     // Ajuste da equipe depois: o valor muda, não bate mais e a conferência fica velha.

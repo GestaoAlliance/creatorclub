@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-343 — 2026-11-17 — Ajustes da conferência: clique duplo e "sem chave Pix" (D-PAYCHECK)
+- "Conferido" (e "Mandar para o Pedro") não grava de novo quando o último registro da creator no mês já é o mesmo
+  (status e valor): o clique duplo da Fátima tinha gravado Ruy, Raquel, Israel e Clesiane duas vezes (sem efeito,
+  vale o último). O botão também trava enquanto envia.
+- Lista "0. Conferir": aviso "sem chave Pix" na creator sem chave cadastrada (ela informa no pedido de saque, que não
+  sai sem a chave).
+- Guia de pagamento das creators refeito (PDF, fora do repositório) com o fluxo atual do portal.
+- Teste em `integration/payout-check.test.ts`.
+
 ### CP-342 — 2026-11-17 — Conferência real dos saques da Botanika e pausa ligada (produção)
 - Pausa dos pedidos de produtos ligada na Botanika por SQL, com AuditLog (D-PRODUCTPAUSE): 1 pedido esperando
   aprovação fica parado; 74 kits pendentes ficam guardados.
