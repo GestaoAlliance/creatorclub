@@ -2,7 +2,7 @@
 
 import { AtSign, BadgeCheck, ChevronRight, CircleCheck, FileText, Handshake, KeyRound, Pencil, UserRound } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
-import { requestFixAction, saveSocialAction } from "@/app/portal/[marca]/cadastro/actions";
+import { requestFixAction, savePersonalAction, saveSocialAction } from "@/app/portal/[marca]/cadastro/actions";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import type { PortalProfile } from "@/lib/portal/profile";
@@ -24,20 +24,6 @@ export function ProfileProgress({ p }: { p: PortalProfile }) {
         <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${value}%` }} />
       </div>
       {missing.length > 0 && <p className="text-xs text-white/80">Falta: {missing.join(", ")}.</p>}
-    </div>
-  );
-}
-
-function Row({ label, value, children }: { label: string; value: React.ReactNode; children?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-stone-500">{label}</p>
-          <p className="truncate text-sm font-medium">{value ?? <span className="text-stone-400">não informado</span>}</p>
-        </div>
-        {children}
-      </div>
     </div>
   );
 }
@@ -79,27 +65,26 @@ function FixRequest({ marca, field, onClose }: { marca: string; field: string; o
   );
 }
 
-/** Dados pessoais: só leitura, com "Pedir correção". */
+/** Dados pessoais (D-SELFEDIT): ela muda e salva na hora; "outro dado" ainda vai como pedido à equipe. */
 export function PersonalCard({ p, marca, viewOnly }: { p: PortalProfile; marca: string; viewOnly: boolean }) {
-  const [fix, setFix] = useState<string | null>(null);
+  const [fix, setFix] = useState(false);
   const [sent, setSent] = useState(false);
-  const ask = (f: string) => !viewOnly && (
-    <button type="button" onClick={() => { setFix(f); setSent(false); }} className={`${ui.link} shrink-0 text-xs`}>Pedir correção</button>
-  );
+  const pj = Boolean(p.cnpj) || p.partnership.receivesAs !== "Pessoa física (recibo)";
   return (
     <section className={ui.card}>
       <div>
         <h2 className={ui.h2}><UserRound className="size-4" /> Dados pessoais</h2>
-        <p className={ui.hint}>Estes dados só a equipe muda. Viu algo errado? Peça a correção.</p>
+        <p className={ui.hint}>Mudou algo? Toque em Alterar e salve. Vale para todas as marcas em que você é creator.</p>
       </div>
       <div className={ui.list}>
-        <Row label="Nome" value={p.name}>{ask("NAME")}</Row>
-        <Row label="E-mail" value={p.email}>{ask("EMAIL")}</Row>
-        <Row label="Telefone" value={p.phone}>{ask("PHONE")}</Row>
-        <Row label="CPF" value={p.cpf}>{ask("CPF")}</Row>
-        {(p.cnpj || p.partnership.receivesAs !== "Pessoa física (recibo)") && <Row label="CNPJ" value={p.cnpj}>{ask("CNPJ")}</Row>}
+        <EditRow action={savePersonalAction} marca={marca} field="name" label="Nome completo" value={p.name} shown={p.name} viewOnly={viewOnly} />
+        <EditRow action={savePersonalAction} marca={marca} field="email" label="E-mail (é com ele que você entra)" value={p.email} shown={p.email} type="email" viewOnly={viewOnly} />
+        <EditRow action={savePersonalAction} marca={marca} field="phone" label="Celular (WhatsApp)" value={p.phone} shown={p.phone} type="tel" placeholder="(11) 99999-9999" viewOnly={viewOnly} />
+        <EditRow action={savePersonalAction} marca={marca} field="cpf" label="CPF" value={null} hasValue={Boolean(p.cpf)} shown={p.cpf} inputMode="numeric" placeholder="só os números" viewOnly={viewOnly} />
+        {pj && <EditRow action={savePersonalAction} marca={marca} field="cnpj" label="CNPJ" value={null} hasValue={Boolean(p.cnpj)} shown={p.cnpj} inputMode="numeric" placeholder="só os números" viewOnly={viewOnly} />}
       </div>
-      {fix && <FixRequest marca={marca} field={fix} onClose={() => { setFix(null); setSent(true); }} />}
+      {!viewOnly && !fix && <button type="button" onClick={() => { setFix(true); setSent(false); }} className={`${ui.link} self-start text-xs`}>Outro dado errado? Fale com a equipe</button>}
+      {fix && <FixRequest marca={marca} field="OTHER" onClose={() => { setFix(false); setSent(true); }} />}
       {sent && !fix && <p role="status" className={ui.ok}>Pedido enviado. A equipe corrige e te avisa.</p>}
       {p.fixes.length > 0 && (
         <div className="flex flex-col gap-1.5">
@@ -118,10 +103,12 @@ export function PersonalCard({ p, marca, viewOnly }: { p: PortalProfile; marca: 
   );
 }
 
-/** Um campo editável (Instagram, TikTok, aniversário). */
-function EditRow({ marca, field, label, value, shown, type = "text", placeholder, viewOnly }: { marca: string; field: string; label: string; value: string | null; shown: string | null; type?: string; placeholder?: string; viewOnly: boolean }) {
+type SaveAction = typeof saveSocialAction;
+
+/** Um campo editável (dados pessoais, Instagram, TikTok, aniversário). */
+function EditRow({ action: save = saveSocialAction, marca, field, label, value, hasValue, shown, type = "text", inputMode, placeholder, viewOnly }: { action?: SaveAction; marca: string; field: string; label: string; value: string | null; hasValue?: boolean; shown: string | null; type?: string; inputMode?: "numeric" | "tel" | "email" | "text"; placeholder?: string; viewOnly: boolean }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(saveSocialAction, undefined);
+  const [state, action, pending] = useActionState(save, undefined);
   useEffect(() => {
     if (state?.ok) setOpen(false);
   }, [state]);
@@ -133,7 +120,7 @@ function EditRow({ marca, field, label, value, shown, type = "text", placeholder
           <p className="truncate text-sm font-medium">{shown ?? <span className="text-stone-400">não informado</span>}</p>
         </div>
         {!viewOnly && !open && (
-          <button type="button" onClick={() => setOpen(true)} className={`${ui.ghostSm} shrink-0`}><Pencil className="size-3" /> {value ? "Alterar" : "Informar"}</button>
+          <button type="button" onClick={() => setOpen(true)} className={`${ui.ghostSm} shrink-0`}><Pencil className="size-3" /> {value || hasValue ? "Alterar" : "Informar"}</button>
         )}
       </div>
       {state?.ok && !open && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-300">{state.ok}</p>}
@@ -141,7 +128,7 @@ function EditRow({ marca, field, label, value, shown, type = "text", placeholder
         <form action={action} className="mt-1 flex flex-wrap items-center gap-2">
           <input type="hidden" name="marca" value={marca} />
           <input type="hidden" name="field" value={field} />
-          <input name="value" type={type} defaultValue={value ?? ""} required placeholder={placeholder} aria-label={label} className={`${ui.input} min-w-0 flex-1`} />
+          <input name="value" type={type} inputMode={inputMode} defaultValue={value ?? ""} required placeholder={placeholder} aria-label={label} className={`${ui.input} min-w-0 flex-1`} />
           <button disabled={pending} className={ui.btnSm}>Salvar</button>
           <button type="button" onClick={() => setOpen(false)} className={ui.ghostSm}>Cancelar</button>
           <Msg state={state} />

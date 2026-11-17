@@ -2,10 +2,21 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { actionQueue } from "@/lib/actions/queue";
 import type { PortalContext } from "@/lib/portal/context";
-import { portalProfile, requestDataFix, updateMyBirthDate, updateMyInstagram } from "@/lib/portal/profile";
+import { portalProfile, requestDataFix, updateMyBirthDate, updateMyInstagram, updateMyPersonal } from "@/lib/portal/profile";
+import { loadActor } from "@/lib/auth/actor";
+import { creatorTimeline } from "@/lib/creators/timeline";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
+
+/** CNPJ válido e novo a cada teste (o banco de teste é compartilhado). */
+function newCnpj(): string {
+  const d = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10));
+  const calc = (w: number[]) => { const r = w.reduce((a, x, i) => a + x * d[i]!, 0) % 11; return r < 2 ? 0 : 11 - r; };
+  d.push(calc([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]));
+  d.push(calc([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]));
+  return d.join("");
+}
 afterAll(() => prisma.$disconnect());
 
 describe("Meu cadastro no portal (D-PORTALPROFILE, D-DATAFIX, banco real)", () => {
@@ -53,5 +64,38 @@ describe("Meu cadastro no portal (D-PORTALPROFILE, D-DATAFIX, banco real)", () =
     await expectDbError(prisma.dataFixRequest.create({ data: { brandId: brand.id, creatorId: creator.id, field: "NAME", message: " a ", createdById: "u" } }), /DataFixRequest_valid/);
     await expectDbError(prisma.dataFixRequest.update({ where: { id: fix.id }, data: { message: "outro" } }), /DataFixRequest é somente inserção/);
     await expectDbError(prisma.dataFixRequest.delete({ where: { id: fix.id } }), /DataFixRequest é somente inserção/);
+  });
+
+  it("D-SELFEDIT: ela muda nome, telefone, e-mail (com o login), CPF e CNPJ na hora; a ficha mostra no histórico", async () => {
+    const { brand, creator, account } = await seedBrand(prisma);
+    const userId = randomUUID();
+    await prisma.user.create({ data: { id: userId, email: account.email, name: "C" } });
+    await prisma.creatorAccount.update({ where: { id: account.id }, data: { userId } });
+    const cnpj = newCnpj();
+    const ctx = { creatorId: creator.id, brand: { id: brand.id, slug: brand.slug }, viewAs: null, ugcOnly: false } as unknown as PortalContext;
+    const logins: [string, string][] = [];
+    const login = async (id: string, email: string) => void logins.push([id, email]);
+
+    await expect(updateMyPersonal(prisma, { ...ctx, viewAs: { userId: "x" } } as PortalContext, userId, "name", "Maria Souza", login)).rejects.toThrow(/Visualização/);
+    await expect(updateMyPersonal(prisma, ctx, userId, "cpf", "123.456.789-00", login)).rejects.toThrow(/CPF inválido/);
+    await expect(updateMyPersonal(prisma, ctx, userId, "phone", "123", login)).rejects.toThrow(/DDD/);
+    await expect(updateMyPersonal(prisma, ctx, userId, "pix", "x", login)).rejects.toThrow(/Escolha/);
+    expect(await updateMyPersonal(prisma, ctx, userId, "name", "  Maria   Souza ", login)).toBe("Maria Souza");
+    expect(await updateMyPersonal(prisma, ctx, userId, "phone", "+55 11 98888-7777", login)).toBe("(11) 98888-7777");
+    expect(await updateMyPersonal(prisma, ctx, userId, "cnpj", `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`, login)).toBe(cnpj);
+    const email = `nova-${randomUUID()}@x.com`;
+    await updateMyPersonal(prisma, ctx, userId, "email", email.toUpperCase(), login);
+    expect(logins).toEqual([[userId, email]]);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: userId } })).toMatchObject({ email });
+    expect(await prisma.creatorAccount.findUniqueOrThrow({ where: { id: account.id } })).toMatchObject({ name: "Maria Souza", phone: "(11) 98888-7777", cnpj, email });
+    // E-mail de outra pessoa não.
+    const other = await prisma.creatorAccount.create({ data: { name: "Outra", email: `outra-${randomUUID()}@x.com` } });
+    await expect(updateMyPersonal(prisma, ctx, userId, "email", other.email, login)).rejects.toThrow(/outra pessoa/);
+
+    const gid = randomUUID();
+    await prisma.user.create({ data: { id: gid, email: `${gid}@x.com`, name: "G", roleGrants: { create: { role: "GESTAO", brandId: brand.id } } } });
+    const tl = await creatorTimeline(prisma, (await loadActor(prisma, gid))!, creator.id);
+    expect(tl.filter((e) => e.title.endsWith("pelo portal")).map((e) => e.title)).toEqual(expect.arrayContaining(["Mudou o nome pelo portal", "Mudou o CNPJ pelo portal", "Mudou o e-mail (e o login) pelo portal"]));
+    expect(tl.find((e) => e.title === "Mudou o CNPJ pelo portal")!.detail).toBe(`vazio → ${cnpj}`);
   });
 });
