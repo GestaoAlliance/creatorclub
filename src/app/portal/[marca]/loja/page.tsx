@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { shopStats } from "@/domain";
 import { releaseProgress } from "@/lib/commission/release";
 import { productImages } from "@/lib/reports/product-images";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function PortalShop({ params }: { params: Promise<{ marca: string }> }) {
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
+  if (ctx.ugcOnly) notFound(); // D-UGCPORTAL: UGC não tem loja com saldo (responsável em 2026-11-17).
   const [address, shipments, shop] = await Promise.all([myAddress(db(), ctx), myShipments(db(), ctx), myShop(db(), ctx)]);
   const informed = address ? null : await informedAddress(db(), ctx);
   const purchases = shipments.filter((s) => s.balanceCents !== null);

@@ -45,6 +45,9 @@ describe("loja com o saldo (M5.1, D-SHOPBALANCE, banco real)", () => {
     expect(await myShop(prisma, s.ctx)).toMatchObject({ allowed: false, reason: expect.stringMatching(/conferência/) });
     await expect(buyWithBalance(prisma, s.ctx, s.userId, [{ productId: s.serum.id, quantity: 1 }])).rejects.toThrow(/conferência/);
     await prisma.creator.update({ where: { id: s.creator.id }, data: { withdrawalsUnlockedAt: new Date("2026-01-01"), withdrawalsUnlockedById: "pagamento" } });
+    // D-UGCPORTAL: só UGC não tem loja.
+    expect(await myShop(prisma, { ...s.ctx, ugcOnly: true })).toMatchObject({ allowed: false });
+    await expect(buyWithBalance(prisma, { ...s.ctx, ugcOnly: true }, s.userId, [{ productId: s.serum.id, quantity: 1 }])).rejects.toThrow(/influencers/);
     const shop = await myShop(prisma, s.ctx);
     expect(shop).toMatchObject({ allowed: true, availableCents: 30_000, discountBps: 2000 });
     expect(shop.allowed && shop.products.map((p) => [p.title, p.creatorPriceCents])).toEqual([["Kit", 20_000], ["Sérum", 8_000]]); // sem preço não aparece

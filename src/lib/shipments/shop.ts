@@ -25,6 +25,7 @@ async function shopProducts(prisma: PrismaClient, brand: { id: string; slug: str
 }
 
 export async function myShop(prisma: PrismaClient, ctx: PortalContext, now = new Date()): Promise<ShopState> {
+  if (ctx.ugcOnly) return { allowed: false, reason: "A loja com o saldo é para influencers e prescritores." };
   const creator = await prisma.creator.findUniqueOrThrow({
     where: { id: ctx.creatorId },
     select: { id: true, brandId: true, status: true, contractSigned: true, withdrawalsUnlockedAt: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
@@ -46,6 +47,7 @@ export async function buyWithBalance(
   now = new Date(),
 ): Promise<string> {
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é comprado em nome da creator.");
+  if (ctx.ugcOnly) throw new ShipmentError("A loja com o saldo é para influencers e prescritores.");
   let chosen: { productId: string; quantity: number }[];
   try {
     chosen = validateShopItems(items);
