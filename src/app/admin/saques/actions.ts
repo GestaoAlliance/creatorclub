@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateRemessa, RemessaError, removeFromRemessa } from "@/lib/withdrawals/remessa";
+import { RemessaError, generateRemessa, remessaFile, removeFromRemessa } from "@/lib/withdrawals/remessa";
 import { applyRetorno, retornoPreview, type RetornoRow } from "@/lib/withdrawals/retorno";
 import { approveWithdrawal, nfLocation, payWithdrawal, payWithdrawals, recheckWithdrawalNf, rejectWithdrawal, WithdrawalDecisionError } from "@/lib/withdrawals/decide";
 
@@ -70,6 +70,17 @@ export async function remessaAction(_prev: RemessaState, form: FormData): Promis
     return { file: { name: r.fileName, content: r.content }, ok: `Remessa nº ${r.nsa}: ${r.count} ${r.count === 1 ? "saque" : "saques"}. Envie o arquivo no Internet Banking do SICOOB.` };
   } catch (error) {
     if (error instanceof RemessaError) return { error: error.message, problems: error.problems.map((p) => p.problem) };
+    throw error;
+  }
+}
+
+/** D-REMESSAFILE: baixa de novo o arquivo de uma remessa já gerada (o mesmo, conferido pela assinatura). */
+export async function remessaFileAction(_prev: RemessaState, form: FormData): Promise<RemessaState> {
+  try {
+    const r = await remessaFile(db(), await currentActor(), String(form.get("remittanceId") ?? ""));
+    return { file: { name: r.fileName, content: r.content }, ok: "Arquivo baixado de novo." };
+  } catch (error) {
+    if (error instanceof RemessaError) return { error: error.message };
     throw error;
   }
 }

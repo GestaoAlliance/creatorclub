@@ -315,6 +315,36 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-326 — 2026-11-17 — Ensaio geral do dia de pagamento e correções (D-REMESSAFILE, D-BANKREJECT, D-BANKDATE)
+- Ensaio pedido pelo responsável: ciclo inteiro numa cópia local (calendário da Botanika de novembro, 6 creators
+  fictícias, 4 CNPJ e 2 CPF), clicado nas telas com cada papel: pedido com nota no portal → aprovação da Gestão →
+  remessa SICOOB → retorno → realizados. Página com o passo a passo do Financeiro e os achados:
+  https://claude.ai/artifact/EfkfLoZQzRRmMh1di1jydK. As 8 travas testadas seguraram.
+- **Grave, corrigido:** o arquivo da remessa nunca baixava. Depois de gerar, a página recarrega com 0 saques e o
+  quadro da remessa saía da tela antes de entregar o arquivo. Agora o quadro fica sempre montado, o download espera
+  para soltar o link, e há **"Remessas geradas" com "Baixar de novo"** (`remessaFile`): remonta o arquivo com os
+  mesmos dados e só entrega se a assinatura (sha256) bater com a da geração; se algo mudou, explica e não entrega.
+  Ordem dos saques no arquivo fixada (aprovação, depois id) para a remontagem sair idêntica.
+- **Grave, corrigido:** Pix devolvido pelo banco travava a troca da chave (creator e equipe). Agora troca quando o
+  saque foi devolvido e já saiu da remessa; a linha e o painel do Pagamento mostram "Banco recusou: motivo" (e se a
+  chave já foi trocada), o "Meus saques" da creator mostra o aviso, e a remessa seguinte avisa (sem impedir) quando a
+  chave não mudou desde a devolução.
+- Data do pagamento pelo retorno é a do banco (meio-dia de Brasília do dia pago; nunca no futuro), no saque e no
+  extrato. O quadro da remessa diz quantos são CNPJ e CPF. O portal não mostra mais "nota de R$ 0,00".
+- Produção: o cadastro duplicado da Suzana (INFLUENCER, sem cupom, pedidos ou extrato) foi arquivado por SQL com
+  AuditLog (DEACTIVATED + archivedAt), a pedido do responsável; o válido é o de prescritora (cupom SUZANA).
+- Testes: `test/integration/remessa.test.ts` (baixar de novo, troca da chave após devolução, aviso, data do banco).
+
+### CP-325 — 2026-11-17 — Taxas de Suzana, Leonardo e Angela e cupom desde a aprovação (dados de produção)
+- Decisões do responsável (achados da auditoria): 15% desde o início para as três; vendas antes do cadastro do cupom
+  contam. Feito por SQL com AuditLog: `CommissionPolicy` 15% confirmada desde 16/10 (Suzana, cupom SUZANA; Leonardo;
+  Angela) e `CouponAssignment.validFrom` de ANGELABRUNA e SUZANA de 29/10 para 16/10; reavaliação da Botanika
+  (`attribution.recheck`) atribuiu os 7 pedidos de outubro, congelou a taxa e lançou a comissão:
+  Angela R$ 319,84 (out 304,75 + nov 15,09), Leonardo R$ 1.128,75 (out 336,48 + nov 792,27), Suzana R$ 1.599,87
+  (out 49,88 + nov 1.549,99). Os 2 pedidos expirados da Suzana ficam sem comissão (regra). Outubro delas libera no
+  fechamento de 01/12, junto com novembro (não havia comissão no fechamento de 01/11).
+- Suzana tem um segundo cadastro (INFLUENCER, sem cupom e sem pedidos): só registro, nada mudou.
+
 ### CP-324 — 2026-11-16 — Comissão da Revita sobre o valor com imposto incluso (D-REVITATAX)
 - Achado da auditoria: a loja da Revita manda todos os pedidos com `taxesIncluded = true`, e a regra D-TAX bloqueava a
   comissão (5 pedidos de novembro, cerca de R$ 137,60). Resposta do responsável: comissão sobre o valor dos produtos

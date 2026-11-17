@@ -22,6 +22,8 @@ export type RetornoRow = {
   result: RetornoResult;
   reason: string;
   withdrawalId: string | null;
+  /** Dia em que o banco pagou (AAAA-MM-DD), quando o retorno traz. */
+  paidDay: string | null;
   /** ok = será aplicado; done = já está assim; notfound = não é saque desta remessa; amount = valor diferente do saque;
    * alert = o banco diz que pagou, mas no sistema o saque não está mais nesta remessa (D-NODOUBLEPAY): conferir. */
   state: "ok" | "done" | "notfound" | "amount" | "alert";
@@ -31,6 +33,13 @@ export const reasonOf = (codes: readonly string[]) => (codes.length ? codes.map(
 
 function assertPay(actor: Actor | null, brandId: string): asserts actor is Actor {
   if (!actor || !can(actor.grants, "withdrawals.manage", brandId)) throw new RemessaError("Sem permissão.");
+}
+
+/** Meio-dia de Brasília do dia pago pelo banco; sem data (ou data à frente de agora), agora. */
+export function bankPaidAt(paidDay: string | null, now: Date): Date {
+  if (!paidDay || !/^\d{4}-\d{2}-\d{2}$/.test(paidDay)) return now;
+  const at = new Date(`${paidDay}T15:00:00Z`);
+  return Number.isNaN(at.getTime()) || at > now ? now : at;
 }
 
 /** Lê o retorno e diz o que vai acontecer com cada saque; não muda nada. */
@@ -52,7 +61,7 @@ export async function retornoPreview(prisma: PrismaClient, actor: Actor | null, 
   );
   const rows: RetornoRow[] = parsed.items.map((i) => {
     const w = byRef.get(i.ref);
-    const base = { ref: i.ref, name: i.name, amountCents: i.amountCents, result: i.result, reason: reasonOf(i.codes), withdrawalId: w?.id ?? null };
+    const base = { ref: i.ref, name: i.name, amountCents: i.amountCents, result: i.result, reason: reasonOf(i.codes), withdrawalId: w?.id ?? null, paidDay: i.paidDay };
     if (!w) return { ...base, withdrawalId: others.get(i.ref)?.id ?? null, state: i.result === "PAID" && others.has(i.ref) ? "alert" : "notfound" };
     if (w.amountCents !== i.amountCents) return { ...base, state: "amount" };
     const inThis = w.status === "APPROVED" && w.remittanceId === remittance.id;
@@ -78,7 +87,8 @@ export async function applyRetorno(prisma: PrismaClient, actor: Actor | null, br
     const id = row.withdrawalId;
     if (row.result === "PAID") {
       try {
-        await payWithdrawal(prisma, actor, id, now, null, { viaBank: true });
+        // D-BANKDATE: a data do pagamento é a do banco (o retorno pode subir dias depois); nunca no futuro.
+        await payWithdrawal(prisma, actor, id, bankPaidAt(row.paidDay, now), null, { viaBank: true });
         counts.paid++;
       } catch (error) {
         if (!(error instanceof WithdrawalDecisionError)) throw error;

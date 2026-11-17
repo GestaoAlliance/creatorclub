@@ -21,10 +21,15 @@ const SELECT = {
   id: true,
   amountCents: true,
   method: true,
-  creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
+  bankResult: true,
+  bankAt: true,
+  creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true, pixKeyChangedAt: true } } } },
 } as const;
 
 type Row = { id: string; amountCents: number; method: string; creator: { account: { name: string; cpf: string | null; cnpj: string | null; pixKey: string | null } } };
+
+/** Mesma ordem na geração e no "baixar de novo" (o arquivo precisa sair idêntico). */
+const ORDER = [{ approvedAt: "asc" }, { id: "asc" }] as const;
 
 function toPayment(w: Row): CnabPayment {
   const a = w.creator.account;
@@ -55,10 +60,22 @@ function assertPay(actor: Actor | null, brandId: string): asserts actor is Actor
 export async function remessaPreview(prisma: PrismaClient, actor: Actor | null, brandId: string, payDay: string, now = new Date()) {
   assertPay(actor, brandId);
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: BRAND_SELECT });
-  const rows = await prisma.withdrawal.findMany({ where: { brandId, status: "APPROVED", remittanceId: null }, orderBy: { approvedAt: "asc" }, select: SELECT });
+  const rows = await prisma.withdrawal.findMany({ where: { brandId, status: "APPROVED", remittanceId: null }, orderBy: [...ORDER], select: SELECT });
   const payments = rows.map(toPayment);
   const problems = checkRemessa(companyOf(brand), payments, payDay, dayKey(now, brand.timezone));
-  return { count: payments.length, totalCents: payments.reduce((s, p) => s + p.amountCents, 0), problems: problems.map((p) => ({ ...p, name: payments.find((x) => x.id === p.id)?.name ?? null })) };
+  // D-BANKREJECT: devolvido pelo banco e a chave não mudou desde então: avisa (não impede; o motivo pode ser outro).
+  const warnings = rows
+    .filter((w) => w.bankResult === "REJECTED" && !(w.creator.account.pixKeyChangedAt && w.bankAt && w.creator.account.pixKeyChangedAt > w.bankAt))
+    .map((w) => ({ name: w.creator.account.name, problem: "o banco devolveu o último Pix e a chave Pix não foi trocada desde então. Confira antes de mandar de novo." }));
+  const cnpj = rows.filter((w) => w.method === "NF_PIX").length;
+  return {
+    count: payments.length,
+    cnpj,
+    cpf: payments.length - cnpj,
+    totalCents: payments.reduce((s, p) => s + p.amountCents, 0),
+    problems: problems.map((p) => ({ ...p, name: payments.find((x) => x.id === p.id)?.name ?? null })),
+    warnings,
+  };
 }
 
 /** Gera a remessa: grava o registro, marca os saques e devolve o arquivo. */
@@ -68,7 +85,7 @@ export async function generateRemessa(prisma: PrismaClient, actor: Actor | null,
     // Trava a marca: duas remessas ao mesmo tempo não pegam os mesmos saques nem o mesmo número.
     await tx.$queryRaw`SELECT id FROM "Brand" WHERE id = ${brandId} FOR UPDATE`;
     const brand = await tx.brand.findUniqueOrThrow({ where: { id: brandId }, select: BRAND_SELECT });
-    const rows = await tx.withdrawal.findMany({ where: { brandId, status: "APPROVED", remittanceId: null }, orderBy: { approvedAt: "asc" }, select: SELECT });
+    const rows = await tx.withdrawal.findMany({ where: { brandId, status: "APPROVED", remittanceId: null }, orderBy: [...ORDER], select: SELECT });
     const payments = rows.map(toPayment);
     const company = companyOf(brand);
     const today = dayKey(now, brand.timezone);
@@ -89,6 +106,38 @@ export async function generateRemessa(prisma: PrismaClient, actor: Actor | null,
     });
     return { fileName: `REMESSA_${brand.slug.toUpperCase()}_${String(nsa).padStart(6, "0")}.txt`, content, count: payments.length, totalCents, nsa };
   });
+}
+
+/** Remessas da marca, da mais nova para a mais antiga (para baixar de novo o arquivo). */
+export async function recentRemessas(prisma: PrismaClient, actor: Actor | null, brandId: string, take = 6) {
+  assertPay(actor, brandId);
+  const rows = await prisma.paymentRemittance.findMany({
+    where: { brandId },
+    orderBy: { nsa: "desc" },
+    take,
+    select: { id: true, nsa: true, payDay: true, count: true, totalCents: true, createdAt: true },
+  });
+  return rows.map((r) => ({ ...r, payDay: r.payDay.toISOString().slice(0, 10) }));
+}
+
+/**
+ * D-REMESSAFILE: o arquivo de uma remessa já gerada, para baixar de novo (o download pode falhar). Remonta com os mesmos
+ * dados e só entrega se a assinatura bater com a da geração: se algum saque saiu da remessa ou um dado mudou (ex.: chave
+ * Pix), o arquivo não seria o mesmo e não sai.
+ */
+export async function remessaFile(prisma: PrismaClient, actor: Actor | null, remittanceId: string) {
+  const r = await prisma.paymentRemittance.findUnique({ where: { id: remittanceId }, select: { id: true, brandId: true, nsa: true, payDay: true, sha256: true, createdAt: true } });
+  if (!r) throw new RemessaError("Remessa não encontrada.");
+  assertPay(actor, r.brandId);
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: r.brandId }, select: BRAND_SELECT });
+  const rows = await prisma.withdrawal.findMany({ where: { remittanceId: r.id }, orderBy: [...ORDER], select: SELECT });
+  const content = rows.length
+    ? buildRemessa({ company: companyOf(brand), payments: rows.map(toPayment), payDay: r.payDay.toISOString().slice(0, 10), nsa: r.nsa, now: r.createdAt, today: dayKey(r.createdAt, brand.timezone) })
+    : "";
+  if (!content || createHash("sha256").update(content).digest("hex") !== r.sha256)
+    throw new RemessaError(`A remessa nº ${r.nsa} mudou depois de gerada (saque tirado ou devolvido pelo banco, ou dado da creator trocado). O arquivo de antes não pode ser refeito: se ela ainda não foi enviada ao banco, tire os saques dela e gere uma nova.`);
+  await prisma.auditLog.create({ data: { brandId: r.brandId, actorType: "USER", actorId: actor.userId, action: "remittance.downloaded", entity: "PaymentRemittance", entityId: r.id, after: { nsa: r.nsa } } });
+  return { fileName: `REMESSA_${brand.slug.toUpperCase()}_${String(r.nsa).padStart(6, "0")}.txt`, content };
 }
 
 /** Tira um saque da remessa (o banco recusou): ele volta para a próxima. */

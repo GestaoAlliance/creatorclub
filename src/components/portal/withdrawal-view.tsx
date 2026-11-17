@@ -159,7 +159,7 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
           <li className="flex gap-3">
             <span className="grid size-7 shrink-0 place-content-center rounded-full bg-brand text-xs font-semibold text-white dark:bg-brand-2 dark:text-stone-900">1</span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Emita a nota fiscal de <strong className="money">{formatBRL(Math.max(0, balance.availableCents))}</strong> (o valor total disponível), pelo CNPJ do seu cadastro, com estes dados:</p>
+              <p className="text-sm font-medium">{balance.availableCents > 0 ? (<>Emita a nota fiscal de <strong className="money">{formatBRL(balance.availableCents)}</strong> (o valor total disponível), pelo CNPJ do seu cadastro, com estes dados:</>) : "Quando houver comissão liberada, emita a nota fiscal do valor total disponível (ele aparece aqui), pelo CNPJ do seu cadastro, com estes dados:"}</p>
               <div className="mt-2"><NfDataList nf={tab.nf} /></div>
             </div>
           </li>
@@ -222,6 +222,12 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
                       </li>
                     ))}
                   </ol>
+                  {/* D-BANKREJECT: o banco devolveu o Pix; o saque segue aprovado e vai na próxima remessa. */}
+                  {w.status === "APPROVED" && w.remittanceId === null && w.bankResult === "REJECTED" && (
+                    <p role="alert" className="rounded-xl bg-amber-500/12 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                      O banco devolveu este Pix{w.bankNote ? ` (${w.bankNote})` : ""}. Confira sua chave Pix acima e troque se precisar: o pagamento vai de novo na próxima remessa.
+                    </p>
+                  )}
                   {w.status === "REJECTED" && w.note && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-800 dark:text-red-300">Motivo: {w.note}</p>}
                   {w.status === "PAID" && w.pixReference && <p className="font-mono text-[11px] text-stone-500">ID do Pix: {w.pixReference}</p>}
                 </li>

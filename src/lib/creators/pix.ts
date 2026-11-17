@@ -10,7 +10,8 @@ import { maskPix } from "@/lib/portal/withdrawal-extras";
  * Troca da chave Pix (D-PIXCHANGE, pedido do responsável em 2026-11-16): a creator troca no portal (Saque) e a equipe
  * (quem vê dados fiscais e edita creators ou paga saques) troca na ficha, com o motivo. Contra golpe: toda troca vai
  * para a auditoria, a creator recebe o aviso (portal, WhatsApp ou e-mail) e o saque mostra "chave trocada há X dias".
- * Não troca com saque aprovado esperando o Pix (o Pagamento pode estar pagando na chave antiga).
+ * Não troca com saque aprovado esperando o Pix (o Pagamento pode estar pagando na chave antiga), salvo o que o banco
+ * devolveu e já saiu da remessa (D-BANKREJECT).
  */
 
 export class PixError extends Error {}
@@ -45,7 +46,10 @@ export async function changePixKey(prisma: PrismaClient, who: PixWho, creatorId:
   const key = cleanPixKey(rawKey);
   if (key === c.account.pixKey) throw new PixError("Esta já é a chave cadastrada.");
   // Saque aprovado esperando o Pix (de qualquer marca da pessoa): a chave antiga pode estar sendo paga.
-  const waiting = await prisma.withdrawal.count({ where: { status: "APPROVED", creator: { accountId: c.accountId } } });
+  // D-BANKREJECT: o que o banco devolveu e já saiu da remessa não está sendo pago; a troca da chave é o conserto.
+  const waiting = await prisma.withdrawal.count({
+    where: { status: "APPROVED", creator: { accountId: c.accountId }, OR: [{ remittanceId: { not: null } }, { bankResult: null }, { bankResult: { not: "REJECTED" } }] },
+  });
   if (waiting) throw new PixError("Há um saque aprovado esperando o Pix. Troque a chave depois que ele for pago (ou peça para a equipe recusar e você pede de novo).");
   await prisma.$transaction(async (tx) => {
     await tx.creatorAccount.update({ where: { id: c.accountId }, data: { pixKey: key, pixKeyChangedAt: now } });
