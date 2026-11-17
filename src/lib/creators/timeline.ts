@@ -48,6 +48,8 @@ export async function creatorNumbers(prisma: PrismaClient, creatorId: string, no
   };
 }
 
+const SELF_FIELD: Record<string, string> = { name: "nome", phone: "telefone", email: "e-mail (e o login)", cpf: "CPF", cnpj: "CNPJ" };
+
 export type TimelineKind = "signup" | "approval" | "invite" | "contract" | "coupon" | "rate" | "sale" | "release" | "shipment" | "withdrawal" | "status" | "note";
 export type TimelineEvent = { at: Date; kind: TimelineKind; title: string; detail?: string | null };
 
@@ -61,7 +63,8 @@ export async function creatorTimeline(prisma: PrismaClient, actor: Actor, creato
     select: { brandId: true, accountId: true, createdAt: true, activatedAt: true, deactivatedAt: true, reviewedAt: true, withdrawalsUnlockedAt: true },
   });
   const money = can(actor.grants, "money.view", creator.brandId);
-  const [apps, invites, autentique, signatures, assignments, policies, firstSale, releases, shipments, withdrawals, notes] = await Promise.all([
+  const fiscal = can(actor.grants, "personal.fiscal", creator.brandId);
+  const [apps, invites, autentique, signatures, assignments, policies, firstSale, releases, shipments, withdrawals, notes, selfEdits] = await Promise.all([
     prisma.creatorApplication.findMany({ where: { creatorId }, select: { submittedAt: true, decidedAt: true, source: true } }),
     prisma.creatorInvite.findMany({ where: { accountId: creator.accountId }, select: { createdAt: true, acceptedAt: true } }),
     prisma.contractRequest.findMany({ where: { creatorId }, select: { sentAt: true, signedAt: true, rejectedAt: true, sandbox: true } }),
@@ -73,6 +76,8 @@ export async function creatorTimeline(prisma: PrismaClient, actor: Actor, creato
     prisma.shipment.findMany({ where: { creatorId }, select: { createdAt: true, shippedAt: true, deliveredAt: true, cancelledAt: true, status: true, trackingCode: true } }),
     money ? prisma.withdrawal.findMany({ where: { creatorId }, select: { requestedAt: true, decidedAt: true, status: true, amountCents: true } }) : [],
     prisma.creatorNote.findMany({ where: { creatorId }, orderBy: { createdAt: "desc" }, take: 50, select: { createdAt: true, body: true, author: { select: { name: true } } } }),
+    // D-SELFEDIT: o que ela mudou sozinha no portal (a conta é uma só para todas as marcas).
+    prisma.auditLog.findMany({ where: { action: "creator.self_edit", entity: "CreatorAccount", entityId: creator.accountId }, orderBy: { createdAt: "desc" }, take: 30, select: { createdAt: true, before: true, after: true } }),
   ]);
 
   const ev: TimelineEvent[] = [];
@@ -118,6 +123,14 @@ export async function creatorTimeline(prisma: PrismaClient, actor: Actor, creato
     if (w.status === "CANCELLED") add(w.decidedAt, "withdrawal", "Cancelou o pedido de saque");
   }
   for (const n of notes) add(n.createdAt, "note", n.body, n.author.name);
+  for (const e of selfEdits) {
+    const b = (e.before ?? {}) as { field?: string; value?: string | null };
+    const a = (e.after ?? {}) as { field?: string; value?: string | null };
+    const field = a.field ?? b.field ?? "";
+    const hide = (field === "cpf" || field === "cnpj") && !fiscal;
+    const show = (v: string | null | undefined) => (v ? (hide ? "•••" : v) : "vazio");
+    add(e.createdAt, "status", `Mudou o ${SELF_FIELD[field] ?? "cadastro"} pelo portal`, `${show(b.value)} → ${show(a.value)}`);
+  }
   return ev.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, limit);
 }
 

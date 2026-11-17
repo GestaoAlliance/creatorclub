@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-329 — 2026-11-17 — A creator muda os próprios dados no "Meu cadastro" (D-SELFEDIT)
+- Pedido do responsável: os pedidos de correção (D-DATAFIX) chegavam demais à gestora. Agora, no "Meu cadastro" do
+  portal, ela toca em Alterar e salva na hora: nome completo, celular, e-mail (troca também o login, já confirmado),
+  CPF e CNPJ. Sem aprovação e sem trava de saque ("salvou, está feito"); só confere se o dado é válido (dígitos do
+  CPF/CNPJ, formato do e-mail, celular com DDD) e se não é de outra pessoa. Vale para todas as marcas dela.
+- A equipe vê na linha do tempo da ficha: "Mudou o CNPJ pelo portal", com antes → depois (CPF/CNPJ mascarados para
+  quem não vê dado fiscal). Nada vai para a fila de Ações. O pedido à equipe ficou só para "outro dado".
+- `updateMyPersonal` (`src/lib/portal/profile.ts`), `savePersonalAction`, `PersonalCard`; histórico em
+  `creatorTimeline`. Teste em `portal-profile.test.ts` (com CNPJ gerado na hora: o banco de teste é compartilhado,
+  o que também pode explicar a falha solta do `coupon-board.test.ts`).
+
 ### CP-328 — 2026-11-17 — Auditoria das telas, lote 2 (médios)
 - Papéis diferentes em cada marca: o menu usa o papel da marca do topo; Candidatas, Envios, Desempenho e Abertura
   conferem a permissão na marca do topo (antes davam erro 500); o Início da Alliance mostra vendas do mês só para quem

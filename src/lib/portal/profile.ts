@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { CREATOR_CATEGORY_LABEL, DATA_FIX_LABEL, dayKey, parseBirthDate, profileCompleteness, socialHandle, type DataFixField } from "@/domain";
+import { CREATOR_CATEGORY_LABEL, DATA_FIX_LABEL, dayKey, parseBirthDate, profileCompleteness, socialHandle, validBrPhone, validDoc, type DataFixField } from "@/domain";
 import { releaseProgress } from "@/lib/commission/release";
 import { maskPix } from "@/lib/portal/withdrawal-extras";
 import { addressOf, type Address } from "@/lib/shipments/address";
@@ -9,7 +9,8 @@ import { SocialError } from "./social";
 
 /**
  * D-PORTALPROFILE: aba "Meu cadastro" do portal. A creator vê os próprios dados (CPF/CNPJ mascarados), muda o que é
- * dela (foto, Pix, endereço, Instagram, TikTok, aniversário) e pede à equipe a correção do resto (D-DATAFIX).
+ * dela (foto, Pix, endereço, Instagram, TikTok, aniversário, nome, telefone, e-mail, CPF e CNPJ; D-SELFEDIT). O pedido
+ * de correção à equipe (D-DATAFIX) fica para "outro dado".
  */
 
 export const maskCpfDigits = (d: string) => (d.length === 11 ? `•••.${d.slice(3, 6)}.${d.slice(6, 9)}-••` : "•••");
@@ -130,4 +131,60 @@ export async function updateMyBirthDate(prisma: PrismaClient, ctx: PortalContext
     prisma.creatorAccount.update({ where: { id: creator.accountId }, data: { birthDate: new Date(`${b.day}T00:00:00Z`) } }),
     prisma.auditLog.create({ data: { brandId: creator.brandId, actorType: "USER", actorId: actorUserId, action: "creator.birthdate", entity: "CreatorAccount", entityId: creator.accountId, before: { birthDate: before }, after: { birthDate: b.day } } }),
   ]);
+}
+
+/** D-SELFEDIT: campos que a creator muda sozinha no "Meu cadastro" (sem aprovação; a equipe vê no histórico). */
+export const SELF_EDIT_FIELDS = ["name", "phone", "email", "cpf", "cnpj"] as const;
+export type SelfEditField = (typeof SELF_EDIT_FIELDS)[number];
+export const SELF_EDIT_LABEL: Record<SelfEditField, string> = { name: "nome", phone: "telefone", email: "e-mail", cpf: "CPF", cnpj: "CNPJ" };
+
+/** Troca do e-mail de login no Supabase Auth (o e-mail novo já entra confirmado). */
+export type LoginEmailChanger = (userId: string, email: string) => Promise<void>;
+
+/**
+ * D-SELFEDIT (responsável, 2026-11-17): a creator corrige nome, telefone, e-mail (o do login também), CPF e CNPJ e salva
+ * na hora, sem pedir à gestora. Só confere se o dado é válido (dígitos do CPF/CNPJ, formato do e-mail e telefone) e se
+ * não é de outra pessoa; vale para todas as marcas dela (a conta é uma só). Fica no histórico da ficha.
+ */
+export async function updateMyPersonal(prisma: PrismaClient, ctx: PortalContext, actorUserId: string, field: string, raw: string, changeLoginEmail: LoginEmailChanger): Promise<string> {
+  if (ctx.viewAs) throw new SocialError("Visualização da equipe: nada é alterado em nome da creator.");
+  if (!(SELF_EDIT_FIELDS as readonly string[]).includes(field)) throw new SocialError("Escolha o que quer mudar.");
+  const f = field as SelfEditField;
+  const creator = await prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { brandId: true, account: { select: { id: true, userId: true, name: true, email: true, phone: true, cpf: true, cnpj: true } } } });
+  const a = creator.account;
+  let value: string;
+  if (f === "name") {
+    value = raw.replace(/\s+/g, " ").trim().slice(0, 120);
+    if (value.length < 3 || !/\s/.test(value)) throw new SocialError("Informe o nome completo.");
+  } else if (f === "phone") {
+    const ok = validBrPhone(raw);
+    if (!ok) throw new SocialError("Informe o celular com DDD, por exemplo (11) 99999-9999.");
+    value = ok;
+  } else if (f === "email") {
+    value = raw.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) || value.length > 200) throw new SocialError("E-mail inválido.");
+  } else {
+    value = raw.replace(/\D/g, "");
+    const size = f === "cpf" ? 11 : 14;
+    if (value.length !== size || !validDoc(value)) throw new SocialError(`${f === "cpf" ? "CPF" : "CNPJ"} inválido: confira os números.`);
+  }
+  const before = a[f];
+  if (before === value) return value;
+  if (f === "email") {
+    const [user, account] = await Promise.all([
+      prisma.user.findUnique({ where: { email: value }, select: { id: true } }),
+      prisma.creatorAccount.findUnique({ where: { email: value }, select: { id: true } }),
+    ]);
+    if ((user && user.id !== a.userId) || (account && account.id !== a.id)) throw new SocialError("Esse e-mail já é de outra pessoa no Creator Club.");
+    // O login muda primeiro (se falhar, nada muda aqui); depois o cadastro.
+    if (a.userId) await changeLoginEmail(a.userId, value);
+  }
+  if ((f === "cpf" || f === "cnpj") && (await prisma.creatorAccount.findFirst({ where: { [f]: value, id: { not: a.id } }, select: { id: true } })))
+    throw new SocialError(`Esse ${f === "cpf" ? "CPF" : "CNPJ"} já está no cadastro de outra pessoa. Fale com a equipe.`);
+  await prisma.$transaction([
+    prisma.creatorAccount.update({ where: { id: a.id }, data: { [f]: value } }),
+    ...(f === "email" && a.userId ? [prisma.user.update({ where: { id: a.userId }, data: { email: value } })] : []),
+    prisma.auditLog.create({ data: { brandId: creator.brandId, actorType: "USER", actorId: actorUserId, action: "creator.self_edit", entity: "CreatorAccount", entityId: a.id, before: { field: f, value: before }, after: { field: f, value } } }),
+  ]);
+  return value;
 }
