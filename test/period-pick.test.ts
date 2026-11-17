@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickPeriod, rangeKey, stepMonth } from "@/domain";
+import { periodPhrase, pickPeriod, rangeKey, stepMonth } from "@/domain";
 
 describe("seletor de tempo (D-PERIODPICK)", () => {
   const today = "2026-11-17";
@@ -19,5 +19,12 @@ describe("seletor de tempo (D-PERIODPICK)", () => {
     expect(stepMonth(pickPeriod("m:2026-10", today), 1, today)).toBe("m:2026-11");
     expect(stepMonth(pickPeriod("m:2026-11", today), 1, today)).toBe("m:2026-11");
     expect(stepMonth(pickPeriod("30d", today), -1, today)).toBe("m:2026-11");
+  });
+
+  it("o período numa frase", () => {
+    expect(periodPhrase(pickPeriod("m:2026-11", "2026-11-17"))).toBe("em novembro de 2026");
+    expect(periodPhrase(pickPeriod("30d", "2026-11-17"))).toBe("nos últimos 30 dias");
+    expect(periodPhrase(pickPeriod("y:2026", "2026-11-17"))).toBe("no ano de 2026");
+    expect(periodPhrase(pickPeriod("r:2026-09-05:2026-10-10", "2026-11-17"))).toBe("de 05/09/2026 a 10/10/2026");
   });
 });

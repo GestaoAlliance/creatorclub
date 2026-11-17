@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-337 — 2026-11-17 — Vendas por creator e seletor de tempo na ficha (D-PERIODPICK)
+- Pedido do responsável: escolher a creator em Vendas e ver as vendas dela no período; a ficha não tinha o seletor.
+- Vendas: campo "Creator" (digita o nome e escolhe; × tira o filtro). A lista, os quadros e o CSV ficam só com ela, e
+  em cima entra o resumo do período: vendido, pedidos pagos, comissão e ticket médio (pagos pela data do pagamento,
+  a regra da comissão). No pedido aberto, "Ver só as vendas dela".
+- Ficha: o seletor fica na faixa do topo; "Vendas · <período>" (com a comissão), Retorno, Comparada às outras e O que ela
+  mais vende passam a usar o período; o gráfico mostra os 12 meses até o fim dele. Aba nova "Vendas" com os pedidos
+  dela no período (até 50, o resto em "Abrir em Vendas").
+- `creatorPeriodSales` (`src/lib/sales/creator-period.ts`), filtro `creatorId` em `listSales`, `CreatorPicker`,
+  `periodPhrase`. Testes em `period-pick.test.ts` e `integration/creator-period.test.ts`.
+- Próximo (mesmo pedido): seletor na lista de Creators e em Envios; depois Desempenho e Cupons.
+
 ### CP-336 — 2026-11-17 — Seletor de tempo, parte 2: Pagamentos pela data do Pix + quadro "Mês a mês" (D-PERIODPICK)
 - Pagamentos CNPJ e CPF: o seletor substitui o "Mês da comissão". "NF para aprovar" e "Saques a realizar" mostram tudo
   o que está em aberto, de qualquer mês (cada linha diz de qual mês é a comissão); "Saques realizados" mostra os Pix que

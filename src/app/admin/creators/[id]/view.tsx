@@ -27,6 +27,10 @@ import { OriginLine } from "./origin-form";
 import type { Origin } from "@/domain";
 import { UgcVideosCard } from "./ugc-card";
 import { ContractFileForm } from "./contract-file";
+import { PeriodPicker } from "@/components/staff/period-picker";
+import { SalesTable } from "@/app/admin/vendas/sales-table";
+import { periodPhrase, pickPeriod } from "@/domain";
+import type { creatorPeriodSales } from "@/lib/sales/creator-period";
 import { CompareCard, FileHero, MonthlyCard, NeedsList, ProductsCard, ShipmentCard, type HeroTile } from "./file-parts";
 import type { CreatorInsights } from "@/lib/creators/insights";
 import { releaseNote } from "@/components/ui/release-progress";
@@ -41,6 +45,12 @@ type Statement = Awaited<ReturnType<typeof creatorStatement>>;
 type Terms = Awaited<ReturnType<typeof creatorTermsStatus>>;
 type ContractSig = Awaited<ReturnType<typeof creatorContractSignature>>;
 type Numbers = Awaited<ReturnType<typeof creatorNumbers>>;
+type FilePeriod = {
+  key: string;
+  today: string;
+  sales: Awaited<ReturnType<typeof creatorPeriodSales>> | null;
+  orders: { total: number; rows: Parameters<typeof SalesTable>[0]["rows"] } | null;
+};
 
 const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 const KIND_DOT: Record<TimelineKind, string> = {
@@ -74,7 +84,7 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, returnDays = 90, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null }: { insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; returnDays?: number; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, period = null, initialTab, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null }: { insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; period?: FilePeriod | null; initialTab?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   const mainCoupon = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until) ?? null;
@@ -83,8 +93,16 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
   const openingPending = Boolean(opening && !opening.approved && !ugcOnly);
   const paidBefore = openingPending ? (opening?.paidCents ?? 0) : 0;
   const tiles: HeroTile[] = [];
-  if (numbers) {
+  // D-PERIODPICK: o período escolhido (o mesmo das outras telas).
+  const picked = period ? pickPeriod(period.key, period.today) : null;
+  const phrase = picked ? periodPhrase(picked) : "nos últimos 30 dias";
+  if (numbers && period?.sales && picked) {
+    const s = period.sales;
+    tiles.push({ label: `Vendas · ${picked.label}`, value: formatBRL(s.salesCents), hint: `${s.orders} ${s.orders === 1 ? "pedido" : "pedidos"} · comissão ${formatBRL(s.commissionCents)}` });
+  } else if (numbers) {
     tiles.push({ label: "Vendas em 30 dias", value: formatBRL(numbers.last30.salesCents), hint: `${numbers.last30.orders} ${numbers.last30.orders === 1 ? "pedido" : "pedidos"} · ticket ${formatBRL(numbers.last30.ticketCents)}` });
+  }
+  if (numbers) {
     tiles.push({ label: "Aguardando pagamento", value: formatBRL(numbers.pending.salesCents), hint: `${numbers.pending.orders} ${numbers.pending.orders === 1 ? "pedido" : "pedidos"}${numbers.pending.commissionCents !== null ? ` · ≈ ${formatBRL(numbers.pending.commissionCents)} de comissão` : ""}` });
   }
   if (st && !ugcOnly) {
@@ -138,6 +156,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
         canViewAs={p.canViewAs}
         canEditPhoto={p.canEdit}
         tiles={tiles}
+        picker={period ? <PeriodPicker value={period.key} today={period.today} tone="brand" /> : undefined}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
@@ -158,7 +177,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
       </aside>
       <div className="min-w-0 xl:order-1">
       <Tabs
-        initial={st?.month && mes ? "extrato" : undefined}
+        initial={st?.month && mes ? "extrato" : initialTab}
         tabs={[
           {
             id: "resumo",
@@ -196,7 +215,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
         </Card>
       )}
       {ret && !ugcOnly && (
-        <Card title={`Retorno (últimos ${returnDays} dias)`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
+        <Card title={`Retorno ${phrase}`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
           <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4 [&_p.text-2xl]:whitespace-nowrap [&_p.text-2xl]:text-xl">
             <Kpi label="Receita" value={formatBRL(ret.revenueCents)} hint={`${ret.orders} pedidos`} />
             <Kpi label="Custos" value={formatBRL(ret.cogsCents + ret.commissionCents + ret.kitsCents + ret.freightCents)} hint={`produtos ${formatBRL(ret.cogsCents)} · comissão ${formatBRL(ret.commissionCents)} · kits e frete ${formatBRL(ret.kitsCents + ret.freightCents)}`} />
@@ -211,10 +230,10 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
       )}
       {insights?.money && <MonthlyCard months={insights.money.months} minCents={st && st.release.basis !== "COMMISSION" ? st.release.minCents : null} />}
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        {insights?.money && <CompareCard c={insights.money.compare} />}
+        {insights?.money && <CompareCard c={insights.money.compare} label={phrase} />}
         {insights && <ShipmentCard s={insights.shipment} count={insights.shipments} />}
       </div>
-      {insights?.money && <ProductsCard products={insights.money.products} />}
+      {insights?.money && <ProductsCard products={insights.money.products} label={phrase} />}
                 <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
                   <div className="flex min-w-0 flex-col gap-6">
           {!p.reviewedAt && !ugcOnly && (
@@ -285,6 +304,25 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               </>
             ),
           },
+          ...(period?.orders && picked ? [{ id: "vendas", label: "Vendas", content: (
+            <Card title={`Vendas ${phrase}`} icon={<TrendingUp className="size-4" />}>
+              {period.sales && (
+                <p className="text-sm text-stone-600 dark:text-stone-300">
+                  <strong className="tabular-nums">{formatBRL(period.sales.salesCents)}</strong> em {period.sales.orders} {period.sales.orders === 1 ? "pedido pago" : "pedidos pagos"} · comissão <strong className="tabular-nums">{formatBRL(period.sales.commissionCents)}</strong> · ticket {formatBRL(period.sales.ticketCents)}
+                </p>
+              )}
+              {period.orders.rows.length === 0 ? (
+                <p className={ui.muted}>Nenhum pedido dela {phrase}.</p>
+              ) : (
+                <div className="-mx-4 md:-mx-5"><SalesTable rows={period.orders.rows} /></div>
+              )}
+              <p className={ui.hint}>
+                {period.orders.total > period.orders.rows.length ? `Mostrando os ${period.orders.rows.length} mais recentes de ${period.orders.total}. ` : ""}
+                Os pedidos feitos no período (pagos, aguardando, estornados e cancelados); o total em cima conta só os pagos, pela data do pagamento.{" "}
+                <Link href={`/admin/vendas?creator=${p.id}${period.key ? `&p=${encodeURIComponent(period.key)}` : ""}#lista`} className={ui.link}>Abrir em Vendas</Link>
+              </p>
+            </Card>
+          ) }] : []),
           ...(st && !ugcOnly ? [{ id: "extrato", label: "Extrato", content: <>
           {st && !ugcOnly && (
             <Card title="Extrato" icon={<Receipt className="size-4" />} help="fi-extrato">

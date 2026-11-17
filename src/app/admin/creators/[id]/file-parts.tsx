@@ -42,6 +42,8 @@ export function FileHero(p: {
   canViewAs: boolean;
   canEditPhoto: boolean;
   tiles: HeroTile[];
+  /** D-PERIODPICK: o seletor de tempo da ficha. */
+  picker?: ReactNode;
 }) {
   const wa = p.phone ? whatsappChatUrl(p.phone) : null;
   const ig = p.instagram ? instagramUrl(p.instagram) : null;
@@ -98,6 +100,7 @@ export function FileHero(p: {
           )}
         </div>
 
+        {p.picker && <div className="flex justify-end">{p.picker}</div>}
         {p.tiles.length > 0 && (
           <div className="grid grid-cols-2 gap-2 @3xl:grid-cols-4">
             {p.tiles.map((t) => (
@@ -187,7 +190,7 @@ export function MonthlyCard({ months, minCents }: { months: NonNullable<CreatorI
 }
 
 /** Comparação com a média das creators ativas da marca e a posição no ranking dos 30 dias. */
-export function CompareCard({ c }: { c: NonNullable<CreatorInsights["money"]>["compare"] }) {
+export function CompareCard({ c, label = "nos últimos 30 dias" }: { c: NonNullable<CreatorInsights["money"]>["compare"]; label?: string }) {
   const ratio = c.averageCents ? c.sales30Cents / c.averageCents : 0;
   const width = (v: number) => `${Math.max(2, Math.min(100, (v / Math.max(c.sales30Cents, c.averageCents, 1)) * 100))}%`;
   return (
@@ -196,10 +199,10 @@ export function CompareCard({ c }: { c: NonNullable<CreatorInsights["money"]>["c
         {c.rank ? (
           <>
             <span className="text-3xl font-semibold tabular-nums">{c.rank}º</span>
-            <span className="text-sm text-stone-500">de {c.active} ativas em vendas nos últimos 30 dias</span>
+            <span className="text-sm text-stone-500">de {c.active} ativas em vendas {label}</span>
           </>
         ) : (
-          <span className="text-sm text-stone-500">Sem vendas nos últimos 30 dias ({c.active} ativas na marca)</span>
+          <span className="text-sm text-stone-500">Sem vendas {label} ({c.active} ativas na marca)</span>
         )}
       </div>
       <div className="flex flex-col gap-2 text-sm">
@@ -224,12 +227,12 @@ export function CompareCard({ c }: { c: NonNullable<CreatorInsights["money"]>["c
 }
 
 /** Produtos que ela mais vende (12 meses, por unidades). */
-export function ProductsCard({ products }: { products: NonNullable<CreatorInsights["money"]>["products"] }) {
+export function ProductsCard({ products, label = "nos últimos 12 meses" }: { products: NonNullable<CreatorInsights["money"]>["products"]; label?: string }) {
   const max = Math.max(...products.map((x) => x.quantity), 1);
   return (
     <Card title="O que ela mais vende" icon={<ShoppingBag className="size-4" />}>
       {products.length === 0 ? (
-        <p className="text-sm text-stone-500">Nenhuma venda nos últimos 12 meses.</p>
+        <p className="text-sm text-stone-500">Nenhuma venda {label}.</p>
       ) : (
         <ol className="flex flex-col gap-2.5">
           {products.map((x, i) => (
@@ -243,7 +246,7 @@ export function ProductsCard({ products }: { products: NonNullable<CreatorInsigh
           ))}
         </ol>
       )}
-      <p className="text-xs text-stone-500">Últimos 12 meses, pelas unidades nos pedidos com o cupom dela (brindes de valor zero ficam de fora).</p>
+      <p className="text-xs text-stone-500">{label.charAt(0).toUpperCase() + label.slice(1)}, pelas unidades nos pedidos com o cupom dela (brindes de valor zero ficam de fora).</p>
     </Card>
   );
 }

@@ -48,10 +48,13 @@ export function lastMonths(now: Date, timeZone: string, n = FILE_MONTHS): string
 
 const KIT_LABEL: Record<string, string> = { WELCOME: "kit de boas-vindas", MONTHLY: "kit do mês", GOAL: "kit da meta" };
 
-export async function creatorInsights(prisma: PrismaClient, actor: Actor, creatorId: string, now = new Date()): Promise<CreatorInsights> {
+/** `range` (D-PERIODPICK): comparação e produtos no período; o gráfico mostra os 12 meses até o fim dele. */
+export async function creatorInsights(prisma: PrismaClient, actor: Actor, creatorId: string, now = new Date(), range?: { gte: Date; lt: Date }): Promise<CreatorInsights> {
   const c = await prisma.creator.findUniqueOrThrow({ where: { id: creatorId }, select: { id: true, brandId: true, withdrawalsUnlockedAt: true, brand: { select: { timezone: true } } } });
   const money = can(actor.grants, "money.view", c.brandId);
-  const months = lastMonths(now, c.brand.timezone);
+  const win = range ?? { gte: new Date(now.getTime() - 30 * DAY), lt: new Date(now.getTime() + 60_000) };
+  const end = range ? new Date(Math.min(range.lt.getTime() - 1, now.getTime())) : now;
+  const months = lastMonths(end, c.brand.timezone);
   const paid = { cancelledAt: null, test: false, financialStatus: { in: ["PAID" as const, "PARTIALLY_REFUNDED" as const] } };
 
   const [ship, shipCount, moneyPart] = await Promise.all([
@@ -63,19 +66,19 @@ export async function creatorInsights(prisma: PrismaClient, actor: Actor, creato
     prisma.shipment.count({ where: { creatorId: c.id, status: { not: "CANCELLED" } } }),
     money
       ? (async () => {
-          const since = new Date(now.getTime() - 400 * DAY);
+          const since = new Date(end.getTime() - 400 * DAY);
           const [orders, lines, ranking, opening] = await Promise.all([
-            prisma.order.findMany({ where: { ...paid, attribution: { creatorId: c.id }, paidAt: { gte: since } }, select: { paidAt: true, subtotalCents: true } }),
+            prisma.order.findMany({ where: { ...paid, attribution: { creatorId: c.id }, paidAt: { gte: since, lte: end } }, select: { paidAt: true, subtotalCents: true } }),
             prisma.orderLine.groupBy({
               by: ["title"],
-              where: { order: { ...paid, attribution: { creatorId: c.id }, paidAt: { gte: new Date(now.getTime() - 365 * DAY) } }, discountedTotalCents: { gt: 0 } },
+              where: { order: { ...paid, attribution: { creatorId: c.id }, paidAt: range ? { gte: range.gte, lt: range.lt } : { gte: new Date(now.getTime() - 365 * DAY) } }, discountedTotalCents: { gt: 0 } },
               _sum: { quantity: true, discountedTotalCents: true },
               orderBy: { _sum: { quantity: "desc" } },
               take: 5,
             }),
             // Ativas da marca e as vendas de 30 dias de cada uma (quem não vendeu conta zero na média).
             prisma.$queryRaw<{ id: string; cents: bigint }[]>(Prisma.sql`
-              SELECT cr.id, COALESCE(SUM(o."subtotalCents") FILTER (WHERE o."paidAt" >= ${new Date(now.getTime() - 30 * DAY)}), 0) AS cents
+              SELECT cr.id, COALESCE(SUM(o."subtotalCents") FILTER (WHERE o."paidAt" >= ${win.gte} AND o."paidAt" < ${win.lt}), 0) AS cents
               FROM "Creator" cr
               LEFT JOIN "OrderAttribution" a ON a."creatorId" = cr.id
               LEFT JOIN "Order" o ON o.id = a."orderId" AND o."cancelledAt" IS NULL AND o.test = false
