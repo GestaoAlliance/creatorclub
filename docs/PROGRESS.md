@@ -327,6 +327,11 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   (5 pedidos de julho, R$ 180,70) e Barbieri (R$ 100,68): pagar depois do encerramento?; pedido #2438 (FESTEVES,
   JULIACOLARES, LARILESSA) está com a Fernanda pela regra do primeiro cupom, a planilha dá à Larissa; Clesiane
   cancela e pede de novo o valor total (R$ 509,20).
+- Decisões do responsável (17/11): Juliana Esposito e Barbieri recebem a comissão das vendas de antes do encerramento
+  (Juliana marcada como desligada por SQL, com AuditLog; o portal continua deixando pedir o saque); o pedido #2438 fica
+  com a Fernanda (regra do primeiro cupom). Joingle conferida pedido a pedido: julho, a planilha deixou de fora o
+  #1709 (BOTANIKA antes de JOINGLE; PROMO não leva, então é dela, R$ 91,04); setembro, o Pix de R$ 844,57 foi R$ 150,34
+  acima das vendas de setembro dela. Saldo R$ 50,29 + outubro R$ 274,88 = R$ 325,17 está certo.
 - Guia de pagamento das creators (PDF da equipe) conferido: ajustar valor da nota (aba Saque), nome da tela (Saque),
   status "Pago", % do contrato, prazo de novembro até o dia 22, recibo para quem é pessoa física.
 
