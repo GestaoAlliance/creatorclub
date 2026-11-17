@@ -19,7 +19,7 @@ import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
 import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TagsEditor, ProfileForm } from "./forms";
-import { AccessBox } from "@/components/staff/access-box";
+import { AccessBox, NewAccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
 import { InstagramCard } from "./ig-card";
@@ -452,6 +452,12 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           {p.userId && (
             <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
               <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} loginEmail={p.loginEmail} />
+            </Card>
+          )}
+          {/* D-ACCESSDIRECT: quem nunca entrou ganha o acesso direto, com senha provisória. */}
+          {!p.userId && p.canEdit && (
+            <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
+              <NewAccessBox accountId={p.accountId} email={p.contact.email} emailOk={!p.contact.fakeEmail} name={p.contact.name} phone={p.contact.phone} />
             </Card>
           )}
           {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}

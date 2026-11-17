@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { setTemporaryPassword } from "@/lib/auth/access";
+import { createCreatorLogin, setTemporaryPassword } from "@/lib/auth/access";
 import { changePixKey } from "@/lib/creators/pix";
 import { updateContact } from "@/lib/creators/profile";
 import { staffUpdateAddress } from "@/lib/shipments/shipments";
@@ -41,5 +41,33 @@ describe("conta de creator em duas marcas (D-SHAREDACCOUNT, banco real)", () => 
     await staffUpdateAddress(prisma, both, a.creator.id, ADDRESS, true);
     expect((await setTemporaryPassword(prisma, both, userId, admin)).password).toHaveLength(10);
     expect(await prisma.creatorAccount.findUniqueOrThrow({ where: { id: a.account.id } })).toMatchObject({ pixKey: "nova@exemplo.com", name: "Nome Novo", addrCity: "São Paulo" });
+  });
+
+  it("D-ACCESSDIRECT: cria o acesso de quem nunca entrou, com senha provisória; só quem edita em todas as marcas", async () => {
+    const a = await seedBrand(prisma);
+    const b = await seedBrand(prisma);
+    const onlyA = await gestao([a.brand.id]);
+    const created: string[] = [];
+    const login = async (email: string) => {
+      created.push(email);
+      return { userId: randomUUID() };
+    };
+    // Sem login, só na marca A.
+    const r = await createCreatorLogin(prisma, onlyA, a.account.id, login, () => "senha12345");
+    expect(r).toEqual({ password: "senha12345", email: a.account.email.toLowerCase() });
+    const acc = await prisma.creatorAccount.findUniqueOrThrow({ where: { id: a.account.id }, include: { user: true } });
+    expect(acc.user).toMatchObject({ email: a.account.email.toLowerCase(), mustChangePassword: true });
+    await expect(createCreatorLogin(prisma, onlyA, a.account.id, login)).rejects.toThrow(/já tem acesso/);
+
+    // Conta também da marca B: quem só edita A não cria.
+    const shared = await prisma.creatorAccount.create({ data: { name: "Nas Duas", email: `${randomUUID()}@x.com` } });
+    await prisma.creator.create({ data: { brandId: a.brand.id, accountId: shared.id, categories: ["INFLUENCER"] } });
+    await prisma.creator.create({ data: { brandId: b.brand.id, accountId: shared.id, categories: ["INFLUENCER"] } });
+    await expect(createCreatorLogin(prisma, onlyA, shared.id, login)).rejects.toThrow(/outra marca/);
+    // E-mail fictício da importação: pede o real.
+    const fake = await prisma.creatorAccount.create({ data: { name: "Sem Email", email: `x-${randomUUID()}@import.creatorclub` } });
+    await prisma.creator.create({ data: { brandId: a.brand.id, accountId: fake.id, categories: ["INFLUENCER"] } });
+    await expect(createCreatorLogin(prisma, onlyA, fake.id, login)).rejects.toThrow(/e-mail real/);
+    expect(created).toHaveLength(1);
   });
 });

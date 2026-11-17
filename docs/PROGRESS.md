@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-334 — 2026-11-17 — Acesso direto com senha provisória para quem nunca entrou (D-ACCESSDIRECT)
+- Pedido da Fátima e do responsável: a ficha só tinha "Acesso ao portal" (senha provisória, corrigir e-mail, link de
+  nova senha) para quem já tinha login; as creators importadas do app antigo só tinham o convite por link. Agora, na
+  aba Cadastro da ficha, quem nunca entrou tem "Criar acesso com senha provisória": cria o login com o e-mail do
+  cadastro (já confirmado), mostra a senha uma vez com a mensagem pronta para o WhatsApp, e no primeiro acesso o
+  portal pede a senha dela. E-mail errado se corrige em Contato antes. Mesma regra D-SHAREDACCOUNT (só quem edita em
+  todas as marcas dela). Vale para as 3 marcas. O convite por link continua.
+- `createCreatorLogin` (`src/lib/auth/access.ts`), `createLoginAction`, `NewAccessBox`. Teste em
+  `shared-account.test.ts`.
+
 ### CP-333 — 2026-11-17 — Preparação do pagamento de 20/11 (Botanika, dados de produção)
 - Saques abertos: Ludimilla R$ 1.014,21 e Clesiane R$ 194,78 (nota conferida pelo sistema, falta aprovar); Joingle
   R$ 325,17 aprovada com nota "conferir à mão". A conferência com o Guilherme (CP-330) liberou as que estavam seguradas.

@@ -2,7 +2,7 @@
 
 import { KeyRound, Mail, MessageCircle } from "lucide-react";
 import { useActionState } from "react";
-import { loginEmailAction, resetPasswordAction, temporaryPasswordAction } from "@/app/admin/acesso/actions";
+import { createLoginAction, loginEmailAction, resetPasswordAction, temporaryPasswordAction } from "@/app/admin/acesso/actions";
 import { CopyButton } from "@/components/portal/copy-button";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
@@ -81,6 +81,45 @@ export function AccessBox({ userId, lastSeenAt, canReset, name, phone = null, lo
             <CopyButton value={state.link} label="Copiar link" />
             {whatsappLink(phone, `Oi, ${first}! Segue o link para criar uma nova senha do portal (vale por 1 hora e só funciona uma vez):\n${state.link}`) && (
               <a href={whatsappLink(phone, `Oi, ${first}! Segue o link para criar uma nova senha do portal (vale por 1 hora e só funciona uma vez):\n${state.link}`)!} target="_blank" rel="noopener noreferrer" className={`${ui.btnSm} inline-flex items-center gap-1.5`}>
+                <MessageCircle className="size-3.5" /> Abrir WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * D-ACCESSDIRECT: creator que nunca entrou no portal. A equipe cria o acesso com o e-mail do cadastro e uma senha
+ * provisória (aparece uma vez, com a mensagem pronta para o WhatsApp). O e-mail se corrige em Contato, antes.
+ */
+export function NewAccessBox({ accountId, email, emailOk, name, phone = null }: { accountId: string; email: string; emailOk: boolean; name: string; phone?: string | null }) {
+  const [state, action, pending] = useActionState(createLoginAction, undefined);
+  const first = name.trim().split(/\s+/)[0] ?? name;
+  const text = state?.password
+    ? `Oi, ${first}! Seu acesso ao portal de creators está pronto 💚\nEntre em creatorclub.app.br\nE-mail: ${state.email}\nSenha provisória: ${state.password}\nNo primeiro acesso o portal pede para você criar a sua própria senha.`
+    : "";
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm"><span className="text-stone-500">Ainda não entrou no portal.</span> {emailOk ? <>Vai entrar com: <span className="font-mono">{email}</span></> : "Salve o e-mail real dela em Contato primeiro."}</p>
+      {emailOk && !state?.password && (
+        <form action={action} onSubmit={(e) => { if (!confirm(`Criar o acesso de ${first} com o e-mail ${email}?`)) e.preventDefault(); }} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="accountId" value={accountId} />
+          <button className={`${ui.btnSm} inline-flex items-center gap-1.5`} disabled={pending}><KeyRound className="size-3.5" /> {pending ? "Criando…" : "Criar acesso com senha provisória"}</button>
+          <span className={ui.hint}>E-mail errado? Corrija em Contato antes. Ela cria a própria senha no primeiro acesso.</span>
+        </form>
+      )}
+      <Msg state={state?.password ? undefined : state} />
+      {state?.password && (
+        <div className={`${ui.inset} flex flex-col gap-2 text-sm`}>
+          <p>{state.ok}</p>
+          <p>E-mail: <span className="font-mono">{state.email}</span> · Senha: <span className="font-mono text-base font-semibold">{state.password}</span></p>
+          <div className="flex flex-wrap gap-2">
+            <CopyButton value={text} label="Copiar mensagem" />
+            {whatsappLink(phone, text) && (
+              <a href={whatsappLink(phone, text)!} target="_blank" rel="noopener noreferrer" className={`${ui.btnSm} inline-flex items-center gap-1.5`}>
                 <MessageCircle className="size-3.5" /> Abrir WhatsApp
               </a>
             )}

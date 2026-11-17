@@ -1,3 +1,4 @@
+import { FAKE_EMAIL_DOMAIN } from "@/lib/import/legacy";
 import { OTHER_BRAND_MESSAGE } from "@/lib/creators/shared-account";
 import { randomInt } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -24,6 +25,8 @@ export async function touchLastSeen(prisma: PrismaClient, userId: string, now = 
 
 /** D-ACCESSFIX: troca a senha ou o e-mail de login no Supabase (trocado nos testes). */
 export type AuthAdmin = { setPassword(userId: string, password: string): Promise<void>; setEmail(userId: string, email: string): Promise<void> };
+/** Cria o login no Supabase Auth (e-mail já confirmado). */
+export type CreateLogin = (email: string, password: string) => Promise<{ userId: string } | { error: "exists" | "failed" }>;
 
 /** Senha provisória fácil de ditar: sem letras e números que se confundem (l/1, o/0). */
 export function temporaryPassword(size = 10): string {
@@ -121,4 +124,32 @@ export async function changeLoginEmail(prisma: PrismaClient, actor: Actor | null
 /** D-ACCESSFIX: entrou com senha provisória e ainda não criou a própria? */
 export async function mustChangePassword(prisma: PrismaClient, userId: string): Promise<boolean> {
   return (await prisma.user.findUnique({ where: { id: userId }, select: { mustChangePassword: true } }))?.mustChangePassword === true;
+}
+
+/**
+ * D-ACCESSDIRECT (pedido do responsável e da Fátima, 2026-11-17): para a creator que nunca entrou no portal, a equipe
+ * cria o acesso direto com o e-mail do cadastro e uma senha provisória (sem esperar o convite). Aparece uma vez para
+ * mandar pelo WhatsApp; no primeiro acesso o portal pede a senha dela. Só quem edita em todas as marcas dela.
+ */
+export async function createCreatorLogin(prisma: PrismaClient, actor: Actor | null, accountId: string, createLogin: CreateLogin, make = temporaryPassword) {
+  if (!actor) throw new AccessError("Sem permissão.");
+  const account = await prisma.creatorAccount.findUnique({ where: { id: accountId }, select: { id: true, name: true, email: true, userId: true, creators: { select: { brandId: true } } } });
+  if (!account || account.creators.length === 0) throw new AccessError("Creator não encontrada.");
+  const brands = account.creators.map((c) => c.brandId);
+  if (!brands.some((b) => can(actor.grants, "creators.edit", b))) throw new AccessError("Sem permissão.");
+  if (brands.some((b) => !can(actor.grants, "creators.edit", b))) throw new AccessError(OTHER_BRAND_MESSAGE);
+  if (account.userId) throw new AccessError("Ela já tem acesso ao portal. Use \"Criar senha provisória\".");
+  const email = account.email.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith(FAKE_EMAIL_DOMAIN)) throw new AccessError("Salve o e-mail real dela em Contato antes de criar o acesso.");
+  if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) throw new AccessError("Esse e-mail já tem login no Creator Club. Corrija o e-mail dela em Contato ou fale com o super admin.");
+  const password = make();
+  const created = await createLogin(email, password);
+  if ("error" in created) throw new AccessError(created.error === "exists" ? "Esse e-mail já tem login no Creator Club. Corrija o e-mail dela em Contato ou fale com o super admin." : "Não foi possível criar o acesso agora. Tente de novo.");
+  await prisma.$transaction(async (tx) => {
+    await tx.user.create({ data: { id: created.userId, email, name: account.name, mustChangePassword: true } });
+    const linked = await tx.creatorAccount.updateMany({ where: { id: account.id, userId: null }, data: { userId: created.userId } });
+    if (linked.count !== 1) throw new AccessError("Ela acabou de ganhar acesso por outro caminho. Atualize a página.");
+    await tx.auditLog.create({ data: { brandId: brands.find((b) => can(actor.grants, "creators.edit", b)) ?? null, actorType: "USER", actorId: actor.userId, action: "creator.login_created", entity: "CreatorAccount", entityId: account.id, after: { email } } });
+  });
+  return { password, email };
 }
