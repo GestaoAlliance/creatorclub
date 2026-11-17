@@ -40,3 +40,11 @@ export function stepMonth(p: PickedPeriod, delta: -1 | 1, today: string): string
 }
 
 export const rangeKey = (from: string, to: string) => `r:${from}:${to}`;
+
+/** O período numa frase ("em novembro de 2026", "nos últimos 30 dias", "no ano de 2026", "de 05/09/2026 a 10/10/2026"). */
+export function periodPhrase(p: PickedPeriod): string {
+  if (p.kind === "days") return "nos últimos 30 dias";
+  if (p.kind === "year") return `no ${p.label.charAt(0).toLowerCase()}${p.label.slice(1)}`;
+  if (p.kind === "range") return `de ${p.label}`;
+  return `em ${p.label.charAt(0).toLowerCase()}${p.label.slice(1)}`;
+}

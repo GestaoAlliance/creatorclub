@@ -16,6 +16,8 @@ import { BIG_ORDER_FACTOR, listSales, salesReview, SALES_PAGE_SIZE, type ReviewK
 import { staffContext } from "@/lib/staff/context";
 import { filtersOf, salesPeriod, searchesAllTime, type Search } from "./filters";
 import { SalesTable } from "./sales-table";
+import { CreatorPicker } from "@/components/staff/creator-picker";
+import { creatorPeriodSales } from "@/lib/sales/creator-period";
 
 export const dynamic = "force-dynamic";
 
@@ -57,10 +59,17 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const ids = motivo === "pending" ? review.pending.ids : motivo === "lost" ? review.lost.ids : motivo ? review.kinds[motivo].ids : undefined;
   const f = { ...base, ...(ids ? { ids } : {}) };
   const page = Math.max(1, Number.parseInt(sp.pagina ?? "1", 10) || 1);
-  const r = await listSales(db(), brand.id, f, page);
+  // D-PERIODPICK: a creator escolhida (lista e resumo dela no período).
+  const [r, creators, mine] = await Promise.all([
+    listSales(db(), brand.id, f, page),
+    db().creator.findMany({ where: { brandId: brand.id }, select: { id: true, archivedAt: true, account: { select: { name: true } } }, orderBy: { account: { name: "asc" } } }),
+    f.creatorId ? creatorPeriodSales(db(), f.creatorId, period, timezone) : Promise.resolve(null),
+  ]);
+  const options = creators.map((c) => ({ id: c.id, name: c.archivedAt ? `${c.account.name} (arquivada)` : c.account.name }));
+  const chosen = f.creatorId ? (options.find((o) => o.id === f.creatorId) ?? null) : null;
   const pages = Math.max(1, Math.ceil(r.total / SALES_PAGE_SIZE));
   const allCount = SALE_STATUSES.reduce((s, k) => s + r.counts[k], 0);
-  const keep = { p: sp.p ?? "", periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "" };
+  const keep = { p: sp.p ?? "", periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "", creator: f.creatorId ?? "" };
   const toggle = (m: string) => `/admin/vendas${query(sp, { motivo: sp.motivo === m ? "" : m, pagina: "" })}#lista`;
   const heatMax = Math.max(1, ...review.heat.flat());
   const bestSlot = review.heat.flatMap((row, d) => row.map((n, h) => ({ d, h, n }))).sort((a, b) => b.n - a.n)[0];
@@ -125,6 +134,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
                 <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
                 <input name="q" defaultValue={f.q} placeholder="Pedido, cupom ou creator" aria-label="Buscar venda" className={`${ui.input} !rounded-full pl-10`} />
               </label>
+              <CreatorPicker key={f.creatorId ?? ""} options={options} value={f.creatorId ?? null} />
               <select name="dona" defaultValue={sp.dona ?? ""} aria-label="Creator" className={`${ui.inputSm} !rounded-full`}>
                 <option value="">Com e sem creator</option>
                 <option value="creator">Só com creator</option>
@@ -136,6 +146,26 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
                 <a href={`/admin/vendas/csv${query(sp, { pagina: "" })}`} className={ui.ghostSm}><Download className="size-3.5" /> CSV</a>
               </span>
             </form>
+            {chosen && mine && (
+              <div className="liquid-tile grid grid-cols-2 items-end gap-x-6 gap-y-3 rounded-2xl px-4 py-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]">
+                <div className="col-span-2 min-w-0 sm:col-span-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{period.label ?? `${dmy(period.from)} a ${dmy(period.to)}`}</p>
+                  <Link href={`/admin/creators/${chosen.id}`} className="font-semibold hover:underline">{chosen.name}</Link>
+                </div>
+                {[
+                  { k: "Vendido", v: <M>{formatBRL(mine.salesCents)}</M> },
+                  { k: "Pedidos pagos", v: mine.orders },
+                  { k: "Comissão", v: <M>{formatBRL(mine.commissionCents)}</M> },
+                  { k: "Ticket médio", v: <M>{formatBRL(mine.ticketCents)}</M> },
+                ].map((x) => (
+                  <div key={x.k} className="flex flex-col">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{x.k}</span>
+                    <span className="whitespace-nowrap text-lg font-semibold tabular-nums">{x.v}</span>
+                  </div>
+                ))}
+                <p className="col-span-full text-[11px] text-stone-500">Pedidos pagos no período, pela data do pagamento (a mesma regra da comissão). A lista abaixo mostra todos os pedidos dela feitos no período.</p>
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
               <span>
                 <strong className="text-stone-800 dark:text-stone-100">{r.total}</strong> {r.total === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos dos pagos (a base da comissão) ·{" "}

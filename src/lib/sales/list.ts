@@ -9,7 +9,7 @@ import { dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, saleR
 
 export const SALES_PAGE_SIZE = 10;
 
-export type SalesFilters = { q?: string; status?: SaleStatus | ""; owner?: "creator" | "none" | ""; from?: string; to?: string; /** D-SALESREVIEW: só estes pedidos (quadro da conferência). */ ids?: string[] };
+export type SalesFilters = { /** D-PERIODPICK: só os pedidos desta creator. */ creatorId?: string; q?: string; status?: SaleStatus | ""; owner?: "creator" | "none" | ""; from?: string; to?: string; /** D-SALESREVIEW: só estes pedidos (quadro da conferência). */ ids?: string[] };
 
 const paid = [...PAID_FINANCIAL];
 const refunded = [...REFUNDED_FINANCIAL];
@@ -39,6 +39,7 @@ function baseWhere(brandId: string, f: SalesFilters, timeZone: string): Prisma.O
     });
   }
   if (f.ids) and.push({ id: { in: f.ids } });
+  if (f.creatorId) and.push({ attribution: { creatorId: f.creatorId } });
   if (f.owner === "creator") and.push({ attribution: { isNot: null } });
   if (f.owner === "none") and.push({ attribution: { is: null } });
   if (f.from && isDayKey(f.from)) and.push({ createdAtShop: { gte: startOfLocalDay(f.from, timeZone) } });
@@ -99,13 +100,13 @@ async function decorate(prisma: PrismaClient, brandId: string, orders: OrderRow[
 export type SaleRow = Awaited<ReturnType<typeof decorate>>[number];
 
 /** Uma página de vendas (mais novas primeiro), as contagens por situação e as somas do filtro. */
-export async function listSales(prisma: PrismaClient, brandId: string, f: SalesFilters, page = 1) {
+export async function listSales(prisma: PrismaClient, brandId: string, f: SalesFilters, page = 1, size = SALES_PAGE_SIZE) {
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
   const base = baseWhere(brandId, f, brand.timezone);
   const where: Prisma.OrderWhereInput = f.status ? { AND: [base, statusWhere(f.status)] } : base;
   const statuses: SaleStatus[] = ["PAID", "PENDING", "REFUNDED", "CANCELLED", "TEST"];
   const [orders, total, sums, counts] = await Promise.all([
-    prisma.order.findMany({ where, orderBy: [{ createdAtShop: "desc" }, { id: "desc" }], skip: (Math.max(1, page) - 1) * SALES_PAGE_SIZE, take: SALES_PAGE_SIZE, select: SELECT }),
+    prisma.order.findMany({ where, orderBy: [{ createdAtShop: "desc" }, { id: "desc" }], skip: (Math.max(1, page) - 1) * size, take: size, select: SELECT }),
     prisma.order.count({ where }),
     // Só pedidos pagos somam (a base da comissão); cancelados, teste e não pagos ficam na lista e fora da soma.
     prisma.order.aggregate({ where: { AND: [where, statusWhere("PAID")] }, _sum: { subtotalCents: true } }),

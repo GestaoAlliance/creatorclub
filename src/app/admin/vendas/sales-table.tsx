@@ -81,6 +81,9 @@ function OrderPanel({ id, onClose, onPrev, onNext }: { id: string; onClose: () =
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Creator</p>
                 {d.creatorId ? (
                   <p className="mt-0.5"><Link href={`/admin/creators/${d.creatorId}`} className="font-semibold hover:underline">{d.creatorName}</Link> · {d.reason}</p>
+                ) : null}
+                {d.creatorId ? (
+                  <Link href={`/admin/vendas?creator=${d.creatorId}#lista`} className="peek-chip mt-2">Ver só as vendas dela</Link>
                 ) : (
                   <p className="mt-0.5 font-medium">Nenhuma: {d.reason}</p>
                 )}
