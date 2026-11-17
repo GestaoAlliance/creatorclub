@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { AccessError, type AuthAdmin, type RecoveryTokenMaker } from "./access";
+import { AccessError, type AuthAdmin, type CreateLogin, type RecoveryTokenMaker } from "./access";
 
 /** Código de nova senha gerado pelo Supabase (M4.4b): o link aponta para /auth/confirm, que confere no servidor quando a pessoa toca no botão. */
 export const supabaseRecoveryToken: RecoveryTokenMaker = async (email) => {
@@ -20,4 +20,11 @@ export const supabaseAuthAdmin: AuthAdmin = {
     const { error } = await supabaseAdmin().auth.admin.updateUserById(userId, { email, email_confirm: true });
     if (error) throw new AccessError(/already|registered|exists/i.test(error.message) ? "Esse e-mail já tem login no Creator Club." : "Não foi possível trocar o e-mail agora. Tente de novo.");
   },
+};
+
+/** D-ACCESSDIRECT: cria o login com e-mail já confirmado. */
+export const supabaseCreateLogin: CreateLogin = async (email, password) => {
+  const r = await supabaseAdmin().auth.admin.createUser({ email, password, email_confirm: true });
+  if (r.data.user) return { userId: r.data.user.id };
+  return { error: /already|registered|exists/i.test(r.error?.message ?? "") ? "exists" : "failed" };
 };

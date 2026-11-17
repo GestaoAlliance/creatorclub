@@ -2,9 +2,9 @@
 
 import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
-import { AccessError, changeLoginEmail, emailPasswordReset, passwordResetLink, setTemporaryPassword } from "@/lib/auth/access";
+import { AccessError, changeLoginEmail, createCreatorLogin, emailPasswordReset, passwordResetLink, setTemporaryPassword } from "@/lib/auth/access";
 import { currentActor } from "@/lib/auth/current";
-import { supabaseAuthAdmin, supabaseRecoveryToken } from "@/lib/auth/recovery";
+import { supabaseAuthAdmin, supabaseCreateLogin, supabaseRecoveryToken } from "@/lib/auth/recovery";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
@@ -46,6 +46,18 @@ export async function loginEmailAction(_prev: ResetState, form: FormData): Promi
     const email = await changeLoginEmail(db(), await currentActor(), String(form.get("userId") ?? ""), String(form.get("email") ?? ""), supabaseAuthAdmin);
     revalidatePath("/admin", "layout");
     return { ok: `Pronto: agora ela entra com ${email} (a senha continua a mesma).`, email };
+  } catch (error) {
+    if (error instanceof AccessError) return { error: error.message };
+    throw error;
+  }
+}
+
+/** D-ACCESSDIRECT: cria o acesso de quem nunca entrou, com senha provisória (aparece uma vez). */
+export async function createLoginAction(_prev: ResetState, form: FormData): Promise<ResetState> {
+  try {
+    const r = await createCreatorLogin(db(), await currentActor(), String(form.get("accountId") ?? ""), supabaseCreateLogin);
+    revalidatePath("/admin", "layout");
+    return { ok: "Acesso criado. A senha aparece só agora: mande pelo WhatsApp.", password: r.password, email: r.email };
   } catch (error) {
     if (error instanceof AccessError) return { error: error.message };
     throw error;
