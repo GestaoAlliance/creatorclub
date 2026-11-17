@@ -332,6 +332,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   com a Fernanda (regra do primeiro cupom). Joingle conferida pedido a pedido: julho, a planilha deixou de fora o
   #1709 (BOTANIKA antes de JOINGLE; PROMO não leva, então é dela, R$ 91,04); setembro, o Pix de R$ 844,57 foi R$ 150,34
   acima das vendas de setembro dela. Saldo R$ 50,29 + outubro R$ 274,88 = R$ 325,17 está certo.
+- Victoria (decisão da Vanessa, confirmada pelo responsável, 17/11): o pago a mais de jun–set (R$ 2.267,57) não é
+  descontado. Ajuste + R$ 2.267,57 no extrato por SQL (super admin, com AuditLog; chave
+  `victoria:perdao-jun-set:2026-11`). Disponível = R$ 8.548,52 (a comissão de outubro). Não perguntar ao Guilherme:
+  pedido da Vanessa (tudo passa pelo grupo antes).
 - Guia de pagamento das creators (PDF da equipe) conferido: ajustar valor da nota (aba Saque), nome da tela (Saque),
   status "Pago", % do contrato, prazo de novembro até o dia 22, recibo para quem é pessoa física.
 
