@@ -315,6 +315,39 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-343 — 2026-11-17 — Ajustes da conferência: clique duplo e "sem chave Pix" (D-PAYCHECK)
+- "Conferido" (e "Mandar para o Pedro") não grava de novo quando o último registro da creator no mês já é o mesmo
+  (status e valor): o clique duplo da Fátima tinha gravado Ruy, Raquel, Israel e Clesiane duas vezes (sem efeito,
+  vale o último). O botão também trava enquanto envia.
+- Lista "0. Conferir": aviso "sem chave Pix" na creator sem chave cadastrada (ela informa no pedido de saque, que não
+  sai sem a chave).
+- Guia de pagamento das creators refeito (PDF, fora do repositório) com o fluxo atual do portal.
+- Teste em `integration/payout-check.test.ts`.
+
+### CP-342 — 2026-11-17 — Conferência real dos saques da Botanika e pausa ligada (produção)
+- Pausa dos pedidos de produtos ligada na Botanika por SQL, com AuditLog (D-PRODUCTPAUSE): 1 pedido esperando
+  aprovação fica parado; 74 kits pendentes ficam guardados.
+- Conferência (D-PAYCHECK) nos dados reais, comissão de outubro: 26 creators com valor a receber (R$ 17.321,45).
+  Batem só com outubro: Israel, Nathalia, Naiana, Lorena e Cristiane. As outras têm comissão de meses anteriores que
+  acumulou até o mínimo; a Fátima conferiu na planilha de controle (jul–set) que nada foi pago por fora para 14 delas
+  e para a Julia (os R$ 3.547,32 já descontados).
+- Em aberto (perguntas ao responsável e à equipe): Victoria (Pix de 16/09 de R$ 17.456,00, R$ 1.985,85 acima da
+  planilha: perguntar ao Guilherme); Joingle (R$ 59,30 de diferença por mês contra a planilha); Juliana Esposito
+  (5 pedidos de julho, R$ 180,70) e Barbieri (R$ 100,68): pagar depois do encerramento?; pedido #2438 (FESTEVES,
+  JULIACOLARES, LARILESSA) está com a Fernanda pela regra do primeiro cupom, a planilha dá à Larissa; Clesiane
+  cancela e pede de novo o valor total (R$ 509,20).
+- Decisões do responsável (17/11): Juliana Esposito e Barbieri recebem a comissão das vendas de antes do encerramento
+  (Juliana marcada como desligada por SQL, com AuditLog; o portal continua deixando pedir o saque); o pedido #2438 fica
+  com a Fernanda (regra do primeiro cupom). Joingle conferida pedido a pedido: julho, a planilha deixou de fora o
+  #1709 (BOTANIKA antes de JOINGLE; PROMO não leva, então é dela, R$ 91,04); setembro, o Pix de R$ 844,57 foi R$ 150,34
+  acima das vendas de setembro dela. Saldo R$ 50,29 + outubro R$ 274,88 = R$ 325,17 está certo.
+- Victoria (decisão da Vanessa, confirmada pelo responsável, 17/11): o pago a mais de jun–set (R$ 2.267,57) não é
+  descontado. Ajuste + R$ 2.267,57 no extrato por SQL (super admin, com AuditLog; chave
+  `victoria:perdao-jun-set:2026-11`). Disponível = R$ 8.548,52 (a comissão de outubro). Não perguntar ao Guilherme:
+  pedido da Vanessa (tudo passa pelo grupo antes).
+- Guia de pagamento das creators (PDF da equipe) conferido: ajustar valor da nota (aba Saque), nome da tela (Saque),
+  status "Pago", % do contrato, prazo de novembro até o dia 22, recibo para quem é pessoa física.
+
 ### CP-341 — 2026-11-17 — Seletor de tempo em Desempenho e Cupons (D-PERIODPICK)
 - Desempenho: o seletor fica na faixa; as vendas de cada creator nas abas Instagram (venda por mil), UGC e Origem são
   as do período, e na Origem as inscrições e aprovações contam pelo período (ativas é hoje). Os números do Instagram

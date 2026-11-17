@@ -22,6 +22,8 @@ export type CheckRow = {
   creatorId: string;
   name: string;
   phone: string | null;
+  /** Sem chave Pix cadastrada: o pagamento não sai até ela informar (no pedido de saque). */
+  hasPix: boolean;
   month: string;
   salesCents: number;
   rateBps: number | null;
@@ -50,7 +52,7 @@ export async function payCheckRows(prisma: PrismaClient, brandId: string, kind: 
   const lastClosed = previousMonthKey(monthKey(now, tz));
   const creators = await prisma.creator.findMany({
     where: { brandId, archivedAt: null, ...(kind ? { receivesAsIndividual: kind === "CPF" } : {}), ...(only ? { id: { in: only } } : {}) },
-    select: { id: true, categories: true, account: { select: { name: true, phone: true } } },
+    select: { id: true, categories: true, account: { select: { name: true, phone: true, pixKey: true } } },
   });
   const list = creators.filter((c) => !isUgcOnly(c.categories));
   const ids = list.map((c) => c.id);
@@ -110,6 +112,7 @@ export async function payCheckRows(prisma: PrismaClient, brandId: string, kind: 
       creatorId: c.id,
       name: c.account.name,
       phone: c.account.phone,
+      hasPix: Boolean(c.account.pixKey?.trim()),
       month,
       salesCents,
       rateBps,
@@ -167,6 +170,8 @@ export async function recordPayCheck(prisma: PrismaClient, actor: Actor | null, 
   const r = rows[0];
   if (!r) throw new PayCheckError("Nada a receber para conferir agora.");
   if (status === "CHECKED" && r.expectedCents === null) throw new PayCheckError("Sem taxa de comissão confirmada no mês: confirme a taxa antes de conferir.");
+  // Clique duplo (ou repetido): o mesmo registro que já vale não grava de novo.
+  if (r.check && !r.check.stale && r.check.status === status) return r;
   await prisma.$transaction([
     prisma.payoutCheck.create({
       data: { brandId: c.brandId, creatorId, month: r.month, status, amountCents: r.systemCents, expectedCents: r.expectedCents ?? 0, note: note?.trim().slice(0, 2000) || null, createdById: actor.userId, createdAt: now },
