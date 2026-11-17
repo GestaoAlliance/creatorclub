@@ -228,6 +228,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
       nfInstructions: true,
       whatsappInstance: true,
       contractLock: true,
+      productRequestsPausedAt: true,
       welcomeOneIds: true,
       welcomeTwoIds: true,
       approvalSuggestion: true,
@@ -261,5 +262,7 @@ export async function brandList(prisma: PrismaClient, actor: Actor | null) {
   const activeBy = new Map(active.map((a) => [a.brandId, a._count]));
   const waiting = await prisma.creator.groupBy({ by: ["brandId"], where: { awaitingContractAt: { not: null } }, _count: true });
   const waitingBy = new Map(waiting.map((a) => [a.brandId, a._count]));
-  return brands.map((b) => ({ ...b, store: b.integrations[0] ?? null, activeCreators: activeBy.get(b.id) ?? 0, awaitingContract: waitingBy.get(b.id) ?? 0 }));
+  const awaitingShip = await prisma.shipment.groupBy({ by: ["brandId"], where: { status: "AWAITING_APPROVAL" }, _count: true });
+  const shipBy = new Map(awaitingShip.map((a) => [a.brandId, a._count]));
+  return brands.map((b) => ({ ...b, store: b.integrations[0] ?? null, activeCreators: activeBy.get(b.id) ?? 0, awaitingContract: waitingBy.get(b.id) ?? 0, awaitingShipments: shipBy.get(b.id) ?? 0 }));
 }

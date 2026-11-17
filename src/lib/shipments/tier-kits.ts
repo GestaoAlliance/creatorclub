@@ -9,10 +9,10 @@ import { notify } from "@/lib/notifications/notify";
  * vendas do mês (subtotal dos pedidos pagos atribuídos, pelo mês do pagamento) e, se a faixa alcançada dá mais
  * produtos do que já foi liberado no mês, libera a diferença (um `KitGrant` MONTHLY por faixa; `window` = total do mês
  * até ali, e o índice único impede repetir). Os 3 primeiros meses contam da entrada da creator (contrato, ativação ou,
- * sem as duas, o início da meta).
+ * sem as duas, o início da meta). D-PRODUCTPAUSE: marca com os pedidos pausados não ganha kit.
  */
 export async function grantTierKits(prisma: PrismaClient, now = new Date()): Promise<number> {
-  const brands = await prisma.brand.findMany({ where: { archivedAt: null, monthlyKitFrom: { not: null } }, select: { id: true, slug: true, timezone: true, monthlyKitFrom: true } });
+  const brands = await prisma.brand.findMany({ where: { archivedAt: null, monthlyKitFrom: { not: null }, productRequestsPausedAt: null }, select: { id: true, slug: true, timezone: true, monthlyKitFrom: true } });
   let granted = 0;
   for (const brand of brands) {
     const current = monthKey(now, brand.timezone);

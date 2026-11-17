@@ -51,9 +51,11 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   ]);
   const board = await shipmentBoard(db(), actor, brand.id, shipments.map((s) => s.creator.id), now);
   // D-FIRSTKITNOTICE: aviso do 1º produto, pronto e esperando o clique do super admin.
-  const firstKit = brandsWith(actor.grants, "staff.manage") === "ALL" ? await firstKitAudience(db(), brand.id) : null;
+  // D-PRODUCTPAUSE: com os pedidos pausados, nada de chamar a creator para escolher kit.
+  const paused = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { productRequestsPausedAt: true } })).productRequestsPausedAt;
+  const firstKit = !paused && brandsWith(actor.grants, "staff.manage") === "ALL" ? await firstKitAudience(db(), brand.id) : null;
   // D-KITREMINDER: lembrete dos produtos parados, para a Gestão da marca.
-  const kitReminder = can(actor.grants, "creators.edit", brand.id) ? await kitReminderAudience(db(), brand.id) : null;
+  const kitReminder = !paused && can(actor.grants, "creators.edit", brand.id) ? await kitReminderAudience(db(), brand.id) : null;
   const canPrint = can(actor.grants, "shipping.view", brand.id) && can(actor.grants, "personal.address", brand.id);
   const personal = can(actor.grants, "personal.address", brand.id);
 
@@ -106,6 +108,11 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         canPrintAll={canPrint}
         newForm={form ? <NewShipmentForm creators={form.creators} products={form.products} /> : null}
       />
+      {paused && (
+        <p role="status" className="rounded-3xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-900 dark:text-red-200">
+          <strong>Pedidos de produtos pausados</strong> desde {paused.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}: as creators não escolhem kit nem compram com o saldo e aprovar está travado (recusar continua). Para voltar: Configurações › Marcas › Pedidos de produtos.
+        </p>
+      )}
       {firstKit && firstKit.grantIds.length > 0 && <FirstKitNotice count={firstKit.grantIds.length} names={firstKit.names} text={firstKitPreview(firstKit.brand)} hasWhatsApp={Boolean(firstKit.brand.whatsappInstance)} />}
       {kitReminder && kitReminder.grantIds.length > 0 && <KitReminder count={kitReminder.grantIds.length} names={kitReminder.names} text={kitReminderPreview(kitReminder.brand)} hasWhatsApp={Boolean(kitReminder.brand.whatsappInstance)} />}
       <nav aria-label="Outras situações" className="flex flex-wrap items-center gap-1.5 text-sm">

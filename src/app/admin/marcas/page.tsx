@@ -54,6 +54,8 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
           { id: "kits", label: "Kits e envio inicial", done: b.welcomeOneIds.length > 0, hint: "Produtos que a creator pode escolher e os do 1º pedido depois do contrato." },
           { id: "nota", label: "Nota fiscal", done: Boolean(b.nfServiceCode), hint: "O que a creator vê na tela de saque para emitir a nota." },
           { id: "whatsapp", label: "WhatsApp dos avisos", done: Boolean(b.whatsappInstance), hint: "Instância (Evolution, no n8n) que manda os avisos da creator das 9h às 20h." },
+          // D-PRODUCTPAUSE: pausa dos pedidos de produtos (kit e loja com o saldo).
+          { id: "pedidos", label: "Pedidos de produtos", done: b.productRequestsPausedAt ? false : null, hint: b.productRequestsPausedAt ? "Pausados: ninguém pede nem aprova até religar." : "Abertos: kits e loja com o saldo funcionando." },
           { id: "contrato", label: "Contrato na aprovação", done: null, hint: b.contractLock ? "Trava ligada: a creator só vira ativa depois de assinar." : "Trava desligada." },
           { id: "login", label: "Tela de entrar", done: b.assets.some((a) => a.kind === "LOGO"), hint: "Logo que aparece na tela de entrar da marca." },
         ];
@@ -64,6 +66,7 @@ export default async function MarcasPage({ searchParams }: { searchParams: Promi
               items={items}
               form={{ initial: { brandId: b.id, name: b.name, slug: b.slug, primaryColor: b.primaryColor, legalName: b.legalName ?? "", cnpj: b.nfTakerDocument ? formatCnpj(b.nfTakerDocument) : "", storeUrl: b.storeUrl ?? "", nfServiceCode: b.nfServiceCode ?? "", nfServiceDescription: b.nfServiceDescription ?? "", nfInstructions: b.nfInstructions ?? "", whatsappInstance: b.whatsappInstance ?? "", defaultRate: pct(b.defaultCommissionBps), defaultDiscount: pct(b.defaultDiscountBps), approvalSuggestion: b.approvalSuggestion ?? "", shopDiscount: pct(b.shopDiscountBps), financeEmail: b.financeEmail ?? "", bank: { convenio: b.bankConvenio ?? "", agency: b.bankAgency ?? "", agencyDv: b.bankAgencyDv ?? "", account: b.bankAccount ?? "", accountDv: b.bankAccountDv ?? "" }, shipFrom: shipFromInitial(b.shipFrom), welcomeOneIds: b.welcomeOneIds, welcomeTwoIds: b.welcomeTwoIds }, products: b.products }}
               lock={{ brandId: b.id, on: b.contractLock, waiting: b.awaitingContract }}
+              pause={{ brandId: b.id, pausedAt: b.productRequestsPausedAt?.toISOString() ?? null, awaiting: b.awaitingShipments }}
               logo={{ brandId: b.id, slug: b.slug, version: b.assets.find((a) => a.kind === "LOGO")?.sha256.slice(0, 12) ?? null }}
               calendar={(() => {
                 const c = calendarOf(b);

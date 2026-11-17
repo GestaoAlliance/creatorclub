@@ -90,7 +90,8 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
         account: { select: { name: true, phone: true, birthDate: true, userId: true, accessRequestedAt: true, invites: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } } } },
       },
     }),
-    prisma.kitGrant.findMany({ where: { brandId, status: "PENDING", createdAt: { lte: new Date(now.getTime() - KIT_PENDING_DAYS * DAY) } }, select: { id: true, creatorId: true, createdAt: true } }),
+    // D-PRODUCTPAUSE: marca com os pedidos pausados não cobra a escolha do kit.
+    prisma.kitGrant.findMany({ where: { brandId, status: "PENDING", brand: { productRequestsPausedAt: null }, createdAt: { lte: new Date(now.getTime() - KIT_PENDING_DAYS * DAY) } }, select: { id: true, creatorId: true, createdAt: true } }),
     prisma.shipment.findMany({
       where: { brandId, status: "PREPARING", createdAt: { lte: new Date(now.getTime() - SHIP_STUCK_DAYS * DAY) } },
       select: { id: true, creatorId: true, createdAt: true, approvedAt: true },

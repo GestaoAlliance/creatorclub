@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
 import { NF_DEFAULT_SERVICE } from "@/domain";
-import { brandAssetAction, createBrandAction, updateBrandAction, contractLockAction } from "./actions";
+import { brandAssetAction, createBrandAction, updateBrandAction, contractLockAction, productPauseAction } from "./actions";
 
 type Values = {
   brandId?: string;
@@ -266,6 +266,33 @@ export function ContractLockForm({ brandId, on, waiting }: { brandId: string; on
       </p>
       <div className="flex items-center gap-3">
         <button className={on ? ui.dangerSm : ui.btnSm} disabled={pending}>{pending ? "Salvando…" : on ? "Desligar a trava" : "Ligar a trava"}</button>
+        <Msg state={state} />
+      </div>
+    </form>
+  );
+}
+
+/** D-PRODUCTPAUSE: pausa dos pedidos de produtos (kit e loja com o saldo) da marca. */
+export function ProductPauseForm({ brandId, pausedAt, awaiting }: { brandId: string; pausedAt: string | null; awaiting: number }) {
+  const [state, action, pending] = useActionState(productPauseAction, undefined);
+  const paused = pausedAt !== null;
+  const ask = paused
+    ? "Voltar os pedidos de produtos? As creators voltam a escolher kit e comprar com o saldo, a equipe volta a aprovar e os kits automáticos voltam a ser concedidos."
+    : `Pausar os pedidos de produtos? Nenhuma creator da marca escolhe kit nem compra com o saldo, a equipe não aprova${awaiting ? ` (os ${awaiting} esperando ficam parados; recusar continua)` : ""} e os kits automáticos param de ser concedidos.`;
+  return (
+    <form action={action} onSubmit={(e) => { if (!confirm(ask)) e.preventDefault(); }} className="flex flex-col gap-2 text-sm">
+      <input type="hidden" name="brandId" value={brandId} />
+      <input type="hidden" name="paused" value={paused ? "0" : "1"} />
+      {paused ? (
+        <p className="rounded-2xl bg-red-500/10 px-3 py-2.5 text-red-900 dark:text-red-200">
+          <strong>Pausados</strong> desde {new Date(pausedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}. As creators não escolhem kit nem compram com o saldo; aprovar está travado
+          {awaiting > 0 ? ` (${awaiting} esperando)` : ""}; os kits mensal, da meta e da faixa não são concedidos. O kit de boas-vindas de quem é aprovada fica guardado até voltar.
+        </p>
+      ) : (
+        <p>Abertos: as creators escolhem os kits e compram com o saldo; a Gestão aprova e o pedido vai para o Envio.</p>
+      )}
+      <div className="flex items-center gap-3">
+        <button className={paused ? ui.btnSm : ui.dangerSm} disabled={pending}>{pending ? "Salvando…" : paused ? "Voltar os pedidos" : "Pausar os pedidos"}</button>
         <Msg state={state} />
       </div>
     </form>

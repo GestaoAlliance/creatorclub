@@ -25,6 +25,8 @@ model Brand {
   slug                      String              @unique
   /// D-CONTRACTSWITCH: aprovar trava até assinar o contrato (Autentique). Desligada: aprovar cria o cupom e libera na hora.
   contractLock              Boolean             @default(true)
+  /// D-PRODUCTPAUSE: pedidos de produtos pausados (kit e loja com o saldo; aprovar trava; kits automáticos param). null = abertos.
+  productRequestsPausedAt   DateTime?
   /// D-WELCOMECHOICE: produtos do envio inicial de cada opção (1 produto; 2 produtos + 3 vídeos).
   welcomeOneIds             String[]            @default([])
   welcomeTwoIds             String[]            @default([])

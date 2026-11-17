@@ -20,7 +20,8 @@ export async function portalNoticesBoard(prisma: PrismaClient, ctx: PortalContex
   const [brand, list, kits, shipped, campaigns, me] = await Promise.all([
     prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true, whatsappInstance: true } }),
     myNotifications(prisma, ctx),
-    prisma.kitGrant.count({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" } }),
+    // D-PRODUCTPAUSE: com os pedidos pausados, não chama para escolher kit.
+    prisma.kitGrant.count({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING", brand: { productRequestsPausedAt: null } } }),
     prisma.shipment.count({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "SHIPPED" } }),
     portalCampaigns(prisma, ctx, now),
     prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { account: { select: { phone: true, email: true } } } }),
