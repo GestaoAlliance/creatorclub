@@ -107,6 +107,8 @@ export async function acceptStaffInvite(
     if (!existing) {
       await tx.user.create({ data: { id: auth.userId, email: accountEmail, name: invite.name } });
     } else if (existing.disabledAt) {
+      // Quem foi removido volta só com o papel deste convite: os papéis de antes não voltam (auditoria de 2026-11-17).
+      await tx.roleGrant.deleteMany({ where: { userId: auth.userId } });
       await tx.user.update({ where: { id: auth.userId }, data: { disabledAt: null } });
     }
     for (const brandId of [invite.brandId, ...invite.extraBrandIds]) {
@@ -233,6 +235,8 @@ export async function disableStaffUser(prisma: PrismaClient, actor: Actor | null
       if (supers <= 1) throw new TeamError("Precisa sobrar ao menos um super admin.");
     }
     await tx.user.update({ where: { id: userId }, data: { disabledAt: now } });
+    // Removido = sem papéis (os de antes ficam no histórico abaixo); um convite novo dá só o papel dele.
+    await tx.roleGrant.deleteMany({ where: { userId } });
     await tx.auditLog.create({
       data: {
         actorType: "USER",

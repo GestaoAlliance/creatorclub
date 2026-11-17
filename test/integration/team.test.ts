@@ -130,4 +130,18 @@ describe("remover da equipe", () => {
     expect(await loadActor(prisma, other.userId)).toBeNull();
     expect(await prisma.auditLog.count({ where: { actorId: admin.userId, action: { in: ["role.revoke", "user.disable"] } } })).toBe(2);
   });
+
+  it("quem foi removido e aceita um convite novo volta só com o papel do convite", async () => {
+    const admin = await superAdmin();
+    const ex = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    const exUser = await prisma.user.findUniqueOrThrow({ where: { id: ex.userId } });
+    await disableStaffUser(prisma, admin, ex.userId);
+    expect(await prisma.roleGrant.count({ where: { userId: ex.userId } })).toBe(0);
+    // Removido antes desta correção (papéis ainda guardados): o convite também limpa.
+    await prisma.roleGrant.create({ data: { userId: ex.userId, role: "SUPER_ADMIN", brandId: null } });
+    const { token } = await createStaffInvite(prisma, admin, { email: "", name: "Hunter", role: "HUNTER", brandId: brand.id });
+    await acceptStaffInvite(prisma, token, { userId: ex.userId, email: exUser.email });
+    expect((await loadActor(prisma, ex.userId))?.grants).toEqual([{ role: "HUNTER", brandId: brand.id }]);
+  });
 });

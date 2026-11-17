@@ -90,17 +90,21 @@ export function DeliveredForm({ shipmentId }: { shipmentId: string }) {
   );
 }
 
-export function CancelForm({ shipmentId }: { shipmentId: string }) {
+export function CancelForm({ shipmentId, hasKit = false, purchase = false }: { shipmentId: string; hasKit?: boolean; purchase?: boolean }) {
   const [state, action, pending] = useActionState(cancelAction, undefined);
   return (
     <form
       action={action}
       onSubmit={(e) => {
-        if (!confirm("Cancelar este envio?")) e.preventDefault();
+        const kit = (e.currentTarget.elements.namedItem("returnKit") as HTMLInputElement | null)?.checked;
+        const msg = purchase ? "Cancelar este envio? O valor da compra volta para o saldo dela." : kit ? "Cancelar este envio? O kit volta para ela escolher de novo." : "Cancelar este envio?";
+        if (!confirm(msg)) e.preventDefault();
       }}
       className="inline-flex flex-wrap items-center gap-1.5"
     >
       <input type="hidden" name="shipmentId" value={shipmentId} />
+      {/* D-SHIPCANCEL: desmarcado; só quando ela vai escolher de novo (não quando a equipe refaz o envio à mão). */}
+      {hasKit && <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" name="returnKit" className="size-3.5" />Devolver o kit para ela escolher de novo</label>}
       <button className={ui.dangerSm} disabled={pending}>Cancelar envio</button>
       <Msg state={state} />
     </form>

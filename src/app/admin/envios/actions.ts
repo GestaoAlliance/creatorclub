@@ -61,7 +61,7 @@ export async function deliveredAction(_prev: ActionState, form: FormData): Promi
 }
 
 export async function cancelAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  return run(async () => cancelShipment(db(), await currentActor(), String(form.get("shipmentId"))), "Envio cancelado.");
+  return run(async () => cancelShipment(db(), await currentActor(), String(form.get("shipmentId")), { returnKit: form.get("returnKit") === "on" }), "Envio cancelado.");
 }
 
 /** D-KITAPPROVAL: a Gestão aprova o pedido da creator (vai para o Envio). */

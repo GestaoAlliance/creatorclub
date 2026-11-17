@@ -1,3 +1,4 @@
+import { OTHER_BRAND_MESSAGE } from "@/lib/creators/shared-account";
 import { randomInt } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { passwordResetEmail } from "@/domain";
@@ -47,6 +48,8 @@ async function target(prisma: PrismaClient, actor: Actor | null, userId: string)
   // Quem é da equipe só o super admin; creator, quem edita creators numa marca dela.
   const allowed = staff ? superAdmin : creators.some((c) => can(actor.grants, "creators.edit", c.brandId));
   if (!allowed) throw new AccessError("Sem permissão.");
+  // D-SHAREDACCOUNT: o login é um só para todas as marcas dela: só quem edita em todas (ou o super admin).
+  if (!staff && creators.some((c) => !can(actor.grants, "creators.edit", c.brandId))) throw new AccessError(OTHER_BRAND_MESSAGE);
   const brand = creators.find((c) => can(actor.grants, "creators.edit", c.brandId)) ?? creators[0];
   return { user, brandId: brand?.brandId ?? null, brandName: brand?.brand.name ?? "Alliance", brand: brand?.brand ?? null };
 }
@@ -100,7 +103,7 @@ export async function changeLoginEmail(prisma: PrismaClient, actor: Actor | null
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 200) throw new AccessError("E-mail inválido.");
   if (email === t.user.email) throw new AccessError("Esse já é o e-mail de login.");
   const brands = t.user.creatorAccount?.creators ?? [];
-  if (brands.some((c) => !can(actor!.grants, "creators.edit", c.brandId))) throw new AccessError("Ela também é creator de outra marca que você não acessa. Peça a um super admin.");
+  if (brands.some((c) => !can(actor!.grants, "creators.edit", c.brandId))) throw new AccessError(OTHER_BRAND_MESSAGE);
   const [user, account] = await Promise.all([
     prisma.user.findUnique({ where: { email }, select: { id: true } }),
     prisma.creatorAccount.findUnique({ where: { email }, select: { userId: true } }),

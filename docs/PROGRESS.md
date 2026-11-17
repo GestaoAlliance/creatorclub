@@ -315,6 +315,26 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-327 — 2026-11-17 — Auditoria das telas, lote 1 (altos e conta compartilhada)
+- Auditoria das telas pedida pelo responsável: 4 leituras do código em paralelo (portal, dinheiro, operação,
+  configuração e endpoints) e varredura no navegador (8 papéis e 3 tipos de creator, 373 telas em 2 marcas, banco
+  local). Varredura: nenhum erro 500, nenhum CPF/Pix/endereço para papel errado, outra marca bloqueada. Relatório:
+  https://claude.ai/artifact/AhLwM8jSXYhzaaXujpowci (25 achados: 3 altos, 9 médios, 13 baixos).
+- Corrigido neste lote:
+  - Equipe removida (D-STAFFREMOVE): remover apaga os papéis (ficam no histórico); aceitar convite depois de removido
+    dá só o papel do convite (antes voltavam todos, até super admin).
+  - Cadastro do site (D-SIGNUPJOIN): conta que já tem login só vira candidata de outra marca com a senha do login.
+  - Cancelar envio aprovado (D-SHIPCANCEL): o valor de compra com saldo volta ao extrato (ajuste novo); o kit só volta
+    quando a equipe marca "Devolver o kit para ela escolher de novo" (desmarcado: a equipe costuma refazer à mão).
+  - Conta em mais de uma marca (D-SHAREDACCOUNT): Pix, contato, perfil, endereço, senha provisória e link de senha só
+    por quem pode em todas as marcas dela; senão, super admin (`src/lib/creators/shared-account.ts`).
+- Produção (SQL com AuditLog): dos 6 kits presos em envios cancelados, Naiana e Erika (Revita, boas-vindas, sem envio
+  depois) voltaram a PENDING; Cheila, Maria Nazaré, Cristina (envio refeito à mão) e Julia (outro kit em preparo)
+  ficaram como usados, com registro.
+- Testes: `team.test.ts`, `signup.test.ts`, `shop.test.ts`, `shared-account.test.ts` (novo).
+- Próximo: lote 2 (médios) e lote 3 (baixos) da auditoria; pendentes com o responsável: UGC com Loja e senha
+  própria para a planilha Central.
+
 ### CP-326 — 2026-11-17 — Ensaio geral do dia de pagamento e correções (D-REMESSAFILE, D-BANKREJECT, D-BANKDATE)
 - Ensaio pedido pelo responsável: ciclo inteiro numa cópia local (calendário da Botanika de novembro, 6 creators
   fictícias, 4 CNPJ e 2 CPF), clicado nas telas com cada papel: pedido com nota no portal → aprovação da Gestão →

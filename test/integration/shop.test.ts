@@ -5,7 +5,7 @@ import { loadActor } from "@/lib/auth/actor";
 import { creatorBalance } from "@/lib/commission/release";
 import { portalContext } from "@/lib/portal/context";
 import { approveShipment, rejectShipment } from "@/lib/shipments/kits";
-import { updateMyAddress } from "@/lib/shipments/shipments";
+import { cancelShipment, updateMyAddress } from "@/lib/shipments/shipments";
 import { buyWithBalance, myShop } from "@/lib/shipments/shop";
 import { expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -62,6 +62,14 @@ describe("loja com o saldo (M5.1, D-SHOPBALANCE, banco real)", () => {
     expect(await s.balance()).toBe(10_000);
     expect(await prisma.ledgerEntry.findUniqueOrThrow({ where: { idempotencyKey: `purchase:${second}` } })).toMatchObject({ type: "PURCHASE", amountCents: -20_000, note: "Compra com o saldo: 1× Kit" });
     expect(await prisma.shipment.findUniqueOrThrow({ where: { id: second } })).toMatchObject({ status: "PREPARING" });
+
+    // D-SHIPCANCEL: cancelar depois de aprovado devolve o valor (lançamento novo) e o kit; cancelar de novo não repete.
+    const kit = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-11", salesCents: 0, products: 1, status: "CHOSEN", shipmentId: second, chosenAt: new Date() } });
+    await cancelShipment(prisma, s.gestao, second, { returnKit: true });
+    expect(await s.balance()).toBe(30_000);
+    expect(await prisma.ledgerEntry.findUniqueOrThrow({ where: { idempotencyKey: `purchase-cancel:${second}` } })).toMatchObject({ type: "ADJUSTMENT", amountCents: 20_000 });
+    expect(await prisma.kitGrant.findUniqueOrThrow({ where: { id: kit.id } })).toMatchObject({ status: "PENDING", shipmentId: null });
+    await expect(cancelShipment(prisma, s.gestao, second)).rejects.toThrow(/mudou de situação/);
   });
 
   it("pausada ou sem contrato não compra; travas do banco", async () => {

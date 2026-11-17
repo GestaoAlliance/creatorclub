@@ -1,5 +1,6 @@
 "use server";
 
+import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
@@ -7,6 +8,7 @@ import { lookupCnpj } from "@/lib/cnpj/lookup";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
 import { requestPortalAccess, signupCouponTaken, submitSignup, type SignupAuth } from "@/lib/onboarding/signup";
+import { supabasePublicEnv } from "@/lib/supabase/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -22,6 +24,15 @@ const supabaseSignupAuth: SignupAuth = {
   },
   async deleteUser(userId) {
     await supabaseAdmin().auth.admin.deleteUser(userId);
+  },
+  async checkPassword(userId, password) {
+    const u = await supabaseAdmin().auth.admin.getUserById(userId);
+    const email = u.data.user?.email;
+    if (!email || !password) return false;
+    // Cliente sem sessão: só confere a senha, não entra (nenhum cookie é gravado aqui).
+    const { url, key } = supabasePublicEnv();
+    const r = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.signInWithPassword({ email, password });
+    return !r.error && r.data.user?.id === userId;
   },
 };
 

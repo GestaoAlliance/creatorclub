@@ -23,6 +23,8 @@ const BRANDS_QUESTION = "Tenho interesse em representar:";
 export type SignupAuth = {
   createUser(email: string, password: string): Promise<{ userId: string } | { error: "exists" | "failed" }>;
   deleteUser(userId: string): Promise<void>;
+  /** A senha digitada é a do login desta pessoa? (auditoria de 2026-11-17: só a dona da conta a leva a outra marca) */
+  checkPassword(userId: string, password: string): Promise<boolean>;
 };
 
 /** `existing: "request"`: e-mail ou CPF de uma creator já cadastrada que ainda não criou a senha (D-ACCESSREQ). */
@@ -114,6 +116,9 @@ export async function submitSignup(
     (await prisma.creator.count({ where: { accountId: sameAccount.id } })) > 0
       ? sameAccount
       : null;
+  // Conta com login: só quem sabe a senha dela a leva para esta marca (senão qualquer um inscreveria a conta de outra).
+  if (joining?.userId && !(await auth.checkPassword(joining.userId, input.password)))
+    return { ok: false, errors: { password: "Para se inscrever com a conta que você já tem, use a mesma senha do seu login (ou toque em \"Esqueci a senha\" em Entrar)." } };
   // Já mandou esta inscrição (em análise): repetir o cadastro só mostra a mesma resposta.
   if (joining && (await prisma.creatorApplication.findFirst({ where: { brandId: brand.id, accountId: joining.id, status: "NEW" }, select: { id: true } })))
     return { ok: true, email: null, joined: joining.userId ? "login" : "nologin" };

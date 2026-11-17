@@ -1,3 +1,4 @@
+import { allowedInAllBrands, OTHER_BRAND_MESSAGE } from "./shared-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
 import { dayOf } from "./contract";
@@ -250,6 +251,7 @@ export async function updateContact(
 ) {
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
+  if (!(await allowedInAllBrands(prisma, creator.account.id, (b) => can(actor.grants, "creators.edit", b)))) throw new ProfileError(OTHER_BRAND_MESSAGE);
   const name = input.name.trim();
   const email = normalizeEmail(input.email);
   const phone = input.phone.trim() || null;
@@ -293,6 +295,7 @@ export async function updateProfile(
 ) {
   const creator = await loadCreator(prisma, creatorId);
   if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
+  if (!(await allowedInAllBrands(prisma, creator.account.id, (b) => can(actor.grants, "creators.edit", b)))) throw new ProfileError(OTHER_BRAND_MESSAGE);
   const r = cleanProfile(input);
   if (!r.ok) throw new ProfileError(Object.values(r.errors)[0]!);
   const a = creator.account;
