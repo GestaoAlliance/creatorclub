@@ -2,11 +2,12 @@ import { dayKey } from "@/domain";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
+import { staffPeriod } from "@/lib/staff/period";
 import { payMonthBoard, PayFlowError, payRowsCsv, type PayTab } from "@/lib/payouts/month-board";
 
 export const dynamic = "force-dynamic";
 
-// Planilha da aba (D-PAYFLOW): as linhas do mês, ou só as selecionadas (`ids`).
+// Planilha da aba (D-PAYFLOW): as linhas da aba, ou só as selecionadas (`ids`).
 export async function GET(req: Request, ctx: RouteContext<"/admin/pagamentos/[tipo]/planilha">) {
   const { tipo } = await ctx.params;
   const kind = tipo === "cpf" ? "CPF" : tipo === "cnpj" ? "CNPJ" : null;
@@ -18,13 +19,16 @@ export async function GET(req: Request, ctx: RouteContext<"/admin/pagamentos/[ti
   const q = new URL(req.url).searchParams;
   const tab = (["aprovar", "realizar", "realizados"].includes(q.get("aba") ?? "") ? q.get("aba") : "realizar") as PayTab;
   try {
-    const data = await payMonthBoard(db(), scopedActor(actor, brand.id), brand.id, kind, tab, q.get("mes") ?? undefined);
+    const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
+    const p = q.get("p");
+    const period = await staffPeriod(p ? { p } : {}, tz);
+    const data = await payMonthBoard(db(), scopedActor(actor, brand.id), brand.id, kind, tab, period);
     const ids = new Set((q.get("ids") ?? "").split(",").filter(Boolean));
     const rows = ids.size ? data.rows.filter((r) => r.withdrawalId && ids.has(r.withdrawalId)) : data.rows;
-    return new Response(payRowsCsv(rows, brand.name, data.month), {
+    return new Response(payRowsCsv(rows, brand.name), {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="pagamentos-${tipo}-${tab}-${brand.slug}-${data.month}-${dayKey(new Date())}.csv"`,
+        "Content-Disposition": `attachment; filename="pagamentos-${tipo}-${tab}-${brand.slug}-${tab === "realizados" ? `${period.from}_${period.to}-` : ""}${dayKey(new Date())}.csv"`,
         "Cache-Control": "no-store",
       },
     });

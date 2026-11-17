@@ -2,13 +2,13 @@
 
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, FileText, History, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { formatBRL, monthNamePt, shortBRL, UNEXPLAINED } from "@/domain";
 import { Msg } from "@/components/ui/msg";
 import { PayCalendar } from "@/components/ui/pay-calendar";
 import { ui } from "@/components/ui/styles";
 import type { PayKind, payMonthBoard, PayRow, PayTab } from "@/lib/payouts/month-board";
+import { PeriodPicker } from "@/components/staff/period-picker";
 import { Avatar } from "../../creators/list-parts";
 import { MessageSheet, SidePanel } from "../../desempenho/parts";
 import { payBatchAction } from "../../saques/actions";
@@ -29,14 +29,13 @@ const REMIND = {
 };
 
 /** D-PAYFLOW: faixa com o mês e as 3 etapas (abas), e a lista da etapa. */
-export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay, canEditCalendar = false }: { brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean; canEditCalendar?: boolean }) {
-  const router = useRouter();
+export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay, canEditCalendar = false, periodKey, periodLabel, today, monthly }: { brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean; canEditCalendar?: boolean; periodKey: string; periodLabel: string; today: string; monthly?: React.ReactNode }) {
   const doc = kind === "CNPJ" ? "nota" : "recibo";
-  const url = (t: PayTab, m = data.month) => `/admin/pagamentos/${tipo}?aba=${t}&mes=${m}`;
+  const url = (t: PayTab) => `/admin/pagamentos/${tipo}?aba=${t}&p=${encodeURIComponent(periodKey)}`;
   const tiles: { t: PayTab; value: number; hint: string }[] = [
     { t: "aprovar", value: data.stages.aprovar.cents, hint: `${data.stages.aprovar.count} ${data.stages.aprovar.count === 1 ? `${doc} enviada` : `${doc}s enviadas`}${data.stages.aprovar.waiting ? ` · ${data.stages.aprovar.waiting} sem enviar` : ""}` },
     { t: "realizar", value: data.stages.realizar.cents, hint: `${data.stages.realizar.count} ${data.stages.realizar.count === 1 ? "aprovada esperando o Pix" : "aprovadas esperando o Pix"}` },
-    { t: "realizados", value: data.stages.realizados.cents, hint: `${data.stages.realizados.count} ${data.stages.realizados.count === 1 ? "paga" : "pagas"}` },
+    { t: "realizados", value: data.stages.realizados.cents, hint: `${data.stages.realizados.count} Pix em ${periodLabel.toLowerCase()}` },
   ];
   return (
     <>
@@ -49,15 +48,11 @@ export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay,
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Pagamentos {kind}</h1>
               <p className="mt-1 max-w-xl text-sm text-white/80">
-                {kind === "CNPJ" ? "Creators com CNPJ: nota fiscal." : "Creators pessoa física: recibo aceito no portal."} Mês da comissão: a nota da janela de saque paga a comissão do mês anterior.
+                {kind === "CNPJ" ? "Creators com CNPJ: nota fiscal." : "Creators pessoa física: recibo aceito no portal."} Para aprovar e a realizar mostram tudo o que está em aberto; realizados, os Pix que saíram no período.
               </p>
             </div>
-            <label className="flex flex-col gap-1 text-xs font-medium text-white/75">
-              Mês da comissão
-              <select value={data.month} onChange={(e) => router.push(url(tab, e.target.value))} className="rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-sm font-semibold text-white outline-none [&>option]:text-stone-900">
-                {data.months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
-              </select>
-            </label>
+            {/* D-PERIODPICK: o período vale para os Pix que saíram e para o quadro Mês a mês. */}
+            <PeriodPicker value={periodKey} today={today} tone="brand" />
           </div>
           <nav className="grid grid-cols-1 gap-2 @2xl:grid-cols-3" aria-label="Etapas">
             {tiles.map((x, i) => (
@@ -83,14 +78,16 @@ export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay,
         <div className="@container mt-3"><PayCalendar month={data.calendar.month} days={data.calendar.days} normalEnd={data.calendar.normalEnd} today={data.calendar.today} /></div>
       </details>
 
-      <PayList key={`${tab}-${data.month}`} kind={kind} tipo={tipo} tab={tab} data={data} canPay={canPay} />
+      <PayList key={`${tab}-${periodKey}`} kind={kind} tipo={tipo} tab={tab} data={data} canPay={canPay} periodKey={periodKey} periodLabel={periodLabel} />
 
       {tab === "aprovar" && data.waiting.length > 0 && <Waiting data={data} doc={doc} canMessage={canMessage} />}
+
+      {monthly}
     </>
   );
 }
 
-function PayList({ kind, tipo, tab, data, canPay }: { kind: PayKind; tipo: string; tab: PayTab; data: Data; canPay: boolean }) {
+function PayList({ kind, tipo, tab, data, canPay, periodKey, periodLabel }: { kind: PayKind; tipo: string; tab: PayTab; data: Data; canPay: boolean; periodKey: string; periodLabel: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [state, action, pending] = useActionState(payBatchAction, undefined);
@@ -105,15 +102,15 @@ function PayList({ kind, tipo, tab, data, canPay }: { kind: PayKind; tipo: strin
     if (state?.ok) setSel(new Set());
   }, [state]);
   const doc = kind === "CNPJ" ? "nota" : "recibo";
-  const empty = tab === "aprovar" ? `Nenhum${kind === "CNPJ" ? "a nota" : " recibo"} para aprovar em ${monthLabel(data.month)}.` : tab === "realizar" ? `Nada esperando o Pix em ${monthLabel(data.month)}.` : `Nenhum pagamento de ${monthLabel(data.month)} ainda.`;
+  const empty = tab === "aprovar" ? `Nenhum${kind === "CNPJ" ? "a nota" : " recibo"} para aprovar.` : tab === "realizar" ? "Nada esperando o Pix." : `Nenhum Pix em ${periodLabel.toLowerCase()}.`;
   const allOn = payable.length > 0 && chosen.length === payable.length;
-  const csv = `/admin/pagamentos/${tipo}/planilha?aba=${tab}&mes=${data.month}${chosen.length ? `&ids=${chosen.map((r) => r.withdrawalId).join(",")}` : ""}`;
+  const csv = `/admin/pagamentos/${tipo}/planilha?aba=${tab}&p=${encodeURIComponent(periodKey)}${chosen.length ? `&ids=${chosen.map((r) => r.withdrawalId).join(",")}` : ""}`;
 
   return (
     <section className="@container glass overflow-hidden rounded-3xl !p-0">
       <header className="flex flex-wrap items-center gap-2 border-b border-stone-200/70 px-4 py-3 dark:border-white/10 md:px-5">
         <h2 className="mr-auto text-sm font-semibold">
-          {kind === "CPF" && tab === "aprovar" ? "Recibos para aprovar" : TAB_LABEL[tab]} · {monthLabel(data.month)} <span className="font-normal text-stone-500">· {rows.length} · <M>{formatBRL(data.totals.nfCents)}</M></span>
+          {kind === "CPF" && tab === "aprovar" ? "Recibos para aprovar" : TAB_LABEL[tab]} · {tab === "realizados" ? periodLabel : "em aberto"} <span className="font-normal text-stone-500">· {rows.length} · <M>{formatBRL(data.totals.nfCents)}</M></span>
         </h2>
         {tab === "realizar" && canPay && payable.length > 0 && (
           <button type="button" className={ui.ghostSm} onClick={() => setSel(allOn ? new Set() : new Set(payable.map((r) => r.withdrawalId!)))}>{allOn ? "Desmarcar todos" : "Selecionar todos"}</button>
@@ -150,6 +147,7 @@ function PayList({ kind, tipo, tab, data, canPay }: { kind: PayKind; tipo: strin
                       <Avatar name={r.name} id={r.creatorId} />
                       <span className="min-w-0">
                         <span className="block font-medium">{r.name}</span>
+                        {r.month && <span className="block text-[11px] text-stone-500">comissão de {monthLabel(r.month)}</span>}
                         {r.legacy && <span className="rounded-full bg-violet-500/12 px-2 py-0.5 text-[11px] font-medium text-violet-800 dark:text-violet-300">pago antes do Creator Club</span>}
                         {!r.legacy && tab === "aprovar" && r.nfCheck === "OK" && <span className="text-[11px] text-emerald-700 dark:text-emerald-300">nota conferida pelo sistema</span>}
                         {!r.legacy && tab === "aprovar" && r.nfCheck === "MANUAL" && <span className="text-[11px] text-amber-800 dark:text-amber-300">conferir a nota</span>}
@@ -221,12 +219,12 @@ function PayList({ kind, tipo, tab, data, canPay }: { kind: PayKind; tipo: strin
               <span className="min-w-0">
                 <span className="block truncate text-lg font-semibold leading-tight">{open.name}</span>
                 <span className="block text-2xl font-semibold tabular-nums"><M>{formatBRL(open.nfCents)}</M></span>
-                <span className="block text-xs text-white/80">Comissão de {monthLabel(data.month)}</span>
+                {open.month && <span className="block text-xs text-white/80">Comissão de {monthLabel(open.month)}</span>}
               </span>
             </span>
           }
         >
-          <Panel r={open} doc={doc} month={data.month} />
+          <Panel r={open} doc={doc} month={open.month ?? data.month} />
         </SidePanel>
       )}
     </section>

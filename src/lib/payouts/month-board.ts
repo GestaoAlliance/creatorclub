@@ -1,15 +1,15 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { computeBalance, dayKey, isMonthKey, monthKey, monthNamePt, previousMonthKey, UNEXPLAINED, type NfLine } from "@/domain";
+import { addDaysKey, computeBalance, dayKey, monthKey, monthNamePt, previousMonthKey, startOfLocalDay, UNEXPLAINED, type NfLine } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { calendarOf } from "@/lib/brands/calendar";
 import { ledgerEntriesWithMonth, nfSnapshot, openReservations, releasedThroughFor, salesByMonth } from "@/lib/commission/release";
 
 /**
- * D-PAYFLOW: Pagamentos CNPJ e Pagamentos CPF, mês a mês pelo mês da comissão (referência). Três abas:
- * NF para aprovar (pedidos em análise + quem ainda não enviou), Saques a realizar (aprovados) e Saques realizados
- * (pagos + os Pix de antes do Creator Club, pelo mês do Pix). Cada linha: nome completo, vendas do mês, % de comissão,
- * comissão do mês e valor da nota, com o motivo quando a nota é diferente da comissão do mês.
+ * D-PAYFLOW: Pagamentos CNPJ e Pagamentos CPF. Três abas: NF para aprovar (pedidos em análise + quem ainda não enviou)
+ * e Saques a realizar (aprovados) mostram tudo o que está em aberto, de qualquer mês; Saques realizados mostra os Pix
+ * que saíram no período escolhido (D-PERIODPICK), com os de antes do Creator Club. Cada linha: nome completo, mês da
+ * comissão, vendas do mês, % de comissão, comissão do mês e valor da nota, com o motivo quando a nota é diferente.
  */
 
 export class PayFlowError extends Error {}
@@ -21,6 +21,8 @@ export type PayRow = {
   key: string;
   withdrawalId: string | null;
   creatorId: string;
+  /** Mês da comissão (referência do pedido); `null` no Pix de antes do Creator Club. */
+  month: string | null;
   name: string;
   document: string | null;
   pixKey: string | null;
@@ -74,20 +76,23 @@ export function bankState(
  * Totais do mês: notas somam linha a linha; vendas e comissão são do mês da creator, então contam uma vez por creator
  * (dois saques dela no mesmo mês não dobram o total; auditoria de 2026-11-17).
  */
-export function monthTotals(rows: readonly Pick<PayRow, "creatorId" | "legacy" | "nfCents" | "salesCents" | "commissionCents">[]) {
+export function monthTotals(rows: readonly Pick<PayRow, "creatorId" | "legacy" | "nfCents" | "salesCents" | "commissionCents" | "month">[]) {
   const seen = new Set<string>();
   let salesCents = 0;
   let commissionCents = 0;
   for (const r of rows) {
-    if (r.legacy || seen.has(r.creatorId)) continue;
-    seen.add(r.creatorId);
+    const key = `${r.creatorId}:${r.month}`;
+    if (r.legacy || seen.has(key)) continue;
+    seen.add(key);
     salesCents += r.salesCents;
     commissionCents += r.commissionCents;
   }
   return { nfCents: rows.reduce((t, r) => t + r.nfCents, 0), salesCents, commissionCents };
 }
 
-export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, kind: PayKind, tab: PayTab, rawMonth: string | undefined, now = new Date()) {
+export async function payMonthBoard(
+  prisma: PrismaClient, actor: Actor | null, brandId: string, kind: PayKind, tab: PayTab, period: { from: string; to: string } | null, now = new Date(),
+) {
   if (!actor || !can(actor.grants, "withdrawals.view", brandId)) throw new PayFlowError("Sem permissão para pagamentos.");
   const brand = await prisma.brand.findUniqueOrThrow({
     where: { id: brandId },
@@ -95,33 +100,40 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
   });
   const tz = brand.timezone;
   const lastClosed = previousMonthKey(monthKey(now, tz));
-  const month = rawMonth && isMonthKey(rawMonth) ? rawMonth : lastClosed;
+  // O mês da nota da janela (quem ainda não pediu); o período só vale para os Pix que saíram.
+  const month = lastClosed;
+  const today = dayKey(now, tz);
+  const range = period ?? { from: `${today.slice(0, 8)}01`, to: today };
+  const paidIn = { gte: startOfLocalDay(range.from, tz), lt: startOfLocalDay(addDaysKey(range.to, 1), tz) };
+  const legacyIn = { gte: new Date(`${range.from}T00:00:00Z`), lt: new Date(`${addDaysKey(range.to, 1)}T00:00:00Z`) };
   const fiscal = can(actor.grants, "personal.fiscal", brandId);
   const individual = kind === "CPF";
   const methods = individual ? (["RECEIPT_PIX", "ALELO"] as const) : (["NF_PIX"] as const);
 
-  // Todos os pedidos do tipo, para os quadros (contagem por etapa no mês) e a lista de meses.
-  const all = await prisma.withdrawal.findMany({
-    where: { brandId, method: { in: [...methods] }, status: { in: ["REQUESTED", "APPROVED", "PAID"] } },
-    select: { id: true, status: true, referenceMonth: true, amountCents: true },
-  });
-  const inMonth = all.filter((w) => w.referenceMonth === month);
-  const stage = (s: string) => inMonth.filter((w) => w.status === s);
+  // Para os quadros: as filas inteiras e os Pix do período (com os de antes do Creator Club).
+  const [all, legacyAll] = await Promise.all([
+    prisma.withdrawal.findMany({
+      where: { brandId, method: { in: [...methods] }, OR: [{ status: { in: ["REQUESTED", "APPROVED"] } }, { status: "PAID", decidedAt: paidIn }] },
+      select: { id: true, status: true, amountCents: true },
+    }),
+    prisma.legacyPayout.aggregate({ where: { brandId, creator: { receivesAsIndividual: individual }, paidOn: legacyIn }, _sum: { amountCents: true }, _count: true }),
+  ]);
+  const stage = (s: string) => all.filter((w) => w.status === s);
   const sum = (l: { amountCents: number }[]) => l.reduce((t, w) => t + w.amountCents, 0);
 
   const status = tab === "aprovar" ? "REQUESTED" : tab === "realizar" ? "APPROVED" : "PAID";
   const rows = await prisma.withdrawal.findMany({
-    where: { brandId, method: { in: [...methods] }, status, referenceMonth: month },
-    orderBy: status === "PAID" ? { decidedAt: "desc" } : { requestedAt: "asc" },
+    where: { brandId, method: { in: [...methods] }, status, ...(status === "PAID" ? { decidedAt: paidIn } : {}) },
+    orderBy: status === "PAID" ? [{ decidedAt: "desc" }] : [{ referenceMonth: "asc" }, { requestedAt: "asc" }],
     select: {
-      id: true, creatorId: true, amountCents: true, requestedAt: true, approvedAt: true, decidedAt: true, decidedById: true, pixReference: true,
+      id: true, creatorId: true, referenceMonth: true, amountCents: true, requestedAt: true, approvedAt: true, decidedAt: true, decidedById: true, pixReference: true,
       nfFileId: true, nfCheck: true, breakdown: true, remittance: { select: { nsa: true } }, bankResult: true, bankNote: true, bankAt: true,
       creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true, pixKeyChangedAt: true } } } },
     },
   });
   const legacy = tab === "realizados"
     ? await prisma.legacyPayout.findMany({
-        where: { brandId, creator: { receivesAsIndividual: individual }, paidOn: { gte: new Date(`${month}-01T00:00:00Z`), lt: new Date(`${nextMonth(month)}-01T00:00:00Z`) } },
+        where: { brandId, creator: { receivesAsIndividual: individual }, paidOn: legacyIn },
         orderBy: { paidOn: "desc" },
         select: { id: true, creatorId: true, amountCents: true, paidOn: true, note: true, creator: { select: { account: { select: { name: true, cpf: true, cnpj: true } } } } },
       })
@@ -144,9 +156,12 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
     prisma.commissionPolicy.findMany({ where: { creatorId: { in: ids }, confirmedAt: { not: null } }, orderBy: { validFrom: "desc" }, select: { creatorId: true, rateBps: true, validFrom: true, validTo: true } }),
     prisma.user.findMany({ where: { id: { in: rows.map((r) => r.decidedById).filter((x): x is string => Boolean(x)) } }, select: { id: true, name: true } }),
   ]);
-  const monthEnd = new Date(`${nextMonth(month)}-01T03:00:00Z`);
-  const rateOf = (id: string) => policies.find((p) => p.creatorId === id && p.validFrom < monthEnd && (!p.validTo || p.validTo >= new Date(`${month}-01T03:00:00Z`)))?.rateBps ?? null;
-  const commissionOf = (id: string) => entries.filter((e) => e.creatorId === id && e.month === month && ORDER_TYPES.has(e.type)).reduce((t, e) => t + e.amountCents, 0);
+  const rateOf = (id: string, m: string) => {
+    const start = startOfLocalDay(`${m}-01`, tz);
+    const end = startOfLocalDay(`${nextMonth(m)}-01`, tz);
+    return policies.find((p) => p.creatorId === id && p.validFrom < end && (!p.validTo || p.validTo >= start))?.rateBps ?? null;
+  };
+  const commissionOf = (id: string, m: string) => entries.filter((e) => e.creatorId === id && e.month === m && ORDER_TYPES.has(e.type)).reduce((t, e) => t + e.amountCents, 0);
   const doc = (a: { cpf: string | null; cnpj: string | null }) => (fiscal ? (individual ? (a.cpf ?? a.cnpj) : (a.cnpj ?? a.cpf)) : null);
   const payer = new Map(payers.map((u) => [u.id, u.name]));
   const day = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
@@ -154,20 +169,21 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
   const out: PayRow[] = [];
   for (const r of rows) {
     const a = r.creator.account;
-    const commissionCents = commissionOf(r.creatorId);
+    const m = r.referenceMonth ?? month;
+    const commissionCents = commissionOf(r.creatorId, m);
     let lines = Array.isArray(r.breakdown) ? (r.breakdown as unknown as NfLine[]) : null;
     if (!lines && status !== "PAID") {
       // Pedido de antes do D-PAYFLOW: a conta de agora, devolvendo o próprio pedido ao disponível.
       const snap = await nfSnapshot(prisma, { id: r.creatorId, brandId }, tz, now);
       lines = snap.lines.filter((l) => l.key !== "RESERVED" && l.key !== "OTHER");
     }
-    const diff = lines ? diffFromLines(lines, month) : [];
+    const diff = lines ? diffFromLines(lines, m) : [];
     // A conta tem de fechar com o valor pedido; o que sobrar aparece como diferença sem explicação (para conferir).
     const rest = r.amountCents - commissionCents - diff.reduce((t, d) => t + d.cents, 0);
     if (rest !== 0) diff.push({ label: UNEXPLAINED, cents: rest });
     out.push({
-      key: `w:${r.id}`, withdrawalId: r.id, creatorId: r.creatorId, name: a.name, document: doc(a), pixKey: fiscal ? a.pixKey : null,
-      salesCents: sales.get(r.creatorId)?.get(month) ?? 0, rateBps: rateOf(r.creatorId), commissionCents, nfCents: r.amountCents, diff,
+      key: `w:${r.id}`, withdrawalId: r.id, creatorId: r.creatorId, month: m, name: a.name, document: doc(a), pixKey: fiscal ? a.pixKey : null,
+      salesCents: sales.get(r.creatorId)?.get(m) ?? 0, rateBps: rateOf(r.creatorId, m), commissionCents, nfCents: r.amountCents, diff,
       requestedAt: r.requestedAt, approvedAt: r.approvedAt, paidAt: status === "PAID" ? r.decidedAt : null, paidDay: status === "PAID" && r.decidedAt ? day(r.decidedAt) : null,
       paidBy: r.decidedById ? (payer.get(r.decidedById) ?? null) : null, pixReference: r.pixReference, hasNf: r.nfFileId !== null, nfCheck: r.nfCheck,
       legacy: false, note: null, remittanceNsa: r.remittance?.nsa ?? null,
@@ -180,27 +196,26 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
   }
   for (const l of legacy) {
     out.push({
-      key: `l:${l.id}`, withdrawalId: null, creatorId: l.creatorId, name: l.creator.account.name, document: doc(l.creator.account), pixKey: null,
+      key: `l:${l.id}`, withdrawalId: null, creatorId: l.creatorId, month: null, name: l.creator.account.name, document: doc(l.creator.account), pixKey: null,
       salesCents: 0, rateBps: null, commissionCents: 0, nfCents: l.amountCents, diff: [], requestedAt: null, approvedAt: null, paidAt: null,
       paidDay: l.paidOn.toISOString().slice(0, 10), paidBy: null, pixReference: null, hasNf: false, nfCheck: null, legacy: true, note: l.note,
       remittanceNsa: null, canApprove: false, canPay: false, inBank: false, bankRejected: null, pixChangedAfterBank: false,
     });
   }
 
-  // Só no mês da nota da janela (o último mês fechado): nos meses antigos, quem não pediu já entra na nota seguinte.
-  const waiting = month !== lastClosed ? [] : waitingCreators
+  // Quem não pediu a nota do último mês fechado (o saldo liberado dela entra todo nessa nota).
+  const waiting = waitingCreators
     .filter((c) => !open.some((o) => o.creatorId === c.id))
     .map((c) => {
       const b = computeBalance(entries.filter((e) => e.creatorId === c.id), [], now, { releasedThrough: released.get(c.id) ?? null });
-      return { id: c.id, name: c.account.name, phone: c.account.phone, nfCents: b.availableCents, commissionCents: commissionOf(c.id) };
+      return { id: c.id, name: c.account.name, phone: c.account.phone, nfCents: b.availableCents, commissionCents: commissionOf(c.id, month) };
     })
     .filter((c) => c.nfCents > 0)
     .sort((x, y) => y.nfCents - x.nfCents);
 
-  const months = [...new Set([lastClosed, month, ...all.map((w) => w.referenceMonth).filter((m): m is string => Boolean(m))])].sort().reverse();
   return {
     month,
-    months,
+    period: range,
     rows: out,
     waiting,
     window: { start: brand.withdrawalWindowStartDay, end: brand.withdrawalWindowEndDay },
@@ -209,7 +224,7 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
     stages: {
       aprovar: { count: stage("REQUESTED").length, cents: sum(stage("REQUESTED")), waiting: waiting.length },
       realizar: { count: stage("APPROVED").length, cents: sum(stage("APPROVED")) },
-      realizados: { count: stage("PAID").length, cents: sum(stage("PAID")) },
+      realizados: { count: stage("PAID").length + legacyAll._count, cents: sum(stage("PAID")) + (legacyAll._sum.amountCents ?? 0) },
     },
     totals: monthTotals(out),
   };
@@ -221,7 +236,7 @@ function nextMonth(m: string) {
 }
 
 /** Planilha das linhas (BOM para o Excel, `;`, valores com vírgula, total no fim). */
-export function payRowsCsv(rows: readonly PayRow[], brandName: string, month: string): string {
+export function payRowsCsv(rows: readonly PayRow[], brandName: string): string {
   const cell = (v: string | null) => {
     let s = v ?? "";
     if (/^[=+\-@]/.test(s)) s = `'${s}`;
@@ -233,7 +248,7 @@ export function payRowsCsv(rows: readonly PayRow[], brandName: string, month: st
   const head = ["Marca", "Mês da comissão", "Nome completo", "CPF/CNPJ", "Chave Pix", "Valor vendido (R$)", "% comissão", "Comissão do mês (R$)", "Valor da nota (R$)", "Diferença", "Pedido em", "Aprovado em", "Pago em", "Pago por", "ID do Pix", "Observação"];
   const lines = rows.map((r) =>
     [
-      brandName, `${month.slice(5)}/${month.slice(0, 4)}`, r.name, r.document, r.pixKey, r.legacy ? null : brl(r.salesCents), r.rateBps === null ? null : `${(r.rateBps / 100).toString().replace(".", ",")}%`,
+      brandName, r.month ? `${r.month.slice(5)}/${r.month.slice(0, 4)}` : null, r.name, r.document, r.pixKey, r.legacy ? null : brl(r.salesCents), r.rateBps === null ? null : `${(r.rateBps / 100).toString().replace(".", ",")}%`,
       r.legacy ? null : brl(r.commissionCents), brl(r.nfCents), r.diff.map((d) => `${d.label}: ${d.cents < 0 ? "menos" : "mais"} ${brl(Math.abs(d.cents))}`).join(" | ") || null,
       day(r.requestedAt), day(r.approvedAt), br(r.paidDay), r.paidBy, r.pixReference, r.legacy ? `antes do Creator Club: ${r.note ?? ""}` : null,
     ].map(cell).join(";"),

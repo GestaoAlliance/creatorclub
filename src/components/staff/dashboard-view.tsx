@@ -365,7 +365,9 @@ export function DashboardView({
   productsWithoutCost = 0,
   periodKey = "",
   today = "",
+  monthly = null,
 }: {
+  monthly?: ReactNode;
   periodKey?: string;
   today?: string;
   d: StaffDashboard;
@@ -429,6 +431,8 @@ export function DashboardView({
           {cash && <CashCard c={cash} />}
         </div>
       )}
+
+      {monthly}
 
       <MovementsCard d={d} h={health} />
 
