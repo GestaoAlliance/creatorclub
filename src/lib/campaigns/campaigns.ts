@@ -275,7 +275,8 @@ export async function portalCampaigns(prisma: PrismaClient, ctx: PortalContext, 
               // D-PORTALCAMPAIGN: vendas dela só com meta em R$ (para a barra até a meta).
               salesCents: c.goalCents ? mine.salesCents : null,
               // Para passar quem está acima: 1 centavo a mais (no empate, fica na frente quem chegou antes).
-              toAboveCents: above ? above.salesCents - mine.salesCents + 1 : null,
+              // Arredondado para cima, de 10 em 10 reais: motiva sem revelar as vendas exatas de quem está acima.
+              toAboveCents: above ? Math.ceil((above.salesCents - mine.salesCents + 1) / 1000) * 1000 : null,
               toGoalCents: c.goalCents ? Math.max(0, c.goalCents - mine.salesCents) : null,
             }
           : null,

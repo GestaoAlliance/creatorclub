@@ -5,7 +5,7 @@ import { GlassLight } from "@/components/ui/glass-light";
 import type { ApplicationsPace } from "@/lib/onboarding/pace";
 import { ui } from "@/components/ui/styles";
 import { HelpTip } from "@/components/ui/tour";
-import { SIGNUP_BRANDS, type ApplicationFilters, type ApplicationSort } from "@/domain";
+import { type ApplicationFilters, type ApplicationSort } from "@/domain";
 import type { ApplicationFilter, listApplications } from "@/lib/onboarding/applications";
 import { candidateRow } from "./row";
 import { CandidateBoard } from "./table";
@@ -53,10 +53,7 @@ export function CandidatasView({ status, sp, filters, data, canCreate, lock, pac
           <option value="nenhum">Sem hunter</option>
           {hunters.map((h) => <option key={h.code} value={h.code}>{h.name}</option>)}
         </select>
-        <select name="marca" defaultValue={sp.marca ?? ""} aria-label="Marca de interesse" className={`${ui.inputSm} !rounded-full`}>
-          <option value="">Qualquer marca</option>
-          {SIGNUP_BRANDS.map((b) => <option key={b} value={b}>Quer {b}</option>)}
-        </select>
+        {/* D-ALLIANCE: a tela já é da marca do topo; o filtro "Quer <outra marca>" saiu (auditoria de 2026-11-17). */}
         <select name="ordem" defaultValue={filters.sort} aria-label="Ordem" className={`${ui.inputSm} !rounded-full`}>
           {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>

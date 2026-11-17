@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid } from "@/domain";
+import { PROFILE_KEYS, SIGNUP_ADDRESS_PARTS, SIGNUP_QUESTIONS, signupCouponPreview, signupCouponValid, validDoc } from "@/domain";
 import { lookupCnpj } from "@/lib/cnpj/lookup";
 import { db } from "@/lib/db";
 import { ApplicationError } from "@/lib/onboarding/applications";
@@ -88,7 +88,10 @@ export type CnpjAddressResult = { legalName: string; mei: boolean | null; addres
 
 /** D-PJADDR: endereço do CNPJ (dados públicos da Receita) para preencher a entrega de quem não é MEI. */
 export async function cnpjAddressAction(cnpj: string): Promise<CnpjAddressResult> {
-  const info = await lookupCnpj(cnpj);
+  // Só CNPJ válido vai à consulta da Receita (ação pública: nada de consultas soltas; auditoria de 2026-11-17).
+  const digits = String(cnpj ?? "").replace(/\D/g, "");
+  if (digits.length !== 14 || !validDoc(digits)) return { state: "notfound" };
+  const info = await lookupCnpj(digits);
   return typeof info === "string" ? { state: info } : { legalName: info.legalName, mei: info.mei, address: info.address };
 }
 

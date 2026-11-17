@@ -36,7 +36,7 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
         {staff ? (
           <>
             <p className="text-sm">
-              <strong>{req.clientName}</strong> quer <strong>ler</strong> os dados do Creator Club que você já vê no painel (vendas, creators, saques,
+              <strong>{req.clientName}</strong> <span className="text-xs text-stone-500">({new URL(req.redirectUri).host})</span> quer <strong>ler</strong> os dados do Creator Club que você já vê no painel (vendas, creators, saques,
               produtos e pendências das suas marcas) para responder às suas perguntas.
             </p>
             <ul className="list-disc pl-5 text-sm text-stone-600 dark:text-stone-400">

@@ -247,10 +247,20 @@ describe("Saque do portal (D-PORTALWD, banco real)", () => {
     expect(x.received).toMatchObject({ totalCents: 80_000, count: 1, year: "2026", yearCents: 80_000 });
     expect(x.pixKey).toBe("pix•••com");
     expect(x.window).toEqual({ open: true, daysLeft: 6, opensIn: null });
-    // Duas recusas iguais (genéricas) e uma única (pode ter dado de alguém): só a repetida aparece.
-    for (const note of ["CNPJ errado.", "cnpj errado", "Nota da Fulana com valor X"])
-      await prisma.withdrawal.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, amountCents: 100, status: "REJECTED", idempotencyKey: randomUUID(), decidedAt: IN_WINDOW, decidedById: "x", note } });
+    // Motivo comum = de 3 creators diferentes ou mais, sem números (auditoria de 2026-11-17). A mesma creator recusada
+    // duas vezes conta uma; motivo com CNPJ de alguém não aparece.
+    const others = await Promise.all([1, 2].map(async () => {
+      const acc = await prisma.creatorAccount.create({ data: { name: "Outra", email: `${randomUUID()}@x.com` } });
+      return (await prisma.creator.create({ data: { brandId: s.brand.id, accountId: acc.id, categories: [] } })).id;
+    }));
+    const rej = (creatorId: string, note: string) => prisma.withdrawal.create({ data: { brandId: s.brand.id, creatorId, amountCents: 100, status: "REJECTED", idempotencyKey: randomUUID(), decidedAt: IN_WINDOW, decidedById: "x", note } });
+    for (const note of ["CNPJ errado.", "cnpj errado", "CNPJ 11.222.333/0001-81 da Fulana não confere"]) await rej(s.creator.id, note);
+    expect((await portalWithdrawalExtras(prisma, s.ctx, IN_WINDOW)).reasons).toEqual([]);
+    await rej(others[0]!, "CNPJ errado");
+    await rej(others[0]!, "CNPJ 11.222.333/0001-81 da Fulana não confere");
+    await rej(others[1]!, "CNPJ errado");
+    await rej(others[1]!, "CNPJ 11.222.333/0001-81 da Fulana não confere");
     const y = await portalWithdrawalExtras(prisma, s.ctx, IN_WINDOW);
-    expect(y.reasons).toEqual([{ reason: "CNPJ errado", count: 2 }]);
+    expect(y.reasons).toEqual([{ reason: "CNPJ errado", count: 3 }]);
   });
 });

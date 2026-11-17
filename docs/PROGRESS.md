@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-331 — 2026-11-17 — Auditoria das telas, lote 3 (baixos)
+- Convite aberto: mensagem neutra quando o e-mail já tem conta (não revela).
+- Claude (OAuth): erro na tela de permitir volta com o motivo em vez de erro 500; cadastro de app limitado a 100 por
+  hora; a tela mostra o endereço de retorno junto do nome.
+- Saque no portal: a cópia "conferida" da nota é gravada só depois das travas e nunca sobrescrita.
+- Saque no portal: "motivos de recusa comuns" só com 3 creators diferentes ou mais e sem números (CPF/CNPJ de alguém).
+- Portal: marca arquivada some; dias de post no gráfico de Vendas e o passo "primeiro post" contam só posts que marcaram
+  a marca (`InstagramTag`), não os de outra marca dela.
+- Cadastro do site: só CNPJ válido vai à consulta da Receita.
+- Convite em massa ignora arquivadas e desligadas; "Minhas indicações" mostra só a marca do topo; Candidatas perdeu o
+  filtro "Quer <marca>"; exemplo da tela do Claude sem nome de marca.
+- Campanha: "quanto falta para passar quem está acima" arredondado para cima de 10 em 10 reais ("cerca de").
+- Teste instável `coupon-board.test.ts`: o código de cupom do teste às vezes ficava com menos de 3 letras; corrigido.
+- Pendentes com o responsável: creator só de UGC com a Loja; senha própria para a planilha Central.
+
 ### CP-330 — 2026-11-17 — Controle do Guilherme (Botanika jun–set) conferido (dados de produção)
 - O controle de pagamento e situação das influencers da Botanika (Guilherme, 17/11) foi cruzado com o sistema:
   todos os Pix que ele marca como pagos já estavam descontados (LegacyPayout + abertura), valor por valor; outubro

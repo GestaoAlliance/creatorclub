@@ -45,6 +45,9 @@ export async function registerClient(prisma: PrismaClient, body: unknown) {
   if (uris.length === 0 || uris.length > 10) throw new OAuthError("invalid_redirect_uri", "Informe redirect_uris.");
   if (!uris.every(allowedRedirect)) throw new OAuthError("invalid_redirect_uri", "Endereço de retorno não permitido.");
   const name = typeof b.client_name === "string" && b.client_name.trim() ? b.client_name.trim().slice(0, 80) : "Claude";
+  // Cadastro aberto (o Claude se registra sozinho): no máximo 100 por hora, para ninguém encher a tabela.
+  if ((await prisma.mcpClient.count({ where: { createdAt: { gte: new Date(Date.now() - 3_600_000) } } })) >= 100)
+    throw new OAuthError("invalid_request", "Muitos cadastros agora. Tente de novo mais tarde.");
   const c = await prisma.mcpClient.create({ data: { name, redirectUris: uris } });
   return {
     client_id: c.id,
