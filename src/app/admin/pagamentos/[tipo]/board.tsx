@@ -21,7 +21,8 @@ const day = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString("pt
 const br = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : "—");
 const pct = (bps: number | null) => (bps === null ? "—" : `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`);
 
-const TAB_LABEL: Record<PayTab, string> = { aprovar: "NF para aprovar", realizar: "Saques a realizar", realizados: "Saques realizados" };
+type Stage = PayTab | "conferir";
+const TAB_LABEL: Record<Stage, string> = { conferir: "Conferir", aprovar: "NF para aprovar", realizar: "Saques a realizar", realizados: "Saques realizados" };
 
 const REMIND = {
   title: "Sua nota de comissão",
@@ -29,10 +30,12 @@ const REMIND = {
 };
 
 /** D-PAYFLOW: faixa com o mês e as 3 etapas (abas), e a lista da etapa. */
-export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay, canEditCalendar = false, periodKey, periodLabel, today, monthly }: { brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean; canEditCalendar?: boolean; periodKey: string; periodLabel: string; today: string; monthly?: React.ReactNode }) {
+export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay, canEditCalendar = false, periodKey, periodLabel, today, monthly, stage = tab, check = null, checkList = null }: { stage?: Stage; check?: { todo: number; review: number; done: number; cents: number } | null; checkList?: React.ReactNode; brandName: string; kind: PayKind; tipo: string; tab: PayTab; data: Data; canMessage: boolean; canPay: boolean; canEditCalendar?: boolean; periodKey: string; periodLabel: string; today: string; monthly?: React.ReactNode }) {
   const doc = kind === "CNPJ" ? "nota" : "recibo";
-  const url = (t: PayTab) => `/admin/pagamentos/${tipo}?aba=${t}&p=${encodeURIComponent(periodKey)}`;
-  const tiles: { t: PayTab; value: number; hint: string }[] = [
+  const url = (t: Stage) => `/admin/pagamentos/${tipo}?aba=${t}&p=${encodeURIComponent(periodKey)}`;
+  const tiles: { t: Stage; value: number; hint: string }[] = [
+    // D-PAYCHECK: conferir antes de liberar (vendas × % = valor no Creator Club).
+    ...(check ? [{ t: "conferir" as const, value: check.cents, hint: `${check.todo} para conferir${check.review ? ` · ${check.review} em análise` : ""} · ${check.done} conferidas` }] : []),
     { t: "aprovar", value: data.stages.aprovar.cents, hint: `${data.stages.aprovar.count} ${data.stages.aprovar.count === 1 ? `${doc} enviada` : `${doc}s enviadas`}${data.stages.aprovar.waiting ? ` · ${data.stages.aprovar.waiting} sem enviar` : ""}` },
     { t: "realizar", value: data.stages.realizar.cents, hint: `${data.stages.realizar.count} ${data.stages.realizar.count === 1 ? "aprovada esperando o Pix" : "aprovadas esperando o Pix"}` },
     { t: "realizados", value: data.stages.realizados.cents, hint: `${data.stages.realizados.count} Pix em ${periodLabel.toLowerCase()}` },
@@ -54,10 +57,10 @@ export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay,
             {/* D-PERIODPICK: o período vale para os Pix que saíram e para o quadro Mês a mês. */}
             <PeriodPicker value={periodKey} today={today} tone="brand" />
           </div>
-          <nav className="grid grid-cols-1 gap-2 @2xl:grid-cols-3" aria-label="Etapas">
+          <nav className={`grid grid-cols-1 gap-2 ${tiles.length === 4 ? "@2xl:grid-cols-2 @5xl:grid-cols-4" : "@2xl:grid-cols-3"}`} aria-label="Etapas">
             {tiles.map((x, i) => (
-              <Link key={x.t} href={url(x.t)} aria-current={tab === x.t ? "page" : undefined} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white ${tab === x.t ? "is-on" : ""}`}>
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300">{i + 1}. {kind === "CPF" && x.t === "aprovar" ? "Recibos para aprovar" : TAB_LABEL[x.t]}</span>
+              <Link key={x.t} href={url(x.t)} aria-current={stage === x.t ? "page" : undefined} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-left text-stone-900 dark:text-white ${stage === x.t ? "is-on" : ""}`}>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300">{check ? i : i + 1}. {kind === "CPF" && x.t === "aprovar" ? "Recibos para aprovar" : TAB_LABEL[x.t]}</span>
                 <span className="text-2xl font-semibold tabular-nums leading-tight"><M>{shortBRL(x.value)}</M></span>
                 <span className="text-[11px] text-stone-500 dark:text-stone-300">{x.hint}</span>
               </Link>
@@ -78,9 +81,9 @@ export function PayBoard({ brandName, kind, tipo, tab, data, canMessage, canPay,
         <div className="@container mt-3"><PayCalendar month={data.calendar.month} days={data.calendar.days} normalEnd={data.calendar.normalEnd} today={data.calendar.today} /></div>
       </details>
 
-      <PayList key={`${tab}-${periodKey}`} kind={kind} tipo={tipo} tab={tab} data={data} canPay={canPay} periodKey={periodKey} periodLabel={periodLabel} />
+      {stage === "conferir" ? checkList : <PayList key={`${tab}-${periodKey}`} kind={kind} tipo={tipo} tab={tab} data={data} canPay={canPay} periodKey={periodKey} periodLabel={periodLabel} />}
 
-      {tab === "aprovar" && data.waiting.length > 0 && <Waiting data={data} doc={doc} canMessage={canMessage} />}
+      {stage === "aprovar" && data.waiting.length > 0 && <Waiting data={data} doc={doc} canMessage={canMessage} />}
 
       {monthly}
     </>

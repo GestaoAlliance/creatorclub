@@ -7,7 +7,7 @@ import { generateRemessa, recentRemessas, remessaFile, remessaPreview, removeFro
 import { applyRetorno, bankPaidAt, retornoPreview } from "@/lib/withdrawals/retorno";
 import { changePixKey } from "@/lib/creators/pix";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
-import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
+import { commissionEntry, expectDbError, seedBrand, testClient, markChecked } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -39,6 +39,7 @@ async function world() {
   const { withdrawalId } = await requestWithdrawal(prisma, ctx, { actorUserId: userId, requestId: randomUUID(), amountCents: 80_000, pdf: PDF }, IN_WINDOW);
   const gestao = await userWith("GESTAO", a.brand.id);
   const pagamento = await userWith("PAGAMENTO", a.brand.id);
+  await markChecked(prisma, withdrawalId);
   await approveWithdrawal(prisma, gestao, withdrawalId, IN_WINDOW);
   return { ...a, withdrawalId, gestao, pagamento };
 }

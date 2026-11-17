@@ -155,6 +155,7 @@ model Brand {
   shipmentReviews    ShipmentReview[]
   dataFixRequests    DataFixRequest[]
   legacyPayouts      LegacyPayout[]
+  payoutChecks       PayoutCheck[]
 }
 
 enum IntegrationKind {
@@ -446,6 +447,7 @@ model Creator {
   shipmentReviews ShipmentReview[]
   dataFixRequests DataFixRequest[]
   legacyPayouts   LegacyPayout[]
+  payoutChecks    PayoutCheck[]
 
   @@unique([brandId, accountId])
   @@unique([id, brandId])
@@ -1888,4 +1890,31 @@ model LegacyPayout {
   creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
 
   @@index([brandId, paidOn])
+}
+
+/// D-PAYCHECK (passo 1 da Vanessa, 2026-11-17): conferência do valor a receber antes de liberar o saque (vendas do mês ×
+/// % = valor no Creator Club). CHECKED: conferido (aprovar o saque exige o último registro da creator no mês CHECKED,
+/// com o mesmo valor); REVIEW: não bateu, mandado para análise. Só inserção; o último registro vale.
+model PayoutCheck {
+  id            String            @id @default(uuid())
+  brandId       String
+  creatorId     String
+  month         String
+  status        PayoutCheckStatus
+  amountCents   Int
+  expectedCents Int
+  note          String?
+  createdById   String
+  createdAt     DateTime          @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
+
+  @@index([creatorId, month, createdAt])
+  @@index([brandId, month])
+}
+
+enum PayoutCheckStatus {
+  CHECKED
+  REVIEW
 }

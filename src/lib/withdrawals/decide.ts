@@ -6,6 +6,7 @@ import { brandsWith, can } from "@/lib/auth/permissions";
 import { ledgerEntriesWithMonth, openReservations, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { pdfText } from "./nf";
+import { assertPayChecked, PayCheckError } from "@/lib/payouts/check";
 
 /**
  * Decisão do saque (E8, D-WDDECIDE; em duas etapas desde M1.1, D-WDAPPROVE):
@@ -36,6 +37,13 @@ function assertView(actor: Actor | null, brandId: string): asserts actor is Acto
 export async function approveWithdrawal(prisma: PrismaClient, actor: Actor | null, withdrawalId: string, now = new Date()) {
   const w = await load(prisma, withdrawalId);
   assertApprove(actor, w.brandId);
+  // D-PAYCHECK: só aprova o que foi conferido (vendas × % bate com o valor), com o mesmo valor.
+  try {
+    await assertPayChecked(prisma, w);
+  } catch (e) {
+    if (e instanceof PayCheckError) throw new WithdrawalDecisionError(e.message);
+    throw e;
+  }
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.withdrawal.updateMany({
       where: { id: w.id, status: "REQUESTED" },
@@ -50,7 +58,7 @@ export async function approveWithdrawal(prisma: PrismaClient, actor: Actor | nul
 }
 
 async function load(prisma: PrismaClient, id: string) {
-  const w = await prisma.withdrawal.findUnique({ where: { id }, select: { id: true, brandId: true, creatorId: true, amountCents: true, status: true, remittance: { select: { nsa: true } } } });
+  const w = await prisma.withdrawal.findUnique({ where: { id }, select: { id: true, brandId: true, creatorId: true, amountCents: true, status: true, referenceMonth: true, remittance: { select: { nsa: true } } } });
   if (!w) throw new WithdrawalDecisionError("Saque não encontrado.");
   return w;
 }

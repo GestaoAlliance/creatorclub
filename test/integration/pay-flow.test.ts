@@ -6,7 +6,7 @@ import { payMonthBoard, payRowsCsv } from "@/lib/payouts/month-board";
 import { payMonthly } from "@/lib/payouts/monthly";
 import { approveWithdrawal, payWithdrawals } from "@/lib/withdrawals/decide";
 import { requestWithdrawalWithReceipt } from "@/lib/withdrawals/request";
-import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
+import { commissionEntry, expectDbError, seedBrand, testClient, markChecked } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -50,6 +50,9 @@ describe("Pagamentos CNPJ/CPF por mês da comissão (D-PAYFLOW, banco real)", ()
     expect(b.rows).toEqual([expect.objectContaining({ name: "Maria Exemplo da Silva", nfCents: 3_000, commissionCents: 0, rateBps: 1500, diff: [{ label: "comissão de setembro", cents: 3_000 }], canApprove: true })]);
     expect(b.stages.aprovar).toMatchObject({ count: 1, cents: 3_000 });
 
+    // D-PAYCHECK: sem conferir não aprova; a conferência grava o valor (vendas × % = R$ 0 em outubro, a nota é setembro).
+    await expect(approveWithdrawal(prisma, gestao, w.id, IN_WINDOW)).rejects.toThrow(/Confira o valor antes de aprovar/);
+    await markChecked(prisma, w.id);
     await approveWithdrawal(prisma, gestao, w.id, IN_WINDOW);
     b = await payMonthBoard(prisma, pag, a.brand.id, "CPF", "realizar", null, IN_WINDOW);
     expect(b.rows).toEqual([expect.objectContaining({ canPay: true, approvedAt: IN_WINDOW, document: "52998224725", pixKey: "pix@exemplo.com" })]);

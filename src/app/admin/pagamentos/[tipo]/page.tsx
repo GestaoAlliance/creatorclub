@@ -15,11 +15,14 @@ import { MonthlyBoard } from "@/components/staff/monthly-board";
 import { staffPeriod } from "@/lib/staff/period";
 import { monthlyRange, payMonthly } from "@/lib/payouts/monthly";
 import { PayBoard } from "./board";
+import { CheckList } from "./check-list";
+import { payCheckBoard } from "@/lib/payouts/check";
 
 export const dynamic = "force-dynamic";
 
 const KIND: Record<string, PayKind> = { cnpj: "CNPJ", cpf: "CPF" };
 const TABS: PayTab[] = ["aprovar", "realizar", "realizados"];
+// D-PAYCHECK: "conferir" é a etapa antes de aprovar; abre nela enquanto houver o que conferir.
 
 // Pagamentos CNPJ e CPF (D-PAYFLOW): NF para aprovar → Saques a realizar → Saques realizados, filas em aberto e Pix pelo período (D-PERIODPICK).
 export default async function PaymentsPage({ params, searchParams }: { params: Promise<{ tipo: string }>; searchParams: Promise<{ aba?: string; p?: string; periodo?: string; de?: string; ate?: string }> }) {
@@ -36,8 +39,10 @@ export default async function PaymentsPage({ params, searchParams }: { params: P
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
   // D-PERIODPICK: o período escolhido (o mesmo das outras abas) vale para os Pix que saíram e o Mês a mês.
   const period = await staffPeriod(sp, tz);
-  const tab: PayTab = TABS.includes(aba as PayTab) ? (aba as PayTab) : "aprovar";
   const inBrand = scopedActor(actor, brand.id);
+  const check = await payCheckBoard(db(), inBrand, brand.id, kind);
+  const stage = aba === "conferir" || (!aba && check.counts.todo > 0) ? "conferir" : TABS.includes(aba as PayTab) ? (aba as PayTab) : "aprovar";
+  const tab: PayTab = stage === "conferir" ? "aprovar" : stage;
   const [data, monthly] = await Promise.all([
     payMonthBoard(db(), inBrand, brand.id, kind, tab, period),
     payMonthly(db(), inBrand, brand.id, kind, monthlyRange(period)),
@@ -51,6 +56,8 @@ export default async function PaymentsPage({ params, searchParams }: { params: P
     <GlassLight className="dash flex flex-col gap-4">
       <PayBoard brandName={brand.name} kind={kind} tipo={tipo} tab={tab} data={data} canMessage={can(actor.grants, "creators.edit", brand.id)} canPay={manage} canEditCalendar={brandsWith(actor.grants, "staff.manage") === "ALL"}
         periodKey={period.key ?? ""} periodLabel={period.label ?? ""} today={today}
+        stage={stage} check={check.counts}
+        checkList={<CheckList data={check} kind={kind} brandName={brand.name} canCheck={can(actor.grants, "withdrawals.approve", brand.id)} canMessage={can(actor.grants, "creators.edit", brand.id)} />}
         monthly={monthly && <MonthlyBoard data={monthly} path={`/admin/pagamentos/${tipo}`} selected={period.key?.startsWith("m:") ? period.key.slice(2) : null} title={`Mês a mês · ${kind}`} />} />
       {/* Sempre montado: o arquivo chega depois que a lista já zerou (D-REMESSAFILE). */}
       {remessa && <RemessaBar brandId={brand.id} count={remessa.count} cnpj={remessa.cnpj} cpf={remessa.cpf} cents={remessa.totalCents} today={today} problems={remessa.problems} warnings={remessa.warnings} />}
