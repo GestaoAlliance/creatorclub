@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-333 — 2026-11-17 — Preparação do pagamento de 20/11 (Botanika, dados de produção)
+- Saques abertos: Ludimilla R$ 1.014,21 e Clesiane R$ 194,78 (nota conferida pelo sistema, falta aprovar); Joingle
+  R$ 325,17 aprovada com nota "conferir à mão". A conferência com o Guilherme (CP-330) liberou as que estavam seguradas.
+- Risco achado: 16 creators com saldo nunca receberam convite do portal (Victoria cerca de R$ 6,3 mil, Fernanda cerca
+  de R$ 2 mil e outras); sem login não pedem o saque (janela até 22/11). A Ana convida em Creators → marcar →
+  "Convidar para o portal".
+- Karynne e Anna Machado passaram a receber como pessoa física (recibo; sem CNPJ, pessoa física pelo controle do
+  Guilherme), por SQL com AuditLog, decisão do responsável. Thiago e Barbieri (desligados, com saldo) podem pedir o
+  saque (decisão do responsável): convite pela ficha (o convite em massa pula desligadas).
+- Sem Pix: Giovanna e Lorena (o portal pede no pedido); Juliana Rosa sem CPF, CNPJ e Pix.
+
 ### CP-332 — 2026-11-17 — Loja escondida para quem é só UGC (D-UGCPORTAL)
 - Decisão do responsável: creator só de UGC não tem a aba Loja (menu, página e compra recusados), como já não tinha
   Saque. Teste em `shop.test.ts`.
