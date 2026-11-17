@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-344 — 2026-11-17 — Preparação do Pix de 20/11 da Botanika (produção)
+- Pedidos de saque: só Ludimilla (R$ 1.014,21, em análise, conferida) e Joingle (R$ 325,17, aprovada). Prazo até 22/11.
+- Sem login (não conseguem pedir): Fernanda, Victoria, Ana Luiza, Nathalia, Ruy, Robson, Giovanna, Ludmilla Rangel,
+  Cristiane, Karynne, Anna Machado, Thiago, Barbieri e Larissa: a Fátima cria o acesso pela ficha (D-ACCESSDIRECT).
+- Juliana Esposito, Giovanna, Thiago e Barbieri estavam como CNPJ sem CNPJ no cadastro: passam a receber como pessoa
+  física (recibo), por SQL com AuditLog (decisão do responsável). Barbieri também não tem CPF: pedir.
+- Victoria: o último registro da conferência é "em análise"; com o ajuste (R$ 8.548,52) falta clicar em Conferido.
+- Remessa do SICOOB nunca gerada: testar com Joingle e Ludimilla antes (decisão do responsável); se o banco aceitar,
+  as outras vão na remessa do dia 20.
+
 ### CP-343 — 2026-11-17 — Ajustes da conferência: clique duplo e "sem chave Pix" (D-PAYCHECK)
 - "Conferido" (e "Mandar para o Pedro") não grava de novo quando o último registro da creator no mês já é o mesmo
   (status e valor): o clique duplo da Fátima tinha gravado Ruy, Raquel, Israel e Clesiane duas vezes (sem efeito,
