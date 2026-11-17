@@ -315,6 +315,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-330 — 2026-11-17 — Controle do Guilherme (Botanika jun–set) conferido (dados de produção)
+- O controle de pagamento e situação das influencers da Botanika (Guilherme, 17/11) foi cruzado com o sistema:
+  todos os Pix que ele marca como pagos já estavam descontados (LegacyPayout + abertura), valor por valor; outubro
+  não foi pago (confirmado pela Vanessa: o pagamento passa a ser pelo Creator Club).
+- Victoria: o Pix de 16/09 (R$ 17.456,00) é R$ 1.985,85 maior que a soma de jul + ago do controle (R$ 15.470,15).
+  Decisão do responsável: continua descontado o valor do Pix (o que ela recebeu); a pergunta vai ao Guilherme.
+- Comissão por mês: a maioria bate ao centavo. As diferenças vêm do controle feito à mão (conta pedidos feitos no mês
+  não pagos ou cancelados, pedidos com mais de um cupom e pedidos pagos que ficaram de fora). Planilha pedido a pedido
+  para o Guilherme (fora do repositório: nomes e pedidos).
+- Larissa Lessa tinha um segundo cadastro "LARILESSA" (criado pelo cupom da Shopify) com R$ 59,47 de outubro: por SQL
+  com AuditLog, a comissão passou para ela (dois ajustes, saída e entrada), o cupom LARILESSA passou a ser dela e o
+  duplicado foi arquivado.
+- VermeFree: comprovantes ainda pendentes com o Guilherme.
+
 ### CP-329 — 2026-11-17 — A creator muda os próprios dados no "Meu cadastro" (D-SELFEDIT)
 - Pedido do responsável: os pedidos de correção (D-DATAFIX) chegavam demais à gestora. Agora, no "Meu cadastro" do
   portal, ela toca em Alterar e salva na hora: nome completo, celular, e-mail (troca também o login, já confirmado),
