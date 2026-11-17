@@ -6,19 +6,20 @@ import { HideValuesToggle } from "@/components/staff/hide-values";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import { ui } from "@/components/ui/styles";
-import { formatBRL, shortBRL, trendOf } from "@/domain";
+import { dayKey, formatBRL, shortBRL, trendOf } from "@/domain";
 import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { productBoard, STOCK_WARN_DAYS } from "@/lib/reports/product-board";
 import type { ProductScope } from "@/lib/reports/products";
 import { staffContext } from "@/lib/staff/context";
-import { DASH_PRESETS, dashPeriod } from "@/lib/staff/dashboard";
+import { staffPeriod } from "@/lib/staff/period";
+import { PeriodPicker } from "@/components/staff/period-picker";
 import { ProductRanking } from "./ranking";
 
 export const dynamic = "force-dynamic";
 
-type Search = { periodo?: string; de?: string; ate?: string; ver?: string };
+type Search = { p?: string; periodo?: string; de?: string; ate?: string; ver?: string };
 const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
 const pct = (part: number, whole: number) => (whole ? `${((part / whole) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "—");
 const qs = (sp: Search, change: Partial<Search>) => {
@@ -42,14 +43,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   if (!can(actor.grants, "money.view", brand.id)) redirect("/conta");
   const sp = await searchParams;
   const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
-  const period = dashPeriod(sp, timezone);
+  const period = await staffPeriod(sp, timezone);
   const scope: ProductScope = sp.ver === "loja" ? "loja" : "creators";
   const b = await productBoard(db(), brand.id, period, scope);
   const r = b.report;
   const p = r.program;
   const missingCost = r.productsTotal - r.productsWithCost;
   const low = b.rows.filter((x) => x.lowStock);
-  const presetIdx = DASH_PRESETS.findIndex((x) => x.id === period.preset);
 
   return (
     <GlassLight className="dash flex flex-col gap-4">
@@ -71,10 +71,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 <Link href={qs(sp, { ver: "" })} aria-current={scope === "creators" ? "true" : undefined}>Com cupom</Link>
                 <Link href={qs(sp, { ver: "loja" })} aria-current={scope === "loja" ? "true" : undefined}>Loja inteira</Link>
               </nav>
-              <nav className="liquid-pill" style={{ "--n": DASH_PRESETS.length, "--i": Math.max(0, presetIdx) } as React.CSSProperties} aria-label="Período">
-                {presetIdx >= 0 && <span aria-hidden className="drop" />}
-                {DASH_PRESETS.map((x) => <Link key={x.id} href={qs(sp, { periodo: x.id, de: "", ate: "" })} aria-current={period.preset === x.id ? "true" : undefined}>{x.label}</Link>)}
-              </nav>
+              <PeriodPicker value={period.key ?? ""} today={dayKey(new Date(), timezone)} tone="brand" />
               <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
             </div>
           </div>

@@ -38,6 +38,7 @@ export * from "./prospect";
 export * from "./install";
 export * from "./shop";
 export * from "./phone";
+export * from "./period-pick";
 export * from "./cnpj";
 export * from "./cnab240";
 export * from "./instagram";

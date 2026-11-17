@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { addDaysKey, dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, startOfLocalDay } from "@/domain";
+import { addDaysKey, dayKey, isDayKey, nextDayKey, PAID_FINANCIAL, REFUNDED_FINANCIAL, startOfLocalDay, pickPeriod } from "@/domain";
 import type { SalesDay } from "@/lib/portal/sales";
 import { productImages } from "@/lib/reports/product-images";
 
@@ -11,7 +11,7 @@ import { productImages } from "@/lib/reports/product-images";
  */
 
 export type DashCategory = "INFLUENCER" | "UGC" | "PRESCRITOR" | "";
-export type DashPeriod = { from: string; to: string; preset: string };
+export type DashPeriod = { from: string; to: string; preset: string; key?: string; label?: string };
 
 export const DASH_PRESETS = [
   { id: "7", label: "7 dias" },
@@ -21,8 +21,19 @@ export const DASH_PRESETS = [
 ] as const;
 
 /** Período do filtro (dias locais "AAAA-MM-DD", fim incluído). Padrão: últimos 30 dias até hoje. */
-export function dashPeriod(p: { periodo?: string; de?: string; ate?: string }, timeZone: string, now = new Date()): DashPeriod {
+export function dashPeriod(
+  p: { p?: string; periodo?: string; de?: string; ate?: string },
+  timeZone: string,
+  now = new Date(),
+  opts: { saved?: string | null; fallback?: "month" | "30" } = {},
+): DashPeriod {
   const today = dayKey(now, timeZone);
+  // D-PERIODPICK: o seletor novo (?p=) ou a escolha guardada; sem nada, o mês atual (telas) ou 30 dias (Claude/MCP).
+  const picked = p.p ?? (!p.periodo && !p.de && !p.ate ? (opts.saved ?? (opts.fallback === "30" ? null : `m:${today.slice(0, 7)}`)) : null);
+  if (picked) {
+    const x = pickPeriod(picked, today);
+    return { from: x.from, to: x.to, preset: x.key, key: x.key, label: x.label };
+  }
   if (p.de && p.ate && isDayKey(p.de) && isDayKey(p.ate) && p.de <= p.ate) return { from: p.de, to: p.ate, preset: "" };
   if (p.periodo === "mes") return { from: `${today.slice(0, 8)}01`, to: today, preset: "mes" };
   const days = p.periodo === "7" ? 7 : p.periodo === "90" ? 90 : 30;

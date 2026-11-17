@@ -57,7 +57,7 @@ const period = (a: Args, tz: string) => {
   const de = str(a, "de");
   const ate = str(a, "ate");
   const periodo = str(a, "periodo");
-  return dashPeriod({ ...(periodo ? { periodo } : {}), ...(isDayKey(de) && isDayKey(ate) ? { de, ate } : {}) }, tz);
+  return dashPeriod({ ...(periodo ? { periodo } : {}), ...(isDayKey(de) && isDayKey(ate) ? { de, ate } : {}) }, tz, new Date(), { fallback: "30" });
 };
 
 export const TOOLS = [
