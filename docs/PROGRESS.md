@@ -315,6 +315,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-332 — 2026-11-17 — Loja escondida para quem é só UGC (D-UGCPORTAL)
+- Decisão do responsável: creator só de UGC não tem a aba Loja (menu, página e compra recusados), como já não tinha
+  Saque. Teste em `shop.test.ts`.
+
 ### CP-331 — 2026-11-17 — Auditoria das telas, lote 3 (baixos)
 - Convite aberto: mensagem neutra quando o e-mail já tem conta (não revela).
 - Claude (OAuth): erro na tela de permitir volta com o motivo em vez de erro 500; cadastro de app limitado a 100 por

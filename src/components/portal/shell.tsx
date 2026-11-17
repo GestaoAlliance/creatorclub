@@ -26,8 +26,8 @@ export function PortalShell({
 }) {
   const base = `/portal/${ctx.brand.slug}`;
   const others = ctx.brands.filter((b) => b.slug !== ctx.brand.slug);
-  // D-UGCPORTAL: quem é só UGC não tem saldo nem saque. O filtro roda no menu (componente de cliente).
-  const hidden = ctx.ugcOnly ? ["/saque"] : [];
+  // D-UGCPORTAL: quem é só UGC não tem saldo, saque nem loja (loja: responsável em 2026-11-17). O filtro roda no menu (componente de cliente).
+  const hidden = ctx.ugcOnly ? ["/saque", "/loja"] : [];
 
   return (
     <div style={brandCssVars(ctx.brand) as CSSProperties} className="portal-bg flex min-h-screen">
