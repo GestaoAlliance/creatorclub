@@ -2,15 +2,15 @@ import { SALE_STATUSES } from "@/domain";
 import type { SalesFilters } from "@/lib/sales/list";
 import { dashPeriod, type DashPeriod } from "@/lib/staff/dashboard";
 
-export type Search = { q?: string; situacao?: string; dona?: string; de?: string; ate?: string; periodo?: string; pagina?: string; motivo?: string };
+export type Search = { p?: string; q?: string; situacao?: string; dona?: string; de?: string; ate?: string; periodo?: string; pagina?: string; motivo?: string };
 
-/** Período da tela (o mesmo do gráfico e da lista): 7, 30 ou 90 dias, este mês ou de–até. Padrão: 30 dias. */
-export function salesPeriod(sp: Search, timeZone: string, now = new Date()): DashPeriod {
-  return dashPeriod({ ...(sp.periodo ? { periodo: sp.periodo } : {}), ...(sp.de ? { de: sp.de } : {}), ...(sp.ate ? { ate: sp.ate } : {}) }, timeZone, now);
+/** Período da tela (o mesmo do gráfico e da lista): o seletor (D-PERIODPICK) ou o guardado; padrão o mês atual. */
+export function salesPeriod(sp: Search, timeZone: string, now = new Date(), saved: string | null = null): DashPeriod {
+  return dashPeriod({ ...(sp.p ? { p: sp.p } : {}), ...(sp.periodo ? { periodo: sp.periodo } : {}), ...(sp.de ? { de: sp.de } : {}), ...(sp.ate ? { ate: sp.ate } : {}) }, timeZone, now, { saved });
 }
 
 /** Busca sem período escolhido procura em todas as vendas (achar um pedido antigo pelo número). */
-export const searchesAllTime = (sp: Search) => !!(sp.q ?? "").trim() && !sp.periodo && !sp.de && !sp.ate;
+export const searchesAllTime = (sp: Search) => !!(sp.q ?? "").trim() && !sp.p && !sp.periodo && !sp.de && !sp.ate;
 
 /** Filtros da lista a partir do endereço (os mesmos no CSV). */
 export function filtersOf(sp: Search, period?: { from: string; to: string }): SalesFilters {

@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-335 — 2026-11-17 — Seletor de tempo, parte 1: Início, Vendas e Produtos (D-PERIODPICK)
+- Pedido do responsável: os números estavam difíceis de ver por data. Um seletor só para todas as telas da equipe:
+  ‹ mês › (anda mês a mês, nunca passa do mês atual), "30 dias", "Ano" e o calendário de/até. Sem escolha, abre no mês
+  corrente. A escolha fica guardada (cookie `cc_period`) e vale nas outras abas até mudar; o link com `?p=` manda.
+- Ligado no Início da marca, no Início da Alliance, em Vendas e em Vendas › Produtos (substitui os botões de período
+  antigos; os links antigos `periodo`/`de`/`ate` continuam valendo). O MCP mantém 30 dias como padrão.
+- `pickPeriod`/`stepMonth`/`rangeKey` (`src/domain/period-pick.ts`), `staffPeriod` (`src/lib/staff/period.ts`),
+  `PeriodPicker` (`src/components/staff/period-picker.tsx`). Testes em `period-pick.test.ts`, `staff-sales.test.ts` e
+  `integration/dashboard.test.ts`.
+- Próximo (mesmo pedido): Pagamentos pela data do Pix + quadro "Mês a mês"; depois Creators e Envios; depois
+  Desempenho e Cupons.
+
 ### CP-334 — 2026-11-17 — Acesso direto com senha provisória para quem nunca entrou (D-ACCESSDIRECT)
 - Pedido da Fátima e do responsável: a ficha só tinha "Acesso ao portal" (senha provisória, corrigir e-mail, link de
   nova senha) para quem já tinha login; as creators importadas do app antigo só tinham o convite por link. Agora, na

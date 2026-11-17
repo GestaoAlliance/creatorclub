@@ -9,7 +9,10 @@ afterAll(() => prisma.$disconnect());
 describe("dashboard do Início (M0.0.4)", () => {
   it("período, período anterior e variação", () => {
     const now = new Date("2026-10-22T15:00:00Z");
-    expect(dashPeriod({}, "America/Sao_Paulo", now)).toEqual({ from: "2026-09-23", to: "2026-10-22", preset: "30" });
+    // D-PERIODPICK: sem escolha, o mês corrente; o MCP mantém 30 dias.
+    expect(dashPeriod({}, "America/Sao_Paulo", now)).toMatchObject({ from: "2026-10-01", to: "2026-10-22", key: "m:2026-10" });
+    expect(dashPeriod({}, "America/Sao_Paulo", now, { fallback: "30" })).toEqual({ from: "2026-09-23", to: "2026-10-22", preset: "30" });
+    expect(dashPeriod({}, "America/Sao_Paulo", now, { saved: "y:2026" })).toMatchObject({ from: "2026-01-01", to: "2026-10-22", key: "y:2026" });
     expect(dashPeriod({ periodo: "mes" }, "America/Sao_Paulo", now)).toEqual({ from: "2026-10-01", to: "2026-10-22", preset: "mes" });
     expect(dashPeriod({ de: "2026-10-01", ate: "2026-10-10" }, "America/Sao_Paulo", now)).toEqual({ from: "2026-10-01", to: "2026-10-10", preset: "" });
     expect(previousPeriod({ from: "2026-10-01", to: "2026-10-10" })).toEqual({ from: "2026-09-21", to: "2026-09-30" });

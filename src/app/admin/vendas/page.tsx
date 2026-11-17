@@ -1,16 +1,18 @@
 import { ChevronLeft, ChevronRight, Download, Search as SearchIcon, TicketPercent } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { PeriodPicker } from "@/components/staff/period-picker";
+import { PERIOD_COOKIE } from "@/lib/staff/period";
 import { M } from "@/components/staff/dashboard-view";
 import { HideValuesToggle } from "@/components/staff/hide-values";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { formatBRL, SALE_STATUS_LABEL, SALE_STATUSES, shortBRL } from "@/domain";
+import { dayKey, formatBRL, SALE_STATUS_LABEL, SALE_STATUSES, shortBRL } from "@/domain";
 import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { BIG_ORDER_FACTOR, listSales, salesReview, SALES_PAGE_SIZE, type ReviewKey } from "@/lib/sales/list";
-import { DASH_PRESETS } from "@/lib/staff/dashboard";
 import { staffContext } from "@/lib/staff/context";
 import { filtersOf, salesPeriod, searchesAllTime, type Search } from "./filters";
 import { SalesTable } from "./sales-table";
@@ -48,7 +50,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   if (!can(actor.grants, "money.view", brand.id)) redirect("/conta");
   const sp = await searchParams;
   const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
-  const period = salesPeriod(sp, timezone);
+  const period = salesPeriod(sp, timezone, new Date(), (await cookies()).get(PERIOD_COOKIE)?.value ?? null);
   const base = filtersOf(sp, period);
   const review = await salesReview(db(), brand.id, base);
   const motivo = (["untyped", "noowner", "unknown", "big", "promo", "nocode", "pending", "lost"] as const).find((m) => m === sp.motivo);
@@ -58,8 +60,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const r = await listSales(db(), brand.id, f, page);
   const pages = Math.max(1, Math.ceil(r.total / SALES_PAGE_SIZE));
   const allCount = SALE_STATUSES.reduce((s, k) => s + r.counts[k], 0);
-  const keep = { periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "" };
-  const presetIdx = Math.max(0, DASH_PRESETS.findIndex((p) => p.id === period.preset));
+  const keep = { p: sp.p ?? "", periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "" };
   const toggle = (m: string) => `/admin/vendas${query(sp, { motivo: sp.motivo === m ? "" : m, pagina: "" })}#lista`;
   const heatMax = Math.max(1, ...review.heat.flat());
   const bestSlot = review.heat.flatMap((row, d) => row.map((n, h) => ({ d, h, n }))).sort((a, b) => b.n - a.n)[0];
@@ -80,10 +81,8 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <nav className="liquid-pill" style={{ "--n": DASH_PRESETS.length, "--i": period.preset ? presetIdx : -9 } as React.CSSProperties} aria-label="Período">
-                <span aria-hidden className="drop" />
-                {DASH_PRESETS.map((p) => <Link key={p.id} href={`/admin/vendas${query({ ...sp, de: "", ate: "" }, { periodo: p.id, pagina: "" })}`} aria-current={period.preset === p.id ? "true" : undefined}>{p.label}</Link>)}
-              </nav>
+              {/* D-PERIODPICK: o mesmo seletor de tempo de todas as abas. */}
+              <PeriodPicker value={period.key ?? ""} today={dayKey(new Date(), timezone)} tone="brand" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4 @6xl:grid-cols-8">

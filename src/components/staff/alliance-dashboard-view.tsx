@@ -6,7 +6,7 @@ import { ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
 import { brandCssVars } from "@/lib/portal/context";
 import type { AllianceDashboard } from "@/lib/staff/alliance-dashboard";
-import { DASH_PRESETS } from "@/lib/staff/dashboard";
+import { PeriodPicker } from "@/components/staff/period-picker";
 import type { allianceOverview } from "@/lib/staff/overview";
 import { AllianceBrandCards } from "./alliance-view";
 import { Change, M, Stat } from "./dashboard-view";
@@ -20,7 +20,7 @@ const CAT_LABEL: Record<string, string> = { INFLUENCER: "Influencer", UGC: "UGC"
  * "Todas as marcas" (M0.0.4, D-ALLBRANDS): o Início da Alliance com os números das marcas somados, o gráfico, a
  * comparação entre as marcas, as top creators de todas e, embaixo, o que cada marca tem esperando por você.
  */
-export function AllianceDashboardView({ d, cards }: { d: AllianceDashboard | null; cards: Awaited<ReturnType<typeof allianceOverview>> }) {
+export function AllianceDashboardView({ d, cards, periodKey = "", today = "" }: { d: AllianceDashboard | null; cards: Awaited<ReturnType<typeof allianceOverview>>; periodKey?: string; today?: string }) {
   return (
     <div className="dash flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -34,11 +34,7 @@ export function AllianceDashboardView({ d, cards }: { d: AllianceDashboard | nul
         </div>
         {d && (
           <div className="flex flex-wrap items-center gap-2">
-            {DASH_PRESETS.map((p) => (
-              <Link key={p.id} href={`/admin?periodo=${p.id}`} className={d.period.preset === p.id ? ui.pillOn : ui.pill}>
-                {p.label}
-              </Link>
-            ))}
+            <PeriodPicker value={periodKey} today={today} />
             <HideValuesToggle />
           </div>
         )}

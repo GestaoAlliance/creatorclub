@@ -39,11 +39,13 @@ describe("vendas da equipe (M0.1)", () => {
 
 describe("período da tela de vendas", () => {
   const now = new Date("2026-10-22T15:00:00Z");
-  it("padrão 30 dias; a lista segue o período; busca sem período procura em todas as datas", async () => {
+  it("padrão o mês atual (D-PERIODPICK); a lista segue o período; busca sem período procura em todas as datas", async () => {
     const { filtersOf, salesPeriod } = await import("@/app/admin/vendas/filters");
     const p = salesPeriod({}, "America/Sao_Paulo", now);
-    expect(p).toEqual({ from: "2026-09-23", to: "2026-10-22", preset: "30" });
-    expect(filtersOf({}, p)).toMatchObject({ from: "2026-09-23", to: "2026-10-22" });
+    expect(p).toMatchObject({ from: "2026-10-01", to: "2026-10-22", key: "m:2026-10", label: "Outubro de 2026" });
+    expect(filtersOf({}, p)).toMatchObject({ from: "2026-10-01", to: "2026-10-22" });
+    expect(salesPeriod({}, "America/Sao_Paulo", now, "m:2026-08")).toMatchObject({ from: "2026-08-01", to: "2026-08-31" });
+    expect(salesPeriod({ p: "30d" }, "America/Sao_Paulo", now, "m:2026-08")).toMatchObject({ from: "2026-09-23", to: "2026-10-22" });
     expect(filtersOf({ q: "#1001" }, p)).toMatchObject({ q: "#1001", from: "", to: "" });
     expect(filtersOf({ q: "#1001", periodo: "7" }, salesPeriod({ periodo: "7" }, "America/Sao_Paulo", now))).toMatchObject({ from: "2026-10-16", to: "2026-10-22" });
     const custom = salesPeriod({ de: "2026-08-01", ate: "2026-08-31" }, "America/Sao_Paulo", now);

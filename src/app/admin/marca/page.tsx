@@ -1,3 +1,4 @@
+import { dayKey } from "@/domain";
 import { redirect } from "next/navigation";
 import { DashboardView } from "@/components/staff/dashboard-view";
 import { StaffHomeView } from "@/components/staff/home-view";
@@ -5,7 +6,8 @@ import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
-import { dashPeriod, staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
+import { staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
+import { staffPeriod } from "@/lib/staff/period";
 import { staffHome } from "@/lib/staff/home";
 import { baseHealth, cashflow } from "@/lib/staff/insights";
 import { productReport } from "@/lib/reports/products";
@@ -18,7 +20,7 @@ const CATEGORIES: DashCategory[] = ["INFLUENCER", "UGC", "PRESCRITOR"];
 
 // Início dentro de uma marca (A1, D-ALLIANCE). Quem vê dinheiro: o dashboard (M0.0.4, modelo da referência) com o que
 // está esperando por você em cima. Os outros papéis (Envio, Hunter): os cartões do que cada um tem para fazer.
-export default async function BrandHomePage({ searchParams }: { searchParams: Promise<{ periodo?: string; de?: string; ate?: string; tipo?: string }> }) {
+export default async function BrandHomePage({ searchParams }: { searchParams: Promise<{ p?: string; periodo?: string; de?: string; ate?: string; tipo?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marca");
   if (actor.grants.length === 0) redirect("/conta");
@@ -29,12 +31,12 @@ export default async function BrandHomePage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
   const category = CATEGORIES.find((c) => c === sp.tipo) ?? "";
-  const period = dashPeriod(sp, tz);
+  const period = await staffPeriod(sp, tz);
   const [d, health, cash, products] = await Promise.all([
     staffDashboard(db(), brand.id, period, category),
     baseHealth(db(), brand.id, category, { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) }),
     can(actor.grants, "withdrawals.view", brand.id) ? cashflow(db(), brand.id) : Promise.resolve(null),
     productReport(db(), brand.id, period, "creators"),
   ]);
-  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} />;
+  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} periodKey={period.key ?? ""} today={dayKey(new Date(), tz)} />;
 }

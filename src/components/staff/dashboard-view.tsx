@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { PeriodPicker } from "@/components/staff/period-picker";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import type { CSSProperties, ReactNode } from "react";
 import { SalesChart } from "@/components/portal/sales-chart";
@@ -7,7 +8,7 @@ import { needsFor } from "@/lib/staff/needs";
 import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
 import { formatBRL } from "@/domain";
-import { DASH_PRESETS, type DashCategory, type StaffDashboard } from "@/lib/staff/dashboard";
+import type { DashCategory, StaffDashboard } from "@/lib/staff/dashboard";
 import type { StaffHome } from "@/lib/staff/home";
 import type { BaseHealth, Cashflow } from "@/lib/staff/insights";
 import type { ProductReport } from "@/lib/reports/products";
@@ -351,10 +352,6 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
   );
 }
 
-const href = (p: { periodo?: string; tipo?: string }) => {
-  const s = new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][]).toString();
-  return `/admin/marca${s ? `?${s}` : ""}`;
-};
 
 /** Início com o dashboard (M0.0.4, modelo da referência), para quem vê dinheiro na marca. */
 export function DashboardView({
@@ -366,7 +363,11 @@ export function DashboardView({
   cash = null,
   program = null,
   productsWithoutCost = 0,
+  periodKey = "",
+  today = "",
 }: {
+  periodKey?: string;
+  today?: string;
   d: StaffDashboard;
   h: StaffHome;
   category: DashCategory;
@@ -393,19 +394,13 @@ export function DashboardView({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <nav aria-label="Período" className="liquid-pill" style={{ "--n": DASH_PRESETS.length, "--i": Math.max(0, DASH_PRESETS.findIndex((p) => p.id === d.period.preset)) } as CSSProperties}>
-              {DASH_PRESETS.findIndex((p) => p.id === d.period.preset) >= 0 && <span aria-hidden className="drop" />}
-              {DASH_PRESETS.map((p) => (
-                <Link key={p.id} href={href({ periodo: p.id, tipo: category })} aria-current={d.period.preset === p.id ? "true" : undefined}>
-                  {p.label}
-                </Link>
-              ))}
-            </nav>
+            {/* D-PERIODPICK: o mesmo seletor de tempo de todas as abas. */}
+            <PeriodPicker value={periodKey} today={today} tone="brand" />
             <form action="/admin/marca" className="flex items-center gap-1">
               <select name="tipo" defaultValue={category} className="rounded-full border-0 bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur [&>option]:text-stone-900" aria-label="Tipo de creator">
                 {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
-              {d.period.preset && <input type="hidden" name="periodo" value={d.period.preset} />}
+              {periodKey && <input type="hidden" name="p" value={periodKey} />}
               <button className="rounded-full bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur hover:bg-white/25">Aplicar</button>
             </form>
             <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
