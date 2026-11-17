@@ -315,6 +315,23 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-328 — 2026-11-17 — Auditoria das telas, lote 2 (médios)
+- Papéis diferentes em cada marca: o menu usa o papel da marca do topo; Candidatas, Envios, Desempenho e Abertura
+  conferem a permissão na marca do topo (antes davam erro 500); o Início da Alliance mostra vendas do mês só para quem
+  vê dinheiro naquela marca.
+- Envio: vê a aba Ações (tarefas de envio parado, D-ACTIONS) e corrige o endereço no próprio cartão do envio
+  (aguardando ou preparando; D-ADDRSTAFF); "Abrir a ficha" só para quem vê creators.
+- Saque sem liberação mensal (só prêmio ou ajuste) conta no último mês fechado e aparece em Pagamentos.
+- Pagamentos: vendas e comissão do mês somam uma vez por creator nos totais e na planilha (`monthTotals`).
+- Portal, Vendas: pedido cancelado ou não pago aparece na lista mas não conta em pedidos, ticket e dias (regra do Início).
+- Loja: saldo em conferência (saque não liberado, D-WDLOCK) não compra.
+- Vendas da equipe: a soma "em produtos dos pagos (a base da comissão)" só soma pedidos pagos.
+- Fica para depois, com o responsável: senha própria para a planilha Central (separada da dos formulários).
+- Observação: `coupon-board.test.ts` falhou uma vez na bateria completa e passou sozinho e na repetição (instável; a
+  investigar no lote 3).
+- Testes: `month-totals.test.ts` (novo), `portal.test.ts`, `shop.test.ts`, `sales.test.ts`, `remessa.test.ts`,
+  `staff-nav.test.ts`.
+
 ### CP-327 — 2026-11-17 — Auditoria das telas, lote 1 (altos e conta compartilhada)
 - Auditoria das telas pedida pelo responsável: 4 leituras do código em paralelo (portal, dinheiro, operação,
   configuração e endpoints) e varredura no navegador (8 papéis e 3 tipos de creator, 373 telas em 2 marcas, banco

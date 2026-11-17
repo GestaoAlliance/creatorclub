@@ -139,7 +139,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
             </form>
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
               <span>
-                <strong className="text-stone-800 dark:text-stone-100">{r.total}</strong> {r.total === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos (a base da comissão) ·{" "}
+                <strong className="text-stone-800 dark:text-stone-100">{r.total}</strong> {r.total === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos dos pagos (a base da comissão) ·{" "}
                 {searchesAllTime(sp) ? "busca em todas as datas" : `feitos de ${dmy(period.from)} a ${dmy(period.to)}`}
                 {sp.motivo && <> · <Link href={`/admin/vendas${query(sp, { motivo: "", pagina: "" })}#lista`} className="font-semibold text-brand hover:underline dark:text-brand-2">tirar o quadro</Link></>}
               </span>

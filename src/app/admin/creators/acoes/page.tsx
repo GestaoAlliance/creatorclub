@@ -16,7 +16,7 @@ export default async function ActionsPage() {
   if (!actor) redirect("/entrar?next=/admin/creators/acoes");
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
-  if (!can(actor.grants, "creators.edit", brand.id)) redirect("/conta");
+  if (!can(actor.grants, "creators.edit", brand.id) && !can(actor.grants, "shipping.manage", brand.id)) redirect("/conta");
   const [all, doneToday, b] = await Promise.all([
     actionQueue(db(), brand.id).then((t) => visibleTasks(t, actor, brand.id)),
     actionsDoneToday(db(), brand.id),

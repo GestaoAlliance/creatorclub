@@ -191,7 +191,9 @@ describe("Vendas do portal (banco real)", () => {
     const lateSep = await mk("#SET", "2026-10-01T01:00:00Z"); // ainda setembro em São Paulo
     const unpaid = await mk("#PIX", null);
     const test = await mk("#TST", "2026-10-04T12:00:00Z", { test: true });
-    for (const o of [oct, refunded, lateSep, unpaid, test]) {
+    // Pago e cancelado antes da comissão: aparece na lista, mas não conta (mesma regra do Início).
+    const cancelled = await mk("#CAN", "2026-10-04T13:00:00Z", { cancelledAt: T("2026-10-04T14:00:00Z") });
+    for (const o of [oct, refunded, lateSep, unpaid, test, cancelled]) {
       await prisma.orderAttribution.create({ data: { brandId: a.brand.id, orderId: o.id, creatorId: a.creator.id, couponId: a.coupon.id, rateBps: 1500, rule: "first_creator_code", evidenceCodes: [a.coupon.code] } });
     }
     const ids = { brandId: a.brand.id, creatorId: a.creator.id };
@@ -206,9 +208,10 @@ describe("Vendas do portal (banco real)", () => {
     const now = T("2026-10-06T12:00:00Z");
     const page = await portalSales(prisma, ctx, {}, now); // Este mês
     expect([page.period.preset, page.period.firstDay, page.period.lastDay]).toEqual(["mes", "2026-10-01", "2026-10-06"]);
-    expect(page.sales.map((s) => [s.orderName, s.status, s.commissionCents])).toEqual([
-      ["#EST", "REVERSED", 0],
-      ["#OUT", "HELD", 1_500],
+    expect(page.sales.map((s) => [s.orderName, s.commissionCents])).toEqual([
+      ["#CAN", 0],
+      ["#EST", 0],
+      ["#OUT", 1_500],
     ]);
     expect(page.totals).toEqual({ count: 1, baseCents: 10_000, commissionCents: 1_500, ticketCents: 10_000 });
     expect(page.days.map((d) => [d.day, d.count, d.baseCents])).toEqual([

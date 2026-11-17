@@ -27,8 +27,10 @@ async function shopProducts(prisma: PrismaClient, brand: { id: string; slug: str
 export async function myShop(prisma: PrismaClient, ctx: PortalContext, now = new Date()): Promise<ShopState> {
   const creator = await prisma.creator.findUniqueOrThrow({
     where: { id: ctx.creatorId },
-    select: { id: true, brandId: true, status: true, contractSigned: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
+    select: { id: true, brandId: true, status: true, contractSigned: true, withdrawalsUnlockedAt: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
   });
+  // D-WDLOCK: o mesmo saldo que pode sacar; em conferência não compra (auditoria de 2026-11-17).
+  if (!creator.withdrawalsUnlockedAt) return { allowed: false, reason: "Seu saldo está em conferência pela equipe. A loja abre assim que a conferência terminar." };
   if (creator.status !== "ACTIVE") return { allowed: false, reason: "A loja é para creators ativas. Fale com a equipe." };
   if (creator.contractSigned !== true) return { allowed: false, reason: "A loja abre depois do contrato assinado. Se você já assinou, fale com a equipe." };
   const balance = await creatorBalance(prisma, creator, creator.brand.timezone, now);
@@ -55,8 +57,9 @@ export async function buyWithBalance(
     await tx.$queryRaw`SELECT id FROM "Creator" WHERE id = ${ctx.creatorId} FOR UPDATE`;
     const creator = await tx.creator.findUniqueOrThrow({
       where: { id: ctx.creatorId },
-      select: { id: true, brandId: true, status: true, contractSigned: true, account: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
+      select: { id: true, brandId: true, status: true, contractSigned: true, withdrawalsUnlockedAt: true, account: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
     });
+    if (!creator.withdrawalsUnlockedAt) throw new ShipmentError("Seu saldo está em conferência pela equipe. A loja abre assim que a conferência terminar.");
     if (creator.status !== "ACTIVE" || creator.contractSigned !== true) throw new ShipmentError("A loja não está liberada para você. Fale com a equipe.");
     const address = addressOf(creator.account);
     if (!address) throw new ShipmentError("Cadastre o endereço de entrega antes de comprar.");

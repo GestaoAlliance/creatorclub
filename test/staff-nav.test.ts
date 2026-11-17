@@ -9,7 +9,7 @@ describe("menu da equipe por papel", () => {
     expect(labels("SUPER_ADMIN", null)).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
     // M1.1 (D-WDAPPROVE): a Gestão aprova saques, então vê Pagamentos (só a aba Saques).
     expect(labels("GESTAO")).toEqual(["Início", "Creators", "Hunters", "Vendas", "Pagamentos", "Envios", "Configurações"]);
-    expect(labels("ENVIO")).toEqual(["Início", "Envios"]);
+    expect(labels("ENVIO")).toEqual(["Início", "Ações", "Envios"]);
     expect(labels("PAGAMENTO")).toEqual(["Início", "Creators", "Vendas", "Pagamentos", "Configurações"]);
     expect(labels("HUNTER")).toEqual(["Início", "Minhas indicações", "Prospecção"]);
     expect(labels("TIKTOK")).toEqual(["TikTok"]); // D-TIKTOKLIST: a Mafe vê só a lista

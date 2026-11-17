@@ -46,6 +46,8 @@ describe("vendas da equipe (M0.1, banco real)", () => {
     const csv = await salesForCsv(prisma, brand.id, { status: "PAID" });
     expect(csv.map((r) => r.order).sort()).toEqual(["#P1", order.name].sort());
     expect(csv.find((r) => r.order === order.name)).toMatchObject({ creator: account.name, commissionCents: 3000, subtotalCents: 20_000 });
+    // A soma da tela é só dos pagos (a base da comissão), mesmo com pendente, cancelado e teste na lista.
+    expect(all.subtotalCents).toBe(csv.reduce((t, r) => t + r.subtotalCents, 0));
   });
 });
 

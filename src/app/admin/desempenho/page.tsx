@@ -23,6 +23,7 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   if (allowed !== "ALL" && allowed.length === 0) redirect("/admin");
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
+  if (!can(actor.grants, "performance.view", brand.id)) redirect("/admin");
   const sp = await searchParams;
   const now = new Date();
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;

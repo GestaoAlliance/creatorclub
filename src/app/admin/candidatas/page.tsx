@@ -28,6 +28,8 @@ export default async function CandidatasPage({ searchParams }: { searchParams: P
   };
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const brand = (await staffContext(actor)).brand;
+  // Papel diferente em cada marca: confere na marca do topo (auditoria de 2026-11-17).
+  if (brand && !can(actor.grants, "creators.view", brand.id)) redirect("/admin");
   const inBrand = scopedActor(actor, brand?.id);
   const data = await listApplications(db(), inBrand, status, filters);
   // M4.1 (D-MANUALAPP): "Nova candidata" para quem edita creators na marca do topo.

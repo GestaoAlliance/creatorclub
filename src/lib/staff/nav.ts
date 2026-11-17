@@ -5,7 +5,7 @@ import { brandsWith, type Grant, type Permission } from "@/lib/auth/permissions"
  * Menu do painel da equipe (D-DESIGNALL) em grupos (D-MENUGROUPS, plano M): cada item do menu junta telas do mesmo
  * trabalho, mostradas como abas no topo da página. Regra pura (testada). Cada página continua conferindo o acesso.
  */
-type Tab = { href: string; label: string; needs: Permission; global?: boolean };
+type Tab = { href: string; label: string; needs: Permission; orNeeds?: Permission; global?: boolean };
 type Group = { label: string; icon: NavItem["icon"]; tabs: Tab[] };
 
 const GROUPS: Group[] = [
@@ -15,7 +15,8 @@ const GROUPS: Group[] = [
     tabs: [
       { href: "/creators", label: "Creators", needs: "creators.view" },
       { href: "/candidatas", label: "Candidatas", needs: "creators.view" },
-      { href: "/creators/acoes", label: "Ações", needs: "creators.edit" },
+      // D-ACTIONS: envio parado é de quem envia (o Envio vê as tarefas de envio).
+      { href: "/creators/acoes", label: "Ações", needs: "creators.edit", orNeeds: "shipping.manage" },
       { href: "/campanhas", label: "Campanhas", needs: "creators.view" },
       { href: "/conteudo", label: "Conteúdo", needs: "creators.view" },
       // D-TIKTOKLIST: quem tem TikTok (a Mafe vê só esta aba).
@@ -72,8 +73,11 @@ const GROUPS: Group[] = [
 ];
 
 function allowedTab(grants: readonly Grant[], t: Tab): boolean {
-  const b = brandsWith(grants, t.needs);
-  return t.global ? b === "ALL" : b === "ALL" || b.length > 0;
+  const ok = (p: Permission) => {
+    const b = brandsWith(grants, p);
+    return t.global ? b === "ALL" : b === "ALL" || b.length > 0;
+  };
+  return ok(t.needs) || (t.orNeeds !== undefined && ok(t.orNeeds));
 }
 
 /** Menu dentro de uma marca (A1, D-ALLIANCE): o Início da marca e os grupos que o papel pode usar, com as abas. */
