@@ -38,6 +38,9 @@ describe("tela Cupons (D-COUPONBOARD, banco real)", () => {
     const row = b.rows.find((r) => r.id === solta.id)!;
     expect(row).toMatchObject({ kind: null, orders: 3, salesCents: 40_000, sales30Cents: 40_000, firstUse: "2026-11-01", lastUse: "2026-11-06", pending: true, suggestion: { creatorId: creator.id } });
     expect(row.waitingCommissionCents).toBe(Math.round((40_000 * brand.defaultCommissionBps) / 10_000));
+    // D-PERIODPICK: só 01/11 a 03/11 → R$ 100 (o pedido de 05/11 fica fora); o total não muda.
+    const p = await couponBoard(prisma, ana, brand.id, now, { gte: new Date("2026-11-01T03:00:00Z"), lt: new Date("2026-11-04T03:00:00Z") });
+    expect(p.rows.find((r) => r.id === solta.id)).toMatchObject({ salesCents: 40_000, sales30Cents: 10_000 });
     // O cupom do seed é CREATOR sem dona: usado só em 01/09 → pendente e parado.
     expect(b.rows.find((r) => r.id === coupon.id)).toMatchObject({ kind: "CREATOR", pending: true, idle: true, orders: 1 });
     expect(b.withoutCoupon.map((c) => c.id)).toContain(creator.id);

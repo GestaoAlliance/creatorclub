@@ -79,12 +79,13 @@ export type OriginSummaryRow = {
 };
 
 /** Resumo por origem (aba Origem do Desempenho): inscritas, aprovadas, ativas e vendas do mês. */
-export async function originSummary(prisma: PrismaClient, actor: Actor | null, brandId: string, salesByCreator: ReadonlyMap<string, number>): Promise<OriginSummaryRow[]> {
+/** `range` (D-PERIODPICK): inscrições e aprovações das inscritas no período; sem ele, desde o início. */
+export async function originSummary(prisma: PrismaClient, actor: Actor | null, brandId: string, salesByCreator: ReadonlyMap<string, number>, range?: { gte: Date; lt: Date }): Promise<OriginSummaryRow[]> {
   if (!actor || !can(actor.grants, "performance.view", brandId)) throw new OriginError("Sem permissão.");
   const [creators, apps] = await Promise.all([
     prisma.creator.findMany({ where: { brandId, archivedAt: null }, select: { id: true, status: true, createdAt: true } }),
     prisma.creatorApplication.findMany({
-      where: { brandId },
+      where: { brandId, ...(range ? { submittedAt: range } : {}) },
       select: { source: true, submittedAt: true, status: true, campaignTag: true, hunterLink: { select: { user: { select: { id: true, name: true } } } }, _count: { select: { prospects: true } } },
     }),
   ]);

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { monthKey } from "@/domain";
+import { dayKey, nextDayKey, periodPhrase, pickPeriod, startOfLocalDay } from "@/domain";
+import { PeriodPicker } from "@/components/staff/period-picker";
+import { staffPeriod } from "@/lib/staff/period";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { originSummary } from "@/lib/creators/origin";
@@ -13,10 +15,8 @@ import { PerformanceBoard } from "./board";
 
 export const dynamic = "force-dynamic";
 
-const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-
 // Desempenho (D-PERFBOARD): Instagram, UGC e Origem. Gestão, Leitura e super admin (`performance.view`).
-export default async function DesempenhoPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+export default async function DesempenhoPage({ searchParams }: { searchParams: Promise<{ aba?: string; p?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/desempenho");
   const allowed = brandsWith(actor.grants, "performance.view");
@@ -27,15 +27,19 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const now = new Date();
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
-  const sales = await monthSalesByCreator(db(), brand.id, tz, now);
-  const [ig, ugc, origin] = await Promise.all([instagramRanking(db(), actor, brand.id, sales, now), ugcBoard(db(), actor, brand.id, sales, now), originSummary(db(), actor, brand.id, sales)]);
-  const month = monthKey(now, tz);
+  // D-PERIODPICK: vendas e entradas no período escolhido; Instagram e o ciclo da UGC continuam como estão hoje.
+  const period = await staffPeriod(sp.p ? { p: sp.p } : {}, tz, now);
+  const today = dayKey(now, tz);
+  const range = { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) };
+  const sales = await monthSalesByCreator(db(), brand.id, tz, now, range);
+  const [ig, ugc, origin] = await Promise.all([instagramRanking(db(), actor, brand.id, sales, now), ugcBoard(db(), actor, brand.id, sales, now), originSummary(db(), actor, brand.id, sales, range)]);
   const initial = sp.aba === "ugc" || sp.aba === "origem" ? sp.aba : "instagram";
   return (
     <GlassLight className="dash flex flex-col gap-4">
       <PerformanceBoard
         brandName={brand.name}
-        monthLabel={`${MONTHS[Number(month.slice(5)) - 1]} de ${month.slice(0, 4)}`}
+        phrase={periodPhrase(pickPeriod(period.key ?? null, today))}
+        picker={<PeriodPicker value={period.key ?? ""} today={today} tone="brand" />}
         ig={ig}
         ugc={ugc}
         origin={origin}

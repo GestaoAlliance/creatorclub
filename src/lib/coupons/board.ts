@@ -14,7 +14,8 @@ import { classifyCoupon, confirmOwner, confirmRate, couponReview, ReviewError } 
 const DAY = 86_400_000;
 export const COUPON_IDLE_DAYS = 60;
 
-export async function couponBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, now = new Date()) {
+/** `range` (D-PERIODPICK): `sales30Cents` vira as vendas do cupom no período (pagas, pela data do pagamento). */
+export async function couponBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, now = new Date(), range?: { gte: Date; lt: Date }) {
   const review = await couponReview(prisma, actor, brandId);
   const [brand, orders, people] = await Promise.all([
     prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, defaultCommissionBps: true } }),
@@ -27,7 +28,7 @@ export async function couponBoard(prisma: PrismaClient, actor: Actor | null, bra
       select: { id: true, status: true, awaitingContractAt: true, account: { select: { name: true, instagram: true, tiktok: true } }, commissionPolicies: { where: { validTo: null }, orderBy: { validFrom: "desc" }, take: 1, select: { rateBps: true } } },
     }),
   ]);
-  const since30 = now.getTime() - 30 * DAY;
+  const win = range ? { gte: range.gte.getTime(), lt: range.lt.getTime() } : { gte: now.getTime() - 30 * DAY, lt: Number.POSITIVE_INFINITY };
   type Stat = { orders: number; salesCents: number; sales30Cents: number; waitingCents: number; first: Date | null; last: Date | null };
   const stats = new Map<string, Stat>();
   for (const o of orders) {
@@ -39,7 +40,8 @@ export async function couponBoard(prisma: PrismaClient, actor: Actor | null, bra
       if (!s.last || o.createdAtShop > s.last) s.last = o.createdAtShop;
       if (paid) {
         s.salesCents += o.subtotalCents;
-        if ((o.paidAt ?? o.createdAtShop).getTime() >= since30) s.sales30Cents += o.subtotalCents;
+        const t = (o.paidAt ?? o.createdAtShop).getTime();
+        if (t >= win.gte && t < win.lt) s.sales30Cents += o.subtotalCents;
         if (!o.attribution) s.waitingCents += o.subtotalCents;
       }
       stats.set(raw, s);

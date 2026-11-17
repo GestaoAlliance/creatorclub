@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-341 — 2026-11-17 — Seletor de tempo em Desempenho e Cupons (D-PERIODPICK)
+- Desempenho: o seletor fica na faixa; as vendas de cada creator nas abas Instagram (venda por mil), UGC e Origem são
+  as do período, e na Origem as inscrições e aprovações contam pelo período (ativas é hoje). Os números do Instagram
+  (seguidores, engajamento) e o ciclo de vídeos da UGC continuam como estão hoje.
+- Cupons: a coluna "30 dias" vira as vendas do cupom no período (e o total "De creator"); as pendências (tipo, dona,
+  taxa) aparecem todas, de qualquer data.
+- Com isto o seletor está em todas as telas da equipe pedidas (Início, Vendas, Produtos, Pagamentos, Creators, ficha,
+  Envios, Desempenho e Cupons).
+- `monthSalesByCreator(..., range)`, `originSummary(..., range)`, `couponBoard(..., range)`. Testes em
+  `integration/coupon-board.test.ts`, `perf-board.test.ts` e `origin.test.ts`.
+
 ### CP-340 — 2026-11-17 — Seletor de tempo em Creators e Envios (D-PERIODPICK)
 - Creators: o seletor fica na faixa; a coluna "30 dias" vira "Vendas" do período (com a seta contra o período
   anterior do mesmo tamanho), entra "Comissão" do período, a ordenação "Vendas no período" e o total no topo (vendas e
