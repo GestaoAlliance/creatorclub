@@ -7,7 +7,7 @@ import { payoutSummary } from "@/lib/withdrawals/summary";
 import { payoutBoard } from "@/lib/withdrawals/board";
 import { staffHome } from "@/lib/staff/home";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
-import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
+import { commissionEntry, expectDbError, seedBrand, testClient, markChecked } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -35,6 +35,7 @@ async function requested() {
   const { withdrawalId } = await requestWithdrawal(prisma, ctx, { actorUserId: userId, requestId: randomUUID(), amountCents: 80_000, pdf: PDF }, IN_WINDOW);
   const pagamento = await userWith("PAGAMENTO", a.brand.id);
   const gestao = await userWith("GESTAO", a.brand.id);
+  await markChecked(prisma, withdrawalId);
   return { ...a, ctx, userId, withdrawalId, pagamento, gestao };
 }
 

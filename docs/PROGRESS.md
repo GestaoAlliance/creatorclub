@@ -315,6 +315,22 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-339 — 2026-11-17 — Conferência dos saques antes de liberar (D-PAYCHECK)
+- Pedido da Vanessa (passo 1): antes de liberar o saque, conferir se vendas do mês × % de comissão dá o valor no
+  Creator Club (o caso dos R$ 5.700). Respostas do responsável: etapa nova em Pagamentos, bate com diferença de até
+  R$ 1,00, botão + mensagem + trava, e "Mandar para o Pedro" quando não bate.
+- Pagamentos CNPJ e CPF: etapa "0. Conferir" (abre nela enquanto houver o que conferir). Cada creator com valor a
+  receber do último mês fechado (pediu ou não): vendas, %, esperado, valor no Creator Club, "Bate"/"Não bate" com os
+  motivos (comissão de outro mês, ajustes, estornos, comissão do mês diferente de vendas × %).
+- "Conferido" grava quem, quando e o valor; para quem ainda não pediu, abre a mensagem da Vanessa (WhatsApp, valor
+  exato da nota). "Mandar para o Pedro" marca "em análise" e copia o texto para o grupo. Valor que muda depois da
+  conferência pede conferir de novo.
+- Trava: aprovar o saque exige o último registro da creator no mês "conferido", com o mesmo valor (todas as marcas).
+- Tabela `PayoutCheck` (só inserção, RLS, `PayoutCheck_valid`, `PayoutCheck_insert_only`), migração
+  `20261209090000_payout_check`, `src/lib/payouts/check.ts`. Testes em `integration/payout-check.test.ts` e
+  `pay-flow.test.ts`.
+- Próximo: seletor de tempo em Creators e Envios; depois Desempenho e Cupons.
+
 ### CP-338 — 2026-11-17 — Pausa dos pedidos de produtos por marca (D-PRODUCTPAUSE)
 - Pedido da Vanessa (passo 2, grupo IA & Tecnologia): bloquear os pedidos de produtos das creators da Botanika até
   organizar os saques (aprovar já manda para o Envio e o Olist). Respostas do responsável: chave por marca (só

@@ -93,3 +93,9 @@ export async function expectDbError(op: Promise<unknown>, pattern: RegExp): Prom
   }
   throw new Error("a operação deveria ter falhado no banco, mas passou");
 }
+
+/** D-PAYCHECK: conferência gravada com o valor do saque (aprovar exige). */
+export async function markChecked(prisma: PrismaClient, withdrawalId: string) {
+  const w = await prisma.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId }, select: { brandId: true, creatorId: true, amountCents: true, referenceMonth: true } });
+  await prisma.payoutCheck.create({ data: { brandId: w.brandId, creatorId: w.creatorId, month: w.referenceMonth ?? "2026-09", status: "CHECKED", amountCents: w.amountCents, expectedCents: w.amountCents, createdById: "teste" } });
+}
