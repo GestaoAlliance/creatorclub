@@ -28,12 +28,12 @@ export function Sparkline({ weeks, className = "h-6 w-24" }: { weeks: number[]; 
 /** Seta de alta/queda dos últimos 30 dias contra os 30 anteriores. */
 export function TrendChip({ current, previous }: { current: number; previous: number }) {
   const t = trendOf(current, previous);
-  if (t.dir === "new") return <span title="Vendeu nos últimos 30 dias e nada nos 30 anteriores" className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/12 px-1.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"><Sparkles className="size-3" />voltou</span>;
+  if (t.dir === "new") return <span title="Vendeu no período e nada no período anterior" className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/12 px-1.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"><Sparkles className="size-3" />voltou</span>;
   if (t.pct === null) return null;
   const cls = t.dir === "up" ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : t.dir === "down" ? "bg-red-500/10 text-red-700 dark:text-red-300" : "bg-stone-500/10 text-stone-600 dark:text-stone-300";
   const Icon = t.dir === "up" ? ArrowUpRight : t.dir === "down" ? ArrowDownRight : ArrowRight;
   return (
-    <span title={`30 dias anteriores: ${formatBRL(previous)}`} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls}`}>
+    <span title={`Período anterior: ${formatBRL(previous)}`} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${cls}`}>
       <Icon className="size-3" />
       {t.pct > 0 ? "+" : ""}
       {t.pct}%

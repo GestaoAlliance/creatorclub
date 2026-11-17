@@ -306,13 +306,16 @@ export async function myShipments(prisma: PrismaClient, ctx: PortalContext) {
   return prisma.shipment.findMany({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id }, orderBy: { createdAt: "desc" }, select: SHIPMENT_SELECT });
 }
 
-export async function staffShipments(prisma: PrismaClient, actor: Actor | null, opts: { status?: ShipmentStatusValue; staleBefore?: Date } = {}) {
+/** `range` (D-PERIODPICK): entregues pela entrega, cancelados pelo cancelamento e "todos" pela data do pedido no período. */
+export async function staffShipments(prisma: PrismaClient, actor: Actor | null, opts: { status?: ShipmentStatusValue; staleBefore?: Date; range?: { gte: Date; lt: Date } } = {}) {
   if (!actor) throw new ShipmentError("Sem permissão para envios.");
   const brands = brandsWith(actor.grants, "shipping.view");
   if (brands !== "ALL" && brands.length === 0) throw new ShipmentError("Sem permissão para envios.");
   return prisma.shipment.findMany({
     // D-TRACKING: `staleBefore` = enviados antes da data e ainda sem "Recebi" (possível extravio).
-    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), ...(opts.status ? { status: opts.status } : {}), ...(opts.staleBefore ? { status: "SHIPPED" as const, shippedAt: { lte: opts.staleBefore } } : {}) },
+    where: { ...(brands === "ALL" ? {} : { brandId: { in: brands } }), ...(opts.status ? { status: opts.status } : {}), ...(opts.staleBefore ? { status: "SHIPPED" as const, shippedAt: { lte: opts.staleBefore } } : {}),
+      ...(opts.range && !opts.staleBefore ? (opts.status === "DELIVERED" ? { deliveredAt: opts.range } : opts.status === "CANCELLED" ? { cancelledAt: opts.range } : !opts.status ? { createdAt: opts.range } : {}) : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 200,
     // M4.3 (D-PROFILEFIELDS): alergias e restrições aparecem para quem monta o envio.

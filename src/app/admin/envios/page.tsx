@@ -16,6 +16,9 @@ import { SHIPMENT_STATUS_LABEL, shipmentFormData, staffShipments, trackingUrl, t
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { ShipExtras, ShipHero, ShipQueue, type ShipRow } from "./board";
 import { FirstKitNotice, KitReminder, NewShipmentForm } from "./forms";
+import { PeriodPicker } from "@/components/staff/period-picker";
+import { staffPeriod } from "@/lib/staff/period";
+import { dayKey, nextDayKey, periodPhrase, pickPeriod, startOfLocalDay } from "@/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,7 @@ const STATUSES = Object.keys(SHIPMENT_STATUS_LABEL) as ShipmentStatusValue[];
 const KIT_LABEL: Record<string, string> = { WELCOME: "kit de boas-vindas", MONTHLY: "kit do mês", GOAL: "kit da meta" };
 
 // Envios de produtos às creators (E7.8): Envio, Gestão e super admin. Visual D-SHIPBOARD.
-export default async function EnviosPage({ searchParams }: { searchParams: Promise<{ situacao?: string; parado?: string }> }) {
+export default async function EnviosPage({ searchParams }: { searchParams: Promise<{ situacao?: string; parado?: string; p?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/envios");
   const view = brandsWith(actor.grants, "shipping.view");
@@ -33,7 +36,14 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "shipping.view", brand.id)) redirect("/admin");
   const inBrand = scopedActor(actor, brand.id);
-  const { situacao, parado } = await searchParams;
+  const { situacao, parado, p } = await searchParams;
+  // D-PERIODPICK: as filas (aguardando, preparando, a caminho) mostram tudo o que está aberto; entregues, cancelados,
+  // "todos", o quadro e a planilha seguem o período.
+  const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
+  const period = await staffPeriod(p ? { p } : {}, timezone);
+  const today = dayKey(new Date(), timezone);
+  const picked = pickPeriod(period.key ?? null, today);
+  const range = { gte: startOfLocalDay(period.from, timezone), lt: startOfLocalDay(nextDayKey(period.to), timezone) };
   // D-TRACKING: "Sem Recebi há 10+ dias" (enviados, possível extravio).
   const stale = parado === "1";
   const now = new Date();
@@ -44,12 +54,12 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   const status = stale ? undefined : (STATUSES.find((s) => s === situacao) ?? (situacao === undefined ? fallback : undefined));
   const canManage = can(actor.grants, "shipping.manage", brand.id);
   const [shipments, staleList, form, imageOf] = await Promise.all([
-    staffShipments(db(), inBrand, stale ? { staleBefore } : status ? { status } : {}),
+    staffShipments(db(), inBrand, stale ? { staleBefore } : status ? { status, range } : { range }),
     staffShipments(db(), inBrand, { staleBefore }),
     canManage ? shipmentFormData(db(), inBrand) : null,
     productImages(db(), brand.id),
   ]);
-  const board = await shipmentBoard(db(), actor, brand.id, shipments.map((s) => s.creator.id), now);
+  const board = await shipmentBoard(db(), actor, brand.id, shipments.map((s) => s.creator.id), now, range);
   // D-FIRSTKITNOTICE: aviso do 1º produto, pronto e esperando o clique do super admin.
   // D-PRODUCTPAUSE: com os pedidos pausados, nada de chamar a creator para escolher kit.
   const paused = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { productRequestsPausedAt: true } })).productRequestsPausedAt;
@@ -106,6 +116,8 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         counts={board.counts}
         canCreate={Boolean(form)}
         canPrintAll={canPrint}
+        periodLabel={periodPhrase(picked)}
+        picker={<PeriodPicker value={period.key ?? ""} today={today} tone="brand" />}
         newForm={form ? <NewShipmentForm creators={form.creators} products={form.products} /> : null}
       />
       {paused && (
@@ -124,18 +136,19 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         {canPrint && (
           <form action="/admin/envios/csv" method="get" className="ml-auto flex flex-wrap items-center gap-1.5">
             {status && <input type="hidden" name="situacao" value={status} />}
-            <input type="date" name="de" aria-label="Pedidos de" className={ui.inputSm} />
-            <input type="date" name="ate" aria-label="até" className={ui.inputSm} />
-            <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`}><Download className="size-4" />Planilha ({status ? SHIPMENT_STATUS_LABEL[status] : stale ? "todos" : "todos"})</button>
+            <input type="hidden" name="de" value={period.from} />
+            <input type="hidden" name="ate" value={period.to} />
+            <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`}><Download className="size-4" />Planilha ({status ? SHIPMENT_STATUS_LABEL[status] : "todos"}, {picked.label.toLowerCase()})</button>
           </form>
         )}
       </nav>
-      <ShipQueue key={current} rows={rows} canPrint={canPrint} emptyText={stale ? "Ninguém sem confirmar há 10+ dias. 🎉" : status ? `Nenhum envio em ${SHIPMENT_STATUS_LABEL[status]}.` : "Nenhum envio."} />
+      <ShipQueue key={current} rows={rows} canPrint={canPrint} emptyText={stale ? "Ninguém sem confirmar há 10+ dias. 🎉" : status ? `Nenhum envio em ${SHIPMENT_STATUS_LABEL[status]}${status === "DELIVERED" || status === "CANCELLED" ? ` ${periodPhrase(picked)}` : ""}.` : `Nenhum envio pedido ${periodPhrase(picked)}.`} />
       <ShipExtras
         olistLate={board.olistLate}
         month={board.month}
         stale={staleList.map((s) => ({ id: s.id, creatorId: s.creator.id, name: s.creator.account.name, days: Math.floor((now.getTime() - (s.shippedAt ?? s.createdAt).getTime()) / 86_400_000) }))}
         canMessage={can(actor.grants, "creators.edit", brand.id)}
+        periodLabel={periodPhrase(picked)}
       />
     </GlassLight>
   );

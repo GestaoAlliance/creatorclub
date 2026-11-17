@@ -12,6 +12,7 @@ import type { BulkInviteState } from "./actions";
 import { BulkBar } from "./bulk-bar";
 import { Avatar, CopyChip, LastSale, Sparkline, TrendChip } from "./list-parts";
 import { PeekPanel } from "./peek-panel";
+import { PeriodPicker } from "@/components/staff/period-picker";
 
 export type Row = {
   id: string;
@@ -36,8 +37,9 @@ export type Row = {
   tiktok: string | null;
   cpf: string | null;
   coupon: string | null;
-  /** D-CREATORLIST: 30 dias, os 30 anteriores e as 12 semanas (só para quem vê dinheiro). */
-  stats: { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; weeks: number[] } | null;
+  /** D-CREATORLIST + D-PERIODPICK: o período escolhido (sales30Cents), o anterior do mesmo tamanho, a comissão do
+   * período e as 12 semanas (só para quem vê dinheiro). */
+  stats: { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; commissionCents: number; weeks: number[] } | null;
   /** M4.2 (D-TAGS). */
   tags: { id: string; name: string }[];
   /** M4.3 (D-PROFILEFIELDS). */
@@ -60,7 +62,7 @@ const SITUATIONS: { id: Situation; label: string; param: string }[] = [
   { id: "DEACTIVATED", label: "Encerradas", param: "encerradas" },
 ];
 const SORTS: { id: Sort; label: string; money?: boolean }[] = [
-  { id: "sales30", label: "Vendas em 30 dias", money: true },
+  { id: "sales30", label: "Vendas no período", money: true },
   { id: "sales", label: "Vendas no total", money: true },
   { id: "last", label: "Última venda" },
   { id: "name", label: "Nome" },
@@ -100,7 +102,7 @@ function initial(p: ListInit, money: boolean) {
  * com vendas de 30 dias + tendência + 12 semanas + última venda colorida, painel lateral com o resumo e ações em grupo.
  * Tudo no navegador: a lista já vem filtrada pela permissão (vendas só para quem vê dinheiro; CPF só com dado fiscal).
  */
-export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: string; slug: string }; pendingApplications: number; canEdit: boolean; archived: boolean; archivedCount: number; canReview: boolean }) {
+export function CreatorList(p: { period: { key: string; label: string; phrase: string; today: string }; rows: Row[]; init: ListInit; brand: { name: string; slug: string }; pendingApplications: number; canEdit: boolean; archived: boolean; archivedCount: number; canReview: boolean }) {
   const { rows } = p;
   const money = rows.some((r) => r.stats !== null);
   const start = useMemo(() => initial(p.init, money), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -130,6 +132,8 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
     if (origin) sp.set("origem", origin);
     if (sort !== (money ? "sales30" : "name")) sp.set("ordem", sort);
     if (p.archived) sp.set("arquivadas", "1");
+    const keepPeriod = new URLSearchParams(window.location.search).get("p");
+    if (keepPeriod) sp.set("p", keepPeriod);
     const next = `${window.location.pathname}${sp.size ? `?${sp}` : ""}`;
     if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, "", next);
   }, [q, situation, segment, category, tag, uf, origin, sort, money, p.archived]);
@@ -219,6 +223,7 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
 
   const sales30 = inCategory.reduce((s, r) => s + (r.stats?.sales30Cents ?? 0), 0);
   const prev30 = inCategory.reduce((s, r) => s + (r.stats?.prev30Cents ?? 0), 0);
+  const commission = inCategory.reduce((s, r) => s + (r.stats?.commissionCents ?? 0), 0);
   const total = inCategory.reduce((s, r) => s + (r.stats?.salesCents ?? 0), 0);
   const top = inCategory.map((r) => r.stats?.salesCents ?? 0).sort((a, b) => b - a);
   const share = (n: number) => (total ? Math.round((top.slice(0, n).reduce((s, v) => s + v, 0) / total) * 100) : 0);
@@ -250,11 +255,12 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
                 ) : (
                   <>
                     {rows.length} na base · {rows.filter((r) => r.status === "ACTIVE").length} ativas
-                    {money && sales30 > 0 && <> · <strong className="font-semibold text-white">{formatBRL(sales30)}</strong> em 30 dias</>}
+                    {money && <> · <strong className="font-semibold text-white">{formatBRL(sales30)}</strong> em vendas e <strong className="font-semibold text-white">{formatBRL(commission)}</strong> de comissão {p.period.phrase}</>}
                   </>
                 )}
               </p>
             </div>
+            {money && !p.archived && <PeriodPicker value={p.period.key} today={p.period.today} tone="brand" />}
             <div className="liquid-pill" style={{ "--n": SITUATIONS.length, "--i": sitIndex } as React.CSSProperties} role="tablist" aria-label="Situação">
               <span aria-hidden className="drop" />
               {SITUATIONS.map((s) => (
@@ -346,7 +352,7 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
           </span>
           {segment === "idle60" && <button type="button" onClick={() => setSegment("")} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-900 dark:text-amber-200">{IDLE60.label} <X className="size-3" /></button>}
           {money && total > 0 && <span>Concentração: a maior faz {share(1)}% das vendas · as 3 maiores, {share(3)}%</span>}
-          {money && sales30 + prev30 > 0 && <span className="inline-flex items-center gap-1">30 dias: {shortBRL(sales30)} <TrendChip current={sales30} previous={prev30} /></span>}
+          {money && sales30 + prev30 > 0 && <span className="inline-flex items-center gap-1">{p.period.label}: {shortBRL(sales30)} <TrendChip current={sales30} previous={prev30} /></span>}
           {filtersOn && <button type="button" onClick={clearAll} className="font-semibold text-brand hover:underline dark:text-brand-2">Limpar filtros</button>}
           <span className="ml-auto flex flex-wrap gap-3">
             {p.canReview && <Link href="/admin/creators/revisar" className="hover:underline">Cadastros a revisar</Link>}
@@ -404,7 +410,8 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
                     )}
                     <th className={p.canEdit ? "" : "!pl-5"}>Creator</th>
                     <th className="hidden @5xl:table-cell">Cupom</th>
-                    {money && <th className="text-right">30 dias</th>}
+                    {money && <th className="text-right" title={p.period.label}>Vendas</th>}
+                    {money && <th className="hidden text-right @3xl:table-cell">Comissão</th>}
                     {money && <th className="hidden @6xl:table-cell">12 semanas</th>}
                     <th>Última venda</th>
                     {money && <th className="hidden text-right @4xl:table-cell">No total</th>}
@@ -459,6 +466,7 @@ export function CreatorList(p: { rows: Row[]; init: ListInit; brand: { name: str
                             {c.stats && <TrendChip current={c.stats.sales30Cents} previous={c.stats.prev30Cents} />}
                           </td>
                         )}
+                        {money && <td className="hidden whitespace-nowrap text-right tabular-nums @3xl:table-cell" title={formatBRL(c.stats?.commissionCents ?? 0)}>{shortBRL(c.stats?.commissionCents ?? 0)}</td>}
                         {money && <td className="hidden @6xl:table-cell">{c.stats && <Sparkline weeks={c.stats.weeks} />}</td>}
                         <td><LastSale day={c.lastOrder?.day ?? null} daysAgo={d} /></td>
                         {money && (

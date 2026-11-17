@@ -8,10 +8,12 @@ import { db } from "@/lib/db";
 import { listCreators, STATUS_LABEL } from "@/lib/creators/profile";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { CreatorList, type ListInit } from "./list";
+import { staffPeriod } from "@/lib/staff/period";
+import { dayKey, periodPhrase, pickPeriod } from "@/domain";
 
 export const dynamic = "force-dynamic";
 
-type Params = { portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string; arquivadas?: string; origem?: string; q?: string; situacao?: string; filtro?: string; uf?: string; ordem?: string };
+type Params = { p?: string; portal?: string; contrato?: string; semvenda?: string; categoria?: string; pendencia?: string; tag?: string; arquivadas?: string; origem?: string; q?: string; situacao?: string; filtro?: string; uf?: string; ordem?: string };
 
 export default async function CreatorsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const actor = await currentActor();
@@ -22,8 +24,13 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   if (!can(actor.grants, "creators.view", brand.id)) redirect("/conta");
   const sp = await searchParams;
   const archived = sp.arquivadas === "1";
+  // D-PERIODPICK: vendas e comissão de cada uma no período escolhido (o mesmo das outras telas).
+  const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
+  const period = await staffPeriod(sp.p ? { p: sp.p } : {}, timezone);
+  const today = dayKey(new Date(), timezone);
+  const picked = pickPeriod(period.key ?? null, today);
   const [creators, pendingApplications, archivedCount] = await Promise.all([
-    listCreators(db(), scopedActor(actor, brand.id), brand.id, archived),
+    listCreators(db(), scopedActor(actor, brand.id), brand.id, archived, period),
     db().creatorApplication.count({ where: { brandId: brand.id, status: "NEW" } }),
     db().creator.count({ where: { brandId: brand.id, archivedAt: { not: null } } }),
   ]);
@@ -50,6 +57,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
         </p>
       )}
       <CreatorList
+        period={{ key: period.key ?? "", label: picked.label, phrase: periodPhrase(picked), today }}
         rows={creators.map((c) => ({ ...c, statusLabel: STATUS_LABEL[c.status] }))}
         init={init}
         brand={{ name: brand.name, slug: brand.slug }}
