@@ -11,6 +11,7 @@ import type { ShipmentAddress } from "@/lib/shipments/address";
 import type { CreatorShipContext } from "@/lib/shipments/board";
 import { Avatar } from "../creators/list-parts";
 import { MessageSheet, SidePanel } from "../desempenho/parts";
+import { AddressForm } from "../creators/[id]/data-forms";
 import { ApprovalForms, CancelForm, DeliveredForm, ShippedForm } from "./forms";
 
 type Status = "AWAITING_APPROVAL" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -40,6 +41,10 @@ export type ShipRow = {
   recipient: { cpf: string | null; cnpj: string | null; phone: string | null; email: string } | null;
   canManage: boolean;
   canApprove: boolean;
+  /** Corrige o endereço aqui (D-ADDRSTAFF; o Envio não abre a ficha). */
+  canEditAddress: boolean;
+  /** Abre a ficha (quem vê creators). */
+  canOpenProfile: boolean;
   context: CreatorShipContext | null;
 };
 type Month = { products: { title: string; units: number; image: string | null }[]; units: number; freightCents: number; shipments: number };
@@ -247,6 +252,9 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
             <span className="flex gap-2"><IdCard className="mt-0.5 size-3.5 shrink-0 text-stone-500" /><span>{s.recipient.cpf ? <>CPF <span className="font-mono">{s.recipient.cpf}</span></> : "CPF não informado"}{s.recipient.cnpj && <> · CNPJ <span className="font-mono">{s.recipient.cnpj}</span></>}<br />{[s.recipient.phone, s.recipient.email].filter(Boolean).join(" · ")}</span></span>
           )}
           {s.address && <span className="flex gap-2"><MapPin className="mt-0.5 size-3.5 shrink-0 text-stone-500" /><span>{s.addressLines.map((l) => <span key={l} className="block">{l}</span>)}</span></span>}
+          {s.canEditAddress && (s.status === "AWAITING_APPROVAL" || s.status === "PREPARING") && (
+            <AddressForm creatorId={s.creator.id} address={s.address && !("raw" in s.address) ? s.address : { zip: "", street: "", number: "", complement: null, district: "", city: "", state: "" }} />
+          )}
         </div>
       )}
 
@@ -280,7 +288,7 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
           </div>
         </div>
       )}
-      <Link href={`/admin/creators/${s.creator.id}`} className={`${ui.ghostSm} self-start`}>Abrir a ficha</Link>
+      {s.canOpenProfile && <Link href={`/admin/creators/${s.creator.id}`} className={`${ui.ghostSm} self-start`}>Abrir a ficha</Link>}
     </>
   );
 }

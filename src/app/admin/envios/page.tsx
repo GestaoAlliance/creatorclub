@@ -31,6 +31,7 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
+  if (!can(actor.grants, "shipping.view", brand.id)) redirect("/admin");
   const inBrand = scopedActor(actor, brand.id);
   const { situacao, parado } = await searchParams;
   // D-TRACKING: "Sem Recebi há 10+ dias" (enviados, possível extravio).
@@ -86,6 +87,8 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
       recipient: personal ? { cpf: cpf ? formatDoc(cpf) : null, cnpj: cnpj ? formatDoc(cnpj) : null, phone, email } : null,
       canManage,
       canApprove: can(actor.grants, "creators.edit", brand.id),
+      canEditAddress: personal && (canManage || can(actor.grants, "creators.edit", brand.id)),
+      canOpenProfile: can(actor.grants, "creators.view", brand.id),
       context: board.context.get(s.creator.id) ?? null,
     };
   });

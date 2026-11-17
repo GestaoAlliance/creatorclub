@@ -219,3 +219,18 @@ describe("ensaio do dia de pagamento (D-REMESSAFILE, D-BANKREJECT, D-BANKDATE)",
     expect(bankPaidAt(null, T("2026-10-23T18:00:00Z"))).toEqual(T("2026-10-23T18:00:00Z"));
   });
 });
+
+describe("saque sem liberação mensal (auditoria de 2026-11-17)", () => {
+  it("conta no último mês fechado, para aparecer em Pagamentos", async () => {
+    const a = await seedBrand(prisma);
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { nfTakerDocument: "65100830000136" } });
+    const userId = randomUUID();
+    await prisma.user.create({ data: { id: userId, email: `${userId}@x.com`, name: "Creator" } });
+    await prisma.creatorAccount.update({ where: { id: a.account.id }, data: { userId, pixKey: "maria@exemplo.com", cpf: "52998224725", cnpj: "11222333000181" } });
+    await prisma.creator.update({ where: { id: a.creator.id }, data: { withdrawalsUnlockedAt: T("2026-10-01T00:00:00Z"), withdrawalsUnlockedById: "pagamento" } });
+    await prisma.ledgerEntry.create({ data: { brandId: a.brand.id, creatorId: a.creator.id, type: "ADJUSTMENT", amountCents: 5_000, availableAt: T("2026-09-20T12:00:00Z"), idempotencyKey: randomUUID(), note: "prêmio", createdById: userId } });
+    const ctx = await portalContext(prisma, (await loadActor(prisma, userId))!, a.brand.slug);
+    const { withdrawalId } = await requestWithdrawal(prisma, ctx, { actorUserId: userId, requestId: randomUUID(), amountCents: 5_000, pdf: PDF }, IN_WINDOW);
+    expect((await prisma.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } })).referenceMonth).toBe("2026-09");
+  });
+});

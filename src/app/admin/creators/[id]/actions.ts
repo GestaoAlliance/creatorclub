@@ -297,6 +297,7 @@ export async function addressAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   const f = (k: string) => String(form.get(k) ?? "");
   return run(id, async () => {
+    revalidatePath("/admin/envios");
     const r = await staffUpdateAddress(db(), await currentActor(), id, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") }, form.get("alsoPending") === "on");
     return { ok: r.pendingUpdated ? `Endereço salvo e trocado em ${r.pendingUpdated} ${r.pendingUpdated === 1 ? "envio ainda não enviado" : "envios ainda não enviados"}.` : "Endereço salvo." };
   }, "Endereço salvo.");

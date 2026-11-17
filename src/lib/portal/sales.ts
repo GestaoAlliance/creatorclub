@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { dayKey, monthKey } from "@/domain";
+import { dayKey, monthKey, PAID_FINANCIAL } from "@/domain";
 import { releaseProgress, type ReleaseProgress } from "@/lib/commission/release";
 import type { PortalContext } from "./context";
 import { resolvePeriod, type Period } from "./period";
@@ -70,11 +70,15 @@ export async function portalSales(
           name: true,
           paidAt: true,
           subtotalCents: true,
+          financialStatus: true,
+          cancelledAt: true,
           ledgerEntries: { where: { creatorId: ctx.creatorId, type: { in: ["COMMISSION", "REVERSAL"] } }, select: { amountCents: true } },
         },
       },
     },
   });
+  // Pedido que conta (a mesma regra do Início e da comissão): pago ou parcialmente estornado e não cancelado.
+  const counts = new Set(rows.filter((r) => (PAID_FINANCIAL as readonly string[]).includes(r.order.financialStatus) && r.order.cancelledAt === null).map((r) => r.order.id));
   const sales = rows
     .map((r): Sale => {
       const entries = r.order.ledgerEntries;
@@ -95,12 +99,14 @@ export async function portalSales(
   for (const s of sales) {
     const d = byDay.get(dayKey(s.paidAt, tz));
     if (!d) continue;
-    if (s.status !== "REVERSED") d.count++;
-    d.baseCents += s.baseCents;
+    const valid = counts.has(s.orderId) && s.status !== "REVERSED";
+    if (valid) d.count++;
+    if (valid) d.baseCents += s.baseCents;
     d.commissionCents += s.commissionCents;
   }
-  const count = sales.filter((s) => s.status !== "REVERSED").length;
-  const baseCents = sales.reduce((s, x) => s + x.baseCents, 0);
+  const valid = sales.filter((s) => counts.has(s.orderId) && s.status !== "REVERSED");
+  const count = valid.length;
+  const baseCents = valid.reduce((s, x) => s + x.baseCents, 0);
   return {
     period,
     release,

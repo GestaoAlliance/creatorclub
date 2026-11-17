@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { brandsWith } from "@/lib/auth/permissions";
+import { brandsWith, can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
@@ -19,6 +19,7 @@ export default async function OpeningPage() {
   // A1 (D-ALLIANCE): só a marca escolhida no topo.
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
+  if (!can(actor.grants, "withdrawals.manage", brand.id)) redirect("/admin");
   const rows = await openingList(db(), scopedActor(actor, brand.id));
   return (
     <GlassLight className="dash flex flex-col gap-4">

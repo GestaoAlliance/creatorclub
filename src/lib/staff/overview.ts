@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { monthKey } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
-import { scopeGrants } from "@/lib/auth/permissions";
+import { can, scopeGrants } from "@/lib/auth/permissions";
 import { staffHome } from "./home";
 
 /**
@@ -17,7 +17,9 @@ export async function allianceOverview(prisma: PrismaClient, actor: Actor, brand
         prisma.brand.findUniqueOrThrow({ where: { id: b.id }, select: { timezone: true } }),
       ]);
       const month = monthKey(now, brand.timezone);
-      const sales = await prisma.orderAttribution.findMany({
+      // Vendas só para quem vê dinheiro nesta marca (auditoria de 2026-11-17: Envio/Hunter em duas marcas viam).
+      const money = can(actor.grants, "money.view", b.id);
+      const sales = !money ? [] : await prisma.orderAttribution.findMany({
         where: { brandId: b.id, order: { paidAt: { gte: new Date(now.getTime() - 32 * 86_400_000) }, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] }, cancelledAt: null, test: false } },
         select: { order: { select: { paidAt: true, subtotalCents: true } } },
       });
@@ -26,8 +28,8 @@ export async function allianceOverview(prisma: PrismaClient, actor: Actor, brand
         ...b,
         home,
         store: store ? { connected: store.status === "CONNECTED", shop: store.externalId, lastSyncAt: store.lastSyncAt } : null,
-        salesCents: monthSales.reduce((acc, s) => acc + Math.max(0, s.order.subtotalCents), 0),
-        orders: monthSales.length,
+        salesCents: money ? monthSales.reduce((acc, s) => acc + Math.max(0, s.order.subtotalCents), 0) : null,
+        orders: money ? monthSales.length : null,
       };
     }),
   );

@@ -58,11 +58,13 @@ export function AllianceBrandCards({ brands }: { brands: Brands }) {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-stone-500">Vendas do mês</p>
-                  <p className="text-xl font-semibold tabular-nums">{formatBRL(b.salesCents).replace(/,00$/, "")}</p>
-                  <p className={ui.hint}>{b.orders} {b.orders === 1 ? "pedido" : "pedidos"} com cupom</p>
-                </div>
+                {b.salesCents !== null && b.orders !== null && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-stone-500">Vendas do mês</p>
+                    <p className="text-xl font-semibold tabular-nums">{formatBRL(b.salesCents).replace(/,00$/, "")}</p>
+                    <p className={ui.hint}>{b.orders} {b.orders === 1 ? "pedido" : "pedidos"} com cupom</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs uppercase tracking-wide text-stone-500">Creators ativas</p>
                   <p className="text-xl font-semibold tabular-nums">{c?.active ?? 0}</p>

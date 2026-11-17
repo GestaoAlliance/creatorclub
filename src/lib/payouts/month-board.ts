@@ -70,6 +70,23 @@ export function bankState(
   return { bankRejected: r.bankNote || "Pix devolvido pelo banco", pixChangedAfterBank: !!changed && !!r.bankAt && changed > r.bankAt };
 }
 
+/**
+ * Totais do mês: notas somam linha a linha; vendas e comissão são do mês da creator, então contam uma vez por creator
+ * (dois saques dela no mesmo mês não dobram o total; auditoria de 2026-11-17).
+ */
+export function monthTotals(rows: readonly Pick<PayRow, "creatorId" | "legacy" | "nfCents" | "salesCents" | "commissionCents">[]) {
+  const seen = new Set<string>();
+  let salesCents = 0;
+  let commissionCents = 0;
+  for (const r of rows) {
+    if (r.legacy || seen.has(r.creatorId)) continue;
+    seen.add(r.creatorId);
+    salesCents += r.salesCents;
+    commissionCents += r.commissionCents;
+  }
+  return { nfCents: rows.reduce((t, r) => t + r.nfCents, 0), salesCents, commissionCents };
+}
+
 export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, kind: PayKind, tab: PayTab, rawMonth: string | undefined, now = new Date()) {
   if (!actor || !can(actor.grants, "withdrawals.view", brandId)) throw new PayFlowError("Sem permissão para pagamentos.");
   const brand = await prisma.brand.findUniqueOrThrow({
@@ -194,7 +211,7 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
       realizar: { count: stage("APPROVED").length, cents: sum(stage("APPROVED")) },
       realizados: { count: stage("PAID").length, cents: sum(stage("PAID")) },
     },
-    totals: { nfCents: out.reduce((t, r) => t + r.nfCents, 0), commissionCents: out.reduce((t, r) => t + r.commissionCents, 0), salesCents: out.reduce((t, r) => t + r.salesCents, 0) },
+    totals: monthTotals(out),
   };
 }
 
@@ -221,6 +238,7 @@ export function payRowsCsv(rows: readonly PayRow[], brandName: string, month: st
       day(r.requestedAt), day(r.approvedAt), br(r.paidDay), r.paidBy, r.pixReference, r.legacy ? `antes do Creator Club: ${r.note ?? ""}` : null,
     ].map(cell).join(";"),
   );
-  const total = ["Total", "", `${rows.length} ${rows.length === 1 ? "linha" : "linhas"}`, "", "", brl(rows.reduce((s, r) => s + r.salesCents, 0)), "", brl(rows.reduce((s, r) => s + r.commissionCents, 0)), brl(rows.reduce((s, r) => s + r.nfCents, 0)), "", "", "", "", "", "", ""].join(";");
+  const t = monthTotals(rows);
+  const total = ["Total", "", `${rows.length} ${rows.length === 1 ? "linha" : "linhas"}`, "", "", brl(t.salesCents), "", brl(t.commissionCents), brl(t.nfCents), "", "", "", "", "", "", ""].join(";");
   return `﻿${[head.join(";"), ...lines, total].join("\r\n")}\r\n`;
 }

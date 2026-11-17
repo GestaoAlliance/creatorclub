@@ -107,7 +107,8 @@ export async function listSales(prisma: PrismaClient, brandId: string, f: SalesF
   const [orders, total, sums, counts] = await Promise.all([
     prisma.order.findMany({ where, orderBy: [{ createdAtShop: "desc" }, { id: "desc" }], skip: (Math.max(1, page) - 1) * SALES_PAGE_SIZE, take: SALES_PAGE_SIZE, select: SELECT }),
     prisma.order.count({ where }),
-    prisma.order.aggregate({ where, _sum: { subtotalCents: true } }),
+    // Só pedidos pagos somam (a base da comissão); cancelados, teste e não pagos ficam na lista e fora da soma.
+    prisma.order.aggregate({ where: { AND: [where, statusWhere("PAID")] }, _sum: { subtotalCents: true } }),
     Promise.all(statuses.map((s) => prisma.order.count({ where: { AND: [base, statusWhere(s)] } }))),
   ]);
   return {

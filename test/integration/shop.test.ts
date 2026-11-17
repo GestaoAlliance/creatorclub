@@ -17,7 +17,7 @@ const ADDRESS = { zip: "01310-100", street: "Av. Paulista", number: "1000", dist
 async function setup(balanceCents: number) {
   const s = await seedBrand(prisma);
   await prisma.brand.update({ where: { id: s.brand.id }, data: { shopDiscountBps: 2000 } });
-  await prisma.creator.update({ where: { id: s.creator.id }, data: { status: "ACTIVE", contractSigned: true } });
+  await prisma.creator.update({ where: { id: s.creator.id }, data: { status: "ACTIVE", contractSigned: true, withdrawalsUnlockedAt: new Date("2026-01-01"), withdrawalsUnlockedById: "pagamento" } });
   const userId = randomUUID();
   await prisma.user.create({ data: { id: userId, email: `${userId}@x.com`, name: "Creator" } });
   await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { userId } });
@@ -40,6 +40,11 @@ async function setup(balanceCents: number) {
 describe("loja com o saldo (M5.1, D-SHOPBALANCE, banco real)", () => {
   it("preço com o desconto da marca; reserva o saldo; aprovar lança no extrato; recusar devolve", async () => {
     const s = await setup(30_000);
+    // Saldo em conferência (D-WDLOCK): não compra.
+    await prisma.creator.update({ where: { id: s.creator.id }, data: { withdrawalsUnlockedAt: null, withdrawalsUnlockedById: null } });
+    expect(await myShop(prisma, s.ctx)).toMatchObject({ allowed: false, reason: expect.stringMatching(/conferência/) });
+    await expect(buyWithBalance(prisma, s.ctx, s.userId, [{ productId: s.serum.id, quantity: 1 }])).rejects.toThrow(/conferência/);
+    await prisma.creator.update({ where: { id: s.creator.id }, data: { withdrawalsUnlockedAt: new Date("2026-01-01"), withdrawalsUnlockedById: "pagamento" } });
     const shop = await myShop(prisma, s.ctx);
     expect(shop).toMatchObject({ allowed: true, availableCents: 30_000, discountBps: 2000 });
     expect(shop.allowed && shop.products.map((p) => [p.title, p.creatorPriceCents])).toEqual([["Kit", 20_000], ["Sérum", 8_000]]); // sem preço não aparece

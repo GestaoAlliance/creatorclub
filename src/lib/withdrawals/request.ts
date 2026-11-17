@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { checkNf, checkWithdrawalRequest, dayKey, parseNfseText, receiptText, type WithdrawalError } from "@/domain";
+import { checkNf, checkWithdrawalRequest, dayKey, monthKey, parseNfseText, previousMonthKey, receiptText, type WithdrawalError } from "@/domain";
 import { creatorBalance, nfSnapshot, releasedThroughFor } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { isValidCpf, pendingTerms } from "@/lib/terms/terms";
@@ -153,7 +153,8 @@ async function createRequest(
           amountCents: input.amountCents,
           idempotencyKey: key,
           requestedAt: now,
-          referenceMonth: snap.referenceMonth,
+          // Sem liberação mensal ainda (só prêmio ou ajuste): conta no último mês fechado, para aparecer em Pagamentos.
+          referenceMonth: snap.referenceMonth ?? previousMonthKey(monthKey(now, creator.brand.timezone)),
           breakdown: snap.lines,
           ...document.data,
         },

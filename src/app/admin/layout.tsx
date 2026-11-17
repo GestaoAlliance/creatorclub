@@ -3,7 +3,7 @@ import { StaffFrame } from "@/components/staff/frame";
 import { currentActor } from "@/lib/auth/current";
 import { staffContext } from "@/lib/staff/context";
 import { allianceNav, hasAlliancePanel, staffNav } from "@/lib/staff/nav";
-import { brandsWith } from "@/lib/auth/permissions";
+import { brandsWith, scopeGrants } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       isCreator={ctx.isCreator}
       alliance={hasAlliancePanel(actor.grants, ctx.brands.length)}
       search={(() => { const b = brandsWith(actor.grants, "creators.view"); return b === "ALL" || b.length > 0; })()}
-      brandItems={staffNav(actor.grants)}
+      brandItems={staffNav(ctx.brand ? scopeGrants(actor.grants, ctx.brand.id) : actor.grants)}
       allianceItems={allianceNav(actor.grants)}
     >
       {children}
