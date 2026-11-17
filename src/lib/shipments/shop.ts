@@ -4,6 +4,7 @@ import { creatorBalance } from "@/lib/commission/release";
 import type { PortalContext } from "@/lib/portal/context";
 import { addressOf } from "./address";
 import { ShipmentError } from "./shipments";
+import { PAUSED_CREATOR, requestsPaused } from "./pause";
 
 /**
  * Loja com o saldo (M5.1, D-SHOPBALANCE; respostas do responsável em 2026-10-27): a creator ativa, com contrato
@@ -31,6 +32,7 @@ export async function myShop(prisma: PrismaClient, ctx: PortalContext, now = new
     select: { id: true, brandId: true, status: true, contractSigned: true, withdrawalsUnlockedAt: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
   });
   // D-WDLOCK: o mesmo saldo que pode sacar; em conferência não compra (auditoria de 2026-11-17).
+  if (await requestsPaused(prisma, creator.brandId)) return { allowed: false, reason: PAUSED_CREATOR };
   if (!creator.withdrawalsUnlockedAt) return { allowed: false, reason: "Seu saldo está em conferência pela equipe. A loja abre assim que a conferência terminar." };
   if (creator.status !== "ACTIVE") return { allowed: false, reason: "A loja é para creators ativas. Fale com a equipe." };
   if (creator.contractSigned !== true) return { allowed: false, reason: "A loja abre depois do contrato assinado. Se você já assinou, fale com a equipe." };
@@ -61,6 +63,7 @@ export async function buyWithBalance(
       where: { id: ctx.creatorId },
       select: { id: true, brandId: true, status: true, contractSigned: true, withdrawalsUnlockedAt: true, account: true, brand: { select: { slug: true, timezone: true, shopDiscountBps: true } } },
     });
+    if (await requestsPaused(tx, creator.brandId)) throw new ShipmentError(PAUSED_CREATOR);
     if (!creator.withdrawalsUnlockedAt) throw new ShipmentError("Seu saldo está em conferência pela equipe. A loja abre assim que a conferência terminar.");
     if (creator.status !== "ACTIVE" || creator.contractSigned !== true) throw new ShipmentError("A loja não está liberada para você. Fale com a equipe.");
     const address = addressOf(creator.account);

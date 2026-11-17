@@ -315,6 +315,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-338 — 2026-11-17 — Pausa dos pedidos de produtos por marca (D-PRODUCTPAUSE)
+- Pedido da Vanessa (passo 2, grupo IA & Tecnologia): bloquear os pedidos de produtos das creators da Botanika até
+  organizar os saques (aprovar já manda para o Envio e o Olist). Respostas do responsável: chave por marca (só
+  Botanika agora), trava pedir e aprovar, kits automáticos param, vale para todas as creators da marca.
+- Configurações › Marcas › "Pedidos de produtos": Pausar / Voltar (Gestão da marca ou super admin, com histórico).
+  Pausada: a creator não escolhe kit nem compra com o saldo (portal mostra "Pedidos pausados"), aprovar trava (recusar
+  continua), os kits mensal, da meta e da faixa não são concedidos, Ações não cobra kit parado e Envios mostra o aviso
+  (sem os avisos de kit). O kit de boas-vindas da aprovação continua registrado e espera a volta.
+- Ao voltar, o worker concede o que as vendas do mês corrente e do anterior alcançaram na faixa (como hoje).
+- Migração `20261208090000_product_requests_pause` (`Brand.productRequestsPausedAt`). `src/lib/shipments/pause.ts`.
+  Teste em `integration/product-pause.test.ts`.
+- Falta (produção): ligar a pausa na Botanika depois do deploy (Configurações › Marcas › Pedidos de produtos).
+- Próximo: passo 1 da Vanessa (conferência dos saques: vendas de outubro × % = valor no Creator Club); depois o
+  seletor de tempo em Creators e Envios.
+
 ### CP-337 — 2026-11-17 — Vendas por creator e seletor de tempo na ficha (D-PERIODPICK)
 - Pedido do responsável: escolher a creator em Vendas e ver as vendas dela no período; a ficha não tinha o seletor.
 - Vendas: campo "Creator" (digita o nome e escolhe; × tira o filtro). A lista, os quadros e o CSV ficam só com ela, e

@@ -8,6 +8,8 @@ import type { BrandAssetKind } from "@/domain";
 import { db } from "@/lib/db";
 import { ContractSendError, setContractLock } from "@/lib/autentique/applications";
 import { CalendarError, cancelExtension, extendWindow, updateCalendar } from "@/lib/brands/calendar";
+import { setProductPause } from "@/lib/shipments/pause";
+import { ShipmentError } from "@/lib/shipments/shipments";
 
 export type BrandState = { error?: string; ok?: string } | undefined;
 
@@ -124,4 +126,18 @@ export async function extendWindowAction(_prev: BrandState, form: FormData): Pro
 
 export async function cancelExtensionAction(_prev: BrandState, form: FormData): Promise<BrandState> {
   return calendarRun(async () => cancelExtension(db(), await currentActor(), String(form.get("brandId"))), "A janela voltou ao fim normal.");
+}
+
+/** D-PRODUCTPAUSE: pausa ou volta os pedidos de produtos da marca. */
+export async function productPauseAction(_prev: BrandState, form: FormData): Promise<BrandState> {
+  const paused = form.get("paused") === "1";
+  try {
+    await setProductPause(db(), await currentActor(), String(form.get("brandId") ?? ""), paused);
+    revalidatePath("/admin/marcas");
+    revalidatePath("/admin/envios");
+    return { ok: paused ? "Pedidos pausados: as creators não pedem e a equipe não aprova até religar." : "Pedidos de produtos de volta: as creators já podem escolher." };
+  } catch (error) {
+    if (error instanceof ShipmentError) return { error: error.message };
+    throw error;
+  }
 }

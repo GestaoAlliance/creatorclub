@@ -13,7 +13,8 @@ import { notify } from "@/lib/notifications/notify";
 const PAID = ["PAID", "PARTIALLY_REFUNDED"];
 
 export async function grantGoalKits(prisma: PrismaClient, now = new Date()): Promise<number> {
-  const brands = await prisma.brand.findMany({ where: { archivedAt: null }, select: { id: true, slug: true, timezone: true, monthlyKitFrom: true } });
+  // D-PRODUCTPAUSE: marca com os pedidos pausados não ganha kit.
+  const brands = await prisma.brand.findMany({ where: { archivedAt: null, productRequestsPausedAt: null }, select: { id: true, slug: true, timezone: true, monthlyKitFrom: true } });
   let granted = 0;
   for (const brand of brands) {
     const today = dayKey(now, brand.timezone);

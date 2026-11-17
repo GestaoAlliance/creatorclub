@@ -200,7 +200,11 @@ export function ShipmentsView({
   let headline: React.ReactNode;
   let sub: React.ReactNode = null;
   let cta: React.ReactNode = null;
-  if (kits.kits.length > 0) {
+  // D-PRODUCTPAUSE: pedidos pausados pela equipe: nada para escolher agora (os kits ganhos ficam guardados).
+  if (kits.paused) {
+    headline = kits.kits.length > 0 ? <>Seus produtos estão guardados</> : <>Pedidos pausados</>;
+    sub = "Os pedidos de produtos estão pausados pela equipe no momento. Assim que voltarem, você consegue escolher por aqui.";
+  } else if (kits.kits.length > 0) {
     headline = <>Você ganhou {pendingProducts} {kitNoun(marca, pendingProducts)}!</>;
     sub = "Escolha os produtos e confirme o endereço: a equipe aprova e faz o envio.";
     cta = <a href="#escolher" className="self-start rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 shadow-sm">Escolher agora</a>;
@@ -242,7 +246,7 @@ export function ShipmentsView({
         </div>
       </section>
       {/* D-KITAPPROVAL: o pedido só existe com produto liberado; a escolha vai para a aprovação da equipe e depois para o envio. */}
-      {kits.kits.length > 0 && (
+      {kits.kits.length > 0 && !kits.paused && (
         <section id="escolher" data-tour="solicitar-pedido" className="flex scroll-mt-24 flex-col gap-4">
           {viewOnly && (
             <p className="rounded-2xl border border-amber-400/60 bg-amber-100/70 px-4 py-2.5 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
@@ -256,7 +260,7 @@ export function ShipmentsView({
       )}
       <ShipmentList marca={marca} shipments={shipments} viewOnly={viewOnly} etas={etas} images={images} />
       {/* D-KITPROGRESS: como liberar o próximo produto (as faixas do contrato). */}
-      {progress && <KitProgressCard progress={progress} brandSlug={marca} />}
+      {progress && !kits.paused && <KitProgressCard progress={progress} brandSlug={marca} />}
       <AddressCard marca={marca} address={address} viewOnly={viewOnly} informed={informedAddress} />
     </div>
   );

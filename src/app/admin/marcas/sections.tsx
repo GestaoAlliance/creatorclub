@@ -3,16 +3,16 @@
 import { Check, CircleAlert } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { BrandForm, BrandImage, ContractLockForm, type BrandSection } from "./forms";
+import { BrandForm, BrandImage, ContractLockForm, ProductPauseForm, type BrandSection } from "./forms";
 import { CalendarForm } from "./calendar-form";
 
-export type SectionItem = { id: BrandSection | "contrato" | "login" | "calendario"; label: string; done: boolean | null; hint: string };
+export type SectionItem = { id: BrandSection | "contrato" | "login" | "calendario" | "pedidos"; label: string; done: boolean | null; hint: string };
 
 /**
  * Marca em seções com checklist (D-SETTINGSBOARD): índice com ✓ ou "falta" ao lado (abas no celular) e só a seção
  * escolhida aberta. Abre na primeira que falta.
  */
-export function BrandSections({ items, form, lock, logo, calendar }: { items: SectionItem[]; form: Omit<React.ComponentProps<typeof BrandForm>, "section">; lock: { brandId: string; on: boolean; waiting: number }; logo: { brandId: string; slug: string; version: string | null }; calendar: React.ComponentProps<typeof CalendarForm> }) {
+export function BrandSections({ items, form, lock, pause, logo, calendar }: { items: SectionItem[]; form: Omit<React.ComponentProps<typeof BrandForm>, "section">; lock: { brandId: string; on: boolean; waiting: number }; pause: React.ComponentProps<typeof ProductPauseForm>; logo: { brandId: string; slug: string; version: string | null }; calendar: React.ComponentProps<typeof CalendarForm> }) {
   const [cur, setCur] = useState(items.find((i) => i.done === false)?.id ?? items[0]!.id);
   const item = items.find((i) => i.id === cur)!;
   return (
@@ -42,10 +42,11 @@ export function BrandSections({ items, form, lock, logo, calendar }: { items: Se
             <p className="text-sm text-stone-500">{item.hint}</p>
           </div>
           {/* O formulário fica montado (o que foi digitado não se perde ao trocar de seção); só a seção escolhida aparece. */}
-          <div hidden={cur === "contrato" || cur === "login" || cur === "calendario"}>
-            <BrandForm {...form} section={cur === "contrato" || cur === "login" || cur === "calendario" ? "dados" : cur} />
+          <div hidden={cur === "contrato" || cur === "login" || cur === "calendario" || cur === "pedidos"}>
+            <BrandForm {...form} section={cur === "contrato" || cur === "login" || cur === "calendario" || cur === "pedidos" ? "dados" : cur} />
           </div>
           {cur === "calendario" && <CalendarForm {...calendar} />}
+          {cur === "pedidos" && <ProductPauseForm {...pause} />}
           {cur === "contrato" && <ContractLockForm brandId={lock.brandId} on={lock.on} waiting={lock.waiting} />}
           {cur === "login" && (
             <div className="flex flex-col gap-3">

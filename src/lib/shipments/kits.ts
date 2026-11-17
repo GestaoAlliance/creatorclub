@@ -7,6 +7,7 @@ import type { Actor } from "@/lib/auth/actor";
 import { can } from "@/lib/auth/permissions";
 import { addressOf } from "./address";
 import { ShipmentError } from "./shipments";
+import { PAUSED_CREATOR, PAUSED_STAFF, requestsPaused } from "./pause";
 
 /**
  * Kit mensal (D-KIT) e kit de boas-vindas do contrato (D-WELCOMEKIT, ao assinar), escolhidos do mesmo jeito.
@@ -59,9 +60,10 @@ export async function myPendingKits(prisma: PrismaClient, ctx: PortalContext) {
     orderBy: [{ kind: "desc" }, { month: "asc" }], // boas-vindas primeiro
     select: { id: true, kind: true, month: true, products: true, salesCents: true, presetProductIds: true },
   });
+  const paused = await requestsPaused(prisma, ctx.brand.id);
   const kits = await Promise.all(rows.map(async ({ presetProductIds, ...k }) => ({ ...k, preset: await presetProducts(prisma, ctx.brand.id, presetProductIds) })));
   const products = kits.length ? await kitProducts(prisma, ctx.brand.id) : [];
-  return { kits, products };
+  return { kits, products, paused };
 }
 
 export async function chooseKit(
@@ -75,6 +77,7 @@ export async function chooseKit(
   const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true } });
   if (!kit || kit.creatorId !== ctx.creatorId) throw new ShipmentError("Kit não encontrado.");
   if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
+  if (await requestsPaused(prisma, kit.brandId)) throw new ShipmentError(PAUSED_CREATOR);
   // D-WELCOMECHOICE: kit com produtos fixos vai com eles, seja o que for enviado pelo formulário; com mais opções que
   // produtos (D-WELCOMEPICK), ela escolhe entre elas.
   const preset = await presetProducts(prisma, kit.brandId, kit.presetProductIds);
@@ -130,6 +133,8 @@ async function awaiting(prisma: PrismaClient, actor: Actor | null, shipmentId: s
 /** D-KITAPPROVAL: aprovado vai para a fila do Envio ("Preparando"). */
 export async function approveShipment(prisma: PrismaClient, actor: Actor | null, shipmentId: string, now = new Date()) {
   const s = await awaiting(prisma, actor, shipmentId);
+  // D-PRODUCTPAUSE: com a pausa, nada vai para o Envio (nem para o Olist); recusar continua.
+  if (await requestsPaused(prisma, s.brandId)) throw new ShipmentError(PAUSED_STAFF);
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.shipment.updateMany({ where: { id: shipmentId, status: "AWAITING_APPROVAL" }, data: { status: "PREPARING", approvedAt: now, approvedById: actor!.userId } });
     if (count === 0) throw new ShipmentError("Este pedido já foi decidido. Atualize a página.");
@@ -182,10 +187,11 @@ export type KitProgress =
 
 export async function kitProgress(prisma: PrismaClient, ctx: PortalContext, now = new Date()): Promise<KitProgress | null> {
   const [brand, c] = await Promise.all([
-    prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true, monthlyKitFrom: true } }),
+    prisma.brand.findUniqueOrThrow({ where: { id: ctx.brand.id }, select: { timezone: true, monthlyKitFrom: true, productRequestsPausedAt: true } }),
     prisma.creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { status: true, contractStart: true, activatedAt: true, goalStartAt: true, awaitingContractAt: true } }),
   ]);
-  if (c.status !== "ACTIVE" || c.awaitingContractAt) return null;
+  // D-PRODUCTPAUSE: com a pausa, nenhum kit é concedido; não mostra quanto falta.
+  if (c.status !== "ACTIVE" || c.awaitingContractAt || brand.productRequestsPausedAt) return null;
   const month = monthKey(now, brand.timezone);
   if (brand.monthlyKitFrom && month >= brand.monthlyKitFrom) {
     const salesCents = (await salesByMonth(prisma, [ctx.creatorId], brand.timezone)).get(ctx.creatorId)!.get(month) ?? 0;
