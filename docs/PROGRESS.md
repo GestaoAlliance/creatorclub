@@ -315,6 +315,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-325 — 2026-11-17 — Taxas de Suzana, Leonardo e Angela e cupom desde a aprovação (dados de produção)
+- Decisões do responsável (achados da auditoria): 15% desde o início para as três; vendas antes do cadastro do cupom
+  contam. Feito por SQL com AuditLog: `CommissionPolicy` 15% confirmada desde 16/10 (Suzana, cupom SUZANA; Leonardo;
+  Angela) e `CouponAssignment.validFrom` de ANGELABRUNA e SUZANA de 29/10 para 16/10; reavaliação da Botanika
+  (`attribution.recheck`) atribuiu os 7 pedidos de outubro, congelou a taxa e lançou a comissão:
+  Angela R$ 319,84 (out 304,75 + nov 15,09), Leonardo R$ 1.128,75 (out 336,48 + nov 792,27), Suzana R$ 1.599,87
+  (out 49,88 + nov 1.549,99). Os 2 pedidos expirados da Suzana ficam sem comissão (regra). Outubro delas libera no
+  fechamento de 01/12, junto com novembro (não havia comissão no fechamento de 01/11).
+- Suzana tem um segundo cadastro (INFLUENCER, sem cupom e sem pedidos): só registro, nada mudou.
+
 ### CP-324 — 2026-11-16 — Comissão da Revita sobre o valor com imposto incluso (D-REVITATAX)
 - Achado da auditoria: a loja da Revita manda todos os pedidos com `taxesIncluded = true`, e a regra D-TAX bloqueava a
   comissão (5 pedidos de novembro, cerca de R$ 137,60). Resposta do responsável: comissão sobre o valor dos produtos
