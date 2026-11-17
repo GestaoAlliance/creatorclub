@@ -322,7 +322,10 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 - Juliana Esposito, Giovanna, Thiago e Barbieri estavam como CNPJ sem CNPJ no cadastro: passam a receber como pessoa
   física (recibo), por SQL com AuditLog (decisão do responsável). Barbieri também não tem CPF: pedir.
 - Victoria: o último registro da conferência é "em análise"; com o ajuste (R$ 8.548,52) falta clicar em Conferido.
-- Remessa do SICOOB nunca gerada: testar com Joingle e Ludimilla antes (decisão do responsável); se o banco aceitar,
+- Joingle: o saque aprovado em 16/11 era só um teste, com a nota que ela já cancelou (Vanessa). Recusado por SQL
+  (motivo: "A nota anexada foi cancelada. Envie uma nota nova de R$ 325,17 e peça o saque de novo."), com AuditLog e
+  sem o aviso automático (a Fátima fala com ela). A conferência de R$ 325,17 continua valendo.
+- Remessa do SICOOB nunca gerada: testar com a Ludimilla antes (a Joingle refaz o pedido) (decisão do responsável); se o banco aceitar,
   as outras vão na remessa do dia 20.
 
 ### CP-343 — 2026-11-17 — Ajustes da conferência: clique duplo e "sem chave Pix" (D-PAYCHECK)
