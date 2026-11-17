@@ -315,6 +315,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-345 — 2026-11-17 — Encerrada libera tudo (D-ENDRELEASE)
+- Pedido do responsável (Juliana Esposito, encerrada, com R$ 12,47 de setembro presos pelo mínimo de R$ 100):
+  creator encerrada (DEACTIVATED) tem toda a comissão liberada até o último mês fechado, sem o mínimo.
+- `releasedThroughFor` considera o último mês fechado para quem está encerrada (vale para saldo, nota, portal,
+  conferência e pagamentos). O mês corrente continua esperando o fechamento.
+- Em produção muda só a Juliana (R$ 180,70 → R$ 193,17; a conferência de R$ 180,70 fica velha e pede conferir de
+  novo). O cadastro duplicado LARILESSA (arquivado) fica zerado.
+- Teste em `integration/end-release.test.ts`.
+
 ### CP-344 — 2026-11-17 — Preparação do Pix de 20/11 da Botanika (produção)
 - Pedidos de saque: só Ludimilla (R$ 1.014,21, em análise, conferida) e Joingle (R$ 325,17, aprovada). Prazo até 22/11.
 - Sem login (não conseguem pedir): Fernanda, Victoria, Ana Luiza, Nathalia, Ruy, Robson, Giovanna, Ludmilla Rangel,
