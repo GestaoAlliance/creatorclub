@@ -276,7 +276,7 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
           <div className="flex flex-wrap items-center gap-2">
             {s.address && <a href={`/imprimir/envios?ids=${s.id}`} target="_blank" rel="noopener noreferrer" className={ui.ghostSm}><Printer className="size-3.5" />Etiqueta e declaração</a>}
             {s.status === "SHIPPED" && <DeliveredForm shipmentId={s.id} />}
-            <CancelForm shipmentId={s.id} />
+            <CancelForm shipmentId={s.id} hasKit={s.kitLabel !== null && s.kitLabel !== "compra com o saldo"} purchase={s.kitLabel === "compra com o saldo"} />
           </div>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { allowedInAllBrands, OTHER_BRAND_MESSAGE } from "./shared-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { notices } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
@@ -39,6 +40,8 @@ export async function changePixKey(prisma: PrismaClient, who: PixWho, creatorId:
     actorId = who.userId;
   } else {
     if (!who.actor || !canEditPix(who.actor, c.brandId)) throw new PixError("Sem permissão para trocar a chave Pix.");
+    const staff = who.actor;
+    if (!(await allowedInAllBrands(prisma, c.accountId, (b) => canEditPix(staff, b)))) throw new PixError(OTHER_BRAND_MESSAGE);
     reason = who.reason.trim().replace(/\s+/g, " ").slice(0, 200);
     if (!reason) throw new PixError("Escreva o motivo da troca (ex.: a creator pediu pelo WhatsApp).");
     actorId = who.actor.userId;

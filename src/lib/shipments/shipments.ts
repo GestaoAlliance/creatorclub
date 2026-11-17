@@ -1,3 +1,4 @@
+import { allowedInAllBrands, OTHER_BRAND_MESSAGE } from "@/lib/creators/shared-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { lookupCnpj, type CnpjLookup } from "@/lib/cnpj/lookup";
 import { cnpjAddressLine, mustShipToCnpj, notices, sameShipAddress, trackingUrl as trackingLink, type Notice } from "@/domain";
@@ -65,6 +66,8 @@ export async function staffUpdateAddress(prisma: PrismaClient, actor: Actor | nu
   if (!actor || !can(actor.grants, "personal.address", creator.brandId) || !(can(actor.grants, "shipping.manage", creator.brandId) || can(actor.grants, "creators.edit", creator.brandId))) {
     throw new ShipmentError("Sem permissão para alterar o endereço.");
   }
+  const canAddr = (b: string) => can(actor.grants, "personal.address", b) && (can(actor.grants, "shipping.manage", b) || can(actor.grants, "creators.edit", b));
+  if (!(await allowedInAllBrands(prisma, creator.accountId, canAddr))) throw new ShipmentError(OTHER_BRAND_MESSAGE);
   let address: Address;
   try {
     address = normalizeAddress(input);
@@ -240,15 +243,36 @@ export async function confirmReceived(prisma: PrismaClient, ctx: PortalContext, 
   );
 }
 
-export async function cancelShipment(prisma: PrismaClient, actor: Actor | null, shipmentId: string, now = new Date()) {
-  await transition(
-    prisma,
-    shipmentId,
-    ["PREPARING", "SHIPPED"],
-    { status: "CANCELLED", cancelledAt: now, cancelledById: actor?.userId },
-    (brandId) => assertManage(actor, brandId),
-    { actorId: actor?.userId ?? "", action: "shipment.cancelled", after: {} },
-  );
+/**
+ * Cancelar um envio já aprovado (D-SHIPCANCEL, responsável em 2026-11-17): o valor de uma compra com o saldo volta ao
+ * extrato (lançamento novo; o da compra fica). O kit só volta para a creator escolher de novo quando a equipe marca
+ * (ela costuma refazer o envio à mão, e devolver sempre daria produto em dobro).
+ */
+export async function cancelShipment(prisma: PrismaClient, actor: Actor | null, shipmentId: string, opts: { returnKit?: boolean } = {}, now = new Date()) {
+  const s = await prisma.shipment.findUnique({ where: { id: shipmentId }, select: { brandId: true, creatorId: true, balanceCents: true } });
+  if (!s) throw new ShipmentError("Envio não encontrado.");
+  assertManage(actor, s.brandId);
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.shipment.updateMany({ where: { id: shipmentId, status: { in: ["PREPARING", "SHIPPED"] } }, data: { status: "CANCELLED", cancelledAt: now, cancelledById: actor!.userId } });
+    if (count === 0) throw new ShipmentError("Este envio mudou de situação. Atualize a página.");
+    const kits = opts.returnKit ? await tx.kitGrant.updateMany({ where: { shipmentId }, data: { status: "PENDING", shipmentId: null, chosenAt: null } }) : { count: 0 };
+    const paid = await tx.ledgerEntry.findUnique({ where: { idempotencyKey: `purchase:${shipmentId}` }, select: { amountCents: true } });
+    if (paid && paid.amountCents < 0) {
+      await tx.ledgerEntry.create({
+        data: {
+          brandId: s.brandId,
+          creatorId: s.creatorId,
+          type: "ADJUSTMENT",
+          amountCents: -paid.amountCents,
+          availableAt: now,
+          idempotencyKey: `purchase-cancel:${shipmentId}`,
+          note: "Compra com o saldo cancelada: valor devolvido",
+          createdById: actor!.userId,
+        },
+      });
+    }
+    await audit(tx, s.brandId, actor!.userId, "shipment.cancelled", shipmentId, { kitsBack: kits.count, refundCents: paid ? -paid.amountCents : 0 });
+  });
 }
 
 // ───── Leitura ─────

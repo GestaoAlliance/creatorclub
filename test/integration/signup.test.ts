@@ -48,6 +48,9 @@ function fakeAuth() {
     async deleteUser(id) {
       users.delete(id);
     },
+    async checkPassword(_id, password) {
+      return password === PASSWORD;
+    },
   };
   return { auth, users };
 }
@@ -153,7 +156,7 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     const clash = randomUUID();
     await prisma.user.create({ data: { id: clash, email: `${clash}@x.com`, name: "X" } });
     const before = users.size;
-    const clashing: SignupAuth = { createUser: async () => (users.set(clash, "c@x.com"), { userId: clash }), deleteUser: auth.deleteUser };
+    const clashing: SignupAuth = { createUser: async () => (users.set(clash, "c@x.com"), { userId: clash }), deleteUser: auth.deleteUser, checkPassword: auth.checkPassword };
     expect(await submitSignup(prisma, base(brand.slug, `${randomUUID()}@x.com`, "6.6.6.6"), clashing, now)).toMatchObject({ ok: false });
     expect(users.size).toBe(before);
 
@@ -223,6 +226,9 @@ describe("cadastro de creator com conta (D-SIGNUPACCOUNT, banco real)", () => {
     // Com senha: mesma coisa, avisando para entrar com a senha de sempre.
     await prisma.user.create({ data: { id: randomUUID(), email: `${randomUUID()}@x.com`, name: "L" } }).then(async (u) => prisma.creatorAccount.update({ where: { id: a.account.id }, data: { userId: u.id } }));
     const c = await seedBrand(prisma);
+    // Senha errada (alguém que só sabe o e-mail dela): nada é gravado.
+    expect(await submitSignup(prisma, { ...base(c.brand.slug, a.account.email, "8.8.8.4"), values: typed, password: "outra-senha-forte-9" }, auth, now)).toMatchObject({ ok: false, errors: { password: expect.stringMatching(/mesma senha/) } });
+    expect(await prisma.creatorApplication.count({ where: { brandId: c.brand.id } })).toBe(0);
     expect(await submitSignup(prisma, { ...base(c.brand.slug, a.account.email, "8.8.8.4"), values: typed }, auth, now)).toEqual({ ok: true, email: null, joined: "login" });
   });
 
