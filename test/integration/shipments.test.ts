@@ -120,6 +120,12 @@ describe("envios de produtos (banco real)", () => {
     await cancelShipment(prisma, s.envio, b);
     expect((await staffShipments(prisma, s.envio, { status: "CANCELLED" })).map((x) => x.id)).toEqual([b]);
     expect((await staffShipments(prisma, s.envio)).map((x) => x.id).sort()).toEqual([a, b].sort());
+    // D-PERIODPICK: cancelados e "todos" seguem o período; fora dele, nada.
+    const past = { gte: new Date("2000-01-01T00:00:00Z"), lt: new Date("2000-02-01T00:00:00Z") };
+    const wide = { gte: new Date("2000-01-01T00:00:00Z"), lt: new Date("2100-01-01T00:00:00Z") };
+    expect(await staffShipments(prisma, s.envio, { status: "CANCELLED", range: past })).toEqual([]);
+    expect((await staffShipments(prisma, s.envio, { status: "CANCELLED", range: wide })).map((x) => x.id)).toEqual([b]);
+    expect(await staffShipments(prisma, s.envio, { range: past })).toEqual([]);
     // D-SHIPRECIPIENT: a fila traz CPF, CNPJ, telefone e e-mail para o Envio montar o pedido.
     expect(Object.keys((await staffShipments(prisma, s.envio))[0]!.creator.account).sort()).toEqual(["allergies", "cnpj", "cpf", "email", "name", "phone"]);
   });

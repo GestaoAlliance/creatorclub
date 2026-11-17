@@ -315,6 +315,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-340 — 2026-11-17 — Seletor de tempo em Creators e Envios (D-PERIODPICK)
+- Creators: o seletor fica na faixa; a coluna "30 dias" vira "Vendas" do período (com a seta contra o período
+  anterior do mesmo tamanho), entra "Comissão" do período, a ordenação "Vendas no período" e o total no topo (vendas e
+  comissão). Os quadros "Vendendo" e "Pararam" continuam nos últimos 30 dias (como ela está hoje). Painel lateral igual.
+- Envios: Aguardando aprovação, Preparando e A caminho mostram tudo o que está aberto; Entregues (pela entrega),
+  Cancelados (pelo cancelamento) e Todos (pela data do pedido) seguem o período, como o quadro "Entregues", "Produtos
+  enviados" e a planilha.
+- `listCreators(..., period)`, `staffShipments({ range })`, `shipmentBoard(..., period)`. Testes em
+  `integration/creator-list.test.ts` e `integration/shipments.test.ts`.
+- Próximo: seletor em Desempenho e Cupons.
+
 ### CP-339 — 2026-11-17 — Conferência dos saques antes de liberar (D-PAYCHECK)
 - Pedido da Vanessa (passo 1): antes de liberar o saque, conferir se vendas do mês × % de comissão dá o valor no
   Creator Club (o caso dos R$ 5.700). Respostas do responsável: etapa nova em Pagamentos, bate com diferença de até

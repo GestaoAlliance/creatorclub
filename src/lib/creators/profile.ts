@@ -1,6 +1,6 @@
 import { allowedInAllBrands, OTHER_BRAND_MESSAGE } from "./shared-account";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
+import { addDaysKey, assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, nextDayKey, startOfLocalDay, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -34,7 +34,8 @@ function audit(prisma: PrismaClient, actor: Actor, brandId: string, action: stri
   return prisma.auditLog.create({ data: { brandId, actorType: "USER", actorId: actor.userId, action, entity, entityId, before, after } });
 }
 
-export async function listCreators(prisma: PrismaClient, actor: Actor | null, brandId: string, archived = false) {
+/** `period` (D-PERIODPICK): vendas e comissão de cada uma no período e no anterior do mesmo tamanho (padrão: 30 dias). */
+export async function listCreators(prisma: PrismaClient, actor: Actor | null, brandId: string, archived = false, period?: { from: string; to: string }) {
   if (!actor || !can(actor.grants, "creators.view", brandId)) throw new ProfileError("Sem permissão.");
   const [creators, brand] = await Promise.all([
     prisma.creator.findMany({
@@ -70,19 +71,35 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
     showOrigin ? originsFor(prisma, creators.map((c) => c.id)) : Promise.resolve(null),
   ]);
   const now = new Date();
-  const since30 = now.getTime() - 30 * 86_400_000;
-  const since60 = now.getTime() - 60 * 86_400_000;
-  type Stats = { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; weeks: number[]; lastPaidAt: Date | null };
-  const empty = (): Stats => ({ salesCents: 0, orders: 0, sales30Cents: 0, prev30Cents: 0, weeks: Array<number>(LIST_WEEKS).fill(0), lastPaidAt: null });
+  const tz = brand.timezone;
+  const cur = period ?? { from: dayKey(new Date(now.getTime() - 29 * 86_400_000), tz), to: dayKey(now, tz) };
+  const len = Math.round((Date.parse(`${cur.to}T12:00:00Z`) - Date.parse(`${cur.from}T12:00:00Z`)) / 86_400_000) + 1;
+  const prev = { from: addDaysKey(cur.from, -len) };
+  const curGte = startOfLocalDay(cur.from, tz).getTime();
+  const curLt = startOfLocalDay(nextDayKey(cur.to), tz).getTime();
+  const prevGte = startOfLocalDay(prev.from, tz).getTime();
+  // Comissão do período (comissões menos estornos dos pedidos pagos no período).
+  const commission = money
+    ? await prisma.ledgerEntry.groupBy({
+        by: ["creatorId"],
+        where: { brandId, type: { in: ["COMMISSION", "REVERSAL"] }, order: { paidAt: { gte: new Date(curGte), lt: new Date(curLt) }, cancelledAt: null, test: false, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] } } },
+        _sum: { amountCents: true },
+      })
+    : [];
+  const commissionBy = new Map(commission.map((c) => [c.creatorId, c._sum.amountCents ?? 0]));
+  type Stats = { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; commissionCents: number; weeks: number[]; lastPaidAt: Date | null };
+  const empty = (): Stats => ({ salesCents: 0, orders: 0, sales30Cents: 0, prev30Cents: 0, commissionCents: 0, weeks: Array<number>(LIST_WEEKS).fill(0), lastPaidAt: null });
   const stats = new Map<string, Stats>();
   for (const o of sales) {
     const id = o.attribution!.creatorId;
     const st = stats.get(id) ?? empty();
     st.salesCents += o.subtotalCents;
     st.orders++;
-    // D-CREATORLIST: 30 dias, os 30 anteriores (tendência) e as semanas do mini gráfico.
-    if (o.paidAt && o.paidAt.getTime() >= since30) st.sales30Cents += o.subtotalCents;
-    else if (o.paidAt && o.paidAt.getTime() >= since60) st.prev30Cents += o.subtotalCents;
+    // D-CREATORLIST + D-PERIODPICK: o período escolhido (sales30Cents), o anterior do mesmo tamanho (tendência) e as
+    // semanas do mini gráfico.
+    const t = o.paidAt?.getTime() ?? null;
+    if (t !== null && t >= curGte && t < curLt) st.sales30Cents += o.subtotalCents;
+    else if (t !== null && t >= prevGte && t < curGte) st.prev30Cents += o.subtotalCents;
     const w = o.paidAt ? weekIndex(o.paidAt, now) : null;
     if (w !== null) st.weeks[w]! += o.subtotalCents;
     if (o.paidAt && (!st.lastPaidAt || o.paidAt > st.lastPaidAt)) st.lastPaidAt = o.paidAt;
@@ -124,7 +141,7 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       niches: c.account.niches,
       cpf: fiscal ? (c.account.cpf ?? null) : null,
       coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
-      stats: money ? (({ lastPaidAt: _, ...v }) => v)(stats.get(c.id) ?? empty()) : null,
+      stats: money ? (({ lastPaidAt: _, ...v }) => ({ ...v, commissionCents: commissionBy.get(c.id) ?? 0 }))(stats.get(c.id) ?? empty()) : null,
       pendings: creatorPendings({
         status: c.status,
         reviewed: c.reviewedAt !== null,

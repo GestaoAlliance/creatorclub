@@ -20,11 +20,12 @@ const KIT_LABEL: Record<string, string> = { WELCOME: "kit de boas-vindas", MONTH
 
 export type CreatorShipContext = { total: number; lastSentAt: Date | null; openCount: number; pendingKits: { label: string; products: number }[] };
 
-export async function shipmentBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, creatorIds: readonly string[], now = new Date()) {
+/** `period` (D-PERIODPICK): entregues e produtos enviados no período (padrão: o mês corrente). */
+export async function shipmentBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, creatorIds: readonly string[], now = new Date(), period?: { gte: Date; lt: Date }) {
   if (!actor || !can(actor.grants, "shipping.view", brandId)) throw new ShipmentBoardError("Sem permissão.");
   const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
   const month = monthKey(now, brand.timezone);
-  const range = { gte: startOfLocalDay(`${month}-01`, brand.timezone), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, brand.timezone) };
+  const range = period ?? { gte: startOfLocalDay(`${month}-01`, brand.timezone), lt: startOfLocalDay(`${nextMonthKey(month)}-01`, brand.timezone) };
   const ids = [...new Set(creatorIds)];
   const [byStatus, stale, delivered, late, monthShip, ctxShip, kits, imageOf] = await Promise.all([
     prisma.shipment.groupBy({ by: ["status"], where: { brandId }, _count: true }),

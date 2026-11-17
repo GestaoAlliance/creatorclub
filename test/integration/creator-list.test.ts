@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { listCreators } from "@/lib/creators/profile";
-import { seedBrand, testClient } from "./fixtures";
+import { commissionEntry, seedBrand, testClient } from "./fixtures";
 
 const prisma = testClient();
 afterAll(() => prisma.$disconnect());
@@ -23,6 +23,13 @@ describe("lista de creators no modelo da referência (M0.0.2, banco real)", () =
     const gestao = await userWith("GESTAO", brand.id);
     const [row] = await listCreators(prisma, gestao, brand.id);
     expect(row).toMatchObject({ phone: "(11) 91234-5678", instagram: "maria.ex", tiktok: "maria.tt", coupon: coupon.code, cpf: "52998224725", stats: { salesCents: 20_000, orders: 1, sales30Cents: 0 } });
+
+    // D-PERIODPICK: setembro (o pedido de 01/09) com a comissão; agosto é o período anterior (vazio).
+    await prisma.ledgerEntry.create({ data: commissionEntry({ brandId: brand.id, creatorId: creator.id, orderId: order.id }) });
+    const [sep] = await listCreators(prisma, gestao, brand.id, false, { from: "2026-09-01", to: "2026-09-30" });
+    expect(sep!.stats).toMatchObject({ sales30Cents: 20_000, prev30Cents: 0, commissionCents: 3_000 });
+    const [oct] = await listCreators(prisma, gestao, brand.id, false, { from: "2026-10-01", to: "2026-10-30" });
+    expect(oct!.stats).toMatchObject({ sales30Cents: 0, prev30Cents: 20_000, commissionCents: 0 });
 
     // Pagamento também vê as vendas (money.view).
     const pagamento = await userWith("PAGAMENTO", brand.id);

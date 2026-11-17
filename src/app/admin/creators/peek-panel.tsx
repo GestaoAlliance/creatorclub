@@ -128,7 +128,7 @@ export function PeekPanel({ row, onClose, onPrev, onNext, daysAgo }: { row: Row;
           {s && (
             <section className="flex flex-col gap-2">
               <div className="grid grid-cols-2 gap-2">
-                <Stat label="Vendas 30 dias" value={formatBRL(s.sales30Cents)} sub={<span className="inline-flex items-center gap-1"><TrendChip current={s.sales30Cents} previous={s.prev30Cents} /> vs. 30 dias antes</span>} />
+                <Stat label="Vendas no período" value={formatBRL(s.sales30Cents)} sub={<span className="inline-flex items-center gap-1"><TrendChip current={s.sales30Cents} previous={s.prev30Cents} /> vs. período anterior · comissão {formatBRL(s.commissionCents)}</span>} />
                 <Stat label="Vendas no total" value={formatBRL(s.salesCents)} sub={`${s.orders} pedido${s.orders === 1 ? "" : "s"}`} />
                 <Stat label="Saldo para saque" value={m ? formatBRL(m.availableCents) : peek === undefined ? "…" : "—"} sub={m ? (m.withdrawalsUnlocked ? (m.requestedCents ? `${formatBRL(m.requestedCents)} já pedido` : "liberado") : "abertura ainda não aprovada") : undefined} />
                 <Stat label="A liberar no dia 1" value={m ? formatBRL(Math.max(0, m.heldCents)) : peek === undefined ? "…" : "—"} sub={m?.rateBps != null ? `comissão de ${pct(m.rateBps)}` : undefined} />

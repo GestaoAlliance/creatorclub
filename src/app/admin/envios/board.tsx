@@ -73,14 +73,14 @@ function Allergy({ s }: { s: ShipRow }) {
 }
 
 /** Faixa: caminho do envio em quadros (abrem a lista) e os atalhos da equipe. */
-export function ShipHero({ brandName, current, counts, canCreate, canPrintAll, newForm }: { brandName: string; current: string; counts: { awaiting: number; preparing: number; shipped: number; stale: number; deliveredThisMonth: number }; canCreate: boolean; canPrintAll: boolean; newForm: React.ReactNode }) {
+export function ShipHero({ brandName, current, counts, canCreate, canPrintAll, newForm, periodLabel = "no mês", picker = null }: { periodLabel?: string; picker?: React.ReactNode; brandName: string; current: string; counts: { awaiting: number; preparing: number; shipped: number; stale: number; deliveredThisMonth: number }; canCreate: boolean; canPrintAll: boolean; newForm: React.ReactNode }) {
   const [creating, setCreating] = useState(false);
   const tiles = [
     { key: "AWAITING_APPROVAL", label: "Aguardando aprovação", n: counts.awaiting, hint: "pedidos das creators", dot: counts.awaiting ? "seg-bad" : "seg-good" },
     { key: "PREPARING", label: "Preparando", n: counts.preparing, hint: "na fila do Envio", dot: counts.preparing ? "seg-warn" : "seg-good" },
     { key: "SHIPPED", label: "A caminho", n: counts.shipped, hint: "com rastreio", dot: "seg-info" },
     { key: "parado", label: "Sem Recebi 10+ dias", n: counts.stale, hint: "possível extravio", dot: counts.stale ? "seg-bad" : "seg-good" },
-    { key: "DELIVERED", label: "Entregues no mês", n: counts.deliveredThisMonth, hint: "confirmados", dot: "seg-good" },
+    { key: "DELIVERED", label: "Entregues", n: counts.deliveredThisMonth, hint: periodLabel, dot: "seg-good" },
   ];
   return (
     <section className="@container relative isolate overflow-hidden rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
@@ -93,7 +93,8 @@ export function ShipHero({ brandName, current, counts, canCreate, canPrintAll, n
             <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-3xl">Envios <HelpTip id="en-situacao" /></h1>
             <p className="mt-1 max-w-xl text-sm text-white/80">Pedidos das creators chegam em Aguardando aprovação; a Gestão aprova e vão para Preparando. Marque como enviado com o rastreio e acompanhe a entrega.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {picker}
             {canCreate && <button type="button" data-tour="en-novo" onClick={() => setCreating((v) => !v)} aria-expanded={creating} className="peek-chip"><Package className="size-3.5" />{creating ? "Fechar novo envio" : "Novo envio"}</button>}
             {canPrintAll && counts.preparing > 0 && <a href="/imprimir/envios?todos=1" target="_blank" rel="noopener noreferrer" className="peek-chip"><Printer className="size-3.5" />Etiquetas de todos em Preparando ({counts.preparing})</a>}
           </div>
@@ -294,7 +295,7 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
 }
 
 /** Atrasados no Olist, produtos do mês e cobrar o "Recebi" dos parados. */
-export function ShipExtras({ olistLate, month, stale, canMessage }: { olistLate: { id: string; name: string; days: number; reason: string }[]; month: Month; stale: { id: string; creatorId: string; name: string; days: number }[]; canMessage: boolean }) {
+export function ShipExtras({ olistLate, month, stale, canMessage, periodLabel = "do mês" }: { periodLabel?: string; olistLate: { id: string; name: string; days: number; reason: string }[]; month: Month; stale: { id: string; creatorId: string; name: string; days: number }[]; canMessage: boolean }) {
   const [msg, setMsg] = useState(false);
   return (
     <div className="@container">
@@ -309,9 +310,9 @@ export function ShipExtras({ olistLate, month, stale, canMessage }: { olistLate:
           )}
         </section>
         <section className="liquid-tile flex flex-col gap-2 rounded-3xl p-4">
-          <h3 className="text-sm font-semibold">Produtos do mês</h3>
+          <h3 className="text-sm font-semibold">Produtos enviados {periodLabel}</h3>
           <p className="text-xs text-stone-500">{month.units} unidades em {month.shipments} envios · frete <span className="money">{shortBRL(month.freightCents)}</span></p>
-          {month.products.length === 0 ? <p className="text-sm text-stone-500">Nada enviado neste mês ainda.</p> : (
+          {month.products.length === 0 ? <p className="text-sm text-stone-500">Nada enviado {periodLabel}.</p> : (
             <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
               {month.products.map((p) => (
                 <li key={p.title} className="flex items-center gap-2 text-sm">
