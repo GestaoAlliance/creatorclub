@@ -154,6 +154,7 @@ function PayList({ kind, tipo, tab, data, canPay }: { kind: PayKind; tipo: strin
                         {!r.legacy && tab === "aprovar" && r.nfCheck === "OK" && <span className="text-[11px] text-emerald-700 dark:text-emerald-300">nota conferida pelo sistema</span>}
                         {!r.legacy && tab === "aprovar" && r.nfCheck === "MANUAL" && <span className="text-[11px] text-amber-800 dark:text-amber-300">conferir a nota</span>}
                         {r.remittanceNsa !== null && <span className="text-[11px] text-sky-800 dark:text-sky-300">no banco · remessa {r.remittanceNsa}</span>}
+                        {r.bankRejected && <span className="block text-[11px] font-medium text-red-700 dark:text-red-400">Banco recusou: {r.bankRejected}{r.pixChangedAfterBank ? " · chave trocada depois" : " · chave ainda não trocada"}</span>}
                       </span>
                     </span>
                   </td>
@@ -272,6 +273,11 @@ function Panel({ r, doc, month }: { r: PayRow; doc: string; month: string }) {
       {doc === "recibo" && <a href={`/admin/saques/recibo/${r.withdrawalId}`} target="_blank" rel="noopener noreferrer" className={`${ui.ghostSm} self-start`}><FileText className="size-3.5" />Recibo</a>}
       <p className="text-xs text-stone-500">Pedido em {day(r.requestedAt)}{r.approvedAt ? ` · aprovado em ${day(r.approvedAt)}` : ""}{r.paidDay ? ` · pago em ${br(r.paidDay)}${r.paidBy ? ` por ${r.paidBy}` : ""}` : ""}</p>
       {r.pixReference && <p className="font-mono text-xs text-stone-500">ID do Pix: {r.pixReference}</p>}
+      {r.bankRejected && (
+        <p role="alert" className="rounded-2xl bg-red-500/10 px-3 py-2.5 text-sm text-red-800 dark:text-red-300">
+          O banco devolveu este Pix: {r.bankRejected}. {r.pixChangedAfterBank ? "A chave já foi trocada depois disso; vai na próxima remessa." : <>Peça a chave certa à creator (ela troca na aba Saque do portal) ou troque na <Link href={`/admin/creators/${r.creatorId}`} className="underline">ficha</Link>, antes da próxima remessa.</>}
+        </p>
+      )}
       {r.inBank && (
         <div className="flex flex-col gap-2 border-t border-stone-200/70 pt-4 dark:border-white/10">
           <p className="text-sm text-sky-800 dark:text-sky-300">No banco (remessa nº {r.remittanceNsa}): este saque é dado como pago quando você sobe o retorno do SICOOB. Não faça Pix à mão.</p>

@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { ui } from "@/components/ui/styles";
-import { approveAction, payAction, payBatchAction, recheckAction, rejectAction, remessaAction, removeRemessaAction, retornoAction } from "./actions";
+import { approveAction, payAction, payBatchAction, recheckAction, rejectAction, remessaAction, remessaFileAction, removeRemessaAction, retornoAction } from "./actions";
 
 export function ApproveForm({ withdrawalId, label }: { withdrawalId: string; label: string }) {
   const [state, action, pending] = useActionState(approveAction, undefined);
@@ -122,15 +122,36 @@ export function BatchBar({ count }: { count: number }) {
 }
 
 /** D-REMESSA: arquivo de remessa SICOOB (Pix) com os aprovados ainda não enviados ao banco. */
-export function RemessaBar({ brandId, count, cents, today, problems }: { brandId: string; count: number; cents: number; today: string; problems: { name: string | null; problem: string }[] }) {
+/** Baixa o arquivo no navegador: o link entra na página e a URL só é liberada depois (soltar na hora cancela em alguns navegadores). */
+function saveFile(file: { name: string; content: string }) {
+  const url = URL.createObjectURL(new Blob([file.content], { type: "text/plain" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: file.name });
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
+}
+
+type RemessaBarProps = {
+  brandId: string;
+  count: number;
+  cnpj: number;
+  cpf: number;
+  cents: number;
+  today: string;
+  problems: { name: string | null; problem: string }[];
+  warnings: { name: string; problem: string }[];
+};
+
+export function RemessaBar({ brandId, count, cnpj, cpf, cents, today, problems, warnings }: RemessaBarProps) {
   const [state, action, pending] = useActionState(remessaAction, undefined);
   useEffect(() => {
-    if (!state?.file) return;
-    const url = URL.createObjectURL(new Blob([state.file.content], { type: "text/plain" }));
-    const a = Object.assign(document.createElement("a"), { href: url, download: state.file.name });
-    a.click();
-    URL.revokeObjectURL(url);
+    if (state?.file) saveFile(state.file);
   }, [state]);
+  const kinds = [cnpj && `${cnpj} CNPJ`, cpf && `${cpf} CPF`].filter(Boolean).join(" + ");
   const blocking = problems.filter((p) => !p.problem.startsWith("Nenhum saque"));
   return (
     <form action={action} className={`${ui.card} flex flex-col gap-3`}>
@@ -139,7 +160,7 @@ export function RemessaBar({ brandId, count, cents, today, problems }: { brandId
         <div>
           <p className="font-semibold">Remessa SICOOB (Pix)</p>
           <p className={ui.hint}>
-            {count === 0 ? "Nenhum saque aprovado esperando remessa." : `${count} ${count === 1 ? "saque aprovado" : "saques aprovados"} ainda não ${count === 1 ? "enviado" : "enviados"} ao banco · ${brl(cents)}`}
+            {count === 0 ? "Nenhum saque aprovado esperando remessa." : `${count} ${count === 1 ? "saque aprovado" : "saques aprovados"} ainda não ${count === 1 ? "enviado" : "enviados"} ao banco (${kinds}) · ${brl(cents)}. A remessa leva CNPJ e CPF no mesmo arquivo.`}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -155,12 +176,52 @@ export function RemessaBar({ brandId, count, cents, today, problems }: { brandId
           {blocking.map((p, i) => <li key={i}>{p.name ? `${p.name}: ` : ""}{p.problem}</li>)}
         </ul>
       )}
+      {warnings.length > 0 && (
+        <ul role="alert" className="list-disc pl-5 text-sm text-red-700 dark:text-red-400">
+          {warnings.map((p, i) => <li key={i}>{p.name}: {p.problem}</li>)}
+        </ul>
+      )}
       {state?.problems && state.problems.length > 0 && (
         <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-400">{state.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
       )}
       <Msg state={state?.error || state?.ok ? { ...(state.error ? { error: state.error } : {}), ...(state.ok ? { ok: state.ok } : {}) } : undefined} />
       <p className={ui.hint}>Os saques do arquivo ficam marcados como "enviados ao banco". Depois que o banco processar, suba o retorno abaixo (ou marque como pagos aqui).</p>
     </form>
+  );
+}
+
+/** D-REMESSAFILE: remessas já geradas, com "Baixar de novo" (o arquivo sai igual ao da geração, ou não sai). */
+export function RemessaHistory({ items }: { items: { id: string; nsa: number; payDay: string; count: number; totalCents: number; createdAt: Date }[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className={`${ui.card} flex flex-col gap-2`}>
+      <p className="font-semibold">Remessas geradas</p>
+      <p className={ui.hint}>Se o arquivo não baixou na hora, baixe de novo aqui. É o mesmo arquivo: não gere outra remessa.</p>
+      <ul className="flex flex-col divide-y divide-stone-200/70 text-sm dark:divide-white/10">
+        {items.map((r) => <RemessaRow key={r.id} r={r} />)}
+      </ul>
+    </div>
+  );
+}
+
+function RemessaRow({ r }: { r: { id: string; nsa: number; payDay: string; count: number; totalCents: number; createdAt: Date } }) {
+  const [state, action, pending] = useActionState(remessaFileAction, undefined);
+  useEffect(() => {
+    if (state?.file) saveFile(state.file);
+  }, [state]);
+  const made = new Date(r.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return (
+    <li className="flex flex-col gap-1 py-2">
+      <form action={action} className="flex flex-wrap items-center justify-between gap-2">
+        <input type="hidden" name="remittanceId" value={r.id} />
+        <span>
+          <strong>Nº {r.nsa}</strong> · pagamento em {r.payDay.slice(8, 10)}/{r.payDay.slice(5, 7)} · {r.count} {r.count === 1 ? "saque" : "saques"} · {brl(r.totalCents)}
+          <span className={ui.hint}> · gerada em {made}</span>
+        </span>
+        <button className={ui.ghostSm} disabled={pending}>{pending ? "Baixando…" : "Baixar de novo"}</button>
+      </form>
+      {state?.error && <Msg state={{ error: state.error }} />}
+    </li>
   );
 }
 

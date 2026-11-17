@@ -6,11 +6,11 @@ import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
 import { payMonthBoard, type PayKind, type PayTab } from "@/lib/payouts/month-board";
-import { remessaPreview } from "@/lib/withdrawals/remessa";
+import { recentRemessas, remessaPreview } from "@/lib/withdrawals/remessa";
 import { aleloCardStatus } from "@/lib/withdrawals/alelo";
 import { dayKey } from "@/domain";
 import { AleloCardBox } from "../../saques/alelo-card";
-import { RemessaBar, RetornoForm } from "../../saques/forms";
+import { RemessaBar, RemessaHistory, RetornoForm } from "../../saques/forms";
 import { PayBoard } from "./board";
 
 export const dynamic = "force-dynamic";
@@ -35,12 +35,15 @@ export default async function PaymentsPage({ params, searchParams }: { params: P
   const manage = can(actor.grants, "withdrawals.manage", brand.id);
   const today = dayKey(new Date(), "America/Sao_Paulo");
   const remessa = tab === "realizar" && manage ? await remessaPreview(db(), actor, brand.id, today) : null;
+  const remessas = tab === "realizar" && manage ? await recentRemessas(db(), actor, brand.id) : [];
   const alelo = kind === "CPF" && manage ? await aleloCardStatus(db(), actor, brand.id) : null;
   return (
     <GlassLight className="dash flex flex-col gap-4">
       <PayBoard brandName={brand.name} kind={kind} tipo={tipo} tab={tab} data={data} canMessage={can(actor.grants, "creators.edit", brand.id)} canPay={manage} canEditCalendar={brandsWith(actor.grants, "staff.manage") === "ALL"} />
-      {remessa && remessa.count > 0 && <RemessaBar brandId={brand.id} count={remessa.count} cents={remessa.totalCents} today={today} problems={remessa.problems} />}
+      {/* Sempre montado: o arquivo chega depois que a lista já zerou (D-REMESSAFILE). */}
+      {remessa && <RemessaBar brandId={brand.id} count={remessa.count} cnpj={remessa.cnpj} cpf={remessa.cpf} cents={remessa.totalCents} today={today} problems={remessa.problems} warnings={remessa.warnings} />}
       {remessa && <RetornoForm brandId={brand.id} />}
+      {remessa && <RemessaHistory items={remessas} />}
       {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}
     </GlassLight>
   );

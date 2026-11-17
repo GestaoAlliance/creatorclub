@@ -45,6 +45,10 @@ export type PayRow = {
   canPay: boolean;
   /** D-NODOUBLEPAY: aprovado e no banco: só o retorno paga; "tirar da remessa" com confirmação. */
   inBank: boolean;
+  /** D-BANKREJECT: o banco devolveu o Pix (o motivo); volta na próxima remessa. */
+  bankRejected: string | null;
+  /** D-BANKREJECT: a chave Pix foi trocada depois da devolução do banco. */
+  pixChangedAfterBank: boolean;
 };
 
 const ORDER_TYPES = new Set(["COMMISSION", "REVERSAL"]);
@@ -54,6 +58,16 @@ export function diffFromLines(lines: readonly NfLine[], month: string): { label:
   return lines
     .filter((l) => l.key !== `c:${month}` && l.key !== "RESERVED" && l.cents !== 0)
     .map((l) => ({ label: l.key.startsWith("c:") ? `comissão de ${monthNamePt(l.month!)}` : l.label.charAt(0).toLowerCase() + l.label.slice(1), cents: l.cents }));
+}
+
+/** D-BANKREJECT: aprovado, fora da remessa e devolvido pelo banco. */
+export function bankState(
+  status: string,
+  r: { remittance: unknown; bankResult: string | null; bankNote: string | null; bankAt: Date | null; creator: { account: { pixKeyChangedAt: Date | null } } },
+): { bankRejected: string | null; pixChangedAfterBank: boolean } {
+  if (status !== "APPROVED" || r.remittance !== null || r.bankResult !== "REJECTED") return { bankRejected: null, pixChangedAfterBank: false };
+  const changed = r.creator.account.pixKeyChangedAt;
+  return { bankRejected: r.bankNote || "Pix devolvido pelo banco", pixChangedAfterBank: !!changed && !!r.bankAt && changed > r.bankAt };
 }
 
 export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, kind: PayKind, tab: PayTab, rawMonth: string | undefined, now = new Date()) {
@@ -84,8 +98,8 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
     orderBy: status === "PAID" ? { decidedAt: "desc" } : { requestedAt: "asc" },
     select: {
       id: true, creatorId: true, amountCents: true, requestedAt: true, approvedAt: true, decidedAt: true, decidedById: true, pixReference: true,
-      nfFileId: true, nfCheck: true, breakdown: true, remittance: { select: { nsa: true } },
-      creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true } } } },
+      nfFileId: true, nfCheck: true, breakdown: true, remittance: { select: { nsa: true } }, bankResult: true, bankNote: true, bankAt: true,
+      creator: { select: { account: { select: { name: true, cpf: true, cnpj: true, pixKey: true, pixKeyChangedAt: true } } } },
     },
   });
   const legacy = tab === "realizados"
@@ -144,6 +158,7 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
       // D-NODOUBLEPAY: no banco (remessa) = pago pelo retorno, não pelo botão.
       canPay: status === "APPROVED" && !r.remittance && can(actor.grants, "withdrawals.manage", brandId),
       inBank: status === "APPROVED" && r.remittance !== null && can(actor.grants, "withdrawals.manage", brandId),
+      ...bankState(status, r),
     });
   }
   for (const l of legacy) {
@@ -151,7 +166,7 @@ export async function payMonthBoard(prisma: PrismaClient, actor: Actor | null, b
       key: `l:${l.id}`, withdrawalId: null, creatorId: l.creatorId, name: l.creator.account.name, document: doc(l.creator.account), pixKey: null,
       salesCents: 0, rateBps: null, commissionCents: 0, nfCents: l.amountCents, diff: [], requestedAt: null, approvedAt: null, paidAt: null,
       paidDay: l.paidOn.toISOString().slice(0, 10), paidBy: null, pixReference: null, hasNf: false, nfCheck: null, legacy: true, note: l.note,
-      remittanceNsa: null, canApprove: false, canPay: false, inBank: false,
+      remittanceNsa: null, canApprove: false, canPay: false, inBank: false, bankRejected: null, pixChangedAfterBank: false,
     });
   }
 

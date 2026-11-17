@@ -3,8 +3,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
 import { portalContext } from "@/lib/portal/context";
 import { approveWithdrawal, payWithdrawal, payWithdrawals, rejectWithdrawal } from "@/lib/withdrawals/decide";
-import { generateRemessa, remessaPreview, removeFromRemessa } from "@/lib/withdrawals/remessa";
-import { applyRetorno, retornoPreview } from "@/lib/withdrawals/retorno";
+import { generateRemessa, recentRemessas, remessaFile, remessaPreview, removeFromRemessa } from "@/lib/withdrawals/remessa";
+import { applyRetorno, bankPaidAt, retornoPreview } from "@/lib/withdrawals/retorno";
+import { changePixKey } from "@/lib/creators/pix";
 import { requestWithdrawal } from "@/lib/withdrawals/request";
 import { commissionEntry, expectDbError, seedBrand, testClient } from "./fixtures";
 
@@ -157,5 +158,64 @@ describe("retorno SICOOB (D-RETORNO, banco real)", () => {
     const s = await world();
     await expectDbError(prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: "REJECTED", bankAt: new Date(), bankNote: " " } }), /Withdrawal_bank_result/);
     await expectDbError(prisma.withdrawal.update({ where: { id: s.withdrawalId }, data: { bankResult: "SCHEDULED" } }), /Withdrawal_bank_result/);
+  });
+});
+
+describe("ensaio do dia de pagamento (D-REMESSAFILE, D-BANKREJECT, D-BANKDATE)", () => {
+  it("baixar de novo devolve o mesmo arquivo; remessa que mudou não é refeita", async () => {
+    const s = await world();
+    const now = T("2026-10-06T13:00:00Z");
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now);
+    await expect(remessaFile(prisma, s.gestao, (await recentRemessas(prisma, s.pagamento, s.brand.id))[0]!.id)).rejects.toThrow(/permissão/);
+    const list = await recentRemessas(prisma, s.pagamento, s.brand.id);
+    expect(list).toEqual([expect.objectContaining({ nsa: 1, count: 1, totalCents: 80_000, payDay: "2026-10-20" })]);
+    const again = await remessaFile(prisma, s.pagamento, list[0]!.id);
+    expect(again).toEqual({ fileName: r.fileName, content: r.content });
+    expect(await prisma.auditLog.count({ where: { brandId: s.brand.id, action: "remittance.downloaded" } })).toBe(1);
+    // Chave trocada depois: o arquivo de antes não sai (seria outro arquivo).
+    await prisma.creatorAccount.update({ where: { id: s.account.id }, data: { pixKey: "outra@exemplo.com" } });
+    await expect(remessaFile(prisma, s.pagamento, list[0]!.id)).rejects.toThrow(/mudou depois de gerada/);
+  });
+
+  it("Pix devolvido pelo banco: a chave pode ser trocada; a remessa avisa enquanto não trocar", async () => {
+    const s = await world();
+    const now = T("2026-10-06T13:00:00Z");
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", now);
+    const userId = (await prisma.creatorAccount.findUniqueOrThrow({ where: { id: s.account.id } })).userId!;
+    const ctx = await portalContext(prisma, (await loadActor(prisma, userId))!, s.brand.slug);
+    // No banco: não troca (o banco pode estar pagando na chave atual).
+    await expect(changePixKey(prisma, { kind: "creator", ctx, userId }, s.creator.id, "nova@exemplo.com")).rejects.toThrow(/aprovado esperando o Pix/);
+    await applyRetorno(prisma, s.pagamento, s.brand.id, bankReturn(r.content, "PJ"), now);
+    const before = await remessaPreview(prisma, s.pagamento, s.brand.id, "2026-10-21", now);
+    expect(before).toMatchObject({ count: 1, cnpj: 1, cpf: 0, problems: [] });
+    expect(before.warnings).toEqual([expect.objectContaining({ problem: expect.stringMatching(/não foi trocada/) })]);
+    // Devolvido e fora da remessa: troca.
+    await changePixKey(prisma, { kind: "creator", ctx, userId }, s.creator.id, "nova@exemplo.com", T("2026-10-06T14:00:00Z"));
+    expect((await remessaPreview(prisma, s.pagamento, s.brand.id, "2026-10-21", now)).warnings).toEqual([]);
+    const r2 = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-21", T("2026-10-06T15:00:00Z"));
+    expect(r2.content).toContain("nova@exemplo.com");
+  });
+
+  it("aprovado que nunca foi ao banco continua travando a troca da chave", async () => {
+    const s = await world();
+    const userId = (await prisma.creatorAccount.findUniqueOrThrow({ where: { id: s.account.id } })).userId!;
+    const ctx = await portalContext(prisma, (await loadActor(prisma, userId))!, s.brand.slug);
+    await expect(changePixKey(prisma, { kind: "creator", ctx, userId }, s.creator.id, "nova@exemplo.com")).rejects.toThrow(/aprovado esperando o Pix/);
+  });
+
+  it("pago pelo retorno com a data em que o banco pagou", async () => {
+    const s = await world();
+    const r = await generateRemessa(prisma, s.pagamento, s.brand.id, "2026-10-20", T("2026-10-06T13:00:00Z"));
+    const set = (l: string, from: number, v: string) => l.slice(0, from - 1) + v + l.slice(from - 1 + v.length);
+    const paid = bankReturn(r.content, "00")
+      .split("\r\n")
+      .map((l) => (l[7] === "3" && l[13] === "A" ? set(set(l, 155, "20102026"), 163, "000000000080000") : l))
+      .join("\r\n");
+    await applyRetorno(prisma, s.pagamento, s.brand.id, paid, T("2026-10-23T18:00:00Z"));
+    const w = await prisma.withdrawal.findUniqueOrThrow({ where: { id: s.withdrawalId } });
+    expect(w).toMatchObject({ status: "PAID", decidedAt: T("2026-10-20T15:00:00Z") });
+    expect((await prisma.ledgerEntry.findFirstOrThrow({ where: { withdrawalId: s.withdrawalId, type: "WITHDRAWAL" } })).availableAt).toEqual(T("2026-10-20T15:00:00Z"));
+    expect(bankPaidAt("2026-10-25", T("2026-10-23T18:00:00Z"))).toEqual(T("2026-10-23T18:00:00Z"));
+    expect(bankPaidAt(null, T("2026-10-23T18:00:00Z"))).toEqual(T("2026-10-23T18:00:00Z"));
   });
 });

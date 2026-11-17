@@ -33,7 +33,7 @@ export type WithdrawalTab = {
   /** D-PFRECEIPT: recebe como pessoa física (recibo no lugar da nota). */
   individual: boolean;
   blocks: WithdrawalBlock[];
-  withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; approvedAt: Date | null; decidedAt: Date | null; note: string | null; pixReference: string | null }[];
+  withdrawals: { id: string; requestedAt: Date; amountCents: number; status: keyof typeof WITHDRAWAL_STATUS_LABEL; approvedAt: Date | null; decidedAt: Date | null; note: string | null; pixReference: string | null; remittanceId: string | null; bankResult: string | null; bankNote: string | null }[];
   statement: Statement;
   /** D-NFAMOUNT: valor da nota com a conta aberta (comissão por mês, já pago, saques) e o que entra na próxima. */
   nfAmount: ReturnType<typeof nfBreakdown> & { legacy: { day: string; cents: number }[] };
@@ -70,7 +70,7 @@ export async function portalWithdrawalTab(
     prisma.withdrawal.findMany({
       where: { creatorId: ctx.creatorId, brandId: ctx.brand.id },
       orderBy: { requestedAt: "desc" },
-      select: { id: true, requestedAt: true, amountCents: true, status: true, approvedAt: true, decidedAt: true, note: true, pixReference: true },
+      select: { id: true, requestedAt: true, amountCents: true, status: true, approvedAt: true, decidedAt: true, note: true, pixReference: true, remittanceId: true, bankResult: true, bankNote: true },
     }),
   ]);
   const [ledger, release, legacy] = await Promise.all([

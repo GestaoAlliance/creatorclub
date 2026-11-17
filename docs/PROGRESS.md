@@ -315,6 +315,26 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-326 — 2026-11-17 — Ensaio geral do dia de pagamento e correções (D-REMESSAFILE, D-BANKREJECT, D-BANKDATE)
+- Ensaio pedido pelo responsável: ciclo inteiro numa cópia local (calendário da Botanika de novembro, 6 creators
+  fictícias, 4 CNPJ e 2 CPF), clicado nas telas com cada papel: pedido com nota no portal → aprovação da Gestão →
+  remessa SICOOB → retorno → realizados. Página com o passo a passo do Financeiro e os achados:
+  https://claude.ai/artifact/EfkfLoZQzRRmMh1di1jydK. As 8 travas testadas seguraram.
+- **Grave, corrigido:** o arquivo da remessa nunca baixava. Depois de gerar, a página recarrega com 0 saques e o
+  quadro da remessa saía da tela antes de entregar o arquivo. Agora o quadro fica sempre montado, o download espera
+  para soltar o link, e há **"Remessas geradas" com "Baixar de novo"** (`remessaFile`): remonta o arquivo com os
+  mesmos dados e só entrega se a assinatura (sha256) bater com a da geração; se algo mudou, explica e não entrega.
+  Ordem dos saques no arquivo fixada (aprovação, depois id) para a remontagem sair idêntica.
+- **Grave, corrigido:** Pix devolvido pelo banco travava a troca da chave (creator e equipe). Agora troca quando o
+  saque foi devolvido e já saiu da remessa; a linha e o painel do Pagamento mostram "Banco recusou: motivo" (e se a
+  chave já foi trocada), o "Meus saques" da creator mostra o aviso, e a remessa seguinte avisa (sem impedir) quando a
+  chave não mudou desde a devolução.
+- Data do pagamento pelo retorno é a do banco (meio-dia de Brasília do dia pago; nunca no futuro), no saque e no
+  extrato. O quadro da remessa diz quantos são CNPJ e CPF. O portal não mostra mais "nota de R$ 0,00".
+- Produção: o cadastro duplicado da Suzana (INFLUENCER, sem cupom, pedidos ou extrato) foi arquivado por SQL com
+  AuditLog (DEACTIVATED + archivedAt), a pedido do responsável; o válido é o de prescritora (cupom SUZANA).
+- Testes: `test/integration/remessa.test.ts` (baixar de novo, troca da chave após devolução, aviso, data do banco).
+
 ### CP-325 — 2026-11-17 — Taxas de Suzana, Leonardo e Angela e cupom desde a aprovação (dados de produção)
 - Decisões do responsável (achados da auditoria): 15% desde o início para as três; vendas antes do cadastro do cupom
   contam. Feito por SQL com AuditLog: `CommissionPolicy` 15% confirmada desde 16/10 (Suzana, cupom SUZANA; Leonardo;
