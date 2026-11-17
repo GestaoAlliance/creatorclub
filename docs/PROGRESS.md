@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-336 — 2026-11-17 — Seletor de tempo, parte 2: Pagamentos pela data do Pix + quadro "Mês a mês" (D-PERIODPICK)
+- Pagamentos CNPJ e CPF: o seletor substitui o "Mês da comissão". "NF para aprovar" e "Saques a realizar" mostram tudo
+  o que está em aberto, de qualquer mês (cada linha diz de qual mês é a comissão); "Saques realizados" mostra os Pix que
+  saíram no período, com os de antes do Creator Club. A planilha segue a aba e o período.
+- Quadro "Mês a mês" (12 meses até o mês escolhido; com "Ano", os meses do ano): vendido, comissão gerada, liberada,
+  paga (Pix do mês) e a pagar. Em Pagamentos, só o tipo da tela; no Início da marca, CNPJ e CPF juntos. Clicar no mês
+  leva o seletor para ele. "A pagar" espalha o que cada creator ainda tem a receber pelos meses liberados, do mais novo
+  para o mais antigo (o total bate com o saldo a receber).
+- `payMonthBoard` (período em vez de mês), `payMonthly`/`monthlyRange`/`spreadOwed` (`src/lib/payouts/monthly.ts`),
+  `MonthlyBoard`. Testes em `pay-monthly.test.ts`, `month-totals.test.ts` e `integration/pay-flow.test.ts`.
+- Próximo (mesmo pedido): seletor em Creators e Envios; depois Desempenho e Cupons.
+
 ### CP-335 — 2026-11-17 — Seletor de tempo, parte 1: Início, Vendas e Produtos (D-PERIODPICK)
 - Pedido do responsável: os números estavam difíceis de ver por data. Um seletor só para todas as telas da equipe:
   ‹ mês › (anda mês a mês, nunca passa do mês atual), "30 dias", "Ano" e o calendário de/até. Sem escolha, abre no mês

@@ -13,6 +13,8 @@ import { baseHealth, cashflow } from "@/lib/staff/insights";
 import { productReport } from "@/lib/reports/products";
 import { startOfLocalDay, nextDayKey } from "@/domain";
 import { onlyTikTok } from "@/lib/staff/nav";
+import { MonthlyBoard } from "@/components/staff/monthly-board";
+import { monthlyRange, payMonthly } from "@/lib/payouts/monthly";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +34,14 @@ export default async function BrandHomePage({ searchParams }: { searchParams: Pr
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
   const category = CATEGORIES.find((c) => c === sp.tipo) ?? "";
   const period = await staffPeriod(sp, tz);
-  const [d, health, cash, products] = await Promise.all([
+  const [d, health, cash, products, monthly] = await Promise.all([
     staffDashboard(db(), brand.id, period, category),
     baseHealth(db(), brand.id, category, { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) }),
     can(actor.grants, "withdrawals.view", brand.id) ? cashflow(db(), brand.id) : Promise.resolve(null),
     productReport(db(), brand.id, period, "creators"),
+    // D-PERIODPICK: o Mês a mês com CNPJ e CPF juntos (só quem vê pagamentos).
+    payMonthly(db(), scopedActor(actor, brand.id), brand.id, null, monthlyRange(period)),
   ]);
-  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} periodKey={period.key ?? ""} today={dayKey(new Date(), tz)} />;
+  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} periodKey={period.key ?? ""} today={dayKey(new Date(), tz)}
+    monthly={monthly && <MonthlyBoard data={monthly} path="/admin/marca" selected={period.key?.startsWith("m:") ? period.key.slice(2) : null} />} />;
 }
