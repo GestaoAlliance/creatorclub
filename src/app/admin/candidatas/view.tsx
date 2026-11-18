@@ -1,5 +1,5 @@
 import { ContractLockForm } from "../marcas/forms";
-import { Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { GlassLight } from "@/components/ui/glass-light";
 import type { ApplicationsPace } from "@/lib/onboarding/pace";
@@ -29,39 +29,44 @@ export function CandidatasView({ status, sp, filters, data, canCreate, lock, pac
   const { rows, counts, total, hunters } = data;
   const filtered = rows.length !== total;
   const base: Search = status === "NEW" ? {} : { ver: status };
+  // D-CANDSIMPLE: à mostra só a busca; origem, tipo, hunter e ordem ficam dentro de "Filtros" (aberto se algum estiver em uso).
+  const extra = Boolean(sp.origem || sp.tipo || sp.hunter || (sp.ordem && sp.ordem !== "prioridade"));
   const toolbar = (
-    <>
-      <div className="-mx-1 flex gap-1 overflow-x-auto px-1">
-        {SOURCES.map(([v, l]) => (
-          <Link key={v || "todas"} href={qs(sp, { origem: v })} className={`shrink-0 rounded-full px-3 py-1 text-sm transition-colors ${(sp.origem ?? "") === v ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300"}`}>
-            {l}
-          </Link>
-        ))}
-      </div>
-      <form data-tour="cand-filtros" className="flex flex-wrap items-center gap-2" role="search">
-        {Object.entries(base).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-        {sp.origem && <input type="hidden" name="origem" value={sp.origem} />}
+    <form data-tour="cand-filtros" className="flex flex-col gap-2" role="search">
+      {Object.entries(base).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
+      <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-0 flex-[1_1_16rem]">
           <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
           <input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar por nome, @ ou e-mail" aria-label="Buscar" className={`${ui.input} !rounded-full pl-10`} />
         </label>
-        <select name="tipo" defaultValue={sp.tipo ?? ""} aria-label="Tipo" className={`${ui.inputSm} !rounded-full`}>
-          {KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <select name="hunter" defaultValue={sp.hunter ?? ""} aria-label="Hunter" className={`${ui.inputSm} !rounded-full`}>
-          <option value="">Qualquer hunter</option>
-          <option value="nenhum">Sem hunter</option>
-          {hunters.map((h) => <option key={h.code} value={h.code}>{h.name}</option>)}
-        </select>
-        {/* D-ALLIANCE: a tela já é da marca do topo; o filtro "Quer <outra marca>" saiu (auditoria de 2026-11-17). */}
-        <select name="ordem" defaultValue={filters.sort} aria-label="Ordem" className={`${ui.inputSm} !rounded-full`}>
-          {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <button className={ui.btnSm}>Filtrar</button>
+        <button className={ui.btnSm}>Buscar</button>
         {filtered && <Link href={qs(base, {})} className={`${ui.link} text-sm`}>Limpar</Link>}
-        <HelpTip id="cand-filtros" />
-      </form>
-    </>
+      </div>
+      <details open={extra} className="group">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-full px-3 py-1 text-sm text-stone-600 hover:bg-stone-500/10 dark:text-stone-300">
+          <SlidersHorizontal className="size-3.5" />Filtros{extra ? " (em uso)" : ""}
+        </summary>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <select name="origem" defaultValue={sp.origem ?? ""} aria-label="Origem" className={`${ui.inputSm} !rounded-full`}>
+            {SOURCES.map(([v, l]) => <option key={v || "todas"} value={v}>{l}</option>)}
+          </select>
+          <select name="tipo" defaultValue={sp.tipo ?? ""} aria-label="Tipo" className={`${ui.inputSm} !rounded-full`}>
+            {KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <select name="hunter" defaultValue={sp.hunter ?? ""} aria-label="Hunter" className={`${ui.inputSm} !rounded-full`}>
+            <option value="">Qualquer hunter</option>
+            <option value="nenhum">Sem hunter</option>
+            {hunters.map((h) => <option key={h.code} value={h.code}>{h.name}</option>)}
+          </select>
+          {/* D-ALLIANCE: a tela já é da marca do topo; o filtro "Quer <outra marca>" saiu (auditoria de 2026-11-17). */}
+          <select name="ordem" defaultValue={filters.sort} aria-label="Ordem" className={`${ui.inputSm} !rounded-full`}>
+            {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <button className={ui.btnSm}>Aplicar</button>
+          <HelpTip id="cand-filtros" />
+        </div>
+      </details>
+    </form>
   );
   const summary = (
     <>
