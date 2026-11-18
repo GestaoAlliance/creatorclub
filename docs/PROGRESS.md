@@ -317,6 +317,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-350 — 2026-11-18 — Simulação do fechamento de 01/12 (novembro), sem gravar nada
+
+- A regra do fechamento (`planReleases`, mínimo de R$ 100 de comissão nas 3 marcas) aplicada à comissão lançada até
+  18/11. **Botanika:** 14 liberam (R$ 16.665,68; Victoria R$ 9.037,05). **VermeFree:** 6 liberam (R$ 2.534,73).
+  **Revita:** ninguém chega a R$ 100. 20 ficam acumulando para o mês seguinte (Lorena Botanika a R$ 0,56 do mínimo).
+- **Pontos de atenção:** Elaine Cunto libera R$ 116,13 e está como PJ sem CNPJ, sem chave Pix e sem login; Anna Luiza
+  Nicácio (R$ 641,53) e Suzana (R$ 1.599,87) liberam pela primeira vez (conferência em dezembro). Janela da Botanika
+  volta sozinha para 5–15 em dezembro (a extensão até 22 vale só em novembro).
+- **Achado do dia:** a liberação atrasada (D-LATERELEASE) liberou outubro da VermeFree às 13:40, logo depois da
+  confirmação dos cupons, e 12 creators receberam por e-mail "Sua comissão foi liberada… peça do dia 5 ao 15" (certo
+  pela regra).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-349 — 2026-11-18 — Ensaio da remessa SICOOB com os saques reais da Botanika
 
 - Os 4 saques pedidos (Ludimilla, Joingle, Clesiane, Ana Luiza Cassettari) ainda esperam aprovação, então o ensaio foi
