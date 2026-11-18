@@ -315,6 +315,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-346 — 2026-11-18 — Varredura dos saques da Botanika e comissão que entra depois do fechamento (D-LATERELEASE)
+- Varredura completa desde a 1ª venda (23/06): atribuição refeita nos 4.203 pedidos com cupom (1.641 com dona, todos
+  iguais ao gravado); comissão refeita pedido a pedido (R$ 63.302,42, bate centavo por centavo, taxa do contrato);
+  os 8 comprovantes do SICOOB batem com os "já pago antes"; ajustes manuais conferidos. Diferenças contra a planilha
+  do controle explicadas (pedidos não pagos/cancelados, cupom que não era o primeiro, pedidos fora da planilha).
+- Achado: Angela Bruna (R$ 304,75) e Leonardo Simões (R$ 336,48) tinham a comissão de outubro lançada em 17/11
+  (taxa confirmada depois do fechamento de 01/11) e só liberariam em 01/12. Conserto: o worker refaz a liberação do
+  último mês fechado a cada passada ("month.catch_up"). Em produção, liberados por SQL com AuditLog; os dois sem CNPJ
+  passam a receber como pessoa física (mesma decisão de 17/11). Elaine Cunto (novembro) também está sem CNPJ.
+- Pendente de confirmação da equipe: o Pix de R$ 512,63 (09/09) da Joingle foi pago para a Alliance.
+- Teste em `integration/release.test.ts`.
+
 ### CP-345 — 2026-11-17 — Encerrada libera tudo (D-ENDRELEASE)
 - Pedido do responsável (Juliana Esposito, encerrada, com R$ 12,47 de setembro presos pelo mínimo de R$ 100):
   creator encerrada (DEACTIVATED) tem toda a comissão liberada até o último mês fechado, sem o mínimo.

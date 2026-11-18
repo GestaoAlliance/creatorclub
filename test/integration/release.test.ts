@@ -65,6 +65,20 @@ describe("fechamento mensal (D-CONTRACT, banco real)", () => {
     expect(await prisma.auditLog.count({ where: { brandId: a.brand.id, action: "month.close" } })).toBe(4);
   });
 
+  it("D-LATERELEASE: comissão lançada depois do fechamento libera na próxima passada, sem esperar o mês seguinte", async () => {
+    const a = await seedBrand(prisma);
+    await prisma.brand.update({ where: { id: a.brand.id }, data: { releaseBasis: "COMMISSION", releaseMinCents: 10_000, releaseMinPrescriberCents: 10_000 } });
+    // Outubro fecha sem nada lançado (a taxa ainda estava a confirmar).
+    expect(await close(a.brand.id, T("2026-11-01T08:00:00Z"))).toBe(0);
+    // 17/11: a taxa é confirmada e a comissão de outubro (R$ 300) entra no extrato.
+    await sale(a, "2026-10-20T12:00:00Z", 200_000);
+    expect(await close(a.brand.id, T("2026-11-17T18:00:00Z"))).toBe(1);
+    expect(await prisma.commissionRelease.findMany({ where: { creatorId: a.creator.id }, select: { month: true } })).toEqual([{ month: "2026-10" }]);
+    expect(await close(a.brand.id, T("2026-11-17T18:15:00Z"))).toBe(0); // não refaz
+    expect(await prisma.auditLog.count({ where: { brandId: a.brand.id, action: "month.catch_up" } })).toBe(1);
+    expect((await creatorBalance(prisma, a.creator, "America/Sao_Paulo", T("2026-11-18T12:00:00Z"))).availableCents).toBe(30_000);
+  });
+
   it("D-MIN100: marca que conta a comissão (Botanika) libera com R$ 100 de comissão acumulada; estorno desconta", async () => {
     const a = await seedBrand(prisma);
     await prisma.brand.update({ where: { id: a.brand.id }, data: { releaseBasis: "COMMISSION", releaseMinCents: 10_000, releaseMinPrescriberCents: 10_000 } });

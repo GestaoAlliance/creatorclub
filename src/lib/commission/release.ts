@@ -196,8 +196,10 @@ export async function closeDueMonths(prisma: PrismaClient, now = new Date(), onl
   let total = 0;
   for (const brand of brands) {
     const month = lastClosedMonth(now, brand.timezone);
-    if (await prisma.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } })) continue;
-    total += await closeBrandMonth(prisma, brand, month, now);
+    // D-LATERELEASE: mês já fechado ainda libera quem passou do mínimo com comissão lançada depois do dia 1 (ex.: taxa
+    // confirmada depois do fechamento). Antes ela só sairia no fechamento seguinte, um mês depois.
+    const closed = await prisma.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } });
+    total += await closeBrandMonth(prisma, brand, month, now, closed ? "catchup" : "close");
   }
   return total;
 }
@@ -207,12 +209,15 @@ async function closeBrandMonth(
   brand: { id: string; slug: string; timezone: string; releaseMinCents: number; releaseMinPrescriberCents: number; releaseBasis: ReleaseBasis; withdrawalWindowStartDay?: number; withdrawalWindowEndDay?: number; withdrawalPayFromDay?: number | null; withdrawalPayByDay?: number },
   month: string,
   now: Date,
+  mode: "close" | "catchup" = "close",
 ): Promise<number> {
   return prisma.$transaction(
     async (tx) => {
       // Trava o fechamento da marca: dois workers ao mesmo tempo não gravam em dobro.
       await tx.$queryRaw`SELECT id FROM "Brand" WHERE id = ${brand.id} FOR UPDATE`;
-      if (await tx.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } })) return 0;
+      const alreadyClosed = await tx.monthClosing.findUnique({ where: { brandId_month: { brandId: brand.id, month } }, select: { id: true } });
+      if (mode === "close" && alreadyClosed) return 0;
+      if (mode === "catchup" && !alreadyClosed) return 0;
       const creators = await tx.creator.findMany({
         where: { brandId: brand.id },
         select: { id: true, categories: true, contractTemplate: { select: { releaseMinCents: true } } },
@@ -226,16 +231,17 @@ async function closeBrandMonth(
           (r) => ({ brandId: brand.id, creatorId: c.id, month: r.month, salesCents: r.salesCents, minCents, basis: brand.releaseBasis, releasedAt: now }),
         );
       });
+      if (mode === "catchup" && rows.length === 0) return 0;
       if (rows.length) await tx.commissionRelease.createMany({ data: rows });
       // D-GOALKIT (2026-10-27): o kit mensal por faixa saiu; o produto vem pela meta de R$ 1.000 (`grantGoalKits`).
       // U5 (D-NOTICES): avisa quem teve comissão liberada neste fechamento.
       await notify(tx, [...new Set(rows.map((r) => r.creatorId))].map((creatorId) => ({ brandId: brand.id, creatorId, notice: notices.commissionReleased(month, brand.withdrawalWindowStartDay ? withdrawalDays({ withdrawalWindowStartDay: brand.withdrawalWindowStartDay, withdrawalWindowEndDay: brand.withdrawalWindowEndDay ?? 10, withdrawalPayFromDay: brand.withdrawalPayFromDay ?? null, withdrawalPayByDay: brand.withdrawalPayByDay ?? 15 }) : undefined) })));
-      const closing = await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } });
+      const closing = alreadyClosed ?? (await tx.monthClosing.create({ data: { brandId: brand.id, month, releases: rows.length, closedAt: now } }));
       await tx.auditLog.create({
         data: {
           brandId: brand.id,
           actorType: "JOB",
-          action: "month.close",
+          action: mode === "catchup" ? "month.catch_up" : "month.close",
           entity: "MonthClosing",
           entityId: closing.id,
           after: { month, releases: rows.length, creators: [...new Set(rows.map((r) => r.creatorId))].length },
