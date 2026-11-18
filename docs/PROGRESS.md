@@ -317,6 +317,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-351 — 2026-11-18 — Pagamentos numa fila só, com um botão por creator (D-PAYQUEUE)
+
+- **Pedido do responsável:** parar de empilhar telas e simplificar, começando por Pagamentos.
+- `src/lib/payouts/queue.ts` (`buildQueue`, `queueCounts`): junta conferência, pedidos, aprovados e pagos numa fila,
+  cada creator numa etapa. `src/app/admin/pagamentos/[tipo]/queue.tsx`: topo com a frase do dia e 5 números que
+  filtram; linha com etapa e próxima ação (Conferido / Mandar para o Pedro, Lembrar, Ver e aprovar, Pagar, Ver);
+  painel da nota igual ao de antes; remessa e retorno só na etapa Pagar. Endereços antigos (`?aba=`) abrem na etapa
+  certa. `board.tsx` e `check-list.tsx` saíram (substituídos pela fila).
+- **Relatórios** (`/admin/pagamentos/relatorios`): calendário, Mês a mês CNPJ e CPF, remessas geradas, Saldo de
+  abertura e Conferência da planilha (fora de Configurações).
+- Testes: `test/pay-queue.test.ts`; menu em `test/staff-nav.test.ts`.
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** depois do OK, simplificar a próxima área (perguntar ao responsável).
+
 ### CP-350 — 2026-11-18 — Simulação do fechamento de 01/12 (novembro), sem gravar nada
 
 - A regra do fechamento (`planReleases`, mínimo de R$ 100 de comissão nas 3 marcas) aplicada à comissão lançada até

@@ -45,7 +45,7 @@ export function needsFor(h: StaffHome): { readOnly: boolean; areas: NeedArea[]; 
     if (w.mine.approve || readOnly)
       pagamento.push({ href: "/admin/pagamentos/cnpj", label: "saques para aprovar", n: w.toApprove, urgent: !!w.approveClosing, note: w.approveClosing ? "a janela de pedidos está fechando" : undefined });
     if (w.mine.pay || readOnly)
-      pagamento.push({ href: "/admin/pagamentos/cnpj?aba=realizar", label: "saques aprovados para pagar", n: w.toPay, urgent: !!w.payClosing, note: w.payClosing ? "o prazo de pagamento está chegando" : undefined });
+      pagamento.push({ href: "/admin/pagamentos/cnpj?etapa=pagar", label: "saques aprovados para pagar", n: w.toPay, urgent: !!w.payClosing, note: w.payClosing ? "o prazo de pagamento está chegando" : undefined });
     if (w.openingsPending !== null) pagamento.push({ href: "/admin/abertura", label: "aberturas a aprovar", n: w.openingsPending, urgent: false });
   }
 

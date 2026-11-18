@@ -1,31 +1,32 @@
 import { notFound, redirect } from "next/navigation";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { brandsWith, can } from "@/lib/auth/permissions";
+import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { scopedActor, staffContext } from "@/lib/staff/context";
-import { payMonthBoard, type PayKind, type PayTab } from "@/lib/payouts/month-board";
-import { recentRemessas, remessaPreview } from "@/lib/withdrawals/remessa";
-import { aleloCardStatus } from "@/lib/withdrawals/alelo";
-import { dayKey } from "@/domain";
-import { AleloCardBox } from "../../saques/alelo-card";
-import { RemessaBar, RemessaHistory, RetornoForm } from "../../saques/forms";
-import { MonthlyBoard } from "@/components/staff/monthly-board";
-import { staffPeriod } from "@/lib/staff/period";
-import { monthlyRange, payMonthly } from "@/lib/payouts/monthly";
-import { PayBoard } from "./board";
-import { CheckList } from "./check-list";
+import { payMonthBoard, type PayKind } from "@/lib/payouts/month-board";
 import { payCheckBoard } from "@/lib/payouts/check";
+import { buildQueue, QUEUE_STAGES, queueCounts, type QueueStage } from "@/lib/payouts/queue";
+import { remessaPreview } from "@/lib/withdrawals/remessa";
+import { aleloCardStatus } from "@/lib/withdrawals/alelo";
+import { calendarToday, dayKey } from "@/domain";
+import { staffPeriod } from "@/lib/staff/period";
+import { AleloCardBox } from "../../saques/alelo-card";
+import { RemessaBar, RetornoForm } from "../../saques/forms";
+import { PayQueue, type Filter } from "./queue";
 
 export const dynamic = "force-dynamic";
 
 const KIND: Record<string, PayKind> = { cnpj: "CNPJ", cpf: "CPF" };
-const TABS: PayTab[] = ["aprovar", "realizar", "realizados"];
-// D-PAYCHECK: "conferir" é a etapa antes de aprovar; abre nela enquanto houver o que conferir.
+// Endereços de antes da fila (D-PAYFLOW) continuam abrindo na etapa certa.
+const OLD: Record<string, QueueStage> = { conferir: "conferir", aprovar: "aprovar", realizar: "pagar", realizados: "pago" };
 
-// Pagamentos CNPJ e CPF (D-PAYFLOW): NF para aprovar → Saques a realizar → Saques realizados, filas em aberto e Pix pelo período (D-PERIODPICK).
-export default async function PaymentsPage({ params, searchParams }: { params: Promise<{ tipo: string }>; searchParams: Promise<{ aba?: string; p?: string; periodo?: string; de?: string; ate?: string }> }) {
+/**
+ * D-PAYQUEUE: Pagamentos CNPJ e CPF numa fila só (conferir → esperando o pedido → aprovar → pagar → pago), cada
+ * creator com a próxima ação. Calendário, Mês a mês e remessas antigas ficam em Relatórios.
+ */
+export default async function PaymentsPage({ params, searchParams }: { params: Promise<{ tipo: string }>; searchParams: Promise<{ etapa?: string; aba?: string; p?: string; periodo?: string; de?: string; ate?: string }> }) {
   const { tipo } = await params;
   const kind = KIND[tipo];
   if (!kind) notFound();
@@ -35,34 +36,36 @@ export default async function PaymentsPage({ params, searchParams }: { params: P
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
   if (!can(actor.grants, "withdrawals.view", brand.id)) redirect("/conta");
   const sp = await searchParams;
-  const aba = sp.aba;
+  const asked = sp.etapa ?? (sp.aba ? OLD[sp.aba] : undefined);
+  const filter: Filter = QUEUE_STAGES.includes(asked as QueueStage) ? (asked as QueueStage) : "abertos";
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
-  // D-PERIODPICK: o período escolhido (o mesmo das outras abas) vale para os Pix que saíram e o Mês a mês.
+  // D-PERIODPICK: o período só vale para os Pix que saíram (etapa Pagos); padrão: o mês corrente.
   const period = await staffPeriod(sp, tz);
   const inBrand = scopedActor(actor, brand.id);
-  const check = await payCheckBoard(db(), inBrand, brand.id, kind);
-  const stage = aba === "conferir" || (!aba && check.counts.todo > 0) ? "conferir" : TABS.includes(aba as PayTab) ? (aba as PayTab) : "aprovar";
-  const tab: PayTab = stage === "conferir" ? "aprovar" : stage;
-  const [data, monthly] = await Promise.all([
-    payMonthBoard(db(), inBrand, brand.id, kind, tab, period),
-    payMonthly(db(), inBrand, brand.id, kind, monthlyRange(period)),
+  const [check, aprovar, pagar, pagos] = await Promise.all([
+    payCheckBoard(db(), inBrand, brand.id, kind),
+    payMonthBoard(db(), inBrand, brand.id, kind, "aprovar", period),
+    payMonthBoard(db(), inBrand, brand.id, kind, "realizar", period),
+    payMonthBoard(db(), inBrand, brand.id, kind, "realizados", period),
   ]);
+  const items = buildQueue({ check: check.rows, aprovar: aprovar.rows, pagar: pagar.rows, pagos: pagos.rows });
   const manage = can(actor.grants, "withdrawals.manage", brand.id);
   const today = dayKey(new Date(), tz);
-  const remessa = tab === "realizar" && manage ? await remessaPreview(db(), actor, brand.id, today) : null;
-  const remessas = tab === "realizar" && manage ? await recentRemessas(db(), actor, brand.id) : [];
-  const alelo = kind === "CPF" && manage ? await aleloCardStatus(db(), actor, brand.id) : null;
+  const showBank = manage && filter === "pagar";
+  const remessa = showBank ? await remessaPreview(db(), actor, brand.id, today) : null;
+  const alelo = kind === "CPF" && showBank ? await aleloCardStatus(db(), actor, brand.id) : null;
+  const t = calendarToday(aprovar.calendar.days, aprovar.calendar.today);
   return (
     <GlassLight className="dash flex flex-col gap-4">
-      <PayBoard brandName={brand.name} kind={kind} tipo={tipo} tab={tab} data={data} canMessage={can(actor.grants, "creators.edit", brand.id)} canPay={manage} canEditCalendar={brandsWith(actor.grants, "staff.manage") === "ALL"}
-        periodKey={period.key ?? ""} periodLabel={period.label ?? ""} today={today}
-        stage={stage} check={check.counts}
-        checkList={<CheckList data={check} kind={kind} brandName={brand.name} canCheck={can(actor.grants, "withdrawals.approve", brand.id)} canMessage={can(actor.grants, "creators.edit", brand.id)} />}
-        monthly={monthly && <MonthlyBoard data={monthly} path={`/admin/pagamentos/${tipo}`} selected={period.key?.startsWith("m:") ? period.key.slice(2) : null} title={`Mês a mês · ${kind}`} />} />
-      {/* Sempre montado: o arquivo chega depois que a lista já zerou (D-REMESSAFILE). */}
+      <PayQueue
+        brandName={brand.name} kind={kind} tipo={tipo} items={items} counts={queueCounts(items)} filter={filter} month={check.month}
+        today={{ day: aprovar.calendar.today, now: t.now, next: t.next }} windowEnd={aprovar.window.end}
+        period={{ key: period.key ?? "", label: period.label ?? "", today }}
+        can={{ check: can(actor.grants, "withdrawals.approve", brand.id), message: can(actor.grants, "creators.edit", brand.id), pay: manage }}
+      />
+      {/* Sempre montado na etapa Pagar: o arquivo chega depois que a lista já zerou (D-REMESSAFILE). */}
       {remessa && <RemessaBar brandId={brand.id} count={remessa.count} cnpj={remessa.cnpj} cpf={remessa.cpf} cents={remessa.totalCents} today={today} problems={remessa.problems} warnings={remessa.warnings} />}
       {remessa && <RetornoForm brandId={brand.id} />}
-      {remessa && <RemessaHistory items={remessas} />}
       {alelo && <AleloCardBox ready={alelo.ready.length} incomplete={alelo.incomplete} />}
     </GlassLight>
   );
