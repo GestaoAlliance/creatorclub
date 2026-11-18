@@ -317,6 +317,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-349 — 2026-11-18 — Ensaio da remessa SICOOB com os saques reais da Botanika
+
+- Os 4 saques pedidos (Ludimilla, Joingle, Clesiane, Ana Luiza Cassettari) ainda esperam aprovação, então o ensaio foi
+  fora de produção: arquivo montado pelo código do sistema (`buildRemessa`) com os dados reais da marca e dos saques.
+  `checkRemessa` sem problemas; 6 linhas (só Ludimilla) e 12 (as 4), todas com 240 posições e CRLF.
+- Campos conferidos com o guia (D-REMESSA, CP-319): banco 756, layout 087/045, convênio 5732360, agência 04027, conta
+  90666987-1, serviço 20, forma 45, câmara 009, "Seu Número" = id do saque, data 20/11, valor, chave Pix CNPJ (tipo 03)
+  no segmento B, trailers com quantidade e total certos.
+- **Teste combinado:** aprovar só a Ludimilla, gerar a remessa, subir no SICOOB, subir o retorno; depois aprovar as
+  outras (a remessa leva todos os aprovados ainda não enviados).
+- **Próxima:** acompanhar o teste quando a Ludimilla for aprovada.
+
 ### CP-348 — 2026-11-18 — VermeFree calculando comissão (D-VFCONFIRM)
 
 - **Antes:** 40 cupons sem tipo, 31 donas e 45 taxas a confirmar; 11 pedidos atribuídos e 1 comissão lançada.
