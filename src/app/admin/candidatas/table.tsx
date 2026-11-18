@@ -310,13 +310,10 @@ export function CandidateBoard(p: { rows: CandidateRow[]; pending: boolean; tabs
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const pick = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const clear = useCallback(() => setPicked(new Set()), []);
-  const hunterCodeMissing = rows.filter((c) => c.hunterCode !== null || (c.viaHunterForm && !c.hunter)).length;
   const oldest = rows.reduce((m, c) => Math.max(m, c.days), 0);
   const tiles: Tile[] = pending
     ? [
-        { id: "high", label: "Prioridade alta", n: rows.filter((c) => c.priority.level === "ALTA").length, hint: "decidir primeiro", tone: "good", test: (c) => c.priority.level === "ALTA" },
         { id: "old", label: "Esperando 7+ dias", n: rows.filter((c) => c.days > 7).length, hint: rows.length ? `a mais antiga há ${oldest} dias` : "nenhuma", tone: "bad", test: (c) => c.days > 7 },
-        { id: "hunter", label: "Por hunter", n: rows.filter((c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm).length, hint: hunterCodeMissing ? `${hunterCodeMissing} com código não achado` : "vieram por indicação", tone: "info", test: (c) => c.hunter !== null || c.hunterCode !== null || c.viaHunterForm },
         { id: "dup", label: "Repetidas", n: rows.filter((c) => c.duplicate).length, hint: "podem ser a mesma pessoa", tone: "warn", test: (c) => c.duplicate },
       ]
     : [];
@@ -369,7 +366,8 @@ export function CandidateBoard(p: { rows: CandidateRow[]; pending: boolean; tabs
               </Link>
             ))}
           </nav>
-          <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-3 @5xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-3">
+            {/* D-CANDSIMPLE: só os quadros que pedem ação (esperando 7+ dias, repetidas, aprovadas sem assinar). */}
             {tiles.map((t) => {
               const on = chip === t.id;
               return (
@@ -386,13 +384,6 @@ export function CandidateBoard(p: { rows: CandidateRow[]; pending: boolean; tabs
                 <span className="text-2xl font-semibold tabular-nums leading-tight">{p.pace.waiting}</span>
                 <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{p.pace.waitingSlow ? `${p.pace.waitingSlow} há 3+ dias` : "aprovadas sem assinar"}</span>
               </Link>
-            )}
-            {p.pace && (
-              <div className="frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-stone-900 dark:text-white">
-                <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">Ritmo · 30 dias</span><span className="seg-dot seg-good" /></span>
-                <span className="text-2xl font-semibold tabular-nums leading-tight" title="Tempo médio entre a inscrição e a decisão">{p.pace.avgDecisionDays !== null ? p.pace.avgDecisionDays.toLocaleString("pt-BR") : "—"}<span className="ml-1 text-xs font-medium text-stone-500">dias p/ decidir</span></span>
-                <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{p.pace.approved30} aprovadas · {p.pace.rejected30} recusadas</span>
-              </div>
             )}
           </div>
         </div>

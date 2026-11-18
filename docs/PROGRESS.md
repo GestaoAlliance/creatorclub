@@ -317,6 +317,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-357 — 2026-11-18 — Candidatas mais simples (D-CANDSIMPLE)
+
+- `admin/candidatas/table.tsx`: 3 quadros de ação no lugar de 6. `view.tsx`: busca + "Filtros" recolhido (origem virou
+  lista de escolha junto com tipo, hunter e ordem).
+- Com isso as telas mais usadas foram simplificadas (Pagamentos, portal, ficha, Início, Envios, Candidatas).
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** pausar as mudanças de tela e acompanhar o Pix do dia 20 (remessa e retorno com a Ludimilla).
+
 ### CP-356 — 2026-11-18 — Envios mais simples (D-SHIPSIMPLE)
 
 - `admin/envios/page.tsx`: etapa inicial pelo papel; sem a barra "Todos/Entregue/Cancelado"; seletor de período,
