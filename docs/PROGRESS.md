@@ -27,7 +27,7 @@
 | **Guilherme** | VermeFree: comprovantes do que foi pago (jul–set), para acertar o desconto feito pela planilha | Grupo |
 | **Guilherme** (VermeFree) | Comprovantes dos pagamentos jul–set e conta SICOOB da VermeFree | Grupo |
 | **Responsável** | Convite "Leitura" (VIEWER) de Admin Botanika e Guilherme (nenhum criado ainda) | Equipe |
-| **Responsável** | Botanika: código do serviço da nota (17.06) e logo; remetente das etiquetas nas 3 marcas | Configurações → Marcas |
+| **Responsável** | Botanika: logo; remetente das etiquetas nas 3 marcas (código 17.06 gravado em 18/11) | Configurações → Marcas |
 | **Responsável** | VermeFree e Revita: conta SICOOB, e-mail do financeiro, WhatsApp dos avisos (instância da Evolution), termo publicado | Configurações → Marcas, Termo |
 | **Responsável** | Autentique (contrato na aprovação): chave da API em Integrações (Botanika e VermeFree desconectados) | Configurações → Integrações |
 | **Responsável** | Convite de Pagamento "Vanessa Pagamentos" ainda aberto na Botanika (ela já tem o papel por outro convite): revogar | Equipe |
@@ -316,6 +316,17 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-355 — 2026-11-18 — E-mail do financeiro e dados da nota da Botanika corrigidos (produção)
+
+- Achado: `Brand.financeEmail` da Botanika estava `financeiro@botanicabrasil.com` (erro de digitação); as 7 notas
+  enviadas de 13 a 18/11 (Ludimilla, Joingle, Clesiane, Ana Luiza, Julia) foram para esse endereço. Corrigido para
+  `financeiro@botanikabrasil.com.br` (responsável). As notas continuam no sistema (painel "Ver e aprovar"); não houve
+  reenvio (a chave de e-mail fica só no servidor).
+- Código do serviço **17.06** e a descrição do serviço gravados como dados oficiais da nota da Botanika (antes só
+  sugestão no texto). Tudo com `brand.update` no histórico.
+- VermeFree e Revita ainda sem e-mail do financeiro e dados da nota (sem saque antes de 05/12).
+- **Próxima:** perguntar ao responsável.
 
 ### CP-354 — 2026-11-18 — Início da equipe pelo papel, com "O que fazer hoje" no topo (D-HOMESIMPLE)
 
