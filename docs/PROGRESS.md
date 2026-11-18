@@ -317,6 +317,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-360 — 2026-11-18 — Navegador oferece salvar a senha (D-SAVEPASSWORD)
+
+- Produção: as sessões não caem (sem prazo no Supabase; as da Fátima renovam há dias em 3 aparelhos); o problema era o
+  navegador não perceber o login nem a senha nova.
+- `entrar/login/route.ts` (POST, 303), `SignInForm` como formulário comum com `autocomplete=username` e
+  `current-password`; `NewPasswordForm` e `AcceptForm` com o e-mail como usuário; cadastro pelo site com
+  `autocomplete=username`; a ação `signIn` antiga saiu. Teste: `test/login-route.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-359 — 2026-11-18 — Ensaio do saque da VermeFree (5/12) e ajustes em produção
 
 - Conferido creator por creator: liberado até outubro R$ 13.475,74 (Victoria R$ 9.267,69; Ludimilla R$ 1.163,65;

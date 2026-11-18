@@ -7,16 +7,18 @@ import { acceptInviteAction } from "./actions";
 
 const input = ui.input;
 
-export function AcceptForm({ token, needsPassword, askEmail = false }: { token: string; needsPassword: boolean; askEmail?: boolean }) {
+/** D-SAVEPASSWORD: com e-mail conhecido, ele vai junto (só leitura) para o navegador salvar a senha nova no login certo. */
+export function AcceptForm({ token, needsPassword, askEmail = false, email = null }: { token: string; needsPassword: boolean; askEmail?: boolean; email?: string | null }) {
   const [state, action, pending] = useActionState(acceptInviteAction, undefined);
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="token" value={token} />
       {askEmail && (
         <label className={ui.label}>Seu e-mail (é com ele que você vai entrar)
-          <input className={input} name="email" type="email" autoComplete="email" required />
+          <input className={input} name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required />
         </label>
       )}
+      {needsPassword && !askEmail && email && <input className="sr-only" tabIndex={-1} aria-hidden name="username" type="email" autoComplete="username" value={email} readOnly />}
       {needsPassword && (
         <>
           <label className={ui.label}>Crie sua senha (mínimo {PASSWORD_MIN_LENGTH} caracteres)
