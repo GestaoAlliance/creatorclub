@@ -3,6 +3,7 @@ import { AddressCard } from "@/components/portal/address-card";
 import { PixChange } from "@/components/portal/pix-change";
 import { PartnershipCard, PersonalCard, PixCard, ProfileProgress, SocialCard } from "@/components/portal/profile-view";
 import { PhotoEditor } from "@/components/ui/photo-editor";
+import { MotherAsk } from "@/components/portal/mother-ask";
 import { Avatar } from "@/components/ui/avatar";
 import { db } from "@/lib/db";
 import { currentPortalContext } from "@/lib/portal/current";
@@ -17,6 +18,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ marca:
   const p = await portalProfile(db(), ctx);
   const viewOnly = ctx.viewAs !== null;
   const base = `/portal/${ctx.brand.slug}`;
+  // D-PORTALSIMPLE: o nome da mãe (cartão Alelo), que saiu do Início, fica aqui enquanto não respondido; TikTok e aniversário já estão em "Redes e aniversário".
+  const ask = viewOnly ? null : await db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { receivesAsIndividual: true, account: { select: { motherName: true } } } });
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       <section className="@container relative isolate overflow-visible rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
@@ -35,10 +38,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ marca:
           <ProfileProgress p={p} />
         </div>
       </section>
+      {ask && ask.receivesAsIndividual && !ask.account.motherName && <div id="pergunta-mae" className="scroll-mt-24"><MotherAsk marca={ctx.brand.slug} /></div>}
       <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4 md:gap-6">
           <PersonalCard p={p} marca={ctx.brand.slug} viewOnly={viewOnly} />
-          <SocialCard p={p} marca={ctx.brand.slug} viewOnly={viewOnly} />
+          <div id="redes" className="scroll-mt-24"><SocialCard p={p} marca={ctx.brand.slug} viewOnly={viewOnly} /></div>
         </div>
         <div className="flex flex-col gap-4 md:gap-6">
           {!ctx.ugcOnly && <PixCard p={p}>{!viewOnly && <PixChange marca={ctx.brand.slug} />}</PixCard>}

@@ -317,6 +317,20 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-352 — 2026-11-18 — Portal da creator mais simples: Início e Saque (D-PORTALSIMPLE)
+
+- **Pedido do responsável:** seguir simplificando, agora o portal (de onde vêm as dúvidas para a equipe).
+- **Início** (`home-view.tsx`, `home-parts.tsx`, `portal/[marca]/page.tsx`): faixa do mês, "Você tem R$ X para
+  sacar", cupom e link, um "Próximo passo" por vez. No celular passou de ~6 telas para ~2. Saíram dica do dia,
+  conquistas, próximo kit, quadrinhos, movimentações e as perguntas soltas (componentes `TiktokAsk` e `BirthdayAsk`
+  removidos: o cartão "Redes e aniversário" do Meu cadastro já faz o mesmo). Nome da mãe foi para Meu cadastro; o
+  atalho do post, para Vendas. Os "próximos passos" apontam para Meu cadastro.
+- **Instalar app:** cartão pequeno só no primeiro acesso (marca como visto quando aparece); o aviso grande saiu.
+- **Saque** (`withdrawal-view.tsx`): topo igual; "Como pedir: 3 passos" e chave Pix logo abaixo; o resto em seções
+  fechadas (`Fold`). No celular passou de ~8 telas para ~5 (com tudo fechado, ~3).
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** depois do OK, perguntar a próxima área para simplificar.
+
 ### CP-351 — 2026-11-18 — Pagamentos numa fila só, com um botão por creator (D-PAYQUEUE)
 
 - **Pedido do responsável:** parar de empilhar telas e simplificar, começando por Pagamentos.

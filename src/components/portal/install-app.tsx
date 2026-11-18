@@ -151,12 +151,17 @@ export function InstallGuide({ brandName }: { brandName: string }) {
 
 const mobile = (p: InstallPlatform | null): p is "ios" | "ios-other" | "android" => p === "ios" || p === "ios-other" || p === "android";
 
-/** Cartão no Início (só no celular, até ela fechar ou abrir pelo ícone). */
+/** Cartão no Início (só no celular). D-PORTALSIMPLE: aparece uma vez só (no primeiro acesso); o passo a passo fica em Mais → Instalar. */
 export function InstallCard({ brandName, base }: { brandName: string; base: string }) {
   const { standalone, platform, canPrompt, install } = useInstall();
   const [hidden, setHidden] = useState(true);
   useEffect(() => setHidden(read(DISMISSED) === "1"), []);
-  if (hidden || standalone || !mobile(platform)) return null;
+  const shown = !hidden && !standalone && mobile(platform);
+  // Marca como visto só depois de aparecer: no próximo acesso não volta.
+  useEffect(() => {
+    if (shown) write(DISMISSED);
+  }, [shown]);
+  if (!shown) return null;
   return (
     <section className="glass flex flex-col gap-3 rounded-3xl p-4 md:p-5">
       <div className="flex items-start gap-3">

@@ -2,10 +2,7 @@ import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
 import { HomeView } from "@/components/portal/home-view";
 import { KitBanner } from "@/components/portal/kit-banner";
-import { BirthdayAsk } from "@/components/portal/birthday-ask";
-import { MotherAsk } from "@/components/portal/mother-ask";
-import { TiktokAsk } from "@/components/portal/tiktok-ask";
-import { InstallCard, InstallModal } from "@/components/portal/install-app";
+import { InstallCard } from "@/components/portal/install-app";
 import { db } from "@/lib/db";
 import { portalHomeExtras } from "@/lib/portal/motivation";
 import { currentPortalContext } from "@/lib/portal/current";
@@ -13,7 +10,7 @@ import { portalCoupons } from "@/lib/portal/coupons";
 import { portalSummary } from "@/lib/portal/home";
 import { portalCampaigns } from "@/lib/campaigns/campaigns";
 import Link from "next/link";
-import { FileText, Megaphone, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +19,10 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
   const { marca } = await params;
   const ctx = await currentPortalContext(marca);
   const base = `/portal/${ctx.brand.slug}`;
-  const [summary, kit, account, coupons, extras] = await Promise.all([
+  const [summary, kit, coupons, extras] = await Promise.all([
     portalSummary(db(), ctx),
     // Kit esperando escolha (D-WELCOMEKIT, D-KIT): aviso no topo, boas-vindas primeiro.
     db().kitGrant.findFirst({ where: { creatorId: ctx.creatorId, brandId: ctx.brand.id, status: "PENDING" }, orderBy: [{ kind: "desc" }, { month: "asc" }], select: { kind: true, products: true } }),
-    db().creator.findUniqueOrThrow({ where: { id: ctx.creatorId }, select: { contractFileId: true, receivesAsIndividual: true, account: { select: { tiktok: true, birthDate: true, motherName: true } } } }).then((c) => ({ ...c.account, contractFileId: c.contractFileId, receivesAsIndividual: c.receivesAsIndividual })),
     portalCoupons(db(), ctx),
     // D-PORTALHOME: próximos passos, dica do dia, próximo kit, conquistas e faixa de posição.
     portalHomeExtras(db(), ctx),
@@ -38,9 +34,8 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
   return (
     <div className="flex flex-col gap-6">
       {kit && <KitBanner base={base} brandSlug={ctx.brand.slug} products={kit.products} welcome={kit.kind === "WELCOME"} />}
-      {/* D-INSTALLAPP: portal na tela de início (cartão até ela fechar; aviso uma vez, depois do tutorial). */}
+      {/* D-INSTALLAPP / D-PORTALSIMPLE: um cartão pequeno, só no primeiro acesso. */}
       {!ctx.viewAs && <InstallCard brandName={ctx.brand.name} base={base} />}
-      {!ctx.viewAs && <InstallModal brandName={ctx.brand.name} base={base} />}
       <HomeView top={open.length > 0 && (
         <Link href={`${base}/campanhas`} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
           <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"><Trophy className="size-4" /></span>
@@ -50,31 +45,6 @@ export default async function PortalHome({ params }: { params: Promise<{ marca: 
           </span>
         </Link>
       )} s={summary} base={base} ugc={ctx.ugcOnly} extras={extras} brandSlug={ctx.brand.slug} coupons={{ list: coupons, origin, brandName: ctx.brand.name, deactivated: ctx.status === "DEACTIVATED" }} />
-      <div className="flex flex-col gap-4 md:gap-6">
-      {!account.tiktok && <div id="pergunta-tiktok" className="scroll-mt-24"><TiktokAsk marca={ctx.brand.slug} /></div>}
-      {/* M4.2 (D-TAGS): aniversário, enquanto não informado. */}
-      {/* M4.6 (D-POSTS): atalho para registrar o post. */}
-      <Link href={`${base}/posts`} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
-        <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><Megaphone className="size-4" /></span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold">Postou? Registre o link</span>
-          <span className="text-sm text-stone-600 dark:text-stone-300">Veja quanto vendeu depois de cada post →</span>
-        </span>
-      </Link>
-      {/* D-CONTRACTFILE: contrato assinado anexado pela equipe. */}
-      {account.contractFileId && (
-        <a href={`${base}/contrato-pdf`} target="_blank" rel="noopener noreferrer" className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
-          <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><FileText className="size-4" /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold">Meu contrato</span>
-            <span className="text-sm text-stone-600 dark:text-stone-300">Ver o contrato assinado (PDF) →</span>
-          </span>
-        </a>
-      )}
-      {/* D-ALELOCARD: pessoa física sem o nome da mãe (cartão Alelo). */}
-      {account.receivesAsIndividual && !account.motherName && <div id="pergunta-mae" className="scroll-mt-24"><MotherAsk marca={ctx.brand.slug} /></div>}
-      {!account.birthDate && <div id="pergunta-aniversario" className="scroll-mt-24"><BirthdayAsk marca={ctx.brand.slug} brandName={ctx.brand.name} /></div>}
-      </div>
     </div>
   );
 }
