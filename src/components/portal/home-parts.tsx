@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Award, Check, ChevronRight, Lightbulb, ListChecks, Target, TrendingUp } from "lucide-react";
-import { ProductThumb } from "@/components/ui/product-thumb";
-import { formatBRL, kitNoun, shortBRL } from "@/domain";
+import { ChevronRight, ListChecks, TrendingUp } from "lucide-react";
+import { formatBRL, shortBRL } from "@/domain";
 import type { ReleaseProgress } from "@/lib/commission/release";
 import type { portalHomeExtras } from "@/lib/portal/motivation";
 import { ShareButton } from "./share-button";
@@ -93,95 +92,21 @@ export function HomeHero(p: {
   );
 }
 
-/** Próximos passos: o que falta fazer, com atalho; some quando tudo está feito. */
+/**
+ * D-PORTALSIMPLE: uma pendência por vez (a primeira que falta), com atalho; some quando tudo está feito.
+ */
 export function NextSteps({ steps }: { steps: Extras["steps"] }) {
-  if (!steps.length) return null;
+  const next = steps.find((s) => !s.done);
+  if (!next) return null;
   const done = steps.filter((s) => s.done).length;
   return (
-    <section className="glass flex flex-col gap-2 rounded-3xl p-4 md:p-5">
-      <h2 className="flex items-center justify-between gap-2 font-semibold">
-        <span className="flex items-center gap-2"><ListChecks className="size-4" />Próximos passos</span>
-        <span className="text-xs font-normal text-stone-500">{done} de {steps.length}</span>
-      </h2>
-      <ul className="flex flex-col gap-1.5">
-        {steps.map((s) => (
-          <li key={s.id}>
-            {s.done ? (
-              <span className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-stone-500 line-through"><span className="grid size-6 place-content-center rounded-full bg-emerald-500 text-white"><Check className="size-3.5" /></span>{s.label}</span>
-            ) : (
-              <Link href={s.href} className="liquid-tile flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium">
-                <span className="size-6 shrink-0 rounded-full border-2 border-brand/50 dark:border-brand-2/60" />
-                <span className="min-w-0 flex-1">{s.label}</span>
-                <ChevronRight className="size-4 shrink-0 text-stone-400" />
-              </Link>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** Dica do dia, com os dados dela. */
-export function DailyTip({ tip }: { tip: string }) {
-  return (
-    <section className="glass flex items-start gap-3 rounded-3xl p-4 md:p-5">
-      <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-amber-400/20 text-amber-700 dark:text-amber-300"><Lightbulb className="size-4" /></span>
-      <span className="min-w-0">
-        <span className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500">Dica do dia</span>
-        <span className="block text-sm">{tip}</span>
+    <Link href={next.href} className="glass flex items-center gap-3 rounded-3xl p-4 hover:shadow-sm md:p-5">
+      <span className="grid size-9 shrink-0 place-content-center rounded-2xl bg-brand/10 text-brand dark:bg-brand-2/15 dark:text-brand-2"><ListChecks className="size-4" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500">Próximo passo · {done} de {steps.length} feitos</span>
+        <span className="block font-semibold">{next.label}</span>
       </span>
-    </section>
-  );
-}
-
-/** Próximo kit: quanto falta (faixa do mês ou meta da janela), com as fotos dos produtos que ela pode escolher. */
-export function NextKit({ kit, photos, brandSlug, base }: { kit: Extras["kit"]; photos: Extras["kitPhotos"]; brandSlug: string; base: string }) {
-  if (!kit) return null;
-  let title: React.ReactNode;
-  let goal = 0;
-  let value = 0;
-  if (kit.kind === "TIER") {
-    value = kit.salesCents;
-    goal = kit.next?.fromCents ?? kit.salesCents;
-    title = kit.next ? <>Faltam <M>{formatBRL(kit.next.fromCents - kit.salesCents)}</M> para ganhar {kit.next.total - kit.total > 1 ? `mais ${kit.next.total - kit.total} ${kitNoun(brandSlug, 2)}` : `mais 1 ${kitNoun(brandSlug, 1)}`} este mês</> : <>Você chegou à faixa mais alta do mês 🎉</>;
-  } else {
-    value = kit.salesCents;
-    goal = kit.goalCents;
-    title = kit.granted ? <>Meta desta janela batida: seu produto está liberado 🎉</> : <>Faltam <M>{formatBRL(Math.max(0, kit.goalCents - kit.salesCents))}</M> até {kit.to.split("-").reverse().slice(0, 2).join("/")} para ganhar um {kitNoun(brandSlug, 1)}</>;
-  }
-  const pct = goal ? Math.min(100, Math.round((value / goal) * 100)) : 100;
-  return (
-    <Link href={`${base}/envios`} className="glass flex flex-col gap-3 rounded-3xl p-4 md:p-5">
-      <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500"><Target className="size-3.5" />Próximo kit</span>
-      <span className="font-semibold leading-snug">{title}</span>
-      <span className="h-2 overflow-hidden rounded-full bg-stone-300/60 dark:bg-white/10"><span className="block h-full rounded-full bg-brand dark:bg-brand-2" style={{ width: `${pct}%` }} /></span>
-      {photos.length > 0 && (
-        <span className="flex items-center gap-2">
-          <span className="flex -space-x-2">{photos.map((ph) => <span key={ph.title} className="rounded-xl ring-2 ring-white dark:ring-stone-900"><ProductThumb src={ph.image} title={ph.title} size="sm" /></span>)}</span>
-          <span className="text-xs text-stone-500">você escolhe entre estes e outros produtos</span>
-        </span>
-      )}
+      <ChevronRight className="size-4 shrink-0 text-stone-400" />
     </Link>
-  );
-}
-
-/** Conquistas: quatro selos; os que faltam aparecem apagados. */
-export function Achievements({ list }: { list: Extras["achievements"] }) {
-  return (
-    <section className="glass flex flex-col gap-3 rounded-3xl p-4 md:p-5">
-      <h2 className="flex items-center justify-between gap-2 font-semibold">
-        <span className="flex items-center gap-2"><Award className="size-4" />Conquistas</span>
-        <span className="text-xs font-normal text-stone-500">{list.filter((a) => a.done).length} de {list.length}</span>
-      </h2>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {list.map((a) => (
-          <li key={a.id} className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-center text-xs font-medium ${a.done ? "liquid-tile" : "bg-stone-500/8 text-stone-400"}`}>
-            <span className={`grid size-10 place-content-center rounded-full ${a.done ? "bg-brand text-white shadow dark:bg-brand-2 dark:text-stone-900" : "bg-stone-300/60 dark:bg-white/10"}`}><Award className="size-5" /></span>
-            {a.label}
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }

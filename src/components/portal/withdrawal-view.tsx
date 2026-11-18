@@ -108,36 +108,6 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
         </div>
       </section>
 
-      {(tab.nfAmount.lines.length > 0 || tab.nfAmount.next.length > 0) && <NfAmountCard tab={tab} doc={doc} />}
-
-      {/* D-CALENDAR: as datas do mês dela (enviar a nota, receber, liberar a próxima comissão). */}
-      <section className="@container glass flex flex-col gap-3 rounded-3xl p-5">
-        <h2 className="font-semibold">Seu calendário do mês</h2>
-        <PayCalendar month={tab.calendar.month} days={tab.calendar.days} normalEnd={tab.calendar.normalEnd} today={tab.calendar.today} who="creator" />
-        {tab.calendar.extended && <p className="text-xs text-amber-800 dark:text-amber-300">Neste mês o prazo para enviar a {doc} foi estendido até o dia {tab.calendar.days.end}.</p>}
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4" />Sua chave Pix</h2>
-          <p className="font-mono text-lg">{extras.pixKey ?? "não cadastrada"}</p>
-          <p className="text-xs text-stone-500">{extras.pixKey ? "O Pix do saque cai nesta chave." : "Você informa a chave no pedido de saque."}</p>
-          {/* D-PIXCHANGE: ela mesma troca (a equipe também, na ficha). */}
-          {extras.pixKey && !tab.blocks.includes("VIEW_ONLY") && <PixChange marca={base.split("/")[2]!} />}
-        </section>
-        <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
-          <h2 className="text-sm font-semibold">Total recebido</h2>
-          <p className="text-lg font-semibold tabular-nums"><span className="money">{formatBRL(extras.received.totalCents)}</span></p>
-          <p className="text-xs text-stone-500">{extras.received.count} {extras.received.count === 1 ? "saque pago" : "saques pagos"} · em {extras.received.year}: <span className="money">{formatBRL(extras.received.yearCents)}</span></p>
-        </section>
-      </div>
-      <p className="px-1 text-xs text-stone-500">
-        {tab.release.minCents !== null &&
-          `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
-        Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
-        liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix {payDaysText(days)}.
-      </p>
-
       {tab.individual ? (
         <section data-tour="saque-recibo" className="glass flex flex-col gap-3 rounded-3xl p-5">
           <div className="flex items-center justify-between gap-2">
@@ -181,11 +151,19 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
       </section>
       )}
 
-      <section data-tour="meus-saques" className="glass rounded-3xl p-5">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="font-semibold">Meus saques</h2>
-          <HelpTip id="meus-saques" />
-        </div>
+      <section className="glass flex flex-col gap-1 rounded-3xl p-4 md:p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4" />Sua chave Pix</h2>
+          <p className="font-mono text-lg">{extras.pixKey ?? "não cadastrada"}</p>
+          <p className="text-xs text-stone-500">{extras.pixKey ? "O Pix do saque cai nesta chave." : "Você informa a chave no pedido de saque."}</p>
+          {/* D-PIXCHANGE: ela mesma troca (a equipe também, na ficha). */}
+          {extras.pixKey && !tab.blocks.includes("VIEW_ONLY") && <PixChange marca={base.split("/")[2]!} />}
+      </section>
+
+      {/* D-PORTALSIMPLE: o resto fica fechado; ela abre se quiser. */}
+      <div className="flex flex-col gap-3">
+        {(tab.nfAmount.lines.length > 0 || tab.nfAmount.next.length > 0) && <Fold title={`De onde vem o valor da sua ${doc}`}><NfAmountCard tab={tab} doc={doc} bare /></Fold>}
+        <Fold title="Meus saques" open={justRequested || tab.withdrawals.some((w) => w.status === "REQUESTED" || w.status === "APPROVED")} tour="meus-saques">
+          <p className="mb-2 text-sm text-stone-600 dark:text-stone-300">Total recebido: <strong className="money">{formatBRL(extras.received.totalCents)}</strong> · {extras.received.count} {extras.received.count === 1 ? "saque pago" : "saques pagos"} · em {extras.received.year}: <span className="money">{formatBRL(extras.received.yearCents)}</span></p>
         {tab.withdrawals.length === 0 ? (
           <p className="py-4 text-sm text-stone-500">Nenhum pedido de saque ainda.</p>
         ) : (
@@ -235,11 +213,22 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
             })}
           </ul>
         )}
-      </section>
+        </Fold>
+        <Fold title="Calendário do mês e regras">
+          <div className="@container">
+        <PayCalendar month={tab.calendar.month} days={tab.calendar.days} normalEnd={tab.calendar.normalEnd} today={tab.calendar.today} who="creator" />
+        {tab.calendar.extended && <p className="text-xs text-amber-800 dark:text-amber-300">Neste mês o prazo para enviar a {doc} foi estendido até o dia {tab.calendar.days.end}.</p>}
+          </div>
+          <p className="mt-3 text-xs text-stone-500">
+        {tab.release.minCents !== null &&
+          `A comissão do mês é liberada no dia 1 do mês seguinte quando a sua ${releaseWhat(tab.release)} chega a ${formatBRL(tab.release.minCents)}; se não chegar, soma com a do mês seguinte. `}
+        Pedido de saque do dia {policy.windowStartDay} ao {policy.windowEndDay}, sempre do valor total
+        liberado, {tab.individual ? "com o recibo aceito no portal (pessoa física)" : "com a nota fiscal em PDF"} · pagamento por Pix {payDaysText(days)}.
+      </p>
 
-      <section data-tour="extrato" className="glass rounded-3xl p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-1 font-semibold">Movimentações <HelpTip id="extrato" /></h2>
+        </Fold>
+        <Fold title="Movimentações" tour="extrato">
+          <div className="mb-3">
           {st.months.length > 0 && (
             <nav aria-label="Mês" className="flex flex-wrap gap-2">
               {st.months.map((m) => (
@@ -249,7 +238,7 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
               ))}
             </nav>
           )}
-        </div>
+          </div>
         {st.lines.length === 0 ? (
           <p className="py-4 text-sm text-stone-500">Nenhuma movimentação neste mês.</p>
         ) : (
@@ -283,21 +272,35 @@ export function WithdrawalView({ tab, base, justRequested = false, days, extras 
             Total de {monthLabel(st.month)}: {formatBRL(st.months.find((m) => m.month === st.month)?.totalCents ?? 0)}. Venda conta no mês do pagamento.
           </p>
         )}
-      </section>
+        </Fold>
+      </div>
     </div>
+  );
+}
+
+/** D-PORTALSIMPLE: seção fechada (abre ao tocar). */
+function Fold({ title, open = false, tour, children }: { title: string; open?: boolean; tour?: string; children: React.ReactNode }) {
+  return (
+    <details data-tour={tour} open={open} className="group glass rounded-3xl">
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-semibold md:p-5">
+        <ChevronRight className="size-4 shrink-0 text-stone-400 transition group-open:rotate-90" />
+        <span className="min-w-0 flex-1">{title}</span>
+      </summary>
+      <div className="px-4 pb-4 md:px-5 md:pb-5">{children}</div>
+    </details>
   );
 }
 
 const brDay = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 
 /** D-NFAMOUNT: de onde vem o valor da nota, linha a linha, e o que fica para a próxima. */
-function NfAmountCard({ tab, doc }: { tab: WithdrawalTab; doc: string }) {
+function NfAmountCard({ tab, doc, bare = false }: { tab: WithdrawalTab; doc: string; bare?: boolean }) {
   const n = tab.nfAmount;
   const legacyTotal = n.legacy.reduce((s, l) => s + l.cents, 0);
   const opening = n.lines.find((l) => l.key === "OPENING_BALANCE");
   return (
-    <section className="glass flex flex-col gap-3 rounded-3xl p-5">
-      <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> De onde vem o valor da sua {doc}</h2>
+    <section className={bare ? "flex flex-col gap-3" : "glass flex flex-col gap-3 rounded-3xl p-5"}>
+      {!bare && <h2 className="flex items-center gap-2 font-semibold"><Receipt className="size-4" /> De onde vem o valor da sua {doc}</h2>}
       {n.lines.length > 0 && (
         <ul className="flex flex-col divide-y divide-stone-200/70 text-sm dark:divide-white/10">
           {n.lines.map((l) => (

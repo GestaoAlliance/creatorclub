@@ -77,9 +77,9 @@ export async function portalHomeExtras(prisma: PrismaClient, ctx: PortalContext,
   // Próximos passos (somem quando a lista está completa).
   const steps: NextStep[] = [
     ...(kitPending ? [{ id: "kit" as const, label: "Escolher os produtos do seu kit", href: `${base}/envios`, done: false }] : []),
-    { id: "tiktok", label: "Informar o seu TikTok", href: "#pergunta-tiktok", done: Boolean(me.account.tiktok) },
-    { id: "birthday", label: "Contar o seu aniversário", href: "#pergunta-aniversario", done: Boolean(me.account.birthDate) },
-    ...(me.receivesAsIndividual ? [{ id: "mother" as const, label: "Informar o nome da sua mãe (cartão Alelo)", href: "#pergunta-mae", done: Boolean(me.account.motherName) }] : []),
+    { id: "tiktok", label: "Informar o seu TikTok", href: `${base}/cadastro#redes`, done: Boolean(me.account.tiktok) },
+    { id: "birthday", label: "Contar o seu aniversário", href: `${base}/cadastro#redes`, done: Boolean(me.account.birthDate) },
+    ...(me.receivesAsIndividual ? [{ id: "mother" as const, label: "Informar o nome da sua mãe (cartão Alelo)", href: `${base}/cadastro#pergunta-mae`, done: Boolean(me.account.motherName) }] : []),
     { id: "post", label: "Registrar o seu primeiro post", href: `${base}/posts`, done: Boolean(posts) || brandTagged },
   ];
 
