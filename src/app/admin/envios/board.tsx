@@ -91,7 +91,7 @@ export function ShipHero({ brandName, current, counts, canCreate, canPrintAll, n
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
             <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-3xl">Envios <HelpTip id="en-situacao" /></h1>
-            <p className="mt-1 max-w-xl text-sm text-white/80">Pedidos das creators chegam em Aguardando aprovação; a Gestão aprova e vão para Preparando. Marque como enviado com o rastreio e acompanhe a entrega.</p>
+            <p className="mt-1 max-w-xl text-sm text-white/80">Gestão aprova → Envio prepara e manda com o rastreio → a creator confirma o Recebi.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {picker}
@@ -295,32 +295,17 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
 }
 
 /** Atrasados no Olist, produtos do mês e cobrar o "Recebi" dos parados. */
-export function ShipExtras({ olistLate, month, stale, canMessage, periodLabel = "do mês" }: { periodLabel?: string; olistLate: { id: string; name: string; days: number; reason: string }[]; month: Month; stale: { id: string; creatorId: string; name: string; days: number }[]; canMessage: boolean }) {
+export function ShipExtras({ olistLate, stale, canMessage }: { olistLate: { id: string; name: string; days: number; reason: string }[]; stale: { id: string; creatorId: string; name: string; days: number }[]; canMessage: boolean }) {
   const [msg, setMsg] = useState(false);
   return (
     <div className="@container">
-      <div className="grid gap-3 @4xl:grid-cols-3">
+      <div className="grid gap-3 @3xl:grid-cols-2">
         <section className="liquid-tile flex flex-col gap-2 rounded-3xl p-4">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold"><AlertTriangle className="size-4 text-amber-600" />Atrasou no Olist <span className="text-stone-500">{olistLate.length}</span></h3>
           <p className="text-xs text-stone-500">Em Preparando com erro no Olist ou há 3+ dias sem sair.</p>
           {olistLate.length === 0 ? <p className="text-sm text-stone-500">Nada atrasado. 🎉</p> : (
             <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto text-sm">
               {olistLate.map((o) => <li key={o.id}><span className="font-medium">{o.name}</span> <span className="text-xs text-stone-500">· há {o.days}d · {o.reason}</span></li>)}
-            </ul>
-          )}
-        </section>
-        <section className="liquid-tile flex flex-col gap-2 rounded-3xl p-4">
-          <h3 className="text-sm font-semibold">Produtos enviados {periodLabel}</h3>
-          <p className="text-xs text-stone-500">{month.units} unidades em {month.shipments} envios · frete <span className="money">{shortBRL(month.freightCents)}</span></p>
-          {month.products.length === 0 ? <p className="text-sm text-stone-500">Nada enviado {periodLabel}.</p> : (
-            <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
-              {month.products.map((p) => (
-                <li key={p.title} className="flex items-center gap-2 text-sm">
-                  <ProductThumb src={p.image} title={p.title} size="sm" />
-                  <span className="min-w-0 flex-1 truncate">{p.title}</span>
-                  <span className="shrink-0 font-semibold tabular-nums">{p.units}</span>
-                </li>
-              ))}
             </ul>
           )}
         </section>
@@ -336,6 +321,27 @@ export function ShipExtras({ olistLate, month, stale, canMessage, periodLabel = 
         </section>
       </div>
       {msg && <MessageSheet ids={[...new Set(stale.map((x) => x.creatorId))]} names={stale.map((x) => x.name)} {...RECEIPT_MSG} onClose={() => setMsg(false)} />}
+    </div>
+  );
+}
+
+/** D-SHIPSIMPLE: produtos enviados no período (relatório), em Desempenho → Visão geral. */
+export function ShippedProductsCard({ month, periodLabel }: { month: Month; periodLabel: string }) {
+  return (
+    <div className="glass flex flex-col gap-2 rounded-3xl p-4 md:p-5">
+          <h3 className="text-sm font-semibold">Produtos enviados {periodLabel}</h3>
+          <p className="text-xs text-stone-500">{month.units} unidades em {month.shipments} envios · frete <span className="money">{shortBRL(month.freightCents)}</span></p>
+          {month.products.length === 0 ? <p className="text-sm text-stone-500">Nada enviado {periodLabel}.</p> : (
+            <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+              {month.products.map((p) => (
+                <li key={p.title} className="flex items-center gap-2 text-sm">
+                  <ProductThumb src={p.image} title={p.title} size="sm" />
+                  <span className="min-w-0 flex-1 truncate">{p.title}</span>
+                  <span className="shrink-0 font-semibold tabular-nums">{p.units}</span>
+                </li>
+              ))}
+            </ul>
+          )}
     </div>
   );
 }

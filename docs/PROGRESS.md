@@ -317,6 +317,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-356 — 2026-11-18 — Envios mais simples (D-SHIPSIMPLE)
+
+- `admin/envios/page.tsx`: etapa inicial pelo papel; sem a barra "Todos/Entregue/Cancelado"; seletor de período,
+  "ver cancelados/entregues" e planilha só em Entregues/Cancelados. `board.tsx`: frase curta no topo, `ShipExtras` com
+  os dois avisos de ação; `ShippedProductsCard` novo, usado em Desempenho → Visão geral.
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** perguntar (Candidatas, ou pausar para ouvir a equipe).
+
 ### CP-355 — 2026-11-18 — E-mail do financeiro e dados da nota da Botanika corrigidos (produção)
 
 - Achado: `Brand.financeEmail` da Botanika estava `financeiro@botanicabrasil.com` (erro de digitação); as 7 notas
