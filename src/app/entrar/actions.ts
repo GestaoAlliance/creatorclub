@@ -4,22 +4,10 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
-import { normalizeEmail, passwordProblem, safeNextPath } from "@/lib/auth/rules";
+import { normalizeEmail, passwordProblem } from "@/lib/auth/rules";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type FormState = { error?: string; ok?: string } | undefined;
-
-export async function signIn(_prev: FormState, form: FormData): Promise<FormState> {
-  const email = normalizeEmail(form.get("email"));
-  const password = form.get("password");
-  if (!email || typeof password !== "string" || !password) return { error: "Informe e-mail e senha." };
-
-  const supabase = await supabaseServer();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  // Mensagem única: não revela se o e-mail existe.
-  if (error) return { error: "E-mail ou senha incorretos, ou muitas tentativas. Tente de novo em instantes." };
-  redirect(safeNextPath(form.get("next")));
-}
 
 export async function signOut(): Promise<void> {
   const supabase = await supabaseServer();

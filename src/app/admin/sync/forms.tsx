@@ -21,7 +21,7 @@ export function ConnectForm({ brandId, shop }: { brandId: string; shop: string |
         <input className={input} name="clientId" required={!shop} />
       </label>
       <label className={ui.label}>Client secret
-        <input className={input} name="clientSecret" type="password" required={!shop} />
+        <input className={input} name="clientSecret" type="password" autoComplete="off" required={!shop} />
       </label>
       <Status state={state} />
       <button className={button} disabled={pending}>{pending ? "Conectando…" : shop ? "Reconectar loja" : "Conectar loja"}</button>
@@ -73,7 +73,7 @@ export function AutentiqueForm({ brandId, connected, sandbox }: { brandId: strin
     <form action={action} className="flex flex-col gap-3" autoComplete="off">
       <input type="hidden" name="brandId" value={brandId} />
       <label className={ui.label}>Chave da API do Autentique
-        <input className={input} name="token" type="password" required />
+        <input className={input} name="token" type="password" autoComplete="off" required />
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="sandbox" defaultChecked={sandbox} className="size-4 accent-[var(--brand)]" />

@@ -14,7 +14,7 @@ export default async function NovaSenhaPage({ searchParams }: { searchParams: Pr
     <AuthFrame title="Nova senha">
       {/* D-ACCESSFIX: entrou com a senha provisória que a equipe mandou. */}
       {provisoria && <p className="text-sm text-stone-600 dark:text-stone-300">Você entrou com uma senha provisória. Crie agora a sua senha para continuar.</p>}
-      <NewPasswordForm />
+      <NewPasswordForm email={typeof data.claims.email === "string" ? data.claims.email : null} />
     </AuthFrame>
   );
 }

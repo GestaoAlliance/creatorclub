@@ -46,7 +46,7 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
           <>Digite o seu e-mail e crie a sua senha: é com eles que você vai entrar.</>
         )}
       </p>
-      <AcceptForm token={token} needsPassword={!sessionEmail} askEmail={!invite.email && !sessionEmail} />
+      <AcceptForm token={token} needsPassword={!sessionEmail} askEmail={!invite.email && !sessionEmail} email={invite.email} />
     </>,
     `Olá, ${invite.name.split(" ")[0]}`,
   );

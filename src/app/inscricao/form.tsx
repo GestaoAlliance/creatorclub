@@ -274,7 +274,7 @@ export function SignupForm({ hunterCode, campaign = null, brand }: { hunterCode:
 
       <Block title={sec("contato").title}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={q("email").label} hint={q("email").hint} error={errors.email}>{text("email", { type: "email", required: true, autoComplete: "email" })}</Field>
+          <Field label={q("email").label} hint={q("email").hint} error={errors.email}>{text("email", { type: "email", required: true, autoComplete: "username" })}</Field>
           <Field label={q("phone").label} hint="Só DDD e número, sem o +55." error={errors.phone}>{text("phone", { type: "tel", required: true, inputMode: "numeric", autoComplete: "tel" })}</Field>
         </div>
       </Block>
