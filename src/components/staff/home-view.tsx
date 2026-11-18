@@ -87,7 +87,6 @@ export function StaffHomeView({ h }: { h: StaffHome }) {
         {h.creators && (
           <Tile href="/admin/creators" icon={<Users className="size-4" />} title="Creators" help="eq-creators">
             <Kpi label="Ativas" value={h.creators.active} />
-            <Kpi label="A conferir pela Ana" value={h.creators.toReview} hint="libera o saldo de abertura" />
           </Tile>
         )}
       </div>

@@ -51,7 +51,6 @@ export function FileHero(p: {
     STATUS_LABEL[p.status],
     ...p.categories.map((k) => CREATOR_CATEGORY_LABEL[k as CreatorCategoryValue] ?? k),
     p.hasLogin ? "entra no portal" : "sem acesso ao portal",
-    ...(p.reviewed ? ["conferida pela Ana"] : []),
     ...(p.birthDate ? [`🎂 ${birthdayLabel(p.birthDate)}`] : []),
     ...(p.place ? [`📍 ${p.place}`] : []),
     ...p.niches,

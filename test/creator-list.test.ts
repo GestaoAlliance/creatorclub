@@ -72,7 +72,9 @@ describe("ficha da creator: o que falta (D-CREATORFILE)", () => {
   });
   it("urgente primeiro, com o link de onde resolve; null no checklist não conta", () => {
     const n = creatorFileNeeds({ ...base, hasLogin: false, reviewed: false, idleDays: 60, opening: { approved: false, paidCents: 2_342_862 }, contract: { status: "EXPIRING", daysLeft: 10, end: "2026-11-21" }, checklist: { ...base.checklist, inGroup: false, tagged: null } });
-    expect(n.map((x) => [x.tone, x.href])).toEqual([["urgent", "/admin/abertura"], ["warn", "#contrato"], ["warn", "#resumo"], ["warn", "#resumo"], ["info", "#cadastro"], ["info", "#contrato"]]);
+    expect(n.map((x) => [x.tone, x.href])).toEqual([["urgent", "/admin/abertura"], ["warn", "#contrato"], ["warn", "#resumo"], ["info", "#convite"], ["info", "#contrato"]]);
+    // D-CREATORSIMPLE: "Números a conferir" não aparece mais (a conferência é em Pagamentos).
+    expect(n.some((x) => x.label === "Números a conferir")).toBe(false);
     expect(n[0]!.label).toBe("Abertura esperando o Pagamento (já pago R$ 23.428,62)");
     expect(n.at(-1)!.label).toBe("Checklist: no grupo");
   });
