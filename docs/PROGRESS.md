@@ -22,7 +22,9 @@
 | **Lorena, Juliana, Barbieri, Giovanna** (creators) | Cadastrar a chave Pix no pedido de saque (sem ela o saque não sai) | Portal, aba Saque |
 | **Responsável** | Botanika: regra dos produtos confirmada em 18/11 (tabela do mês, D-TIERKIT); falta só dizer quando religar os pedidos (a pausa de 17/11 segue ligada) | Configurações → Marcas |
 | **Ana** (Gestão) | Botanika: 7 donas de cupom a confirmar; "Conferi os números" em 26 ativas | Vendas → Cupons; ficha |
-| **Ana** | VermeFree: 40 cupons sem tipo (25 já usados em pedidos), 31 donas e 45 taxas a confirmar; "Conferi os números" em 65 ativas (sem isso a VermeFree não calcula comissão) | Vendas → Cupons (VermeFree) |
+| **Fátima** | VermeFree: classificar os 8 cupons de campanha sem tipo (BRASIL6, BRASIL9, PRIMEIRA5, ZEROTOXINAS10, CASA5, QUIZ10, RECOVERY1111, FRETE1111) | Vendas → Cupons (VermeFree) |
+| **Ana** | VermeFree: dona dos cupons JULIA (2 pedidos) e DRGIBRAN (1 pedido; o Kalil não está cadastrado na VermeFree) | Vendas → Cupons (VermeFree) |
+| **Guilherme** | VermeFree: comprovantes do que foi pago (jul–set), para acertar o desconto feito pela planilha | Grupo |
 | **Guilherme** (VermeFree) | Comprovantes dos pagamentos jul–set e conta SICOOB da VermeFree | Grupo |
 | **Responsável** | Convite "Leitura" (VIEWER) de Admin Botanika e Guilherme (nenhum criado ainda) | Equipe |
 | **Responsável** | Botanika: código do serviço da nota (17.06) e logo; remetente das etiquetas nas 3 marcas | Configurações → Marcas |
@@ -314,6 +316,20 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-348 — 2026-11-18 — VermeFree calculando comissão (D-VFCONFIRM)
+
+- **Antes:** 40 cupons sem tipo, 31 donas e 45 taxas a confirmar; 11 pedidos atribuídos e 1 comissão lançada.
+- **Decisões do responsável:** descontar o já pago pela planilha agora; 10% para todas; cupons de campanha para a
+  Fátima; JULIA e DRGIBRAN para a Ana.
+- **Feito em produção (uma transação, tudo no histórico):** 13 saldos de abertura negativos pela planilha
+  (R$ 5.368,65; `creator.opening_legacy`); 45 taxas de 10% confirmadas; 30 cupons com dona viraram CREATOR com 31
+  donas confirmadas; reavaliação da marca na fila.
+- **Resultado conferido:** 463 pedidos atribuídos a 18 creators, R$ 22.020,76 de comissão (jun–nov); saldo depois do
+  já pago: R$ 16.652,11 (Victoria R$ 10.854,74; Ludimilla R$ 1.542,34; Julia R$ 1.165,26…). A estimativa feita antes
+  (10% do subtotal pelo cupom) batia. Parados só os 29 pedidos dos cupons sem tipo e sem dona.
+- **Falta:** Fátima (8 cupons de campanha), Ana (JULIA, DRGIBRAN), Guilherme (comprovantes para acertar o já pago).
+- **Próxima:** perguntar ao responsável.
 
 ### CP-347 — 2026-11-18 — Conferência completa dos produtos liberados (regra dos 45 dias)
 
