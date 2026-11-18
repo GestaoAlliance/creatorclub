@@ -17,6 +17,8 @@ import { OverviewCards } from "@/components/staff/dashboard-view";
 import { staffDashboard } from "@/lib/staff/dashboard";
 import { baseHealth } from "@/lib/staff/insights";
 import { productReport } from "@/lib/reports/products";
+import { shipmentBoard } from "@/lib/shipments/board";
+import { ShippedProductsCard } from "../envios/board";
 
 export const dynamic = "force-dynamic";
 
@@ -42,12 +44,14 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   // D-HOMESIMPLE: o que saiu do Início (saúde da base, retorno, movimentos, tops) fica em "Visão geral".
   const money = can(actor.grants, "money.view", brand.id);
   const geral = money ? await (async () => {
-    const [d, health, products] = await Promise.all([
+    const [d, health, products, ship] = await Promise.all([
       staffDashboard(db(), brand.id, period, ""),
       baseHealth(db(), brand.id, "", range),
       productReport(db(), brand.id, period, "creators"),
+      // D-SHIPSIMPLE: o relatório de produtos enviados saiu de Envios e fica aqui.
+      can(actor.grants, "shipping.view", brand.id) ? shipmentBoard(db(), actor, brand.id, [], now, range) : Promise.resolve(null),
     ]);
-    return { d, health, products };
+    return { d, health, products, ship };
   })() : null;
   const base = `/admin/desempenho${period.key ? `?p=${encodeURIComponent(period.key)}&` : "?"}`;
   if (sp.aba === "geral" && geral) {
@@ -61,6 +65,7 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
           </span>
         </div>
         <OverviewCards d={geral.d} health={geral.health} program={geral.products.program} productsWithoutCost={geral.products.productsTotal - geral.products.productsWithCost} />
+        {geral.ship && <ShippedProductsCard month={geral.ship.month} periodLabel={periodPhrase(pickPeriod(period.key ?? null, today))} />}
       </GlassLight>
     );
   }

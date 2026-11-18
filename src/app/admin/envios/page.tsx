@@ -50,7 +50,9 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
   const staleBefore = new Date(now.getTime() - RECEIPT_CHECK_DAYS * 86_400_000);
   // Sem escolher: abre no que tem trabalho (aguardando, depois preparando).
   const counts0 = await db().shipment.groupBy({ by: ["status"], where: { brandId: brand.id, status: { in: ["AWAITING_APPROVAL", "PREPARING"] } }, _count: true });
-  const fallback: ShipmentStatusValue | undefined = counts0.some((c) => c.status === "AWAITING_APPROVAL") ? "AWAITING_APPROVAL" : counts0.some((c) => c.status === "PREPARING") ? "PREPARING" : undefined;
+  // D-SHIPSIMPLE: abre na etapa da pessoa: quem é só Envio em Preparando; a Gestão em Aguardando (se houver).
+  const onlyShipping = can(actor.grants, "shipping.manage", brand.id) && !can(actor.grants, "creators.edit", brand.id);
+  const fallback: ShipmentStatusValue = !onlyShipping && counts0.some((c) => c.status === "AWAITING_APPROVAL") ? "AWAITING_APPROVAL" : "PREPARING";
   const status = stale ? undefined : (STATUSES.find((s) => s === situacao) ?? (situacao === undefined ? fallback : undefined));
   const canManage = can(actor.grants, "shipping.manage", brand.id);
   const [shipments, staleList, form, imageOf] = await Promise.all([
@@ -117,7 +119,6 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
         canCreate={Boolean(form)}
         canPrintAll={canPrint}
         periodLabel={periodPhrase(picked)}
-        picker={<PeriodPicker value={period.key ?? ""} today={today} tone="brand" />}
         newForm={form ? <NewShipmentForm creators={form.creators} products={form.products} /> : null}
       />
       {paused && (
@@ -127,28 +128,26 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
       )}
       {firstKit && firstKit.grantIds.length > 0 && <FirstKitNotice count={firstKit.grantIds.length} names={firstKit.names} text={firstKitPreview(firstKit.brand)} hasWhatsApp={Boolean(firstKit.brand.whatsappInstance)} />}
       {kitReminder && kitReminder.grantIds.length > 0 && <KitReminder count={kitReminder.grantIds.length} names={kitReminder.names} text={kitReminderPreview(kitReminder.brand)} hasWhatsApp={Boolean(kitReminder.brand.whatsappInstance)} />}
-      <nav aria-label="Outras situações" className="flex flex-wrap items-center gap-1.5 text-sm">
-        <a href="/admin/envios?situacao=" className={`rounded-full px-3 py-1.5 ${current === "" ? "bg-brand font-semibold text-white dark:bg-brand-2 dark:text-stone-900" : "bg-stone-500/10 hover:bg-stone-500/20"}`}>Todos</a>
-        {(["DELIVERED", "CANCELLED"] as const).map((s) => (
-          <a key={s} href={`/admin/envios?situacao=${s}`} className={`rounded-full px-3 py-1.5 ${current === s ? "bg-brand font-semibold text-white dark:bg-brand-2 dark:text-stone-900" : "bg-stone-500/10 hover:bg-stone-500/20"}`}>{SHIPMENT_STATUS_LABEL[s]}</a>
-        ))}
-        {/* D-SHIPCSV: planilha dos envios com a situação escolhida e, se quiser, o período (data do pedido). */}
-        {canPrint && (
-          <form action="/admin/envios/csv" method="get" className="ml-auto flex flex-wrap items-center gap-1.5">
-            {status && <input type="hidden" name="situacao" value={status} />}
-            <input type="hidden" name="de" value={period.from} />
-            <input type="hidden" name="ate" value={period.to} />
-            <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`}><Download className="size-4" />Planilha ({status ? SHIPMENT_STATUS_LABEL[status] : "todos"}, {picked.label.toLowerCase()})</button>
-          </form>
-        )}
-      </nav>
+      {/* D-SHIPSIMPLE: o seletor de período e "Cancelados" só onde valem (entregues e cancelados). */}
+      {(status === "DELIVERED" || status === "CANCELLED") && (
+        <nav aria-label="Período e situação" className="flex flex-wrap items-center gap-2 text-sm">
+          <PeriodPicker value={period.key ?? ""} today={today} />
+          <a href={`/admin/envios?situacao=${status === "DELIVERED" ? "CANCELLED" : "DELIVERED"}${period.key ? `&p=${encodeURIComponent(period.key)}` : ""}`} className="text-stone-500 underline">{status === "DELIVERED" ? "ver cancelados" : "ver entregues"}</a>
+          {canPrint && (
+            <form action="/admin/envios/csv" method="get" className="ml-auto">
+              <input type="hidden" name="situacao" value={status} />
+              <input type="hidden" name="de" value={period.from} />
+              <input type="hidden" name="ate" value={period.to} />
+              <button className={`${ui.ghostSm} inline-flex items-center gap-1.5`}><Download className="size-4" />Planilha</button>
+            </form>
+          )}
+        </nav>
+      )}
       <ShipQueue key={current} rows={rows} canPrint={canPrint} emptyText={stale ? "Ninguém sem confirmar há 10+ dias. 🎉" : status ? `Nenhum envio em ${SHIPMENT_STATUS_LABEL[status]}${status === "DELIVERED" || status === "CANCELLED" ? ` ${periodPhrase(picked)}` : ""}.` : `Nenhum envio pedido ${periodPhrase(picked)}.`} />
       <ShipExtras
         olistLate={board.olistLate}
-        month={board.month}
         stale={staleList.map((s) => ({ id: s.id, creatorId: s.creator.id, name: s.creator.account.name, days: Math.floor((now.getTime() - (s.shippedAt ?? s.createdAt).getTime()) / 86_400_000) }))}
         canMessage={can(actor.grants, "creators.edit", brand.id)}
-        periodLabel={periodPhrase(picked)}
       />
     </GlassLight>
   );
