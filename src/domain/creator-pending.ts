@@ -13,7 +13,6 @@ export function creatorPendings(c: CreatorPendingInput): string[] {
   const out: string[] = [];
   if (c.ownerPending) out.push("dona do cupom a confirmar");
   if (c.ratePending) out.push("taxa a confirmar");
-  if (!c.reviewed) out.push("números a conferir");
   if (c.fakeEmail) out.push("e-mail a confirmar");
   if (c.contract === "EXPIRED") out.push("contrato vencido");
   else if (c.contract === "EXPIRING") out.push("contrato vencendo");

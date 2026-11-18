@@ -12,7 +12,6 @@ describe("pendências da creator (D-CREATORPENDING)", () => {
     expect(creatorPendings({ ...ok, reviewed: false, ownerPending: true, ratePending: true, fakeEmail: true, contract: "EXPIRED" })).toEqual([
       "dona do cupom a confirmar",
       "taxa a confirmar",
-      "números a conferir",
       "e-mail a confirmar",
       "contrato vencido",
     ]);

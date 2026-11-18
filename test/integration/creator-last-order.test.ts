@@ -35,7 +35,7 @@ describe("último pedido e pendências na lista Creators (D-LASTORDER, D-CREATOR
     const rows = new Map((await listCreators(prisma, gestao, a.brand.id)).map((r) => [r.id, r]));
     expect(rows.get(a.creator.id)).toMatchObject({
       lastOrder: { name: "#BOM", day: "2026-10-05" },
-      pendings: ["dona do cupom a confirmar", "taxa a confirmar", "números a conferir"],
+      pendings: ["dona do cupom a confirmar", "taxa a confirmar"], // D-CREATORSIMPLE: sem "números a conferir"
     });
     expect(rows.get(other.id)).toMatchObject({ lastOrder: { name: "#ANTES", day: "2026-08-20" }, pendings: [] });
   });

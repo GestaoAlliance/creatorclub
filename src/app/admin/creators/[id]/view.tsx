@@ -62,7 +62,7 @@ const KIND_DOT: Record<TimelineKind, string> = {
 function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; creatorId: string; canEdit: boolean }) {
   return (
     <Card title="Linha do tempo" icon={<History className="size-4" />}>
-      {canEdit && <NoteForm creatorId={creatorId} />}
+      {/* D-CREATORSIMPLE: a observação se escreve na coluna "O que falta" (uma caixa só). */}
       {events.length === 0 ? (
         <p className={ui.muted}>Nada registrado ainda.</p>
       ) : (
@@ -80,6 +80,46 @@ function Timeline({ events, creatorId, canEdit }: { events: TimelineEvent[]; cre
         </ol>
       )}
     </Card>
+  );
+}
+
+/**
+ * D-CREATORSIMPLE: acesso ao portal num cartão só, no topo do Resumo, com a situação clara (já entrou / acesso criado
+ * e ainda não entrou / convite enviado e não aberto / convite vencido / sem acesso). Principal: senha provisória
+ * (D-ACCESSDIRECT, funciona na hora); o convite por link fica como opção.
+ */
+function AccessCard({ p }: { p: Profile }) {
+  const now = Date.now();
+  const inv = p.invites.find((i) => !i.revokedAt && !i.acceptedAt) ?? null;
+  const open = inv && new Date(inv.expiresAt).getTime() > now;
+  const state = p.userId
+    ? p.lastSeenAt
+      ? { tone: badge.green, text: `Já entra no portal · último acesso ${date(new Date(p.lastSeenAt))}` }
+      : { tone: badge.amber, text: "Acesso criado, mas ela ainda não entrou" }
+    : open
+      ? { tone: badge.amber, text: `Convite enviado em ${date(inv!.createdAt)}: ainda não abriu (vale até ${date(inv!.expiresAt)})` }
+      : inv
+        ? { tone: badge.red, text: `Convite de ${date(inv.createdAt)} venceu sem ser aberto` }
+        : { tone: badge.red, text: "Sem acesso: nunca entrou e não tem convite" };
+  return (
+    <div id="convite" className="scroll-mt-24">
+      <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
+        <p><span className={state.tone}>{state.text}</span></p>
+        {p.userId ? (
+          <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} loginEmail={p.loginEmail} />
+        ) : p.canEdit ? (
+          <>
+            <NewAccessBox accountId={p.accountId} email={p.contact.email} emailOk={!p.contact.fakeEmail} name={p.contact.name} phone={p.contact.phone} />
+            {!p.contact.fakeEmail && (
+              <details>
+                <summary className="cursor-pointer text-sm text-stone-500 hover:underline">Ou mandar convite por link (ela cria a própria senha)</summary>
+                <div className="mt-2"><InviteButton creatorId={p.id} accountId={p.accountId} /></div>
+              </details>
+            )}
+          </>
+        ) : null}
+      </Card>
+    </div>
   );
 }
 
@@ -184,6 +224,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             label: "Resumo",
             content: (
               <>
+      <AccessCard p={p} />
       {st && !ugcOnly && (
         <Card title="Saldo" icon={<Receipt className="size-4" />} help="fi-saldo">
           {openingPending && (
@@ -214,40 +255,8 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           </p>
         </Card>
       )}
-      {ret && !ugcOnly && (
-        <Card title={`Retorno ${phrase}`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
-          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4 [&_p.text-2xl]:whitespace-nowrap [&_p.text-2xl]:text-xl">
-            <Kpi label="Receita" value={formatBRL(ret.revenueCents)} hint={`${ret.orders} pedidos`} />
-            <Kpi label="Custos" value={formatBRL(ret.cogsCents + ret.commissionCents + ret.kitsCents + ret.freightCents)} hint={`produtos ${formatBRL(ret.cogsCents)} · comissão ${formatBRL(ret.commissionCents)} · kits e frete ${formatBRL(ret.kitsCents + ret.freightCents)}`} />
-            <Kpi label="Lucro que deixa" value={formatBRL(ret.profitCents)} tone={ret.profitCents < 0 ? "red" : undefined} hint={ret.unitsWithoutCost ? `${ret.unitsWithoutCost} un. sem custo na Shopify` : undefined} />
-            <Kpi
-              label="Clientes"
-              value={ret.customers.unknown < ret.orders ? `${ret.customers.new} novas` : "—"}
-              hint={ret.customers.unknown < ret.orders ? `${ret.customers.returning} recorrentes${ret.customers.unknown ? ` · ${ret.customers.unknown} sem dado` : ""}` : "precisa de read_customers no app"}
-            />
-          </div>
-        </Card>
-      )}
-      {insights?.money && <MonthlyCard months={insights.money.months} minCents={st && st.release.basis !== "COMMISSION" ? st.release.minCents : null} />}
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        {insights?.money && <CompareCard c={insights.money.compare} label={phrase} />}
-        {insights && <ShipmentCard s={insights.shipment} count={insights.shipments} />}
-      </div>
-      {insights?.money && <ProductsCard products={insights.money.products} label={phrase} />}
-                <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
+                <div className="grid gap-6">
                   <div className="flex min-w-0 flex-col gap-6">
-          {!p.reviewedAt && !ugcOnly && (
-            <Card title="Conferência da Ana" icon={<ClipboardCheck className="size-4" />} help="fi-conferencia">
-              {p.reviewedAt ? (
-                <p className={ui.ok}>Números conferidos em {date(p.reviewedAt)}. O Pagamento já pode aprovar o saldo de abertura.</p>
-              ) : (
-                <>
-                  <p className={ui.muted}>Ainda não conferida. Depois de conferir cupons, taxa e vendas, marque aqui: libera o saldo de abertura (saque) para o Pagamento.</p>
-                  {p.canEdit && <ReviewedButton creatorId={p.id} />}
-                </>
-              )}
-            </Card>
-          )}
           {p.ugcCycle && <UgcVideosCard creatorId={p.id} status={p.status} canEdit={p.canEdit} cycle={p.ugcCycle} videos={p.ugcVideos} legacy={p.ugc} />}
           <Card title="Cupom, comissão e desconto" icon={<Ticket className="size-4" />} help="fi-cupons">
             {p.coupons.length === 0 && <p className={ui.muted}>Nenhum.</p>}
@@ -297,14 +306,29 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
             <Link href="/admin/cupons" className={`${ui.link} text-sm`}>Abrir a conferência de cupons</Link>
           </Card>
                   </div>
-                  <div className="flex min-w-0 flex-col gap-6">
-                    <Timeline events={timeline.slice(0, 8)} creatorId={p.id} canEdit={p.canEdit} />
-                  </div>
                 </div>
               </>
             ),
           },
           ...(period?.orders && picked ? [{ id: "vendas", label: "Vendas", content: (
+            <>
+      {ret && !ugcOnly && (
+        <Card title={`Retorno ${phrase}`} icon={<TrendingUp className="size-4" />} help="fi-retorno">
+          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4 [&_p.text-2xl]:whitespace-nowrap [&_p.text-2xl]:text-xl">
+            <Kpi label="Receita" value={formatBRL(ret.revenueCents)} hint={`${ret.orders} pedidos`} />
+            <Kpi label="Custos" value={formatBRL(ret.cogsCents + ret.commissionCents + ret.kitsCents + ret.freightCents)} hint={`produtos ${formatBRL(ret.cogsCents)} · comissão ${formatBRL(ret.commissionCents)} · kits e frete ${formatBRL(ret.kitsCents + ret.freightCents)}`} />
+            <Kpi label="Lucro que deixa" value={formatBRL(ret.profitCents)} tone={ret.profitCents < 0 ? "red" : undefined} hint={ret.unitsWithoutCost ? `${ret.unitsWithoutCost} un. sem custo na Shopify` : undefined} />
+            <Kpi
+              label="Clientes"
+              value={ret.customers.unknown < ret.orders ? `${ret.customers.new} novas` : "—"}
+              hint={ret.customers.unknown < ret.orders ? `${ret.customers.returning} recorrentes${ret.customers.unknown ? ` · ${ret.customers.unknown} sem dado` : ""}` : "precisa de read_customers no app"}
+            />
+          </div>
+        </Card>
+      )}
+      {insights?.money && <MonthlyCard months={insights.money.months} minCents={st && st.release.basis !== "COMMISSION" ? st.release.minCents : null} />}
+      {insights?.money && <CompareCard c={insights.money.compare} label={phrase} />}
+      {insights?.money && <ProductsCard products={insights.money.products} label={phrase} />}
             <Card title={`Vendas ${phrase}`} icon={<TrendingUp className="size-4" />}>
               {period.sales && (
                 <p className="text-sm text-stone-600 dark:text-stone-300">
@@ -322,6 +346,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                 <Link href={`/admin/vendas?creator=${p.id}${period.key ? `&p=${encodeURIComponent(period.key)}` : ""}#lista`} className={ui.link}>Abrir em Vendas</Link>
               </p>
             </Card>
+            </>
           ) }] : []),
           ...(st && !ugcOnly ? [{ id: "extrato", label: "Extrato", content: <>
           {st && !ugcOnly && (
@@ -486,18 +511,8 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               </div>
             )}
           </Card>
-          {/* M4.4b (D-ACCESS): último acesso ao portal e nova senha. */}
-          {p.userId && (
-            <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
-              <AccessBox userId={p.userId} lastSeenAt={p.lastSeenAt} canReset={p.canEdit} name={p.contact.name} phone={p.contact.phone} loginEmail={p.loginEmail} />
-            </Card>
-          )}
-          {/* D-ACCESSDIRECT: quem nunca entrou ganha o acesso direto, com senha provisória. */}
-          {!p.userId && p.canEdit && (
-            <Card title="Acesso ao portal" icon={<KeyRound className="size-4" />}>
-              <NewAccessBox accountId={p.accountId} email={p.contact.email} emailOk={!p.contact.fakeEmail} name={p.contact.name} phone={p.contact.phone} />
-            </Card>
-          )}
+          {/* D-CREATORSIMPLE: o acesso ao portal está no topo do Resumo. */}
+          {insights && <ShipmentCard s={insights.shipment} count={insights.shipments} />}
           {/* M4.3 (D-PROFILEFIELDS): perfil opcional. */}
           <Card title="Perfil" icon={<Sparkles className="size-4" />}>
             {p.canEdit ? (
@@ -508,17 +523,6 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               </div>
             )}
           </Card>
-          {p.canEdit && !p.hasLogin && (
-            <div id="convite" className="scroll-mt-24">
-            <Card title="Convite para o portal" icon={<Mail className="size-4" />}>
-              {p.contact.fakeEmail ? (
-                <p className="text-sm text-amber-700 dark:text-amber-300">Salve o e-mail real antes de convidar.</p>
-              ) : (
-                <InviteButton creatorId={p.id} accountId={p.accountId} />
-              )}
-            </Card>
-            </div>
-          )}
                 </div>
                 <div className="flex min-w-0 flex-col gap-6">
           {p.canEdit && (

@@ -317,6 +317,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-353 — 2026-11-18 — Ficha da creator mais simples e fim do "números a conferir" (D-CREATORSIMPLE)
+
+- **Achado em produção:** em 18/11 a Fátima mandou 7 convites por link (nenhum "acesso com senha"), e a ficha não
+  mostrava em que pé cada uma estava; daí o "acesso liberado" que não era.
+- **Ficha** (`creators/[id]/view.tsx`): cartão "Acesso ao portal" no topo do Resumo com a situação (`AccessCard`);
+  Resumo com Acesso, Saldo e Cupom; o resto foi para as abas Vendas (gráfico, retorno, comparação, produtos) e
+  Cadastro (último envio); Linha do tempo só na aba; observação só na coluna ao lado. No computador, o Resumo caiu de
+  ~5.600 px para ~3.400 px.
+- **"Números a conferir"** saiu de `creatorFileNeeds`, `creatorPendings`, do selo "conferida pela Ana" e do Início
+  da equipe ("A conferir pela Ana"). Testes ajustados (`creator-list`, `creator-pending`, `creator-last-order`).
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** perguntar a próxima área (Envios, Candidatas ou Início da equipe).
+
 ### CP-352 — 2026-11-18 — Portal da creator mais simples: Início e Saque (D-PORTALSIMPLE)
 
 - **Pedido do responsável:** seguir simplificando, agora o portal (de onde vêm as dúvidas para a equipe).

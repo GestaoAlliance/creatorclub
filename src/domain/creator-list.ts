@@ -154,9 +154,9 @@ export function creatorFileNeeds(c: {
   else if (!c.contract.end) out.push({ label: "Sem datas do contrato", tone: "info", href: "#contrato" });
   if (c.ownerPending) out.push({ label: "Dona do cupom a confirmar", tone: "warn", href: "#resumo" });
   if (c.ratePending && !c.ugcOnly) out.push({ label: "Taxa a confirmar", tone: "warn", href: "#cadastro" });
-  if (!c.reviewed && !c.ugcOnly) out.push({ label: "Números a conferir", tone: "warn", href: "#resumo" });
+  // D-CREATORSIMPLE: "Números a conferir" saiu (desde D-OPENINGBYPAY não trava nada; a conferência é em Pagamentos).
   if (c.fakeEmail) out.push({ label: "E-mail a confirmar", tone: "warn", href: "#cadastro" });
-  else if (!c.hasLogin) out.push({ label: "Sem acesso ao portal: mandar convite", tone: "info", href: "#cadastro" });
+  else if (!c.hasLogin) out.push({ label: "Sem acesso ao portal", tone: "info", href: "#convite" });
   if (c.idleDays !== null) out.push({ label: `Sem vender há ${c.idleDays} dias`, tone: "warn", href: "#resumo" });
   const missing = [
     c.checklist.contractSigned === false && "contrato assinado",
