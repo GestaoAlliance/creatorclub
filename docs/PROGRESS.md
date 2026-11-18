@@ -5,35 +5,35 @@
 
 ## Onde estamos
 
-- **Fase atual:** regras da reunião com a Botanika (2026-10-27) entregues (CP-209 a CP-217). O sistema está no ar com
-  as 3 marcas em `creatorclub.app.br`; o que falta para o lançamento depende das pessoas abaixo.
-- **Próxima tarefa:** (Autentique na candidatura entregue em CP-228: falta colar a chave em Integrações) telas da equipe (revisão de 2026-10-29), um PR por item: ~~1) "Precisa de você" por função~~;
-  ~~2) etiqueta e declaração de conteúdo~~; ~~3) planilha dos envios~~; ~~4) WhatsApp do Álvaro
-  quando um envio vai para "Preparando" + lembrete de envio parado há 3 dias~~; ~~5) rastreio clicável e aviso "kit
-  enviado" para a creator~~; ~~6) lembrete da Juci no dia 15 com saques aprovados sem pagar~~. Olist depois do contrato.
-  Pendentes do responsável: endereço de envio de cada marca em Marcas (para as etiquetas); % de desconto da loja com o saldo (Marcas), e-mail da Mafe, conta SICOOB da Botanika em
-  Marcas e teste da remessa e do retorno na homologação (enviar um arquivo de retorno real para conferir), convite do login Leitura (Admin Botanika e Guilherme).
+- **Fase atual:** as 3 marcas no ar em `creatorclub.app.br`. Botanika pagando pelo Creator Club desde novembro
+  (conferência dos saques, D-PAYCHECK; pedidos de produtos pausados, D-PRODUCTPAUSE). Seletor de tempo em todas as
+  telas da equipe (D-PERIODPICK).
+- **Próxima tarefa:** perguntar ao responsável (opções em aberto: regra nova dos pedidos de produtos para religar a
+  pausa, que depende da Vanessa; cupons e taxas da VermeFree para a Ana).
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
-### O que depende de quem (conferido em produção em 2026-10-24)
+### O que depende de quem (conferido em produção em 2026-11-17)
 
 | Quem | O que | Onde |
 |---|---|---|
-| **Ana** (Gestão) | Botanika: 2 cupons sem tipo, 7 donas e 7 taxas a confirmar (E4.5) | Vendas → Cupons |
-| **Ana** | VermeFree: 37 cupons sem tipo, 31 donas e 45 taxas a confirmar (sem isso a VermeFree não calcula comissão, nem junho e agosto) | Vendas → Cupons (VermeFree) |
-| **Ana** | Revita Derma: 1 cupom sem tipo e 3 taxas a confirmar | Vendas → Cupons (Revita) |
-| **Ana** | Marcar "Conferi os números" na ficha de cada creator (libera o saldo de abertura, D-ANAREVIEW) | Ficha da creator |
-| **Juci** (Pagamento) | Aprovar o saldo de abertura (nenhum aprovado ainda; pagamentos antigos importados: Botanika 34, VermeFree 18) e dizer onde estão as NFs antigas (I7) | Pagamentos → Abertura |
-| **Responsável** | Instalar `docs/sheets/leitura-vermefree.gs` na conta Google da VermeFree | Apps Script |
-| **Responsável** | WhatsApp das marcas (M2.2, D-WHATSAPP): `N8N_NOTICES_URL` e `N8N_NOTICES_SECRET` na Vercel, instância da Evolution de cada marca em Marcas, WhatsApp de quem é da Gestão em Equipe (resumo semanal), ligar o fluxo "[Creator Club] Avisos WhatsApp" no n8n | Vercel, Marcas, Equipe, n8n |
-| **Responsável** | Conta SICOOB da Botanika (convênio CNAB 240, agência, conta) e teste da remessa na homologação (D-REMESSA) | Marcas, Internet Banking SICOOB |
-| **Responsável** | Login "Leitura" de Admin Botanika e Guilherme (D-VIEWER) e convites de Álvaro (Envio) e Juci (Pagamento), só Botanika | Equipe |
-| **Responsável** | Logo de cada marca (nenhuma tem; aparece na tela de entrar e no ícone do app) | Configurações → Marcas |
-| **Responsável** | Semana de teste (U1): convidar Juci (Pagamento) e Álvaro (Envio); 3 a 5 creators de teste no portal; divulgar `/inscricao` e os links das hunters (`/i/codigo`) | Equipe, Hunters |
-| **Responsável** | Revisar os textos de contrato e termo (Botanika, VermeFree e Revita; de preferência com advogado); início do contrato das UGC nas fichas | Contratos, Termo |
-| **Responsável** | Fazer um dump privado do `creator-hub` antigo (sem backup) | Supabase antigo |
+| **Fátima** (Gestão) | Botanika: clicar em Conferido na Karynne e na Anna Machado (Pagamentos CPF); acompanhar os saques de outubro (pedido até o dia 22, Pix de 20 a 25) | Pagamentos |
+| **Lorena, Juliana, Barbieri, Giovanna** (creators) | Cadastrar a chave Pix no pedido de saque (sem ela o saque não sai) | Portal, aba Saque |
+| **Vanessa** | Regra nova dos pedidos de produtos (45 dias, meta, produtos por faixa) para religar a pausa da Botanika | Grupo IA & Tecnologia |
+| **Ana** (Gestão) | Botanika: 7 donas de cupom a confirmar; "Conferi os números" em 26 ativas | Vendas → Cupons; ficha |
+| **Ana** | VermeFree: 40 cupons sem tipo (25 já usados em pedidos), 31 donas e 45 taxas a confirmar; "Conferi os números" em 65 ativas (sem isso a VermeFree não calcula comissão) | Vendas → Cupons (VermeFree) |
+| **Guilherme** (VermeFree) | Comprovantes dos pagamentos jul–set e conta SICOOB da VermeFree | Grupo |
+| **Responsável** | Convite "Leitura" (VIEWER) de Admin Botanika e Guilherme (nenhum criado ainda) | Equipe |
+| **Responsável** | Botanika: código do serviço da nota (17.06) e logo; remetente das etiquetas nas 3 marcas | Configurações → Marcas |
+| **Responsável** | VermeFree e Revita: conta SICOOB, e-mail do financeiro, WhatsApp dos avisos (instância da Evolution), termo publicado | Configurações → Marcas, Termo |
+| **Responsável** | Autentique (contrato na aprovação): chave da API em Integrações (Botanika e VermeFree desconectados) | Configurações → Integrações |
+| **Responsável** | Convite de Pagamento "Vanessa Pagamentos" ainda aberto na Botanika (ela já tem o papel por outro convite): revogar | Equipe |
+| **Responsável** | Revisar os textos de contrato e termo (de preferência com advogado); dump privado do `creator-hub` antigo | Contratos, Termo, Supabase antigo |
+
+Já resolvido desde 24/10: aberturas de saldo aprovadas nas 3 marcas; Botanika sem cupom sem tipo e sem taxa a
+confirmar; SICOOB e WhatsApp da Botanika; Envio (Álvaro, Analise) e Pagamento (Financeiro, Vanessa) com acesso;
+Fátima com acesso nas 3 marcas; Shopify ligada nas 3.
 
 ### Bloqueios e riscos
 - Vercel no plano Pro (reativado em 2026-10-11 depois de suspensão; prévias seguem desligadas, D-PREVIEW).
@@ -314,6 +314,28 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-345 — 2026-11-17 — Encerrada libera tudo (D-ENDRELEASE)
+- Pedido do responsável (Juliana Esposito, encerrada, com R$ 12,47 de setembro presos pelo mínimo de R$ 100):
+  creator encerrada (DEACTIVATED) tem toda a comissão liberada até o último mês fechado, sem o mínimo.
+- `releasedThroughFor` considera o último mês fechado para quem está encerrada (vale para saldo, nota, portal,
+  conferência e pagamentos). O mês corrente continua esperando o fechamento.
+- Em produção muda só a Juliana (R$ 180,70 → R$ 193,17; a conferência de R$ 180,70 fica velha e pede conferir de
+  novo). O cadastro duplicado LARILESSA (arquivado) fica zerado.
+- Teste em `integration/end-release.test.ts`.
+
+### CP-344 — 2026-11-17 — Preparação do Pix de 20/11 da Botanika (produção)
+- Pedidos de saque: só Ludimilla (R$ 1.014,21, em análise, conferida) e Joingle (R$ 325,17, aprovada). Prazo até 22/11.
+- Sem login (não conseguem pedir): Fernanda, Victoria, Ana Luiza, Nathalia, Ruy, Robson, Giovanna, Ludmilla Rangel,
+  Cristiane, Karynne, Anna Machado, Thiago, Barbieri e Larissa: a Fátima cria o acesso pela ficha (D-ACCESSDIRECT).
+- Juliana Esposito, Giovanna, Thiago e Barbieri estavam como CNPJ sem CNPJ no cadastro: passam a receber como pessoa
+  física (recibo), por SQL com AuditLog (decisão do responsável). Barbieri também não tem CPF: pedir.
+- Victoria: o último registro da conferência é "em análise"; com o ajuste (R$ 8.548,52) falta clicar em Conferido.
+- Joingle: o saque aprovado em 16/11 era só um teste, com a nota que ela já cancelou (Vanessa). Recusado por SQL
+  (motivo: "A nota anexada foi cancelada. Envie uma nota nova de R$ 325,17 e peça o saque de novo."), com AuditLog e
+  sem o aviso automático (a Fátima fala com ela). A conferência de R$ 325,17 continua valendo.
+- Remessa do SICOOB nunca gerada: testar com a Ludimilla antes (a Joingle refaz o pedido) (decisão do responsável); se o banco aceitar,
+  as outras vão na remessa do dia 20.
 
 ### CP-343 — 2026-11-17 — Ajustes da conferência: clique duplo e "sem chave Pix" (D-PAYCHECK)
 - "Conferido" (e "Mandar para o Pedro") não grava de novo quando o último registro da creator no mês já é o mesmo

@@ -64,12 +64,23 @@ export async function releaseAmountsByMonth(prisma: Db, creatorIds: string[], ti
   return out;
 }
 
-/** Último mês liberado de cada creator (`null` = nenhum). */
-export async function releasedThroughFor(prisma: Db, creatorIds: string[]): Promise<Map<string, string | null>> {
+/**
+ * Último mês liberado de cada creator (`null` = nenhum). D-ENDRELEASE (responsável, 2026-11-17): creator encerrada
+ * (DEACTIVATED) tem toda a comissão liberada até o último mês fechado, sem o mínimo (ela não vai mais acumular vendas).
+ */
+export async function releasedThroughFor(prisma: Db, creatorIds: string[], now = new Date()): Promise<Map<string, string | null>> {
   const out = new Map<string, string | null>(creatorIds.map((id) => [id, null]));
   if (creatorIds.length === 0) return out;
-  const rows = await prisma.commissionRelease.groupBy({ by: ["creatorId"], where: { creatorId: { in: creatorIds } }, _max: { month: true } });
+  const [rows, ended] = await Promise.all([
+    prisma.commissionRelease.groupBy({ by: ["creatorId"], where: { creatorId: { in: creatorIds } }, _max: { month: true } }),
+    prisma.creator.findMany({ where: { id: { in: creatorIds }, status: "DEACTIVATED" }, select: { id: true, brand: { select: { timezone: true } } } }),
+  ]);
   for (const r of rows) out.set(r.creatorId, r._max.month);
+  for (const c of ended) {
+    const closed = lastClosedMonth(now, c.brand.timezone);
+    const cur = out.get(c.id) ?? null;
+    if (!cur || closed > cur) out.set(c.id, closed);
+  }
   return out;
 }
 
@@ -109,7 +120,7 @@ export async function creatorBalance(prisma: Db, creator: { id: string; brandId:
   const [entries, open, released] = await Promise.all([
     ledgerEntriesWithMonth(prisma, [creator.id], timeZone),
     openReservations(prisma, { creatorId: creator.id, brandId: creator.brandId }),
-    releasedThroughFor(prisma, [creator.id]),
+    releasedThroughFor(prisma, [creator.id], now),
   ]);
   return computeBalance(entries, open, now, { releasedThrough: released.get(creator.id) ?? null });
 }
@@ -122,7 +133,7 @@ export async function nfSnapshot(prisma: Db, creator: { id: string; brandId: str
   const [entries, open, released] = await Promise.all([
     ledgerEntriesWithMonth(prisma, [creator.id], timeZone),
     openReservations(prisma, { creatorId: creator.id, brandId: creator.brandId }),
-    releasedThroughFor(prisma, [creator.id]),
+    releasedThroughFor(prisma, [creator.id], now),
   ]);
   const releasedThrough = released.get(creator.id) ?? null;
   const balance = computeBalance(entries, open, now, { releasedThrough });
