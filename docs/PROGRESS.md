@@ -317,6 +317,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-358 — 2026-11-18 — Código 17.06 e descrição da nota na VermeFree e na Revita (produção)
+
+- Responsável: a VermeFree e a Revita (mesma empresa, Sintonia Pharma) usam os mesmos dados de nota da Botanika:
+  código **17.06** e a mesma descrição do serviço. Gravado com `brand.update` no histórico.
+- Falta: e-mail do financeiro e conta SICOOB (convênio, agência, conta) da Sintonia Pharma, pedidos ao Guilherme no grupo.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-357 — 2026-11-18 — Candidatas mais simples (D-CANDSIMPLE)
 
 - `admin/candidatas/table.tsx`: 3 quadros de ação no lugar de 6. `view.tsx`: busca + "Filtros" recolhido (origem virou
