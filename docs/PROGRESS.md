@@ -317,6 +317,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-359 — 2026-11-18 — Ensaio do saque da VermeFree (5/12) e ajustes em produção
+
+- Conferido creator por creator: liberado até outubro R$ 13.475,74 (Victoria R$ 9.267,69; Ludimilla R$ 1.163,65;
+  Julia R$ 1.000,94…). Prontas para pedir: Ludimilla, Julia, Flavia Teles, Robson. Faltam login, chave Pix ou CNPJ
+  nas outras (lista na conversa, para a Fátima).
+- Decisões do responsável (feito em produção, com histórico): Giovanna e Juliana Esposito passam a PF na VermeFree
+  (iguais à Botanika); os outros sem CNPJ (Osvaldo, Thays, Flavia Donato, Renato, Orlando) a Fátima pergunta.
+  Joingle: julho liberado pela regra da época (influencer sem mínimo, por vendas; `commission.release_manual`),
+  para o disponível não ficar −R$ 62,63 (já pago fora do sistema).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-358 — 2026-11-18 — Código 17.06 e descrição da nota na VermeFree e na Revita (produção)
 
 - Responsável: a VermeFree e a Revita (mesma empresa, Sintonia Pharma) usam os mesmos dados de nota da Botanika:
