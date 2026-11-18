@@ -20,7 +20,7 @@
 |---|---|---|
 | **Fátima** (Gestão) | Botanika: clicar em Conferido na Karynne e na Anna Machado (Pagamentos CPF); acompanhar os saques de outubro (pedido até o dia 22, Pix de 20 a 25) | Pagamentos |
 | **Lorena, Juliana, Barbieri, Giovanna** (creators) | Cadastrar a chave Pix no pedido de saque (sem ela o saque não sai) | Portal, aba Saque |
-| **Vanessa** | Regra nova dos pedidos de produtos (45 dias, meta, produtos por faixa) para religar a pausa da Botanika | Grupo IA & Tecnologia |
+| **Responsável** | Botanika: regra dos produtos confirmada em 18/11 (tabela do mês, D-TIERKIT); falta só dizer quando religar os pedidos (a pausa de 17/11 segue ligada) | Configurações → Marcas |
 | **Ana** (Gestão) | Botanika: 7 donas de cupom a confirmar; "Conferi os números" em 26 ativas | Vendas → Cupons; ficha |
 | **Ana** | VermeFree: 40 cupons sem tipo (25 já usados em pedidos), 31 donas e 45 taxas a confirmar; "Conferi os números" em 65 ativas (sem isso a VermeFree não calcula comissão) | Vendas → Cupons (VermeFree) |
 | **Guilherme** (VermeFree) | Comprovantes dos pagamentos jul–set e conta SICOOB da VermeFree | Grupo |
@@ -314,6 +314,21 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-347 — 2026-11-18 — Conferência completa dos produtos liberados (regra dos 45 dias)
+
+- **Pedido do responsável:** conferir a regra "dos 45 dias" que libera produto pelas vendas.
+- **Conferido em produção:** os 28 produtos liberados por venda (Botanika e VermeFree) batem com a regra; nenhum a mais,
+  nenhum faltando. Botanika: meta de 45 dias só de 27 a 31/10 (Julia, Victoria, Israel); desde novembro, tabela do mês
+  (D-TIERKIT), com a data de entrada de cada uma conferida para os 3 primeiros meses (R$ 500). VermeFree: meta de 45/30
+  dias (Vanessa Ludwig). 2 envios saíram; 17 produtos esperam a escolha (pausa de 17/11).
+- **Decisões do responsável:** a tabela do mês está certa na Botanika; os produtos já liberados ficam valendo; o produto
+  dos pedidos de novembro cancelados em 17/11 sem devolução (Julia e Anna Luiza) volta para elas (feito em produção,
+  `kit.returned` no histórico; o pedido 7826 da Anna no Olist precisa ser cancelado lá).
+- **Corrigido:** a proposta da prospecção Hunter da Botanika ainda prometia "R$ 1.000 nos primeiros 45 dias"; agora fala
+  da tabela do mês ("Nos 3 primeiros meses, ao vender R$ 500 no mês, você recebe mais um; depois, quanto mais vende, mais
+  produtos ganha (até 4 por mês)"). Teste em `test/prospect.test.ts`.
+- **Próxima:** religar os pedidos de produtos da Botanika quando o responsável mandar.
 
 ### CP-346 — 2026-11-18 — Varredura dos saques da Botanika e comissão que entra depois do fechamento (D-LATERELEASE)
 - Varredura completa desde a 1ª venda (23/06): atribuição refeita nos 4.203 pedidos com cupom (1.641 com dona, todos

@@ -36,6 +36,9 @@ describe("prospecção (U6, D-PROSPECT)", () => {
     const b = prospectMessages({ slug: "botanika", prospectFirstMessage: null, prospectProposalMessage: null });
     expect(b.custom).toBe(false);
     expect(b.proposal).toContain("1 suplemento para dar início");
+    // D-TIERKIT: a proposta da Botanika fala da tabela do mês, não da meta antiga de 45 dias.
+    expect(b.proposal).toContain("ao vender R$ 500 no mês");
+    expect(b.proposal).not.toContain("45 dias");
     const other = prospectMessages({ slug: "revita-derma", prospectFirstMessage: null, prospectProposalMessage: null });
     expect(other.proposal).not.toMatch(/suplement/i);
     const text = fillProspectMessage(`${b.first}\n${b.proposal}`, { me: "Ana Gestão", brand: "Botanika", link: "https://cc/i/ana", discountBps: 500, commissionBps: 1500 });
