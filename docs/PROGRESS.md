@@ -317,6 +317,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-354 — 2026-11-18 — Início da equipe pelo papel, com "O que fazer hoje" no topo (D-HOMESIMPLE)
+
+- `components/staff/dashboard-view.tsx`: a fila virou o bloco principal ("O que fazer hoje"); `DashboardView` recebe o
+  papel (`gestao` quem edita creators; `pagamento` o resto de quem vê dinheiro). Gestão: números do período e gráfico;
+  Pagamento: caixa das comissões. `OverviewCards` (saúde, retorno, movimentos, tops) foi para Desempenho → Visão
+  geral (`?aba=geral`, só para quem vê dinheiro). O Mês a mês saiu do Início. No computador, o Início caiu de
+  ~5.400 px para ~2.000 px (Gestão) e ~1.800 px (Pagamento).
+- **Falta (D-REVIEW):** OK do responsável nas capturas antes do merge.
+- **Próxima:** perguntar (Envios, Candidatas, ou pausar para ouvir a equipe).
+
 ### CP-353 — 2026-11-18 — Ficha da creator mais simples e fim do "números a conferir" (D-CREATORSIMPLE)
 
 - **Achado em produção:** em 18/11 a Fátima mandou 7 convites por link (nenhum "acesso com senha"), e a ficha não

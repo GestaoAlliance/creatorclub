@@ -12,6 +12,11 @@ import { instagramRanking } from "@/lib/instagram/ranking";
 import { monthSalesByCreator, ugcBoard } from "@/lib/performance/board";
 import { staffContext } from "@/lib/staff/context";
 import { PerformanceBoard } from "./board";
+import Link from "next/link";
+import { OverviewCards } from "@/components/staff/dashboard-view";
+import { staffDashboard } from "@/lib/staff/dashboard";
+import { baseHealth } from "@/lib/staff/insights";
+import { productReport } from "@/lib/reports/products";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +39,34 @@ export default async function DesempenhoPage({ searchParams }: { searchParams: P
   const sales = await monthSalesByCreator(db(), brand.id, tz, now, range);
   const [ig, ugc, origin] = await Promise.all([instagramRanking(db(), actor, brand.id, sales, now), ugcBoard(db(), actor, brand.id, sales, now), originSummary(db(), actor, brand.id, sales, range)]);
   const initial = sp.aba === "ugc" || sp.aba === "origem" ? sp.aba : "instagram";
+  // D-HOMESIMPLE: o que saiu do Início (saúde da base, retorno, movimentos, tops) fica em "Visão geral".
+  const money = can(actor.grants, "money.view", brand.id);
+  const geral = money ? await (async () => {
+    const [d, health, products] = await Promise.all([
+      staffDashboard(db(), brand.id, period, ""),
+      baseHealth(db(), brand.id, "", range),
+      productReport(db(), brand.id, period, "creators"),
+    ]);
+    return { d, health, products };
+  })() : null;
+  const base = `/admin/desempenho${period.key ? `?p=${encodeURIComponent(period.key)}&` : "?"}`;
+  if (sp.aba === "geral" && geral) {
+    return (
+      <GlassLight className="dash flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-semibold tracking-tight">Visão geral · {periodPhrase(pickPeriod(period.key ?? null, today))}</h1>
+          <span className="flex flex-wrap items-center gap-2">
+            <PeriodPicker value={period.key ?? ""} today={today} />
+            <Link href={`${base}aba=instagram`} className={ui.ghostSm}>Instagram, UGC e origem →</Link>
+          </span>
+        </div>
+        <OverviewCards d={geral.d} health={geral.health} program={geral.products.program} productsWithoutCost={geral.products.productsTotal - geral.products.productsWithCost} />
+      </GlassLight>
+    );
+  }
   return (
     <GlassLight className="dash flex flex-col gap-4">
+      {geral && <Link href={`${base}aba=geral`} className={`${ui.ghostSm} self-end`}>Visão geral do período (saúde da base, retorno, movimentos, tops) →</Link>}
       <PerformanceBoard
         brandName={brand.name}
         phrase={periodPhrase(pickPeriod(period.key ?? null, today))}

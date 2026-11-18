@@ -58,19 +58,19 @@ export function Stat({ label, value, change, hint }: { label: string; value: Rea
  * "Sua fila" (regra em `needsFor`, D-NEEDSAREA): coluna à direita que acompanha a rolagem (no celular, em cima).
  * O urgente vem em cartões vermelhos; o resto em lista por área, cada linha com o atalho para a tela.
  */
-function QueueRail({ h }: { h: StaffHome }) {
+function QueueRail({ h, brandName }: { h: StaffHome; brandName: string }) {
   const { readOnly, areas } = needsFor(h);
   const urgent = areas.flatMap((a) => a.items.filter((i) => i.urgent).map((i) => ({ ...i, area: a.area })));
   const total = areas.reduce((n, a) => n + a.items.length, 0);
   return (
-    <aside aria-label={readOnly ? "Pendências da equipe" : "Sua fila"} className="glass flex flex-col gap-4 rounded-[28px] p-5 xl:sticky xl:top-6">
+    <section aria-label={readOnly ? "Pendências da equipe" : "O que fazer hoje"} className="glass flex flex-col gap-4 rounded-[28px] p-5 md:p-6">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold">{readOnly ? "Pendências da equipe" : "Sua fila"}</h2>
+        <h1 className="text-xl font-semibold tracking-tight">{readOnly ? "Pendências da equipe" : "O que fazer hoje"} <span className="text-sm font-normal text-stone-500">· {brandName}</span></h1>
         <span className="text-xs text-stone-500">{total === 0 ? "tudo em dia" : `${total} ${total === 1 ? "assunto" : "assuntos"}`}</span>
       </div>
-      {total === 0 && <p className={ui.muted}>Nada esperando por você agora.</p>}
+      {total === 0 && <p className={ui.muted}>Nada esperando por você agora. 🎉</p>}
       {urgent.length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-2 md:grid-cols-2">
           {urgent.map((i) => (
             <li key={i.label}>
               <Link href={i.href} className="group flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-3 transition-colors hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:hover:bg-red-950/60">
@@ -105,7 +105,7 @@ function QueueRail({ h }: { h: StaffHome }) {
           </div>
         );
       })}
-    </aside>
+    </section>
   );
 }
 
@@ -353,44 +353,56 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
 }
 
 
-/** Início com o dashboard (M0.0.4, modelo da referência), para quem vê dinheiro na marca. */
+/**
+ * Início da marca para quem vê dinheiro. D-HOMESIMPLE (responsável, 2026-11-18): primeiro "O que fazer hoje" (a fila
+ * da pessoa); depois, pelo papel: Gestão e super admin veem os números do mês e o gráfico; Pagamento vê a caixa das
+ * comissões. Saúde da base, retorno, movimentos e tops ficam em Desempenho; o Mês a mês, em Pagamentos → Relatórios.
+ */
 export function DashboardView({
   d,
   h,
   category,
   brandName,
-  health = null,
   cash = null,
-  program = null,
-  productsWithoutCost = 0,
   periodKey = "",
   today = "",
-  monthly = null,
+  role,
 }: {
-  monthly?: ReactNode;
   periodKey?: string;
   today?: string;
-  d: StaffDashboard;
+  d: StaffDashboard | null;
   h: StaffHome;
   category: DashCategory;
   brandName: string;
-  health?: BaseHealth | null;
   cash?: Cashflow | null;
-  program?: ProductReport["program"];
-  productsWithoutCost?: number;
+  role: "gestao" | "pagamento";
 }) {
-  const k = d.kpis;
-  const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
-    <GlassLight className="dash grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="@container order-2 flex min-w-0 flex-col gap-6 xl:order-1">
+    <GlassLight className="dash @container flex min-w-0 flex-col gap-6">
+      <QueueRail h={h} brandName={brandName} />
+      {role === "gestao" && d && <MonthNumbers d={d} category={category} periodKey={periodKey} today={today} />}
+      {role === "pagamento" && cash && (
+        <>
+          <CashCard c={cash} />
+          <Link href="/admin/pagamentos/cnpj" className={`${ui.link} text-sm`}>Abrir Pagamentos →</Link>
+        </>
+      )}
+    </GlassLight>
+  );
+}
+
+/** Os números do mês (vendas, comissão, creators vendendo, produtos) e o gráfico por dia. */
+function MonthNumbers({ d, category, periodKey, today }: { d: StaffDashboard; category: DashCategory; periodKey: string; today: string }) {
+  const k = d.kpis;
+  return (
+    <>
       {/* D-LIQUIDHOME: arte da marca atrás (cores do banco) e os números em placas de vidro fosco por cima. */}
       <section className="relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_26px_60px_-30px_var(--brand)] md:p-6">
         <div aria-hidden className="brand-art absolute inset-0" />
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_-20%,rgb(255_255_255/0.22),transparent_60%)]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight drop-shadow-sm">Início da {brandName}</h1>
+            <h2 className="text-lg font-semibold leading-tight tracking-tight drop-shadow-sm">Números do período</h2>
             <p className="text-sm text-white/80">
               {dmy(d.period.from)} a {dmy(d.period.to)}, comparado com {dmy(d.previous.from)} a {dmy(d.previous.to)}
             </p>
@@ -422,20 +434,22 @@ export function DashboardView({
           <SalesChart days={d.days} previous={d.prevDays} bands={d.campaigns} />
         </div>
       </Card>
+      <Link href={`/admin/desempenho?aba=geral${periodKey ? `&p=${encodeURIComponent(periodKey)}` : ""}`} className={`${ui.link} text-sm`}>Mais números (saúde da base, retorno, movimentos, tops) em Desempenho →</Link>
+    </>
+  );
+}
 
+/**
+ * D-HOMESIMPLE: o que saiu do Início, em Desempenho → Visão geral: saúde da base, retorno do programa, movimentos e
+ * os tops do período.
+ */
+export function OverviewCards({ d, health, program, productsWithoutCost }: { d: StaffDashboard; health: BaseHealth | null; program: ProductReport["program"] | null; productsWithoutCost: number }) {
+  const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
+  return (
+    <div className="@container flex min-w-0 flex-col gap-6">
       {health && <HealthCard h={health} />}
-
-      {(program || cash) && (
-        <div className={`grid gap-6 ${program && cash ? "@3xl:grid-cols-2" : ""}`}>
-          {program && <ReturnCard p={program} missing={productsWithoutCost} />}
-          {cash && <CashCard c={cash} />}
-        </div>
-      )}
-
-      {monthly}
-
+      {program && <ReturnCard p={program} missing={productsWithoutCost} />}
       <MovementsCard d={d} h={health} />
-
       <div className="grid gap-6 @3xl:grid-cols-2">
         <TopCreatorsCard d={d} />
         <Card title="Top produtos com cupom de creator">
@@ -465,10 +479,6 @@ export function DashboardView({
           {d.giftUnits > 0 && <p className={`${ui.hint} mt-3`}>Fora do ranking: {d.giftUnits} brindes enviados junto com os pedidos.</p>}
         </Card>
       </div>
-      </div>
-      <div className="order-1 xl:order-2">
-        <QueueRail h={h} />
-      </div>
-    </GlassLight>
+    </div>
   );
 }

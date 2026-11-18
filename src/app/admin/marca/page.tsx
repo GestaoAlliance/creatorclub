@@ -9,19 +9,15 @@ import { scopedActor, staffContext } from "@/lib/staff/context";
 import { staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
 import { staffPeriod } from "@/lib/staff/period";
 import { staffHome } from "@/lib/staff/home";
-import { baseHealth, cashflow } from "@/lib/staff/insights";
-import { productReport } from "@/lib/reports/products";
-import { startOfLocalDay, nextDayKey } from "@/domain";
+import { cashflow } from "@/lib/staff/insights";
 import { onlyTikTok } from "@/lib/staff/nav";
-import { MonthlyBoard } from "@/components/staff/monthly-board";
-import { monthlyRange, payMonthly } from "@/lib/payouts/monthly";
 
 export const dynamic = "force-dynamic";
 
 const CATEGORIES: DashCategory[] = ["INFLUENCER", "UGC", "PRESCRITOR"];
 
-// Início dentro de uma marca (A1, D-ALLIANCE). Quem vê dinheiro: o dashboard (M0.0.4, modelo da referência) com o que
-// está esperando por você em cima. Os outros papéis (Envio, Hunter): os cartões do que cada um tem para fazer.
+// Início dentro de uma marca (A1, D-ALLIANCE; D-HOMESIMPLE). Quem vê dinheiro: "O que fazer hoje" e, pelo papel, os
+// números do mês (Gestão) ou a caixa (Pagamento). Os outros papéis (Envio, Hunter): os cartões do que cada um tem para fazer.
 export default async function BrandHomePage({ searchParams }: { searchParams: Promise<{ p?: string; periodo?: string; de?: string; ate?: string; tipo?: string }> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/marca");
@@ -34,14 +30,11 @@ export default async function BrandHomePage({ searchParams }: { searchParams: Pr
   const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
   const category = CATEGORIES.find((c) => c === sp.tipo) ?? "";
   const period = await staffPeriod(sp, tz);
-  const [d, health, cash, products, monthly] = await Promise.all([
-    staffDashboard(db(), brand.id, period, category),
-    baseHealth(db(), brand.id, category, { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) }),
-    can(actor.grants, "withdrawals.view", brand.id) ? cashflow(db(), brand.id) : Promise.resolve(null),
-    productReport(db(), brand.id, period, "creators"),
-    // D-PERIODPICK: o Mês a mês com CNPJ e CPF juntos (só quem vê pagamentos).
-    payMonthly(db(), scopedActor(actor, brand.id), brand.id, null, monthlyRange(period)),
+  // D-HOMESIMPLE: Gestão e super admin (editam creators) veem os números do mês; o Pagamento, a caixa das comissões.
+  const role = can(actor.grants, "creators.edit", brand.id) ? "gestao" : "pagamento";
+  const [d, cash] = await Promise.all([
+    role === "gestao" ? staffDashboard(db(), brand.id, period, category) : Promise.resolve(null),
+    role === "pagamento" && can(actor.grants, "withdrawals.view", brand.id) ? cashflow(db(), brand.id) : Promise.resolve(null),
   ]);
-  return <DashboardView d={d} h={h} category={category} brandName={brand.name} health={health} cash={cash} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} periodKey={period.key ?? ""} today={dayKey(new Date(), tz)}
-    monthly={monthly && <MonthlyBoard data={monthly} path="/admin/marca" selected={period.key?.startsWith("m:") ? period.key.slice(2) : null} />} />;
+  return <DashboardView d={d} h={h} category={category} brandName={brand.name} cash={cash} role={role} periodKey={period.key ?? ""} today={dayKey(new Date(), tz)} />;
 }
