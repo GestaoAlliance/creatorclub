@@ -30,7 +30,7 @@ function PostCard({ p, canRemove }: { p: ContentPost; canRemove: boolean }) {
       <div className="flex items-center gap-2.5">
         <Avatar name={p.creatorName} id={p.creatorId} />
         <div className="min-w-0 flex-1">
-          <Link href={`/admin/creators/${p.creatorId}`} className="block truncate text-sm font-semibold hover:underline">{p.creatorName}</Link>
+          <Link prefetch={false} href={`/admin/creators/${p.creatorId}`} className="block truncate text-sm font-semibold hover:underline">{p.creatorName}</Link>
           <span className="flex items-center gap-1.5 text-xs text-stone-500"><Net p={p.platform} className="size-3.5" /> {br(p.postedDay)} · {p.source === "INSTAGRAM" ? "detectado" : p.byStaff ? "registrado pela equipe" : "registrado por ela"}</span>
         </div>
         <a href={p.url} {...ext} aria-label="Abrir o post" className="grid size-8 place-content-center rounded-full text-stone-500 hover:bg-stone-500/10"><ExternalLink className="size-4" /></a>
@@ -79,7 +79,7 @@ function NotPosted({ people, whatsappOn, canSend }: { people: { id: string; name
         {people.map((p) => (
           <li key={p.id} className="flex items-center gap-2 rounded-xl px-1 py-1 text-sm hover:bg-stone-500/5">
             {canSend && <input type="checkbox" checked={picked.has(p.id)} onChange={() => setPicked((s) => { const n = new Set(s); if (n.has(p.id)) n.delete(p.id); else n.add(p.id); return n; })} aria-label={`Marcar ${p.name}`} className="size-4 accent-[var(--brand)]" />}
-            <Link href={`/admin/creators/${p.id}`} className="min-w-0 flex-1 truncate hover:underline">{p.name}</Link>
+            <Link prefetch={false} href={`/admin/creators/${p.id}`} className="min-w-0 flex-1 truncate hover:underline">{p.name}</Link>
             <span className={`shrink-0 text-xs tabular-nums ${p.days >= 30 ? "font-semibold text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}`}>{p.lastDay ? `${p.days} dias` : "nunca"}</span>
           </li>
         ))}
@@ -213,7 +213,7 @@ export function ContentBoard({ posts, mentions, notPosted, brandName, today, wha
                 {ranking.map((r, i) => (
                   <li key={r.creatorId} className="flex items-center gap-2 text-sm">
                     <span className="w-5 text-xs tabular-nums text-stone-400">{i + 1}º</span>
-                    <Link href={`/admin/creators/${r.creatorId}`} className="min-w-0 flex-1 truncate hover:underline">{names.get(r.creatorId)}</Link>
+                    <Link prefetch={false} href={`/admin/creators/${r.creatorId}`} className="min-w-0 flex-1 truncate hover:underline">{names.get(r.creatorId)}</Link>
                     <span className="shrink-0 text-right text-[11px] leading-tight text-stone-500">
                       {r.posts} post{r.posts === 1 ? "" : "s"}{r.avgLikes !== null ? ` · ♥ ${num(r.avgLikes)}` : ""}
                       <span className="block font-semibold text-stone-700 dark:text-stone-200">{shortBRL(r.salesPerPostCents)}/post</span>

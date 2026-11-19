@@ -25,7 +25,7 @@ function ApplicationDetail({ a, status, templates }: { a: Row; status: Applicati
             {a.duplicates.map((x) => (
               <li key={`${x.kind}-${x.id}`}>
                 {x.kind === "creator" ? (
-                  <Link href={`/admin/creators/${x.id}`} className="underline">{x.name} (já é creator)</Link>
+                  <Link prefetch={false} href={`/admin/creators/${x.id}`} className="underline">{x.name} (já é creator)</Link>
                 ) : (
                   <>{x.name} (candidata {STATUS_LABEL[x.status ?? ""] ?? ""})</>
                 )}{" "}

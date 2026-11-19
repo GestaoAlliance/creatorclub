@@ -395,7 +395,7 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
                     <Avatar name={c.name} id={c.id} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
-                        <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="truncate font-medium">{c.name}</Link>
+                        <Link prefetch={false} href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="truncate font-medium">{c.name}</Link>
                         {c.stats && <span className="shrink-0 text-sm font-semibold tabular-nums">{shortBRL(c.stats.sales30Cents)}</span>}
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -452,7 +452,7 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
                           <div className="flex min-w-0 items-center gap-3">
                             <Avatar name={c.name} id={c.id} />
                             <div className="min-w-0">
-                              <Link href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="block max-w-64 truncate font-medium hover:underline">{c.name}</Link>
+                              <Link prefetch={false} href={`/admin/creators/${c.id}`} onClick={nameClick(c.id)} className="block max-w-64 truncate font-medium hover:underline">{c.name}</Link>
                               <span className="flex items-center gap-2 text-xs text-stone-500">
                                 {c.instagram && <span className="inline-flex min-w-0 max-w-40 items-center gap-1 truncate"><InstagramIcon className="size-3 shrink-0 text-pink-600" />{c.instagram.replace(/^@/, "")}</span>}
                                 {c.tiktok && <TikTokIcon className="size-3 shrink-0" />}

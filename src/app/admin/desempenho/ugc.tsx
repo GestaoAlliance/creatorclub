@@ -106,7 +106,7 @@ export function UgcView({ cards, canEdit, phrase = "no mês" }: { cards: UgcCard
               ))}
             </ul>
           )}
-          <Link href={`/admin/creators/${open.id}`} className={`${ui.btnSm} self-start`}>Abrir a ficha</Link>
+          <Link prefetch={false} href={`/admin/creators/${open.id}`} className={`${ui.btnSm} self-start`}>Abrir a ficha</Link>
         </SidePanel>
       )}
       {msg && <MessageSheet ids={sel.map((c) => c.id)} names={sel.map((c) => c.name)} {...CHARGE} onClose={() => setMsg(false)} />}

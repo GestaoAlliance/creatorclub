@@ -170,7 +170,7 @@ export default async function SalesRankingPage({ searchParams }: { searchParams:
                         <span className="flex items-center gap-3">
                           <Avatar name={r.name} id={r.id} />
                           <span className="min-w-0">
-                            <Link href={`/admin/creators/${r.id}`} className="font-medium hover:underline">{r.name}</Link>
+                            <Link prefetch={false} href={`/admin/creators/${r.id}`} className="font-medium hover:underline">{r.name}</Link>
                             <span className="block text-[11px] text-stone-500">
                               {r.categories.map((c) => CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] ?? c).join(" · ") || "—"}{r.instagram ? ` · @${r.instagram}` : ""} · {pct(r.share)} das vendas
                             </span>

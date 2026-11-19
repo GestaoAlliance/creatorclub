@@ -80,7 +80,7 @@ export function OpeningBoard({ rows, brandName }: { rows: OpeningRow[]; brandNam
                   <div className="flex items-center gap-3">
                     <Avatar name={r.name} id={r.creatorId} />
                     <span className="min-w-0 flex-1">
-                      <Link href={`/admin/creators/${r.creatorId}`} className="block truncate font-semibold hover:underline">{r.name}</Link>
+                      <Link prefetch={false} href={`/admin/creators/${r.creatorId}`} className="block truncate font-semibold hover:underline">{r.name}</Link>
                       <span className="block text-xs text-stone-500">{r.paid ? "comprovantes registrados" : "sem comprovantes registrados"}{r.ready ? " · números conferidos" : ""}</span>
                     </span>
                   </div>
@@ -104,7 +104,7 @@ export function OpeningBoard({ rows, brandName }: { rows: OpeningRow[]; brandNam
             {done.map((r) => (
               <li key={r.creatorId} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <span className="min-w-0">
-                  <Link href={`/admin/creators/${r.creatorId}`} className="font-medium hover:underline">{r.name}</Link>
+                  <Link prefetch={false} href={`/admin/creators/${r.creatorId}`} className="font-medium hover:underline">{r.name}</Link>
                   <span className="block text-xs text-stone-500">
                     liberado em {day(r.unlockedAt!)} · já pago {r.openingCents === null ? "nada" : formatBRL(-r.openingCents)}
                     {r.openingNote && ` · ${r.openingNote.replace(/^Já pago antes do Creator Club: /, "")}`}

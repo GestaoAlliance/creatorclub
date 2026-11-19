@@ -289,7 +289,7 @@ function Panel({ s, now }: { s: ShipRow; now: number }) {
           </div>
         </div>
       )}
-      {s.canOpenProfile && <Link href={`/admin/creators/${s.creator.id}`} className={`${ui.ghostSm} self-start`}>Abrir a ficha</Link>}
+      {s.canOpenProfile && <Link prefetch={false} href={`/admin/creators/${s.creator.id}`} className={`${ui.ghostSm} self-start`}>Abrir a ficha</Link>}
     </>
   );
 }

@@ -150,7 +150,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
               <div className="liquid-tile grid grid-cols-2 items-end gap-x-6 gap-y-3 rounded-2xl px-4 py-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]">
                 <div className="col-span-2 min-w-0 sm:col-span-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{period.label ?? `${dmy(period.from)} a ${dmy(period.to)}`}</p>
-                  <Link href={`/admin/creators/${chosen.id}`} className="font-semibold hover:underline">{chosen.name}</Link>
+                  <Link prefetch={false} href={`/admin/creators/${chosen.id}`} className="font-semibold hover:underline">{chosen.name}</Link>
                 </div>
                 {[
                   { k: "Vendido", v: <M>{formatBRL(mine.salesCents)}</M> },

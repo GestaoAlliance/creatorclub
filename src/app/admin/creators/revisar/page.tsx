@@ -36,7 +36,7 @@ export default async function DataReviewPage() {
             {rows.map((r) => (
               <li key={r.id} className={ui.row}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link href={`/admin/creators/${r.id}`} className="min-w-0 break-words font-medium hover:underline">
+                  <Link prefetch={false} href={`/admin/creators/${r.id}`} className="min-w-0 break-words font-medium hover:underline">
                     {r.name}
                   </Link>
                   {r.status !== "ACTIVE" && <span className={badge.neutral}>inativa</span>}
@@ -60,13 +60,13 @@ export default async function DataReviewPage() {
                     {r.twins.map((t, i) => (
                       <span key={t.id}>
                         {i > 0 && ", "}
-                        <Link href={`/admin/creators/${t.id}`} className={ui.link}>{t.name}</Link> ({t.why})
+                        <Link prefetch={false} href={`/admin/creators/${t.id}`} className={ui.link}>{t.name}</Link> ({t.why})
                       </span>
                     ))}
                   </p>
                 )}
                 <div>
-                  <Link href={`/admin/creators/${r.id}`} className={ui.ghostSm}>Abrir ficha</Link>
+                  <Link prefetch={false} href={`/admin/creators/${r.id}`} className={ui.ghostSm}>Abrir ficha</Link>
                 </div>
               </li>
             ))}

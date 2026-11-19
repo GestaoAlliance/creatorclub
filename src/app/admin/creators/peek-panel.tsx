@@ -203,7 +203,7 @@ export function PeekPanel({ row, onClose, onPrev, onNext, daysAgo }: { row: Row;
         </div>
 
         <footer className="border-t border-stone-200/70 p-3 dark:border-white/10">
-          <Link href={`/admin/creators/${row.id}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_10px_24px_-12px_var(--brand)]">
+          <Link prefetch={false} href={`/admin/creators/${row.id}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_10px_24px_-12px_var(--brand)]">
             Abrir a ficha completa <ExternalLink className="size-4" />
           </Link>
         </footer>

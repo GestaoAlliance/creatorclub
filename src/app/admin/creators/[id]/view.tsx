@@ -354,7 +354,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               {st.months.length > 0 && (
                 <nav aria-label="Mês" className="flex flex-wrap gap-2">
                   {st.months.map((m) => (
-                    <Link key={m.month} href={`/admin/creators/${p.id}?mes=${m.month}`} className={m.month === st.month ? ui.pillOn : ui.pill}>
+                    <Link prefetch={false} key={m.month} href={`/admin/creators/${p.id}?mes=${m.month}`} className={m.month === st.month ? ui.pillOn : ui.pill}>
                       {m.month.slice(5)}/{m.month.slice(2, 4)} · {formatBRL(m.totalCents)}
                     </Link>
                   ))}
@@ -442,7 +442,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
                     Assinou o contrato {CONTRACT_KIND_LABEL[contract.signature.kind as ContractKind] ?? contract.signature.kind} (versão {contract.signature.version}) em {date(contract.signature.at)}.
                   </p>
                   <p className={ui.hint}>Registro: {contract.signature.name} · CPF {contract.signature.cpf}{contract.signature.ip ? ` · IP ${contract.signature.ip}` : ""}</p>
-                  {p.fiscal && <Link href={`/admin/creators/${p.id}/contrato`} className={`${ui.link} text-sm`}>Ler o contrato assinado</Link>}
+                  {p.fiscal && <Link prefetch={false} href={`/admin/creators/${p.id}/contrato`} className={`${ui.link} text-sm`}>Ler o contrato assinado</Link>}
                 </>
               ) : (
                 <p className="text-sm text-amber-700 dark:text-amber-300">

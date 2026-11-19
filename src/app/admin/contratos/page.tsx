@@ -39,7 +39,7 @@ export default async function ContratosPage() {
           <ul className={ui.list}>
             {o.waiting.map((w) => (
               <li key={w.id} className={`${ui.row} flex flex-wrap items-center justify-between gap-2`}>
-                <Link href={`/admin/creators/${w.id}`} className={ui.link}>{w.name}</Link>
+                <Link prefetch={false} href={`/admin/creators/${w.id}`} className={ui.link}>{w.name}</Link>
                 <span className={ui.hint}>{w.template ?? "sem versão de contrato"} · aprovada em {date(w.since)}</span>
               </li>
             ))}

@@ -132,7 +132,7 @@ function Pick({ c, picked, onPick }: { c: CandidateRow; picked: boolean; onPick:
 }
 
 function Actions({ c, onApprove, onReject }: { c: CandidateRow; onApprove: () => void; onReject: () => void }) {
-  if (c.creatorId) return <Link href={`/admin/creators/${c.creatorId}`} onClick={(e) => e.stopPropagation()} className={ui.ghostSm}>Abrir a ficha</Link>;
+  if (c.creatorId) return <Link prefetch={false} href={`/admin/creators/${c.creatorId}`} onClick={(e) => e.stopPropagation()} className={ui.ghostSm}>Abrir a ficha</Link>;
   if (!c.canDecide) return null;
   return (
     <span className="flex items-center justify-end gap-1.5">
@@ -287,7 +287,7 @@ function CandidatePanel({ c, mode, onMode, onClose, onPrev, onNext, pending }: {
         )}
         {c.creatorId && (
           <footer className="border-t border-stone-200/70 p-3 dark:border-white/10">
-            <Link href={`/admin/creators/${c.creatorId}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white">Abrir a ficha</Link>
+            <Link prefetch={false} href={`/admin/creators/${c.creatorId}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white">Abrir a ficha</Link>
           </footer>
         )}
       </aside>

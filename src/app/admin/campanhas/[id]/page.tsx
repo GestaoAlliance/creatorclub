@@ -107,7 +107,7 @@ export default async function CampanhaPage({ params }: { params: Promise<{ id: s
                 return (
                   <li key={s.creatorId} className={`liquid-tile flex flex-col items-center gap-1 rounded-2xl px-2 pb-3 text-center ${h}`}>
                     <span className="text-2xl">{MEDAL[i]}</span>
-                    <Link href={`/admin/creators/${s.creatorId}`} className="w-full truncate text-sm font-semibold hover:underline">{s.name}</Link>
+                    <Link prefetch={false} href={`/admin/creators/${s.creatorId}`} className="w-full truncate text-sm font-semibold hover:underline">{s.name}</Link>
                     <span className="text-xs tabular-nums text-stone-600 dark:text-stone-300">{shortBRL(s.salesCents)}</span>
                   </li>
                 );
@@ -127,7 +127,7 @@ export default async function CampanhaPage({ params }: { params: Promise<{ id: s
                     <span className="flex items-baseline justify-between gap-3 text-sm">
                       <span className="flex min-w-0 items-baseline gap-2">
                         <span className="w-7 shrink-0 text-xs tabular-nums text-stone-400">{s.position}º</span>
-                        <Link href={`/admin/creators/${s.creatorId}`} className="truncate hover:underline">{s.name}</Link>
+                        <Link prefetch={false} href={`/admin/creators/${s.creatorId}`} className="truncate hover:underline">{s.name}</Link>
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
                         <span className="tabular-nums">{formatBRL(s.salesCents)}</span>
