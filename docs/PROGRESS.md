@@ -317,6 +317,26 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-370 — 2026-11-19 — "Sem post" sai da fila de ações (D-NOPOSTQUEUE)
+
+- Produção: a fila tinha 76 "sem post" na Botanika e 46 na VermeFree (Instagram da VermeFree nem está ligado; ninguém
+  registra post à mão; nenhuma ação da fila foi marcada como feita na Botanika e na VermeFree).
+- Decisão do responsável: "Sem post" sai da fila; fica só a lista de Creators → Conteúdo, e ela só aparece com o
+  Instagram da marca ligado e sem quem vendeu nos últimos 30 dias. `queue.ts` sem o bloco; `contentBoard` com
+  `soldSince`. Teste: `test/integration/posts.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
+### CP-369 — 2026-11-19 — Janela de saque estendida até 22/11 na VermeFree e na Revita Derma
+
+- Pedido do responsável: igual à Botanika. Produção (AuditLog `brand.window_extended`): fim do pedido 15 → 22 só em
+  novembro (`windowExtensionMonth` 2026-11, fim normal 15; volta sozinho no dia 1). Pagamento continua de 20 a 25.
+- Motivo: a comissão atrasada da VermeFree foi liberada em 18/11 e a janela tinha fechado em 15/11.
+- Achado: 8 creators da VermeFree com saldo ainda não têm acesso ao portal (Victoria, Thays, Osvaldo, Giovanna,
+  Renato, Andreza, Deborah, Orlando); sem convite não conseguem pedir.
+- Contratos da VermeFree: nenhum texto publicado em Contratos; 3 aprovadas (Vanessa Ludwig, Jessica de Faria, Paula
+  Campozan) esperam. O responsável manda os textos validados.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-368 — 2026-11-19 — Conexões do banco esgotadas (pré-carregamento) e envios da VermeFree registrados
 
 - Produção, 19/11 14:10: "max client connections reached (200)" em ~21 fichas de creator no mesmo segundo. Causa: o

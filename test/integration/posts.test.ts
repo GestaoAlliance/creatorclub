@@ -64,15 +64,10 @@ describe("posts das creators (M4.6, D-POSTS, banco real)", () => {
     await expectDbError(prisma.creatorPost.create({ data: { brandId: brand.id, creatorId: creator.id, url: "http://x.com", platform: "OUTRO", postedDay: "2026-10-01", createdById: "x" } }), /CreatorPost_valid/);
   });
 
-  it("fila de ações: sem post há 15 dias (desde o início dos registros); post recente tira da fila", async () => {
+  it("D-NOPOSTQUEUE: \"Sem post\" não entra mais na fila de ações", async () => {
     const { brand, creator } = await seedBrand(prisma);
     await prisma.creator.update({ where: { id: creator.id }, data: { status: "ACTIVE", createdAt: T("2026-01-01T00:00:00Z") } });
-    const noPost = async (at: string) => (await actionQueue(prisma, brand.id, T(at))).filter((t) => t.kind === "NO_POST" && t.creatorId === creator.id);
-    expect(await noPost("2026-11-07T15:00:00Z")).toEqual([]); // 14 dias desde 24/10
-    expect((await noPost("2026-11-08T15:00:00Z"))[0]).toMatchObject({ detail: "nenhum post registrado há 15 dias", owner: "GESTAO" });
-    const ctx = { creatorId: creator.id, brand: { id: brand.id }, viewAs: null } as unknown as PortalContext;
-    await addPost(prisma, { kind: "creator", ctx, userId: "u" }, creator.id, { url: "https://instagram.com/p/z", postedDay: "2026-11-05" }, T("2026-11-08T15:00:00Z"));
-    expect(await noPost("2026-11-08T15:00:00Z")).toEqual([]);
+    expect((await actionQueue(prisma, brand.id, T("2026-11-20T15:00:00Z"))).filter((t) => t.kind === "NO_POST")).toEqual([]);
   });
 });
 
@@ -84,6 +79,7 @@ describe("conteúdo: posts registrados + detectados no Instagram (D-CONTENTBOARD
     const acc2 = await prisma.creatorAccount.create({ data: { name: "Bia Lima", email: `${randomUUID()}@x.com`, instagram: "bia" } });
     const c2 = await prisma.creator.create({ data: { brandId: brand.id, accountId: acc2.id, categories: ["INFLUENCER"], createdAt: T("2026-10-01T12:00:00Z") } });
     const now = T("2026-11-20T15:00:00Z");
+    await prisma.brand.update({ where: { id: brand.id }, data: { instagramUserId: "17841400000000" } });
     const tag = (username: string, postedAt: string, permalink: string, likes = 10) => prisma.instagramTag.create({ data: { brandId: brand.id, mediaId: randomUUID(), username, postedAt: T(postedAt), permalink, likes, comments: 2 } });
     await tag("maria.ex", "2026-11-10T15:00:00Z", "https://www.instagram.com/p/AAA/", 120);
     await tag("maria.ex", "2026-11-12T15:00:00Z", "https://www.instagram.com/reel/BBB/", 50);
@@ -100,8 +96,13 @@ describe("conteúdo: posts registrados + detectados no Instagram (D-CONTENTBOARD
     expect(b.notPosted.map((x) => x.id)).toEqual([c2.id]);
     expect((await lastPostDaysAll(prisma, brand.id, [creator.id, c2.id])).get(creator.id)).toBe("2026-11-12");
 
-    // Ações: quem marcou a marca não cai em "Sem post"; quem não postou cai.
-    const tasks = (await actionQueue(prisma, brand.id, now)).filter((t) => t.kind === "NO_POST").map((t) => t.creatorId);
-    expect(tasks).toEqual([c2.id]);
+    // D-NOPOSTQUEUE: quem vendeu nos últimos 30 dias sai de "Sem post"; sem o Instagram da marca ligado, a lista fica vazia.
+    const o2 = await prisma.order.create({ data: { brandId: brand.id, shopifyId: `gid://shopify/Order/${randomUUID()}`, name: "#y", createdAtShop: T("2026-11-15T18:00:00Z"), paidAt: T("2026-11-15T18:00:00Z"), financialStatus: "PAID", subtotalCents: 10_000, totalCents: 10_000, discountCodes: [], shopifyUpdatedAt: now } });
+    await prisma.orderAttribution.create({ data: { brandId: brand.id, orderId: o2.id, creatorId: c2.id, couponId: coupon.id, rateBps: 1500, rule: "FIRST_CREATOR_CODE", evidenceCodes: [] } });
+    expect((await contentBoard(prisma, gestao, brand.id, now)).notPosted).toEqual([]);
+    await prisma.orderAttribution.delete({ where: { orderId: o2.id } });
+    await prisma.brand.update({ where: { id: brand.id }, data: { instagramUserId: null } });
+    expect((await contentBoard(prisma, gestao, brand.id, now)).notPosted).toEqual([]);
+    expect((await actionQueue(prisma, brand.id, now)).filter((t) => t.kind === "NO_POST")).toEqual([]);
   });
 });

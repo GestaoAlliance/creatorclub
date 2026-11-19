@@ -41,7 +41,7 @@ const shortcode = (url: string) => url.match(/instagram\.com\/(?:p|reel|reels|tv
 
 export async function contentBoard(prisma: PrismaClient, actor: Actor | null, brandId: string, now = new Date()) {
   if (!actor || !can(actor.grants, "creators.view", brandId)) throw new PostError("Sem permissão.");
-  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true } });
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id: brandId }, select: { timezone: true, instagramUserId: true } });
   const tz = brand.timezone;
   const today = dayKey(now, tz);
   const since = addDaysKey(today, -CONTENT_DAYS);
@@ -118,9 +118,12 @@ export async function contentBoard(prisma: PrismaClient, actor: Actor | null, br
   // Quem não postou: parceiras ativas (não só UGC) sem post (registrado ou detectado) há 15+ dias.
   const last = new Map<string, string>();
   for (const p of posts) if (!last.has(p.creatorId) || p.postedDay > last.get(p.creatorId)!) last.set(p.creatorId, p.postedDay);
-  const older = await lastPostDaysAll(prisma, brandId, creators.map((c) => c.id), tz);
+  // D-NOPOSTQUEUE: só com o Instagram da marca ligado (sem ele o sistema não vê post nenhum) e fora quem vendeu nos
+  // últimos 30 dias (está ativa, mesmo que o post não tenha marcado a marca).
+  const older = brand.instagramUserId ? await lastPostDaysAll(prisma, brandId, creators.map((c) => c.id), tz) : new Map<string, string>();
+  const sold = brand.instagramUserId ? await soldSince(prisma, brandId, new Date(now.getTime() - 30 * 86_400_000)) : new Set<string>();
   const notPosted = creators
-    .filter((c) => c.status === "ACTIVE" && !c.awaitingContractAt && !isUgcOnly(c.categories as string[]))
+    .filter((c) => brand.instagramUserId !== null && c.status === "ACTIVE" && !c.awaitingContractAt && !isUgcOnly(c.categories as string[]) && !sold.has(c.id))
     .map((c) => {
       const lastDay = [last.get(c.id), older.get(c.id)].filter(Boolean).sort().at(-1) ?? null;
       const from = [lastDay ?? POSTS_SINCE, POSTS_SINCE, dayKey(c.createdAt, tz)].sort().at(-1)!;
@@ -131,6 +134,16 @@ export async function contentBoard(prisma: PrismaClient, actor: Actor | null, br
     .sort((a, b) => b.days - a.days);
 
   return { posts, mentions, notPosted, names: new Map(creators.map((c) => [c.id, c.account.name])) };
+}
+
+/** Creators da marca com pedido pago (não cancelado, não teste) desde `since`. */
+async function soldSince(prisma: PrismaClient, brandId: string, since: Date): Promise<Set<string>> {
+  const rows = await prisma.orderAttribution.findMany({
+    where: { brandId, order: { test: false, cancelledAt: null, financialStatus: { in: [...PAID_FINANCIAL] }, paidAt: { gte: since } } },
+    select: { creatorId: true },
+    distinct: ["creatorId"],
+  });
+  return new Set(rows.map((r) => r.creatorId));
 }
 
 /**
