@@ -210,13 +210,9 @@ export const HELP = {
     title: "Ajustes manuais",
     text: "Correções de saldo, sempre como um lançamento novo com o motivo. Nada é apagado do extrato.",
   },
-  "cp-resumo": {
-    title: "Resumo dos cupons",
-    text: "Quantas creators ativas já têm cupom, dona e taxa confirmados, e quantos cupons há de cada tipo.",
-  },
   "cp-abas": {
-    title: "Quadros e busca",
-    text: "Cada quadro abre uma lista: a conferir, de creator, promocionais, parados (60+ dias sem uso) e creators sem cupom. A busca acha cupom ou dona.",
+    title: "Lista de cupons",
+    text: "Todos os cupons numa lista só, com filtro de tipo (de creator, promocionais, parados). A busca acha cupom ou dona.",
   },
   "cp-conferir": {
     title: "Conferir um cupom",
@@ -288,7 +284,7 @@ export const TOURS: Record<TourScreen, HelpId[]> = {
   "equipe-candidatas": ["cand-abas", "cand-filtros", "cand-lista"],
   "equipe-creators": ["cr-filtros", "cr-lista"],
   "equipe-ficha": ["fi-vercomo", "fi-saldo", "fi-conferencia", "fi-cupons", "fi-contrato", "fi-extrato", "fi-taxa", "fi-ajustes"],
-  "equipe-cupons": ["cp-resumo", "cp-abas", "cp-conferir"],
+  "equipe-cupons": ["cp-conferir", "cp-abas"],
   "equipe-envios": ["en-aviso", "en-novo", "en-situacao", "en-cartao", "en-aprovar", "en-enviado"],
   "equipe-saques": ["sq-abas", "sq-cartao", "sq-pagar"],
   "equipe-desempenho": ["de-grupos", "de-cartoes"],

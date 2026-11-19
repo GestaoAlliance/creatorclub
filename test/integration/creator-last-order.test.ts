@@ -38,5 +38,8 @@ describe("último pedido e pendências na lista Creators (D-LASTORDER, D-CREATOR
       pendings: ["dona do cupom a confirmar", "taxa a confirmar"], // D-CREATORSIMPLE: sem "números a conferir"
     });
     expect(rows.get(other.id)).toMatchObject({ lastOrder: { name: "#ANTES", day: "2026-08-20" }, pendings: [] });
+    // D-COUPONSIMPLE: o cupom saiu da outra em 01/09, então ela está sem cupom de creator (filtro "Sem cupom").
+    expect(rows.get(a.creator.id)?.noCreatorCoupon).toBe(false);
+    expect(rows.get(other.id)?.noCreatorCoupon).toBe(true);
   });
 });

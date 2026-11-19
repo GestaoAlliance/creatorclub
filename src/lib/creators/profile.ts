@@ -141,6 +141,8 @@ export async function listCreators(prisma: PrismaClient, actor: Actor | null, br
       niches: c.account.niches,
       cpf: fiscal ? (c.account.cpf ?? null) : null,
       coupon: c.couponAssignments.find((a) => a.coupon.kind === "CREATOR")?.coupon.code ?? c.couponAssignments[0]?.coupon.code ?? null,
+      // D-COUPONSIMPLE: ativa sem cupom de creator (aviso e filtro "Sem cupom" em Creators; antes era um quadro de Cupons).
+      noCreatorCoupon: !c.couponAssignments.some((a) => a.coupon.kind === "CREATOR"),
       stats: money ? (({ lastPaidAt: _, ...v }) => ({ ...v, commissionCents: commissionBy.get(c.id) ?? 0 }))(stats.get(c.id) ?? empty()) : null,
       pendings: creatorPendings({
         status: c.status,
