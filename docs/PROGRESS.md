@@ -317,6 +317,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-371 — 2026-11-19 — Simulação do fechamento de 01/12 refeita com os dados de 19/11
+
+- Sem gravar nada (regra de `planReleases`, mínimo de R$ 100 de comissão). **Botanika:** 14 liberam (R$ 17.055,78;
+  Victoria R$ 9.279,78). **VermeFree:** 6 liberam (R$ 2.686,25). **Revita:** ninguém chega a R$ 100.
+- Perto do mínimo: Lorena Botanika R$ 99,44, Vanessa Stéfani R$ 89,28, Robson VF R$ 93,15, Andreza R$ 87,59.
+- Cadastro a acertar antes de 05/12 (mensagem para o grupo): Victoria sem acesso; Elaine Cunto PJ sem CNPJ/Pix/acesso;
+  Thays sem acesso e Pix; Flavia Nagliati sem Pix e CNPJ; Vanessa Ludwig sem Pix.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-370 — 2026-11-19 — "Sem post" sai da fila de ações (D-NOPOSTQUEUE)
 
 - Produção: a fila tinha 76 "sem post" na Botanika e 46 na VermeFree (Instagram da VermeFree nem está ligado; ninguém
