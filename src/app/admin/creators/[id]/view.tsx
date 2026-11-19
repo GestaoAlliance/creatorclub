@@ -343,7 +343,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
               <p className={ui.hint}>
                 {period.orders.total > period.orders.rows.length ? `Mostrando os ${period.orders.rows.length} mais recentes de ${period.orders.total}. ` : ""}
                 Os pedidos feitos no período (pagos, aguardando, estornados e cancelados); o total em cima conta só os pagos, pela data do pagamento.{" "}
-                <Link href={`/admin/vendas?creator=${p.id}${period.key ? `&p=${encodeURIComponent(period.key)}` : ""}#lista`} className={ui.link}>Abrir em Vendas</Link>
+                <Link href={`/admin/vendas/pedidos?creator=${p.id}${period.key ? `&p=${encodeURIComponent(period.key)}` : ""}#lista`} className={ui.link}>Abrir em Vendas</Link>
               </p>
             </Card>
             </>

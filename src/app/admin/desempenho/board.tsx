@@ -64,7 +64,7 @@ export function PerformanceBoard({ brandName, phrase, picker, ig, ugc, origin, i
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brandName}</p>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Desempenho</h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Redes e origem</h1>
               <p className="mt-1 max-w-2xl text-sm text-white/80">Instagram das creators, vídeos das UGC e de onde vêm as creators. Vendas e entradas {phrase}.</p>
             </div>
             {picker}

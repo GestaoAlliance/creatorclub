@@ -110,7 +110,7 @@ function QueueRail({ h, brandName }: { h: StaffHome; brandName: string }) {
 }
 
 /** Número principal: placa de vidro fosco sobre a arte da marca (D-LIQUIDHOME). O tamanho acompanha o cartão. */
-function HeroStat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
+export function HeroStat({ label, value, change, hint }: { label: string; value: ReactNode; change: number | null; hint: ReactNode }) {
   const up = change !== null && change > 0;
   const down = change !== null && change < 0;
   return (
@@ -356,7 +356,7 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
 /**
  * Início da marca para quem vê dinheiro. D-HOMESIMPLE (responsável, 2026-11-18): primeiro "O que fazer hoje" (a fila
  * da pessoa); depois, pelo papel: Gestão e super admin veem os números do mês e o gráfico; Pagamento vê a caixa das
- * comissões. Saúde da base, retorno, movimentos e tops ficam em Desempenho; o Mês a mês, em Pagamentos → Relatórios.
+ * comissões. Saúde da base, retorno, movimentos e tops ficam em Vendas, embaixo do ranking; o Mês a mês, em Pagamentos → Relatórios.
  */
 export function DashboardView({
   d,
@@ -434,7 +434,7 @@ function MonthNumbers({ d, category, periodKey, today }: { d: StaffDashboard; ca
           <SalesChart days={d.days} previous={d.prevDays} bands={d.campaigns} />
         </div>
       </Card>
-      <Link href={`/admin/desempenho?aba=geral${periodKey ? `&p=${encodeURIComponent(periodKey)}` : ""}`} className={`${ui.link} text-sm`}>Mais números (saúde da base, retorno, movimentos, tops) em Desempenho →</Link>
+      <Link href={`/admin/vendas${periodKey ? `?p=${encodeURIComponent(periodKey)}` : ""}`} className={`${ui.link} text-sm`}>Ranking de creators e mais números em Vendas →</Link>
     </>
   );
 }
@@ -443,15 +443,15 @@ function MonthNumbers({ d, category, periodKey, today }: { d: StaffDashboard; ca
  * D-HOMESIMPLE: o que saiu do Início, em Desempenho → Visão geral: saúde da base, retorno do programa, movimentos e
  * os tops do período.
  */
-export function OverviewCards({ d, health, program, productsWithoutCost }: { d: StaffDashboard; health: BaseHealth | null; program: ProductReport["program"] | null; productsWithoutCost: number }) {
+export function OverviewCards({ d, health, program, productsWithoutCost, topCreators = true }: { d: StaffDashboard; health: BaseHealth | null; program: ProductReport["program"] | null; productsWithoutCost: number; topCreators?: boolean }) {
   const maxUnits = Math.max(1, ...d.topProducts.map((p) => p.units));
   return (
     <div className="@container flex min-w-0 flex-col gap-6">
       {health && <HealthCard h={health} />}
       {program && <ReturnCard p={program} missing={productsWithoutCost} />}
       <MovementsCard d={d} h={health} />
-      <div className="grid gap-6 @3xl:grid-cols-2">
-        <TopCreatorsCard d={d} />
+      <div className={`grid gap-6 ${topCreators ? "@3xl:grid-cols-2" : ""}`}>
+        {topCreators && <TopCreatorsCard d={d} />}
         <Card title="Top produtos com cupom de creator">
           {d.topProducts.length === 0 ? (
             <p className={ui.muted}>Nenhum produto vendido com cupom de creator no período.</p>
