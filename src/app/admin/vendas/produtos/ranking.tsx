@@ -90,7 +90,7 @@ function Panel({ k, period, scope, onClose }: { k: string; period: DashPeriod; s
                       <li key={c.id} className="flex items-center gap-2">
                         <span className="w-4 text-xs tabular-nums text-stone-400">{i + 1}</span>
                         <Avatar name={c.name} id={c.id} size="sm" />
-                        <Link href={`/admin/creators/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">{c.name}</Link>
+                        <Link prefetch={false} href={`/admin/creators/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">{c.name}</Link>
                         <span className="shrink-0 text-xs tabular-nums text-stone-500">{c.units} un. · <M>{shortBRL(c.cents)}</M></span>
                       </li>
                     ))}

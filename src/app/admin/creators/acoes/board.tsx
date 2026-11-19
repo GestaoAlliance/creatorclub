@@ -206,20 +206,20 @@ export function ActionsBoard({ tasks, doneToday, brandName, canSend, whatsappOn 
                   <Avatar name={t.name} id={t.creatorId} />
                   <div className="min-w-[12rem] flex-1">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <Link href={`/admin/creators/${t.creatorId}`} className="font-medium hover:underline">{t.name}</Link>
+                      <Link prefetch={false} href={`/admin/creators/${t.creatorId}`} className="font-medium hover:underline">{t.name}</Link>
                       <span className="rounded-full bg-stone-500/10 px-2 py-0.5 text-[11px] font-semibold text-stone-700 dark:text-stone-200">{ACTION_LABEL[t.kind]}</span>
                       {t.owner === "ENVIO" && <span className="text-[11px] text-stone-500">· {OWNER[t.owner]}</span>}
                     </p>
                     <p className="text-sm text-stone-600 dark:text-stone-300">{t.detail}</p>
                   </div>
                   <div className="ml-12 flex shrink-0 flex-wrap items-center gap-2 sm:ml-0">
-                    {t.kind === "FIX_DATA" && <Link href={`/admin/creators/${t.creatorId}#cadastro`} className={ui.ghostSm}><Pencil className="size-3.5" /> Corrigir na ficha</Link>}
+                    {t.kind === "FIX_DATA" && <Link prefetch={false} href={`/admin/creators/${t.creatorId}#cadastro`} className={ui.ghostSm}><Pencil className="size-3.5" /> Corrigir na ficha</Link>}
                     {t.message ? (
                       <button type="button" onClick={() => setOpen(open === t.key ? null : t.key)} aria-expanded={open === t.key} className={`${ui.btnSm} ${t.whatsappUrl || canSend ? "" : "opacity-60"}`}>
                         <MessageCircle className="size-3.5" /> Mensagem
                       </button>
                     ) : t.kind === "ACCESS" ? (
-                      <Link href={`/admin/creators/${t.creatorId}#cadastro`} className={ui.btnSm}><KeyRound className="size-3.5" /> Gerar o convite</Link>
+                      <Link prefetch={false} href={`/admin/creators/${t.creatorId}#cadastro`} className={ui.btnSm}><KeyRound className="size-3.5" /> Gerar o convite</Link>
                     ) : t.kind === "SHIP_STUCK" ? (
                       <Link href="/admin/envios" className={ui.btnSm}><Package className="size-3.5" /> Ver envio</Link>
                     ) : null}

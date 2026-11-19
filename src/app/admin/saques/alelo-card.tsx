@@ -27,7 +27,7 @@ export function AleloCardBox(p: { ready: number; incomplete: { id: string; name:
           <ul className="mt-2 flex flex-col gap-1">
             {p.incomplete.map((c) => (
               <li key={c.id}>
-                <Link href={`/admin/creators/${c.id}`} className={ui.link}>{c.name}</Link> <span className={ui.hint}>falta {c.missing.join(", ")}</span>
+                <Link prefetch={false} href={`/admin/creators/${c.id}`} className={ui.link}>{c.name}</Link> <span className={ui.hint}>falta {c.missing.join(", ")}</span>
               </li>
             ))}
           </ul>

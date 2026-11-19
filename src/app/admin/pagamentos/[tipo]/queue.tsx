@@ -181,7 +181,7 @@ function List({ brandName, kind, tipo, items, filter, month, windowEnd, period, 
                   <Avatar name={i.name} id={i.creatorId} />
                 )}
                 <span className="min-w-0">
-                  <Link href={`/admin/creators/${i.creatorId}`} className="block truncate font-medium hover:underline">{i.name}</Link>
+                  <Link prefetch={false} href={`/admin/creators/${i.creatorId}`} className="block truncate font-medium hover:underline">{i.name}</Link>
                   <Sub i={i} doc={doc} />
                 </span>
                 <span className="text-right font-semibold tabular-nums"><M>{formatBRL(i.cents)}</M></span>
@@ -358,7 +358,7 @@ function Panel({ r, doc, month }: { r: PayRow; doc: string; month: string }) {
       {r.pixReference && <p className="font-mono text-xs text-stone-500">ID do Pix: {r.pixReference}</p>}
       {r.bankRejected && (
         <p role="alert" className="rounded-2xl bg-red-500/10 px-3 py-2.5 text-sm text-red-800 dark:text-red-300">
-          O banco devolveu este Pix: {r.bankRejected}. {r.pixChangedAfterBank ? "A chave já foi trocada depois disso; vai na próxima remessa." : <>Peça a chave certa à creator (ela troca na aba Saque do portal) ou troque na <Link href={`/admin/creators/${r.creatorId}`} className="underline">ficha</Link>, antes da próxima remessa.</>}
+          O banco devolveu este Pix: {r.bankRejected}. {r.pixChangedAfterBank ? "A chave já foi trocada depois disso; vai na próxima remessa." : <>Peça a chave certa à creator (ela troca na aba Saque do portal) ou troque na <Link prefetch={false} href={`/admin/creators/${r.creatorId}`} className="underline">ficha</Link>, antes da próxima remessa.</>}
         </p>
       )}
       {r.inBank && (

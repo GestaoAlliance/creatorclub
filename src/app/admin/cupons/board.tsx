@@ -81,13 +81,13 @@ function PendingCard({ r, creators, picked, onPick, defaultRate }: { r: CouponRo
           </div>
         ) : r.rate && !r.rate.confirmed ? (
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-stone-500">Dona: <Link href={`/admin/creators/${r.owner!.creatorId}`} className="font-medium hover:underline">{r.owner!.name}</Link></span>
+            <span className="text-xs text-stone-500">Dona: <Link prefetch={false} href={`/admin/creators/${r.owner!.creatorId}`} className="font-medium hover:underline">{r.owner!.name}</Link></span>
             <RateForm policyId={r.rate.policyId} rateBps={r.rate.rateBps} />
           </div>
         ) : (
           <span className="text-xs text-stone-500">
-            Dona: <Link href={`/admin/creators/${r.owner!.creatorId}`} className="font-medium hover:underline">{r.owner!.name}</Link>. Sem comissão cadastrada:{" "}
-            <Link href={`/admin/creators/${r.owner!.creatorId}#contrato`} className="font-medium text-brand hover:underline">defina na ficha</Link>.
+            Dona: <Link prefetch={false} href={`/admin/creators/${r.owner!.creatorId}`} className="font-medium hover:underline">{r.owner!.name}</Link>. Sem comissão cadastrada:{" "}
+            <Link prefetch={false} href={`/admin/creators/${r.owner!.creatorId}#contrato`} className="font-medium text-brand hover:underline">defina na ficha</Link>.
           </span>
         )}
       </div>
@@ -228,11 +228,11 @@ export function CouponsBoard({ rows, creators, brandName, defaultRate, initialQu
                       </span>
                       {/* No celular, o resto embaixo do código. */}
                       <span className="mt-0.5 block text-xs text-stone-500 md:hidden">
-                        {r.owner ? <Link href={`/admin/creators/${r.owner.creatorId}`} className="font-medium text-stone-700 hover:underline dark:text-stone-200">{r.owner.name}</Link> : "da loja"}
+                        {r.owner ? <Link prefetch={false} href={`/admin/creators/${r.owner.creatorId}`} className="font-medium text-stone-700 hover:underline dark:text-stone-200">{r.owner.name}</Link> : "da loja"}
                         {r.rate ? ` · ${pct(r.rate.rateBps)}` : ""}{r.discountBps != null ? ` · ${pct(r.discountBps)} off` : ""} · <M>{shortBRL(r.sales30Cents)}</M> em 30 dias · {r.lastUse ? `último ${br(r.lastUse)}` : "nunca usado"}
                       </span>
                     </td>
-                    <td className="hidden px-3 py-2.5 md:table-cell">{r.owner ? <Link href={`/admin/creators/${r.owner.creatorId}`} className="hover:underline">{r.owner.name}</Link> : <span className="text-stone-400">da loja</span>}</td>
+                    <td className="hidden px-3 py-2.5 md:table-cell">{r.owner ? <Link prefetch={false} href={`/admin/creators/${r.owner.creatorId}`} className="hover:underline">{r.owner.name}</Link> : <span className="text-stone-400">da loja</span>}</td>
                     <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.rate ? pct(r.rate.rateBps) : "—"}</td>
                     <td className="hidden px-3 py-2.5 text-right tabular-nums text-stone-600 dark:text-stone-300 md:table-cell">{r.discountBps != null ? pct(r.discountBps) : "—"}</td>
                     <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.orders}</td>

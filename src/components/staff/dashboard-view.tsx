@@ -139,7 +139,7 @@ export function TopCreatorsCard({ d }: { d: StaffDashboard }) {
           <ol className="flex flex-col gap-3">
             {d.topCreators.map((c, i) => (
               <li key={c.id}>
-                <Link href={`/admin/creators/${c.id}`} className="group flex flex-col gap-1">
+                <Link prefetch={false} href={`/admin/creators/${c.id}`} className="group flex flex-col gap-1">
                   <span className="flex items-baseline justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate">
                       <span className="mr-2 tabular-nums text-stone-400">{i + 1}</span>
@@ -294,7 +294,7 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
   const m = d.movements;
   const row = (x: { id: string; name: string; nowCents: number; beforeCents: number; deltaCents: number }, up: boolean) => (
     <li key={x.id}>
-      <Link href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
+      <Link prefetch={false} href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
         <span className="min-w-0 truncate group-hover:underline">{x.name}</span>
         <span className={`shrink-0 tabular-nums font-semibold ${up ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
           {up ? "+" : "−"}<M>{formatBRL(Math.abs(x.deltaCents))}</M>
@@ -327,7 +327,7 @@ function MovementsCard({ d, h }: { d: StaffDashboard; h: BaseHealth | null }) {
             <Sparkles className="size-3.5 text-brand" />,
             (h?.firstSales ?? []).map((x) => (
               <li key={x.id}>
-                <Link href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
+                <Link prefetch={false} href={`/admin/creators/${x.id}`} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
                   <span className="min-w-0 truncate group-hover:underline">{x.name}</span>
                   <span className="shrink-0 text-xs text-stone-500">{x.day.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}</span>
                 </Link>

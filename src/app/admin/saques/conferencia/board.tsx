@@ -64,7 +64,7 @@ export function CheckBoard({ rows, brandName, lastRead }: { rows: PaymentCheckRo
               <li key={g.key} className="liquid-tile flex flex-col gap-3 rounded-3xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    {g.creatorId ? <Link href={`/admin/creators/${g.creatorId}`} className="block truncate font-semibold hover:underline">{g.name}</Link> : <span className="block truncate font-semibold">{g.name}</span>}
+                    {g.creatorId ? <Link prefetch={false} href={`/admin/creators/${g.creatorId}`} className="block truncate font-semibold hover:underline">{g.name}</Link> : <span className="block truncate font-semibold">{g.name}</span>}
                     <span className="block font-mono text-xs text-stone-500">{g.coupons.join(" · ")}</span>
                   </span>
                   <span className="shrink-0 text-right">

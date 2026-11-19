@@ -37,7 +37,7 @@ export default async function ContratoAssinadoPage({ params }: PageProps<"/admin
   return (
     <>
       <PageHeader title="Contrato assinado">
-        <Link href={`/admin/creators/${id}`} className={ui.link}>Voltar para a ficha</Link>
+        <Link prefetch={false} href={`/admin/creators/${id}`} className={ui.link}>Voltar para a ficha</Link>
       </PageHeader>
       <Card title={`${s.contractDocument.title} · versão ${s.contractDocument.version}`} icon={<ScrollText className="size-4" />}>
         <p className={ui.hint}>

@@ -76,7 +76,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
           <p><strong>{p.name}</strong> foi aprovada. O contrato sai sozinho pelo Autentique (e-mail e WhatsApp dela) em até 1 minuto. Se ela assinar fora (ex.: D4Sign), use &quot;Contrato assinado&quot; na aba Aprovadas.</p>
           <p>O cupom <strong className="font-mono">{o.coupon}</strong> fica reservado. Quando ela assinar, o sistema cria o cupom na Shopify, libera {welcome === "videos" ? "os 2 produtos" : "o produto"} na aba Pedidos, abre a plataforma e manda a mensagem de boas-vindas.</p>
           {o.mail && <p>Convite do portal enviado por e-mail para {o.mail}.</p>}
-          <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
+          <Link prefetch={false} href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
         </Done>
       );
     return (
@@ -104,7 +104,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
             <WhatsAppButton phone={p.phone} label="Abrir WhatsApp com a aprovação" text={msg({})} />
           </>
         )}
-        <Link href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
+        <Link prefetch={false} href={`/admin/creators/${o.creatorId}`} className={`${ui.link} self-start`}>Abrir a ficha</Link>
       </Done>
     );
   }

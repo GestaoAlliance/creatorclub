@@ -80,7 +80,7 @@ function OrderPanel({ id, onClose, onPrev, onNext }: { id: string; onClose: () =
               <section className={`rounded-2xl p-3 ${d.creatorId ? "bg-emerald-500/10" : "bg-amber-500/10"}`}>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Creator</p>
                 {d.creatorId ? (
-                  <p className="mt-0.5"><Link href={`/admin/creators/${d.creatorId}`} className="font-semibold hover:underline">{d.creatorName}</Link> · {d.reason}</p>
+                  <p className="mt-0.5"><Link prefetch={false} href={`/admin/creators/${d.creatorId}`} className="font-semibold hover:underline">{d.creatorName}</Link> · {d.reason}</p>
                 ) : null}
                 {d.creatorId ? (
                   <Link href={`/admin/vendas/pedidos?creator=${d.creatorId}#lista`} className="peek-chip mt-2">Ver só as vendas dela</Link>

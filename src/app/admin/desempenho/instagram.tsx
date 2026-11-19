@@ -140,7 +140,7 @@ export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {fix.map((r) => (
               <li key={r.creatorId} className="liquid-tile flex items-center justify-between gap-2 rounded-2xl px-3 py-2 text-sm">
-                <Link href={`/admin/creators/${r.creatorId}`} className="min-w-0 truncate font-medium hover:underline">{r.name}</Link>
+                <Link prefetch={false} href={`/admin/creators/${r.creatorId}`} className="min-w-0 truncate font-medium hover:underline">{r.name}</Link>
                 <span className="shrink-0 text-[11px] text-amber-800 dark:text-amber-300">{r.status === "NO_HANDLE" ? "sem @" : `@${r.handle}`}</span>
               </li>
             ))}
@@ -189,7 +189,7 @@ export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data
               ))
             )}
           </div>
-          <Link href={`/admin/creators/${open.creatorId}`} className={`${ui.btnSm} self-start`}>Abrir a ficha</Link>
+          <Link prefetch={false} href={`/admin/creators/${open.creatorId}`} className={`${ui.btnSm} self-start`}>Abrir a ficha</Link>
         </SidePanel>
       )}
       {msg && <MessageSheet ids={msg.rows.map((r) => r.creatorId)} names={msg.rows.map((r) => r.name)} {...MSG[msg.kind]} onClose={() => setMsg(null)} />}
