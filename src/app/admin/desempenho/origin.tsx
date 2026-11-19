@@ -1,28 +1,11 @@
-import { Clock } from "lucide-react";
 import Link from "next/link";
 import { ORIGIN_LABEL, shortBRL } from "@/domain";
 import type { OriginSummaryRow } from "@/lib/creators/origin";
 
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : null);
 
-function Step({ label, value, of, rate, tone }: { label: string; value: number; of: number; rate: string | null; tone: string }) {
-  const w = of ? Math.max(value ? 4 : 0, Math.round((value / of) * 100)) : 0;
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span className="flex items-baseline justify-between gap-1 text-[11px] text-stone-500">
-        <span className="truncate uppercase tracking-wide">{label}</span>
-        {rate && <span className="shrink-0 tabular-nums">{rate}</span>}
-      </span>
-      <span className="h-2 overflow-hidden rounded-full bg-stone-300/50 dark:bg-white/10">
-        <span className={`block h-full rounded-full ${tone}`} style={{ width: `${w}%` }} />
-      </span>
-      <span className="text-sm font-semibold tabular-nums">{value || "—"}</span>
-    </div>
-  );
-}
-
 /**
- * Aba Origem (D-ORIGIN; D-PERFBOARD): funil por canal (inscritas → aprovadas → ativas → venderam no mês), com a taxa de
+ * Aba Origem (D-ORIGIN; D-PERFBOARD; D-IGSIMPLE: em tabela): funil por canal (inscritas → aprovadas → ativas → venderam no mês), com a taxa de
  * cada passo, as vendas do mês e o tempo médio da entrada até a 1ª venda.
  */
 export function OriginView({ rows, phrase }: { rows: OriginSummaryRow[]; phrase: string }) {
@@ -32,39 +15,48 @@ export function OriginView({ rows, phrase }: { rows: OriginSummaryRow[]; phrase:
       <section className="glass rounded-3xl p-3 text-sm text-stone-600 md:p-4 dark:text-stone-300">
         Inscrições, aprovações, vendas e &quot;venderam&quot; contam {phrase}; ativas é hoje. Importadas sem origem aparecem como &quot;Não informada&quot;: marque na ficha. A 1ª venda conta da entrada da creator no sistema.
       </section>
-      <ul className="flex flex-col gap-3">
-        {rows.map((r) => {
-          const top = Math.max(r.applications, r.approved, r.active, 1);
-          return (
-            <li key={r.key} className="@container liquid-tile rounded-3xl p-4">
-              <div className="grid gap-4 @3xl:grid-cols-[14rem_minmax(0,1fr)_9rem] @3xl:items-center">
-                <div className="min-w-0">
-                  <Link href={`/admin/creators?origem=${encodeURIComponent(r.key)}`} className="block truncate font-semibold hover:underline">{ORIGIN_LABEL[r.origin.kind]}</Link>
-                  {r.origin.hunter && <span className="block truncate text-xs text-stone-500">{r.origin.hunter.name}</span>}
-                  {r.origin.campaign && <span className="block truncate text-xs text-stone-500">campanha {r.origin.campaign}</span>}
-                  {r.origin.kind === "HUNTER" && !r.origin.hunter && <span className="block text-xs text-stone-500">hunter não identificado</span>}
-                </div>
-                <div className="grid grid-cols-2 gap-3 @xl:grid-cols-4">
-                  <Step label="Inscritas" value={r.applications} of={top} rate={null} tone="bg-stone-400" />
-                  <Step label="Aprovadas" value={r.approved} of={top} rate={r.applications ? pct(r.approved, r.applications) : null} tone="bg-sky-500" />
-                  <Step label="Ativas" value={r.active} of={top} rate={null} tone="bg-brand dark:bg-brand-2" />
-                  <Step label="Venderam" value={r.sellers} of={top} rate={pct(r.sellers, r.active)} tone="bg-emerald-500" />
-                </div>
-                <div className="flex items-end justify-between gap-3 @3xl:flex-col @3xl:items-end">
-                  <span className="text-right">
-                    <span className="block text-lg font-semibold tabular-nums"><span className="money">{shortBRL(r.salesCents)}</span></span>
-                    <span className="block text-[11px] text-stone-500">vendas {phrase}</span>
-                  </span>
-                  {r.active > 0 && <span className="inline-flex items-center gap-1 text-xs text-stone-600 dark:text-stone-300" title={r.firstSales ? `média de ${r.firstSales} creator${r.firstSales === 1 ? "" : "s"}` : undefined}>
-                    <Clock className="size-3.5" />
-                    {r.daysToFirstSale !== null ? `1ª venda em ~${r.daysToFirstSale} ${r.daysToFirstSale === 1 ? "dia" : "dias"}` : "1ª venda: sem dado ainda"}
-                  </span>}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      {/* D-IGSIMPLE: uma linha por canal, para comparar. */}
+      <section className="glass overflow-hidden rounded-3xl !p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm md:min-w-[780px]">
+            <thead className="whitespace-nowrap text-left text-[11px] uppercase tracking-wide text-stone-500">
+              <tr className="border-b border-stone-200/70 dark:border-white/10">
+                <th className="px-4 py-2 font-semibold">Canal</th>
+                <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Inscritas</th>
+                <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Aprovadas</th>
+                <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Ativas</th>
+                <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Venderam</th>
+                <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Vendas</th>
+                <th className="hidden px-4 py-2 text-right font-semibold md:table-cell">1ª venda em</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-200/70 dark:divide-white/10">
+              {rows.map((r) => {
+                const firstSale = r.active > 0 ? (r.daysToFirstSale !== null ? `~${r.daysToFirstSale} ${r.daysToFirstSale === 1 ? "dia" : "dias"}` : "sem dado") : "—";
+                return (
+                  <tr key={r.key} className="hover:bg-stone-500/5">
+                    <td className="px-4 py-2.5">
+                      <Link href={`/admin/creators?origem=${encodeURIComponent(r.key)}`} className="font-medium hover:underline">{ORIGIN_LABEL[r.origin.kind]}</Link>
+                      {r.origin.hunter && <span className="block text-[11px] text-stone-500">{r.origin.hunter.name}</span>}
+                      {r.origin.campaign && <span className="block text-[11px] text-stone-500">campanha {r.origin.campaign}</span>}
+                      {r.origin.kind === "HUNTER" && !r.origin.hunter && <span className="block text-[11px] text-stone-500">hunter não identificado</span>}
+                      <span className="mt-0.5 block text-xs text-stone-600 md:hidden dark:text-stone-300">
+                        {r.applications} inscritas · {r.approved} aprovadas · {r.active} ativas · {r.sellers} venderam · <span className="money font-semibold">{shortBRL(r.salesCents)}</span>
+                      </span>
+                    </td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.applications || "—"}</td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.approved || "—"}{r.applications ? <span className="block text-[11px] text-stone-500">{pct(r.approved, r.applications)}</span> : null}</td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.active || "—"}</td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{r.sellers || "—"}{r.active ? <span className="block text-[11px] text-stone-500">{pct(r.sellers, r.active)} das ativas</span> : null}</td>
+                    <td className="hidden px-3 py-2.5 text-right font-semibold tabular-nums md:table-cell"><span className="money">{shortBRL(r.salesCents)}</span></td>
+                    <td className="hidden px-4 py-2.5 text-right text-xs text-stone-600 md:table-cell dark:text-stone-300" title={r.firstSales ? `média de ${r.firstSales} creator${r.firstSales === 1 ? "" : "s"}` : undefined}>{firstSale}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

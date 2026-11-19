@@ -1,17 +1,17 @@
 "use client";
 
-import { AtSign, Camera, ExternalLink, MessageCircle, TicketX, TrendingDown, TrendingUp } from "lucide-react";
+import { AtSign, ExternalLink, MessageCircle, TicketX } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { InstagramIcon } from "@/components/ui/social-icons";
 import { ui } from "@/components/ui/styles";
-import { formatBRL, growthMovers, IG_FORMAT_LABEL, postsNoCoupon } from "@/domain";
+import { formatBRL, IG_FORMAT_LABEL, postsNoCoupon } from "@/domain";
 import type { instagramRanking, InstagramRow } from "@/lib/instagram/ranking";
 import { Avatar } from "../creators/list-parts";
 import { MessageSheet, SidePanel } from "./parts";
 
 type Data = Awaited<ReturnType<typeof instagramRanking>>;
-type Sort = "seguidores" | "engajamento" | "venda";
+type Sort = "seguidores" | "crescimento" | "engajamento" | "venda" | "post";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
 const k = (v: number) => (v >= 10_000 ? `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : n(v));
@@ -35,23 +35,15 @@ const MSG = {
   },
 };
 
+const COLS: [Sort, string][] = [["seguidores", "Seguidores"], ["crescimento", "Crescimento"], ["engajamento", "Engajamento"], ["venda", "Venda por mil"], ["post", "Último post"]];
+
 function sortRows(rows: InstagramRow[], sort: Sort) {
-  const key = (r: InstagramRow) => (sort === "engajamento" ? r.engagementBps : sort === "venda" ? r.salesPer1kCents : r.followers) ?? -1;
+  const key = (r: InstagramRow) =>
+    (sort === "engajamento" ? r.engagementBps : sort === "venda" ? r.salesPer1kCents : sort === "crescimento" ? r.growth : sort === "post" ? (r.lastPostAt ? new Date(r.lastPostAt).getTime() : null) : r.followers) ?? -Infinity;
   return [...rows].sort((a, b) => key(b) - key(a) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
-function Mover({ r, tone }: { r: InstagramRow; tone: "up" | "down" }) {
-  return (
-    <li className="flex items-center justify-between gap-2 py-1.5 text-sm">
-      <Link href={`/admin/creators/${r.creatorId}`} className="min-w-0 truncate hover:underline">{r.name}</Link>
-      <span className={`shrink-0 font-semibold tabular-nums ${tone === "up" ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
-        {r.growth! > 0 ? "+" : ""}{n(r.growth!)}
-      </span>
-    </li>
-  );
-}
-
-/** Aba Instagram (D-INSTAGRAM; D-PERFBOARD): cresceu/caiu, posta sem cupom, parede de cartões com painel e perfis a corrigir. */
+/** Aba Instagram (D-INSTAGRAM; D-PERFBOARD; D-IGSIMPLE): aviso de quem posta sem cupom, ranking em tabela (ordena pela coluna) com painel e perfis a corrigir. */
 export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data: Data; now: Date; canEdit: boolean; phrase?: string }) {
   const [sort, setSort] = useState<Sort>("seguidores");
   const [open, setOpen] = useState<InstagramRow | null>(null);
@@ -63,80 +55,79 @@ export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data
   const fix = data.rows.filter((r) => r.status === "UNREADABLE" || r.status === "NO_HANDLE");
   const pending = data.rows.filter((r) => r.status === "PENDING").length;
   const noCoupon = postsNoCoupon(ok, now);
-  const movers = growthMovers(ok);
   const tagsOf = (id: string) => data.tags.filter((t) => t.creator?.id === id);
 
   return (
     <div className="flex flex-col gap-4">
-      {(movers.up.length > 0 || movers.down.length > 0 || noCoupon.length > 0) && (
-        <div className="@container">
-          <div className="grid gap-3 @3xl:grid-cols-3">
-            <section className="liquid-tile rounded-3xl p-4">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold"><TrendingUp className="size-4 text-emerald-600" />Mais cresceram no mês</h3>
-              {movers.up.length ? <ul className="mt-1 divide-y divide-stone-200/60 dark:divide-white/10">{movers.up.map((r) => <Mover key={r.creatorId} r={r} tone="up" />)}</ul> : <p className="mt-2 text-xs text-stone-500">Ninguém ganhou seguidores ainda.</p>}
-            </section>
-            <section className="liquid-tile rounded-3xl p-4">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold"><TrendingDown className="size-4 text-red-600" />Mais perderam no mês</h3>
-              {movers.down.length ? <ul className="mt-1 divide-y divide-stone-200/60 dark:divide-white/10">{movers.down.map((r) => <Mover key={r.creatorId} r={r} tone="down" />)}</ul> : <p className="mt-2 text-xs text-stone-500">Ninguém perdeu seguidores. 🎉</p>}
-            </section>
-            <section className="liquid-tile flex flex-col rounded-3xl p-4">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold"><TicketX className="size-4 text-amber-600" />Posta sem cupom <span className="text-stone-500">{noCoupon.length}</span></h3>
-              <p className="mt-0.5 text-xs text-stone-500">Postou nos últimos 30 dias e não pôs o cupom em nenhum post.</p>
-              {noCoupon.length ? (
-                <>
-                  <p className="mt-2 line-clamp-2 text-sm">{noCoupon.map((r) => r.name.split(/\s+/)[0]).join(", ")}</p>
-                  {canEdit && <button type="button" onClick={() => setMsg({ rows: noCoupon, kind: "coupon" })} className={`${ui.btnSm} mt-auto self-start`}><MessageCircle className="size-3.5" />Lembrar do cupom</button>}
-                </>
-              ) : (
-                <p className="mt-2 text-xs text-stone-500">Todas que postaram usaram o cupom. 🎉</p>
-              )}
-            </section>
+      {/* D-IGSIMPLE: das caixas de cima fica só "Posta sem cupom"; quem cresceu ou caiu aparece ordenando a tabela. */}
+      {noCoupon.length > 0 && (
+        <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-400/50 bg-amber-100/70 px-4 py-3 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
+          <TicketX className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1">
+            <strong>{noCoupon.length} {noCoupon.length === 1 ? "posta" : "postam"} sem cupom</strong> (postou nos últimos 30 dias e não pôs o cupom em nenhum post): {noCoupon.map((r) => r.name.split(/\s+/)[0]).join(", ")}
+          </span>
+          {canEdit && <button type="button" onClick={() => setMsg({ rows: noCoupon, kind: "coupon" })} className={ui.btnSm}><MessageCircle className="size-3.5" />Lembrar do cupom</button>}
+        </section>
+      )}
+      <section className="glass overflow-hidden rounded-3xl !p-0" data-tour="de-cartoes">
+        <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-stone-200/70 px-4 py-3 dark:border-white/10 md:px-5">
+          <h2 className="text-base font-semibold">Ranking do Instagram</h2>
+          <span className="text-xs text-stone-500">{ok.length} de {data.rows.length} perfis lidos{pending ? ` · ${pending} esperando a 1ª leitura` : ""} · clique no título da coluna para ordenar</span>
+        </header>
+        {ok.length === 0 ? (
+          <p className="p-8 text-center text-sm text-stone-500">Nenhum perfil lido ainda.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm md:min-w-[860px]">
+              <thead className="whitespace-nowrap text-left text-[11px] uppercase tracking-wide text-stone-500">
+                <tr className="border-b border-stone-200/70 dark:border-white/10">
+                  <th className="w-12 px-4 py-2 font-semibold">#</th>
+                  <th className="px-3 py-2 font-semibold">Creator</th>
+                  {COLS.map(([id, label]) => (
+                    <th key={id} className={`hidden px-3 py-2 text-right font-semibold md:table-cell ${id === "post" ? "pr-4" : ""}`}>
+                      <button type="button" onClick={() => setSort(id)} aria-pressed={sort === id} className={`uppercase tracking-wide hover:text-stone-800 dark:hover:text-stone-100 ${sort === id ? "text-brand dark:text-brand-2" : ""}`}>{label}{sort === id ? " ↓" : ""}</button>
+                    </th>
+                  ))}
+                  <th className="hidden px-3 py-2 font-semibold md:table-cell">Cupom nos posts</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-200/70 dark:divide-white/10">
+                {ok.map((r, i) => (
+                  <tr key={r.creatorId} onClick={() => setOpen(r)} className={`cursor-pointer transition-colors ${open?.creatorId === r.creatorId ? "bg-brand/8" : "hover:bg-stone-500/5"}`}>
+                    <td className="px-4 py-2.5 tabular-nums text-stone-500">{i + 1}</td>
+                    <td className="px-3 py-2.5">
+                      <span className="flex items-center gap-3">
+                        <Avatar name={r.name} id={r.creatorId} />
+                        <span className="min-w-0">
+                          <span className="block font-medium">{r.name}</span>
+                          <span className="block text-[11px] text-stone-500">@{r.handle}</span>
+                          <span className="flex flex-wrap gap-x-2 text-xs md:hidden">
+                            <span className="font-semibold tabular-nums">{k(r.followers ?? 0)}</span>
+                            {r.growth !== null && <span className={r.growth >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}>{r.growth >= 0 ? "+" : ""}{n(r.growth)}</span>}
+                            <span>engaj. {r.engagementBps !== null ? pct(r.engagementBps) : "—"}</span>
+                          </span>
+                        </span>
+                      </span>
+                    </td>
+                    <td className="hidden px-3 py-2.5 text-right font-semibold tabular-nums md:table-cell">{k(r.followers ?? 0)}</td>
+                    <td className={`hidden px-3 py-2.5 text-right tabular-nums md:table-cell ${r.growth === null ? "text-stone-400" : r.growth >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>{r.growth === null ? "—" : `${r.growth >= 0 ? "+" : ""}${n(r.growth)}`}</td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">
+                      {r.engagementBps !== null ? pct(r.engagementBps) : "—"}
+                      {r.drop?.alert && <span className="block text-[11px] text-amber-700 dark:text-amber-300">caiu {pct(r.drop.dropBps)}</span>}
+                    </td>
+                    <td className="hidden px-3 py-2.5 text-right tabular-nums md:table-cell"><span className="money">{r.salesPer1kCents !== null ? formatBRL(r.salesPer1kCents).replace(/,00$/, "") : "—"}</span></td>
+                    <td className="hidden px-3 py-2.5 pr-4 text-right text-xs text-stone-600 md:table-cell dark:text-stone-300">{r.lastPostAt ? date(r.lastPostAt) : "—"}</td>
+                    <td className="hidden px-3 py-2.5 text-xs md:table-cell">
+                      {r.couponPosts > 0 ? <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-emerald-800 dark:text-emerald-300">em {r.couponPosts} {r.couponPosts === 1 ? "post" : "posts"}</span> : noCoupon.includes(r) ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-900 dark:text-amber-200">posta sem cupom</span> : <span className="text-stone-400">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
-
-      <section className="glass flex flex-wrap items-center gap-2 rounded-3xl p-3 md:p-4">
-        <nav aria-label="Ordem" className="flex flex-wrap gap-1.5">
-          {(["seguidores", "engajamento", "venda"] as const).map((s) => (
-            <button key={s} type="button" aria-pressed={s === sort} onClick={() => setSort(s)} className={`rounded-full px-3 py-1.5 text-sm transition ${s === sort ? "bg-brand font-semibold text-white shadow-sm dark:bg-brand-2 dark:text-stone-900" : "bg-stone-500/10 hover:bg-stone-500/20"}`}>
-              {s === "seguidores" ? "Seguidores" : s === "engajamento" ? "Engajamento" : "Venda por mil seguidores"}
-            </button>
-          ))}
-        </nav>
-        <span className="ml-auto text-xs text-stone-500">{ok.length} de {data.rows.length} perfis lidos{pending ? ` · ${pending} esperando a 1ª leitura` : ""}</span>
+        )}
+        <p className="border-t border-stone-200/70 px-4 py-3 text-xs text-stone-500 dark:border-white/10 md:px-5">Crescimento = seguidores ganhos no mês. Venda por mil = vendas {phrase} a cada mil seguidores. Cupom nos posts: últimos 30 dias.</p>
       </section>
-
-      {ok.length === 0 ? (
-        <section className="glass rounded-3xl p-8 text-center text-sm text-stone-500">Nenhum perfil lido ainda.</section>
-      ) : (
-        <div className="@container">
-          <ul data-tour="de-cartoes" className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3 @7xl:grid-cols-4">
-            {ok.map((r, i) => (
-              <li key={r.creatorId}>
-                <button type="button" onClick={() => setOpen(r)} className="liquid-tile flex w-full flex-col gap-3 rounded-3xl p-4 text-left transition hover:-translate-y-0.5">
-                  <span className="flex items-center gap-3">
-                    <span className="relative"><Avatar name={r.name} id={r.creatorId} /><span className="absolute -bottom-1 -right-1 rounded-full bg-white px-1 text-[10px] font-bold tabular-nums text-stone-700 shadow dark:bg-stone-800 dark:text-stone-200">{i + 1}</span></span>
-                    <span className="min-w-0">
-                      <span className="block truncate font-semibold">{r.name}</span>
-                      <span className="block truncate text-xs text-stone-500">@{r.handle}</span>
-                    </span>
-                  </span>
-                  <span className="grid grid-cols-3 gap-2 text-xs">
-                    <span><span className="block text-stone-500">Seguidores</span><span className="block text-base font-semibold tabular-nums">{k(r.followers ?? 0)}</span>{r.growth !== null && <span className={r.growth >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}>{r.growth >= 0 ? "+" : ""}{n(r.growth)}</span>}</span>
-                    <span><span className="block text-stone-500">Engaj.</span><span className="block text-base font-semibold tabular-nums">{r.engagementBps !== null ? pct(r.engagementBps) : "—"}</span>{r.drop?.alert && <span className="text-amber-700 dark:text-amber-300">caiu {pct(r.drop.dropBps)}</span>}</span>
-                    <span><span className="block text-stone-500">Por mil</span><span className="block text-base font-semibold tabular-nums"><span className="money">{r.salesPer1kCents !== null ? formatBRL(r.salesPer1kCents).replace(/,00$/, "") : "—"}</span></span><span className="text-stone-500">{phrase}</span></span>
-                  </span>
-                  <span className="flex flex-wrap gap-1 text-[11px]">
-                    {r.couponPosts > 0 ? <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-emerald-800 dark:text-emerald-300">cupom em {r.couponPosts} {r.couponPosts === 1 ? "post" : "posts"}</span> : noCoupon.includes(r) ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-900 dark:text-amber-200">posta sem cupom</span> : null}
-                    <span className="rounded-full bg-stone-500/10 px-2 py-0.5 text-stone-600 dark:text-stone-300">{ago(r.lastPostAt, now)}</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {fix.length > 0 && (
         <section className="glass flex flex-col gap-3 rounded-3xl p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -156,25 +147,6 @@ export function InstagramView({ data, now, canEdit, phrase = "no mês" }: { data
           </ul>
         </section>
       )}
-
-      <section className="glass flex flex-col gap-2 rounded-3xl p-4">
-        <h3 className="flex items-center gap-1.5 font-semibold"><Camera className="size-4" />Posts que marcaram a marca</h3>
-        {data.tags.length === 0 ? (
-          <p className="text-sm text-stone-500">Nenhum post marcou a marca ainda.</p>
-        ) : (
-          <ul className="divide-y divide-stone-200/70 dark:divide-white/10">
-            {data.tags.slice(0, 12).map((t) => (
-              <li key={t.permalink} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <span className="min-w-0">
-                  {t.creator ? <Link href={`/admin/creators/${t.creator.id}`} className="font-medium hover:underline">{t.creator.name}</Link> : <span className="font-medium">@{t.username} <span className="text-xs font-normal text-stone-500">· não é creator</span></span>}
-                  <span className="block text-xs text-stone-500">{date(t.postedAt)} · {n(t.likes ?? 0)} curtidas · {n(t.comments ?? 0)} comentários</span>
-                </span>
-                <a href={t.permalink} target="_blank" rel="noreferrer" className={ui.ghostSm}><ExternalLink className="size-3.5" />Abrir</a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       {open && (
         <SidePanel

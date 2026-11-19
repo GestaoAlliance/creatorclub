@@ -317,6 +317,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-365 — 2026-11-19 — Redes e origem em tabelas (D-IGSIMPLE)
+
+- Instagram: a parede de cartões virou o ranking em tabela (foto, @, seguidores, crescimento no mês, engajamento, venda
+  por mil, último post, cupom nos posts; o título da coluna ordena; clicar abre o painel). Das 3 caixas de cima ficou só
+  "Posta sem cupom" (aviso com "Lembrar do cupom"); a lista "Posts que marcaram a marca" saiu (continua no painel).
+- Origem: uma linha por canal (inscritas, aprovadas com %, ativas, venderam com %, vendas, dias até a 1ª venda).
+- UGC continua igual. No celular, os números vão embaixo do nome. Tutorial ajustado.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-364 — 2026-11-19 — Cupons mais simples (D-COUPONSIMPLE)
 
 - Opções escolhidas pelo responsável: os cupons a conferir ficam no topo em cartões, só quando existem (sem nada,
