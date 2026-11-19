@@ -317,6 +317,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-362 — 2026-11-19 — Foto da creator no ranking de Vendas
+
+- Pedido do responsável depois do merge do CP-361: a foto de cada creator (`Avatar`, a mesma das outras telas; sem
+  foto, as iniciais) ao lado do nome no ranking. Vale para as três marcas (a tela usa a marca escolhida).
+- **Próxima:** perguntar ao responsável.
+
 ### CP-361 — 2026-11-19 — Vendas abre no ranking de creators (D-SALESRANK)
 
 - Pedido na daily: Vendas, Cupons e Desempenho não ajudavam a decidir. `admin/vendas/page.tsx` novo: números do

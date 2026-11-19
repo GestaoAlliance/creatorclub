@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { HeroStat, M, OverviewCards } from "@/components/staff/dashboard-view";
 import { HideValuesToggle } from "@/components/staff/hide-values";
 import { PeriodPicker } from "@/components/staff/period-picker";
+import { Avatar } from "@/components/ui/avatar";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
 import { CREATOR_CATEGORY_LABEL, dayKey, formatBRL, nextDayKey, periodPhrase, pickPeriod, shortBRL, startOfLocalDay, type CreatorCategoryValue } from "@/domain";
@@ -156,9 +157,15 @@ export default async function SalesRankingPage({ searchParams }: { searchParams:
                     <tr key={r.id} className="hover:bg-stone-500/5">
                       <td className="px-4 py-2.5 tabular-nums text-stone-500">{r.position}</td>
                       <td className="px-3 py-2.5">
-                        <Link href={`/admin/creators/${r.id}`} className="font-medium hover:underline">{r.name}</Link>
-                        <span className="block text-[11px] text-stone-500">
-                          {r.categories.map((c) => CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] ?? c).join(" · ") || "—"}{r.instagram ? ` · @${r.instagram}` : ""} · {pct(r.share)} das vendas
+                        {/* Foto da creator no ranking (pedido do responsável, 2026-11-19). */}
+                        <span className="flex items-center gap-3">
+                          <Avatar name={r.name} id={r.id} />
+                          <span className="min-w-0">
+                            <Link href={`/admin/creators/${r.id}`} className="font-medium hover:underline">{r.name}</Link>
+                            <span className="block text-[11px] text-stone-500">
+                              {r.categories.map((c) => CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] ?? c).join(" · ") || "—"}{r.instagram ? ` · @${r.instagram}` : ""} · {pct(r.share)} das vendas
+                            </span>
+                          </span>
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-right font-semibold tabular-nums"><M>{formatBRL(r.salesCents)}</M></td>
