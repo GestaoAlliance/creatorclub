@@ -37,6 +37,8 @@ export type Row = {
   tiktok: string | null;
   cpf: string | null;
   coupon: string | null;
+  /** D-COUPONSIMPLE: sem cupom de creator (fora quem ainda espera o contrato). */
+  noCreatorCoupon: boolean;
   /** D-CREATORLIST + D-PERIODPICK: o período escolhido (sales30Cents), o anterior do mesmo tamanho, a comissão do
    * período e as 12 semanas (só para quem vê dinheiro). */
   stats: { salesCents: number; orders: number; sales30Cents: number; prev30Cents: number; commissionCents: number; weeks: number[] } | null;
@@ -49,7 +51,7 @@ export type Row = {
 
 type Situation = "ACTIVE" | "INACTIVE" | "DEACTIVATED";
 /** Quadros do topo (D-CREATORLIST); "idle60" só vem de link antigo (`?semvenda=1`). */
-type Segment = "" | "selling" | "stopped" | "never" | "noPortal" | "pending" | "contract" | "idle60";
+type Segment = "" | "selling" | "stopped" | "never" | "noPortal" | "pending" | "contract" | "idle60" | "noCoupon";
 type Sort = "sales30" | "sales" | "last" | "name" | "joined";
 
 const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -78,12 +80,14 @@ const SEGMENTS: { id: Exclude<Segment, "" | "idle60">; label: string; hint: stri
   { id: "contract", label: "Contrato", hint: "vencendo ou vencido", tone: "bad", param: "contrato", test: (r) => r.contract.status === "EXPIRING" || r.contract.status === "EXPIRED" },
 ];
 const IDLE60 = { label: "Sem vender há 60 dias", test: (r: Row) => r.idle?.idle === true };
+/** D-COUPONSIMPLE: filtro "Sem cupom" (`?filtro=semcupom`), aberto pelo aviso acima da lista. */
+const NOCOUPON = { label: "Sem cupom de creator", test: (r: Row) => r.noCreatorCoupon };
 
 export type ListInit = { q?: string; situation?: string; segment?: string; category?: CategoryFilter; tag?: string; origin?: string; uf?: string; sort?: string };
 
 /** Lê o endereço (filtros guardados; links do Início e da aba Origem continuam funcionando). */
 function initial(p: ListInit, money: boolean) {
-  const seg = SEGMENTS.find((s) => s.param === p.segment)?.id ?? (p.segment === "semvenda" ? "idle60" : "");
+  const seg = SEGMENTS.find((s) => s.param === p.segment)?.id ?? (p.segment === "semvenda" ? "idle60" : p.segment === "semcupom" ? "noCoupon" : "");
   return {
     q: p.q ?? "",
     situation: SITUATIONS.find((s) => s.param === p.situation)?.id ?? "ACTIVE",
@@ -125,7 +129,7 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
     const sp = new URLSearchParams();
     if (q.trim()) sp.set("q", q.trim());
     if (situation !== "ACTIVE") sp.set("situacao", SITUATIONS.find((s) => s.id === situation)!.param);
-    if (segment) sp.set("filtro", segment === "idle60" ? "semvenda" : SEGMENTS.find((s) => s.id === segment)!.param);
+    if (segment) sp.set("filtro", segment === "idle60" ? "semvenda" : segment === "noCoupon" ? "semcupom" : SEGMENTS.find((s) => s.id === segment)!.param);
     if (category) sp.set("categoria", category);
     if (tag) sp.set("tag", tag);
     if (uf) sp.set("uf", uf);
@@ -163,9 +167,10 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
 
   const inSituation = useMemo(() => rows.filter((r) => r.status === situation), [rows, situation]);
   const inCategory = useMemo(() => inSituation.filter((r) => matchesCategory(r.categories, category)), [inSituation, category]);
+  const noCouponCount = useMemo(() => rows.filter((r) => r.status === "ACTIVE" && r.noCreatorCoupon).length, [rows]);
 
   const shown = useMemo(() => {
-    const segTest = segment === "idle60" ? IDLE60.test : (SEGMENTS.find((s) => s.id === segment)?.test ?? (() => true));
+    const segTest = segment === "idle60" ? IDLE60.test : segment === "noCoupon" ? NOCOUPON.test : (SEGMENTS.find((s) => s.id === segment)?.test ?? (() => true));
     const words = norm(q).split(/\s+/).filter(Boolean);
     const digits = q.replace(/\D/g, "");
     const list = inCategory.filter((r) => {
@@ -295,6 +300,13 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
         </div>
       </section>
 
+      {/* D-COUPONSIMPLE: ativas sem cupom de creator (as vendas delas não aparecem para ninguém). */}
+      {situation === "ACTIVE" && segment !== "noCoupon" && noCouponCount > 0 && (
+        <button type="button" onClick={() => setSegment("noCoupon")} className="flex items-center gap-2 rounded-2xl border border-amber-400/50 bg-amber-100/70 px-4 py-2.5 text-left text-sm text-amber-950 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-100">
+          <strong className="tabular-nums">{noCouponCount}</strong> {noCouponCount === 1 ? "creator ativa sem cupom" : "creators ativas sem cupom"} de creator: as vendas não contam para {noCouponCount === 1 ? "ela" : "elas"}. <span className="ml-auto shrink-0 font-semibold underline">Ver</span>
+        </button>
+      )}
+
       {/* Busca e filtros. */}
       <section className="glass flex flex-col gap-3 rounded-3xl p-3 md:p-4" data-tour="cr-filtros">
         <div className="flex flex-wrap items-center gap-2">
@@ -350,6 +362,7 @@ export function CreatorList(p: { period: { key: string; label: string; phrase: s
           <span>
             <strong className="tabular-nums text-stone-800 dark:text-stone-100">{shown.length}</strong> de {inSituation.length} {SITUATIONS[sitIndex]!.label.toLowerCase()}
           </span>
+          {segment === "noCoupon" && <button type="button" onClick={() => setSegment("")} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-900 dark:text-amber-200">{NOCOUPON.label} <X className="size-3" /></button>}
           {segment === "idle60" && <button type="button" onClick={() => setSegment("")} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-900 dark:text-amber-200">{IDLE60.label} <X className="size-3" /></button>}
           {money && total > 0 && <span>Concentração: a maior faz {share(1)}% das vendas · as 3 maiores, {share(3)}%</span>}
           {money && sales30 + prev30 > 0 && <span className="inline-flex items-center gap-1">{p.period.label}: {shortBRL(sales30)} <TrendChip current={sales30} previous={prev30} /></span>}

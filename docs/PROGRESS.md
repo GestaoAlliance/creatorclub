@@ -317,6 +317,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-364 — 2026-11-19 — Cupons mais simples (D-COUPONSIMPLE)
+
+- Opções escolhidas pelo responsável: os cupons a conferir ficam no topo em cartões, só quando existem (sem nada,
+  "Todos os cupons conferidos"); embaixo, uma lista só de todos os cupons (tipo, dona, comissão, desconto, pedidos,
+  vendas de 30 dias, último uso, selo "parado") com filtro Todos/De creator/Promocionais/Parados. Saíram o anel de
+  creators conferidas, o seletor de período e os 5 quadros. `/admin/cupons?q=CODIGO` já abre buscando (link dos pedidos).
+- Creators ativas sem cupom de creator saíram de Cupons: aviso em Creators + filtro "Sem cupom"
+  (`?filtro=semcupom`); `listCreators` devolve `noCreatorCoupon`. Tutorial de Cupons ajustado.
+- Teste: `test/integration/creator-last-order.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-363 — 2026-11-19 — Produtos mais simples (D-PRODUCTSIMPLE)
 
 - Faixa: Receita, Unidades, Ticket médio e Acabando no estoque (o "Atenção" misturava estoque com produto sem custo; o
