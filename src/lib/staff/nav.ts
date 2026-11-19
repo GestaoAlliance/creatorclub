@@ -37,10 +37,11 @@ const GROUPS: Group[] = [
     label: "Vendas",
     icon: "sales",
     tabs: [
+      // D-SALESRANK: Vendas abre no ranking; a lista de pedidos virou a aba Pedidos; Desempenho virou "Redes e origem".
       { href: "/vendas", label: "Vendas", needs: "money.view" },
+      { href: "/vendas/pedidos", label: "Pedidos", needs: "money.view" },
       { href: "/vendas/produtos", label: "Produtos", needs: "money.view" },
-      { href: "/cupons", label: "Cupons", needs: "creators.edit" },
-      { href: "/desempenho", label: "Desempenho", needs: "performance.view" },
+      { href: "/desempenho", label: "Redes e origem", needs: "performance.view" },
     ],
   },
   {
@@ -62,6 +63,8 @@ const GROUPS: Group[] = [
       { href: "/equipe", label: "Equipe", needs: "staff.manage", global: true },
       { href: "/contratos", label: "Contratos", needs: "staff.manage", global: true },
       { href: "/termo", label: "Termo", needs: "staff.manage", global: true },
+      // D-SALESRANK: Cupons saiu de Vendas (é cadastro, não leitura de vendas).
+      { href: "/cupons", label: "Cupons", needs: "creators.edit" },
       { href: "/sync", label: "Shopify", needs: "integrations.manage", global: true },
       { href: "/importar", label: "Importar", needs: "integrations.manage", global: true },
       // M3.4b (D-MCP): cada pessoa liga o próprio Claude.

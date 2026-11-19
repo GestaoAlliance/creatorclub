@@ -52,5 +52,12 @@ describe("dashboard do Início (M0.0.4)", () => {
     expect((await staffDashboard(prisma, brand.id, { from: "2026-10-01", to: "2026-10-10", preset: "" }, "UGC")).kpis.sales.cents).toBe(0);
     // Período anterior (21 a 30/09) sem vendas: a variação fica "sem base".
     expect(d.kpis.sales.change).toBeNull();
+    // D-SALESRANK: ranking com comissão do período, ticket, antes, variação e dia da última venda.
+    expect(d.ranking).toEqual([expect.objectContaining({ position: 1, id: creator.id, salesCents: 10_000, orders: 1, commissionCents: 1_000, ticketCents: 10_000, beforeCents: 0, change: null, share: 1, lastSaleDay: "2026-10-03" })]);
+    expect(d.stopped).toBe(0);
+    // Setembro (o pedido do seedBrand) contra outubro sem vendas: 1 creator parou.
+    const oct = await staffDashboard(prisma, brand.id, { from: "2026-10-11", to: "2026-10-20", preset: "" }, "");
+    expect(oct.ranking).toEqual([]);
+    expect(oct.stopped).toBe(1);
   });
 });

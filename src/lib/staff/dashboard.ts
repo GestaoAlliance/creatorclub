@@ -163,7 +163,20 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
   const rising = deltas.filter((x) => x.deltaCents > 0 && x.beforeCents > 0).sort((a, b) => b.deltaCents - a.deltaCents).slice(0, 5);
   /** Caindo: vendia ao menos R$ 200 no período anterior (evita ruído de quem vende pouco). */
   const falling = deltas.filter((x) => x.deltaCents < 0 && x.beforeCents >= 20_000).sort((a, b) => a.deltaCents - b.deltaCents).slice(0, 5);
-  const peopleIds = [...new Set([...topIds.map(([id]) => id), ...rising.map((x) => x.id), ...falling.map((x) => x.id)])];
+  // D-SALESRANK: ranking completo (todas que venderam no período): comissão do período, ticket, variação e última venda.
+  const creatorOfOrder = new Map(cur.orders.map((o) => [o.id, o.attribution!.creatorId]));
+  const commissionByCreator = new Map<string, number>();
+  for (const l of cur.ledger) {
+    const id = l.orderId ? creatorOfOrder.get(l.orderId) : undefined;
+    if (id) commissionByCreator.set(id, (commissionByCreator.get(id) ?? 0) + l.amountCents);
+  }
+  const lastPaid = new Map<string, Date>();
+  for (const o of cur.orders) {
+    const id = o.attribution!.creatorId;
+    const prevAt = lastPaid.get(id);
+    if (!prevAt || o.paidAt! > prevAt) lastPaid.set(id, o.paidAt!);
+  }
+  const peopleIds = [...new Set([...perCreator.keys(), ...rising.map((x) => x.id), ...falling.map((x) => x.id)])];
   const people = peopleIds.length
     ? await prisma.creator.findMany({ where: { id: { in: peopleIds } }, select: { id: true, categories: true, account: { select: { name: true, instagram: true } } } })
     : [];
@@ -176,6 +189,29 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     ...v,
     share: salesCents ? v.salesCents / salesCents : 0,
   }));
+
+  const ranking = [...perCreator.entries()]
+    .sort((a, b) => b[1].salesCents - a[1].salesCents)
+    .map(([id, v], i) => {
+      const beforeCents = prevSales.get(id) ?? 0;
+      return {
+        position: i + 1,
+        id,
+        name: who.get(id)?.account.name ?? "—",
+        instagram: who.get(id)?.account.instagram ?? null,
+        categories: who.get(id)?.categories ?? [],
+        salesCents: v.salesCents,
+        orders: v.orders,
+        commissionCents: commissionByCreator.get(id) ?? 0,
+        ticketCents: v.orders ? Math.round(v.salesCents / v.orders) : 0,
+        beforeCents,
+        change: change(v.salesCents, beforeCents),
+        share: salesCents ? v.salesCents / salesCents : 0,
+        lastSaleDay: lastPaid.has(id) ? dayKey(lastPaid.get(id)!, tz) : null,
+      };
+    });
+  /** Venderam no período anterior e não venderam neste. */
+  const stopped = [...prevSales.entries()].filter(([id, c]) => c > 0 && !perCreator.has(id)).length;
 
   // Top produtos vendidos com cupom de creator.
   const ids = cur.orders.map((o) => o.id);
@@ -210,6 +246,8 @@ export async function staffDashboard(prisma: PrismaClient, brandId: string, peri
     prevDays,
     campaigns,
     topCreators,
+    ranking,
+    stopped,
     topProducts,
     giftUnits,
     concentration: { top1, top3, alert: top1 >= 0.4 },

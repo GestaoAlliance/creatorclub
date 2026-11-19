@@ -317,6 +317,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-361 — 2026-11-19 — Vendas abre no ranking de creators (D-SALESRANK)
+
+- Pedido na daily: Vendas, Cupons e Desempenho não ajudavam a decidir. `admin/vendas/page.tsx` novo: números do
+  período com a comparação (vendas, comissão, creators vendendo de X ativas e quantas pararam, ticket por pedido),
+  ranking de creators (vendas, pedidos, comissão, ticket, variação contra o período anterior, última venda; busca,
+  tipo e ordenação) e, embaixo, saúde da base, retorno, movimentos, top produtos e produtos enviados.
+- A lista de pedidos virou a aba Pedidos (`/admin/vendas/pedidos`, `orders-page.tsx`); Desempenho virou "Redes e
+  origem" (Instagram, UGC, Origem) e `?aba=geral` leva para Vendas; Cupons foi para Configurações.
+- `staffDashboard` devolve `ranking` e `stopped`. Testes: `test/integration/dashboard.test.ts`, `test/staff-nav.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-360 — 2026-11-18 — Navegador oferece salvar a senha (D-SAVEPASSWORD)
 
 - Produção: as sessões não caem (sem prazo no Supabase; as da Fátima renovam há dias em 3 aparelhos); o problema era o

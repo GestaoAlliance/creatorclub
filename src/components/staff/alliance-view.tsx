@@ -78,7 +78,7 @@ export function AllianceBrandCards({ brands }: { brands: Brands }) {
               </form>
               <div className="flex flex-col">
                 {c && <Go slug={b.slug} next="/admin/candidatas" label="Candidatas novas" value={c.applications} tone={c.applications ? "amber" : undefined} />}
-                {c && <Go slug={b.slug} next="/admin/desempenho" label="Desempenho do mês" value="ver" />}
+                {c && <Go slug={b.slug} next="/admin/vendas" label="Ranking de vendas do mês" value="ver" />}
                 {c && c.contractsExpiring + c.contractsExpired > 0 && (
                   <Go slug={b.slug} next="/admin/creators" label="Contratos vencendo ou vencidos" value={c.contractsExpiring + c.contractsExpired} tone="amber" />
                 )}

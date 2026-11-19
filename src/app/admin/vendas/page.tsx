@@ -1,242 +1,189 @@
-import { ChevronLeft, ChevronRight, Download, Search as SearchIcon, TicketPercent } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { PeriodPicker } from "@/components/staff/period-picker";
-import { PERIOD_COOKIE } from "@/lib/staff/period";
-import { M } from "@/components/staff/dashboard-view";
+import { HeroStat, M, OverviewCards } from "@/components/staff/dashboard-view";
 import { HideValuesToggle } from "@/components/staff/hide-values";
+import { PeriodPicker } from "@/components/staff/period-picker";
 import { GlassLight } from "@/components/ui/glass-light";
 import { ui } from "@/components/ui/styles";
-import { dayKey, formatBRL, SALE_STATUS_LABEL, SALE_STATUSES, shortBRL } from "@/domain";
+import { CREATOR_CATEGORY_LABEL, dayKey, formatBRL, nextDayKey, periodPhrase, pickPeriod, shortBRL, startOfLocalDay, type CreatorCategoryValue } from "@/domain";
 import { can } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
-import { BIG_ORDER_FACTOR, listSales, salesReview, SALES_PAGE_SIZE, type ReviewKey } from "@/lib/sales/list";
+import { productReport } from "@/lib/reports/products";
 import { staffContext } from "@/lib/staff/context";
-import { filtersOf, salesPeriod, searchesAllTime, type Search } from "./filters";
-import { SalesTable } from "./sales-table";
-import { CreatorPicker } from "@/components/staff/creator-picker";
-import { creatorPeriodSales } from "@/lib/sales/creator-period";
+import { staffDashboard, type DashCategory } from "@/lib/staff/dashboard";
+import { baseHealth } from "@/lib/staff/insights";
+import { staffPeriod } from "@/lib/staff/period";
+import { shipmentBoard } from "@/lib/shipments/board";
+import { ShippedProductsCard } from "../envios/board";
 
 export const dynamic = "force-dynamic";
 
-const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
-const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "—");
-const WEEK = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-
-const query = (sp: Search, change: Partial<Search>) => {
-  const next = new URLSearchParams();
-  for (const [k, v] of Object.entries({ ...sp, ...change })) if (v) next.set(k, v);
-  const s = next.toString();
-  return s ? `?${s}` : "";
-};
-
-/** Quadros da conferência (D-SALESREVIEW): o que cada motivo pede à equipe. */
-const REVIEW: { key: ReviewKey; label: string; hint: string; tone: string; act?: { href: string; label: string } }[] = [
-  { key: "untyped", label: "Cupom sem tipo", hint: "a Ana classifica em Cupons", tone: "seg-bad", act: { href: "/admin/cupons", label: "Classificar" } },
-  { key: "noowner", label: "Cupom sem dona", hint: "de creator, sem dona na data", tone: "seg-bad" },
-  { key: "unknown", label: "Fora do sistema", hint: "código não cadastrado aqui", tone: "seg-warn" },
-  { key: "big", label: "Pedidos grandes", hint: `${BIG_ORDER_FACTOR}× o ticket médio ou mais`, tone: "seg-info" },
-  { key: "promo", label: "Cupom da marca", hint: "PROMO: não vai para creator", tone: "seg-info" },
-  { key: "nocode", label: "Sem cupom", hint: "venda direta da loja", tone: "seg-info" },
+type Search = { p?: string; periodo?: string; de?: string; ate?: string; tipo?: string; ordem?: string; q?: string };
+const CATS: { id: DashCategory; label: string }[] = [
+  { id: "", label: "Todos os tipos" },
+  { id: "INFLUENCER", label: "Influencer" },
+  { id: "PRESCRITOR", label: "Prescritor" },
+  { id: "UGC", label: "UGC" },
 ];
+const SORTS = [
+  ["vendas", "Vendas"],
+  ["comissao", "Comissão"],
+  ["pedidos", "Pedidos"],
+  ["ticket", "Ticket médio"],
+  ["variacao", "Mais subiu"],
+] as const;
+const pct = (v: number) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+const dm = (k: string | null) => (k ? `${k.slice(8, 10)}/${k.slice(5, 7)}` : "—");
 
-// Vendas = conferência dos pedidos (D-SALESREVIEW, pedido do responsável em 2026-11-11): o painel fica no Início; aqui,
-// cada pedido com a creator que levou (ou o motivo), os quadros do que conferir, o pedido no painel lateral e o CSV.
-export default async function SalesPage({ searchParams }: { searchParams: Promise<Search> }) {
+/**
+ * D-SALESRANK (responsável, daily de 2026-11-19): Vendas é a tela de decisão. Números do período com a comparação, o
+ * ranking de creators (vendas, pedidos, comissão, ticket, variação, última venda) e, embaixo, quem subiu, caiu, fez a
+ * 1ª venda, saúde da base e produtos mais vendidos. "Venda" = valor dos produtos dos pedidos pagos, pela data do
+ * pagamento (o mesmo da comissão). A conferência pedido a pedido está na aba Pedidos.
+ */
+export default async function SalesRankingPage({ searchParams }: { searchParams: Promise<Search> }) {
   const actor = await currentActor();
   if (!actor) redirect("/entrar?next=/admin/vendas");
   const { brand } = await staffContext(actor);
   if (!brand) return <p className={ui.muted}>Nenhuma marca.</p>;
-  if (!can(actor.grants, "money.view", brand.id)) redirect("/conta");
+  if (!can(actor.grants, "money.view", brand.id)) redirect("/admin");
   const sp = await searchParams;
-  const { timezone } = await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } });
-  const period = salesPeriod(sp, timezone, new Date(), (await cookies()).get(PERIOD_COOKIE)?.value ?? null);
-  const base = filtersOf(sp, period);
-  const review = await salesReview(db(), brand.id, base);
-  const motivo = (["untyped", "noowner", "unknown", "big", "promo", "nocode", "pending", "lost"] as const).find((m) => m === sp.motivo);
-  const ids = motivo === "pending" ? review.pending.ids : motivo === "lost" ? review.lost.ids : motivo ? review.kinds[motivo].ids : undefined;
-  const f = { ...base, ...(ids ? { ids } : {}) };
-  const page = Math.max(1, Number.parseInt(sp.pagina ?? "1", 10) || 1);
-  // D-PERIODPICK: a creator escolhida (lista e resumo dela no período).
-  const [r, creators, mine] = await Promise.all([
-    listSales(db(), brand.id, f, page),
-    db().creator.findMany({ where: { brandId: brand.id }, select: { id: true, archivedAt: true, account: { select: { name: true } } }, orderBy: { account: { name: "asc" } } }),
-    f.creatorId ? creatorPeriodSales(db(), f.creatorId, period, timezone) : Promise.resolve(null),
+  const tz = (await db().brand.findUniqueOrThrow({ where: { id: brand.id }, select: { timezone: true } })).timezone;
+  const period = await staffPeriod(sp, tz);
+  const today = dayKey(new Date(), tz);
+  const category = CATS.find((c) => c.id === sp.tipo)?.id ?? "";
+  const range = { gte: startOfLocalDay(period.from, tz), lt: startOfLocalDay(nextDayKey(period.to), tz) };
+  const [d, health, products, ship] = await Promise.all([
+    staffDashboard(db(), brand.id, period, category),
+    baseHealth(db(), brand.id, category, range),
+    productReport(db(), brand.id, period, "creators"),
+    // D-SHIPSIMPLE: o relatório de produtos enviados (antes na Visão geral do Desempenho).
+    can(actor.grants, "shipping.view", brand.id) ? shipmentBoard(db(), actor, brand.id, [], new Date(), range) : Promise.resolve(null),
   ]);
-  const options = creators.map((c) => ({ id: c.id, name: c.archivedAt ? `${c.account.name} (arquivada)` : c.account.name }));
-  const chosen = f.creatorId ? (options.find((o) => o.id === f.creatorId) ?? null) : null;
-  const pages = Math.max(1, Math.ceil(r.total / SALES_PAGE_SIZE));
-  const allCount = SALE_STATUSES.reduce((s, k) => s + r.counts[k], 0);
-  const keep = { p: sp.p ?? "", periodo: sp.periodo ?? "", de: sp.de ?? "", ate: sp.ate ?? "", creator: f.creatorId ?? "" };
-  const toggle = (m: string) => `/admin/vendas${query(sp, { motivo: sp.motivo === m ? "" : m, pagina: "" })}#lista`;
-  const heatMax = Math.max(1, ...review.heat.flat());
-  const bestSlot = review.heat.flatMap((row, d) => row.map((n, h) => ({ d, h, n }))).sort((a, b) => b.n - a.n)[0];
+  const k = d.kpis;
+  const phrase = periodPhrase(pickPeriod(period.key ?? null, today));
+  const ordem = SORTS.find(([v]) => v === sp.ordem)?.[0] ?? "vendas";
+  const q = (sp.q ?? "").trim().toLowerCase();
+  const rows = d.ranking
+    .filter((r) => !q || r.name.toLowerCase().includes(q) || (r.instagram ?? "").toLowerCase().includes(q))
+    .sort((a, b) =>
+      ordem === "comissao" ? b.commissionCents - a.commissionCents
+      : ordem === "pedidos" ? b.orders - a.orders
+      : ordem === "ticket" ? b.ticketCents - a.ticketCents
+      : ordem === "variacao" ? (b.salesCents - b.beforeCents) - (a.salesCents - a.beforeCents)
+      : b.salesCents - a.salesCents);
+  const keep = (extra: Record<string, string>) => {
+    const u = new URLSearchParams();
+    if (period.key) u.set("p", period.key);
+    if (category) u.set("tipo", category);
+    if (sp.q) u.set("q", sp.q);
+    if (ordem !== "vendas") u.set("ordem", ordem);
+    for (const [kk, v] of Object.entries(extra)) if (v) u.set(kk, v); else u.delete(kk);
+    const s = u.toString();
+    return `/admin/vendas${s ? `?${s}` : ""}`;
+  };
 
   return (
-    <GlassLight className="dash flex flex-col gap-4">
-      <section className="@container relative isolate overflow-hidden rounded-[32px] text-white shadow-[0_30px_60px_-34px_var(--brand)]">
-        <div aria-hidden className="brand-art absolute inset-0 -z-10" />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(80%_60%_at_50%_-20%,rgb(255_255_255/0.22),transparent_70%)]" />
-        <div className="flex flex-col gap-5 p-5 md:p-7">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brand.name}</p>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Vendas</h1>
-              <p className="mt-1 max-w-2xl text-sm text-white/80">
-                Conferência dos pedidos de {dmy(period.from)} a {dmy(period.to)}: <strong className="text-white">{review.all.n}</strong> pedidos,{" "}
-                <strong className="text-white">{review.withCreator.n}</strong> com creator ({pct(review.withCreator.n, review.all.n)}). Os números do período estão no Início.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* D-PERIODPICK: o mesmo seletor de tempo de todas as abas. */}
-              <PeriodPicker value={period.key ?? ""} today={dayKey(new Date(), timezone)} tone="brand" />
-            </div>
+    <GlassLight className="dash @container flex min-w-0 flex-col gap-6">
+      <section className="relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_26px_60px_-30px_var(--brand)] md:p-6">
+        <div aria-hidden className="brand-art absolute inset-0" />
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_-20%,rgb(255_255_255/0.22),transparent_60%)]" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/70">{brand.name}</p>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Vendas de creators</h1>
+            <p className="text-sm text-white/80">{phrase} · comparado com o período anterior do mesmo tamanho</p>
           </div>
-          <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4 @6xl:grid-cols-8">
-            {[
-              { key: "pending", label: "Aguardando", n: review.pending.n, sub: <M>{shortBRL(review.pending.cents)}</M>, hint: "pagamento", tone: "seg-warn" },
-              { key: "lost", label: "Estornadas", n: review.lost.n, sub: <M>{shortBRL(review.lost.cents)}</M>, hint: review.lost.reversedCents ? "comissão devolvida" : "e canceladas", tone: "seg-bad" },
-              ...REVIEW.map((x) => ({ key: x.key, label: x.label, n: review.kinds[x.key].n, sub: <M>{shortBRL(review.kinds[x.key].cents)}</M>, hint: x.hint, tone: x.tone })),
-            ].map((t) => {
-              const on = sp.motivo === t.key;
-              return (
-                <Link key={t.key} href={toggle(t.key)} aria-current={on ? "true" : undefined} className={`seg-tile frost-tile flex min-w-0 flex-col items-start gap-0.5 rounded-2xl px-3.5 py-3 text-stone-900 dark:text-white ${on ? "is-on" : ""}`}>
-                  <span className="flex w-full items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-300"><span className="truncate">{t.label}</span><span className={`seg-dot ${t.tone}`} /></span>
-                  <span className="flex items-baseline gap-1.5"><span className="text-2xl font-semibold tabular-nums leading-tight">{t.n}</span><span className="text-xs text-stone-500 dark:text-stone-300">{t.sub}</span></span>
-                  <span className="w-full truncate text-[11px] text-stone-500 dark:text-stone-300">{t.hint}</span>
-                </Link>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-2">
+            <PeriodPicker value={period.key ?? ""} today={today} tone="brand" />
+            <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
           </div>
+        </div>
+        <div className="relative mt-5 grid grid-cols-2 gap-3 @3xl:grid-cols-4">
+          <HeroStat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{k.sales.orders} pedidos · {pct(k.sales.storeShare)} da loja</>} />
+          <HeroStat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas</>} />
+          <HeroStat label="Creators vendendo" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas{d.stopped ? ` · ${d.stopped} pararam` : ""}</>} />
+          <HeroStat label="Ticket médio" value={<M>{formatBRL(k.units.ticketCents)}</M>} change={null} hint={<>por pedido</>} />
         </div>
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <section id="lista" className="glass flex scroll-mt-4 flex-col gap-3 overflow-hidden rounded-3xl !p-0">
-          <div className="flex flex-col gap-3 p-4 pb-0 md:p-5 md:pb-0">
-            <div className="-mx-1 flex gap-1 overflow-x-auto px-1">
-              <Link href={`/admin/vendas${query(sp, { situacao: "", pagina: "" })}#lista`} className={`shrink-0 rounded-full px-3 py-1 text-sm ${f.status ? "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300" : "bg-stone-900 text-white dark:bg-white dark:text-stone-900"}`}>
-                Todas <span className="tabular-nums opacity-60">{allCount}</span>
-              </Link>
-              {SALE_STATUSES.map((s) => (
-                <Link key={s} href={`/admin/vendas${query(sp, { situacao: s, pagina: "" })}#lista`} className={`shrink-0 rounded-full px-3 py-1 text-sm ${f.status === s ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900" : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-300"}`}>
-                  {SALE_STATUS_LABEL[s]} <span className="tabular-nums opacity-60">{r.counts[s]}</span>
-                </Link>
-              ))}
-            </div>
-            <form className="flex flex-wrap items-center gap-2" role="search">
-              {Object.entries(keep).map(([n, v]) => v && <input key={n} type="hidden" name={n} value={v} />)}
-              {f.status && <input type="hidden" name="situacao" value={f.status} />}
-              {sp.motivo && <input type="hidden" name="motivo" value={sp.motivo} />}
-              <label className="relative min-w-0 flex-[1_1_14rem]">
-                <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                <input name="q" defaultValue={f.q} placeholder="Pedido, cupom ou creator" aria-label="Buscar venda" className={`${ui.input} !rounded-full pl-10`} />
-              </label>
-              <CreatorPicker key={f.creatorId ?? ""} options={options} value={f.creatorId ?? null} />
-              <select name="dona" defaultValue={sp.dona ?? ""} aria-label="Creator" className={`${ui.inputSm} !rounded-full`}>
-                <option value="">Com e sem creator</option>
-                <option value="creator">Só com creator</option>
-                <option value="sem">Só sem creator</option>
-              </select>
-              <button className={ui.btnSm}>Buscar</button>
-              <span className="ml-auto flex items-center gap-2">
-                <HideValuesToggle />
-                <a href={`/admin/vendas/csv${query(sp, { pagina: "" })}`} className={ui.ghostSm}><Download className="size-3.5" /> CSV</a>
-              </span>
-            </form>
-            {chosen && mine && (
-              <div className="liquid-tile grid grid-cols-2 items-end gap-x-6 gap-y-3 rounded-2xl px-4 py-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]">
-                <div className="col-span-2 min-w-0 sm:col-span-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{period.label ?? `${dmy(period.from)} a ${dmy(period.to)}`}</p>
-                  <Link href={`/admin/creators/${chosen.id}`} className="font-semibold hover:underline">{chosen.name}</Link>
-                </div>
-                {[
-                  { k: "Vendido", v: <M>{formatBRL(mine.salesCents)}</M> },
-                  { k: "Pedidos pagos", v: mine.orders },
-                  { k: "Comissão", v: <M>{formatBRL(mine.commissionCents)}</M> },
-                  { k: "Ticket médio", v: <M>{formatBRL(mine.ticketCents)}</M> },
-                ].map((x) => (
-                  <div key={x.k} className="flex flex-col">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{x.k}</span>
-                    <span className="whitespace-nowrap text-lg font-semibold tabular-nums">{x.v}</span>
-                  </div>
-                ))}
-                <p className="col-span-full text-[11px] text-stone-500">Pedidos pagos no período, pela data do pagamento (a mesma regra da comissão). A lista abaixo mostra todos os pedidos dela feitos no período.</p>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
-              <span>
-                <strong className="text-stone-800 dark:text-stone-100">{r.total}</strong> {r.total === 1 ? "pedido" : "pedidos"} · <M>{formatBRL(r.subtotalCents)}</M> em produtos dos pagos (a base da comissão) ·{" "}
-                {searchesAllTime(sp) ? "busca em todas as datas" : `feitos de ${dmy(period.from)} a ${dmy(period.to)}`}
-                {sp.motivo && <> · <Link href={`/admin/vendas${query(sp, { motivo: "", pagina: "" })}#lista`} className="font-semibold text-brand hover:underline dark:text-brand-2">tirar o quadro</Link></>}
-              </span>
-              {pages > 1 && <Pager sp={sp} page={Math.min(page, pages)} pages={pages} />}
-            </div>
+      <section className="glass overflow-hidden rounded-3xl !p-0">
+        <header className="flex flex-col gap-3 border-b border-stone-200/70 p-4 dark:border-white/10 md:p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-base font-semibold">Ranking de creators <span className="font-normal text-stone-500">· {rows.length} {rows.length === 1 ? "vendeu" : "venderam"} {phrase}</span></h2>
+            {d.concentration.alert && <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:text-amber-200">A maior faz {pct(d.concentration.top1)} das vendas</span>}
           </div>
-          {r.rows.length === 0 ? (
-            <p className="p-10 text-center text-sm text-stone-500">Nenhum pedido com esses filtros.</p>
-          ) : (
-            <SalesTable rows={r.rows.map((o) => ({ ...o, createdAt: o.createdAt.toISOString(), paidAt: o.paidAt ? o.paidAt.toISOString() : null }))} />
-          )}
-          {pages > 1 && <div className="flex justify-center pb-4"><Pager sp={sp} page={Math.min(page, pages)} pages={pages} /></div>}
-        </section>
+          <form className="flex flex-wrap items-center gap-2" role="search">
+            {period.key && <input type="hidden" name="p" value={period.key} />}
+            <label className="relative min-w-0 flex-[1_1_14rem]">
+              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+              <input name="q" defaultValue={sp.q ?? ""} placeholder="Buscar creator" aria-label="Buscar creator" className={`${ui.input} !rounded-full pl-10`} />
+            </label>
+            <select name="tipo" defaultValue={category} aria-label="Tipo" className={`${ui.inputSm} !rounded-full`}>
+              {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <select name="ordem" defaultValue={ordem} aria-label="Ordenar por" className={`${ui.inputSm} !rounded-full`}>
+              {SORTS.map(([v, l]) => <option key={v} value={v}>Ordenar: {l}</option>)}
+            </select>
+            <button className={ui.btnSm}>Aplicar</button>
+            {(sp.q || category || ordem !== "vendas") && <Link href={keep({ q: "", tipo: "", ordem: "" })} className={`${ui.link} text-sm`}>Limpar</Link>}
+          </form>
+        </header>
+        {rows.length === 0 ? (
+          <p className="p-10 text-center text-sm text-stone-500">Nenhuma venda de creator {phrase}.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wide text-stone-500">
+                <tr className="border-b border-stone-200/70 dark:border-white/10">
+                  <th className="w-12 px-4 py-2 font-semibold">#</th>
+                  <th className="px-3 py-2 font-semibold">Creator</th>
+                  <th className="px-3 py-2 text-right font-semibold">Vendas</th>
+                  <th className="px-3 py-2 text-right font-semibold">Pedidos</th>
+                  <th className="px-3 py-2 text-right font-semibold">Comissão</th>
+                  <th className="px-3 py-2 text-right font-semibold">Ticket</th>
+                  <th className="px-3 py-2 text-right font-semibold">vs anterior</th>
+                  <th className="px-4 py-2 text-right font-semibold">Última venda</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-200/70 dark:divide-white/10">
+                {rows.map((r) => {
+                  const diff = r.salesCents - r.beforeCents;
+                  const Icon = diff > 0 ? ArrowUpRight : diff < 0 ? ArrowDownRight : Minus;
+                  return (
+                    <tr key={r.id} className="hover:bg-stone-500/5">
+                      <td className="px-4 py-2.5 tabular-nums text-stone-500">{r.position}</td>
+                      <td className="px-3 py-2.5">
+                        <Link href={`/admin/creators/${r.id}`} className="font-medium hover:underline">{r.name}</Link>
+                        <span className="block text-[11px] text-stone-500">
+                          {r.categories.map((c) => CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] ?? c).join(" · ") || "—"}{r.instagram ? ` · @${r.instagram}` : ""} · {pct(r.share)} das vendas
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-semibold tabular-nums"><M>{formatBRL(r.salesCents)}</M></td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{r.orders}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums"><M>{formatBRL(r.commissionCents)}</M></td>
+                      <td className="px-3 py-2.5 text-right tabular-nums"><M>{formatBRL(r.ticketCents)}</M></td>
+                      <td className={`px-3 py-2.5 text-right tabular-nums ${diff > 0 ? "text-emerald-700 dark:text-emerald-400" : diff < 0 ? "text-red-700 dark:text-red-400" : "text-stone-500"}`}>
+                        <span className="inline-flex items-center gap-0.5"><Icon className="size-3.5" />{r.change === null ? "nova" : `${r.change > 0 ? "+" : ""}${r.change.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}</span>
+                        <span className="block text-[11px] text-stone-500">antes <M>{shortBRL(r.beforeCents)}</M></span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-stone-600 dark:text-stone-300">{dm(r.lastSaleDay)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="border-t border-stone-200/70 px-4 py-3 text-xs text-stone-500 dark:border-white/10 md:px-5">
+          Venda = valor dos produtos dos pedidos pagos com o cupom dela, pela data do pagamento (o mesmo que vira comissão). Para conferir pedido a pedido, aba <Link href="/admin/vendas/pedidos" className={ui.link}>Pedidos</Link>.
+        </p>
+      </section>
 
-        <aside className="flex min-w-0 flex-col gap-4">
-          <section className="glass flex flex-col gap-3 rounded-3xl p-4">
-            <h2 className={ui.h2}>Quando vendem (com creator)</h2>
-            <div className="grid grid-cols-[1.75rem_repeat(24,minmax(0,1fr))] gap-[2px] text-[9px] text-stone-400">
-              {review.heat.map((row, d) => (
-                <div key={d} className="contents">
-                  <span className="self-center">{WEEK[d]}</span>
-                  {row.map((n, h) => (
-                    <span key={h} title={`${WEEK[d]} ${h}h: ${n} pedido${n === 1 ? "" : "s"}`} className="aspect-square rounded-[3px]" style={{ background: n ? `color-mix(in srgb, var(--brand) ${Math.round(18 + (n / heatMax) * 82)}%, transparent)` : "rgb(120 113 108 / 0.08)" }} />
-                  ))}
-                </div>
-              ))}
-              <span />
-              {Array.from({ length: 24 }, (_, h) => <span key={h} className="text-center">{h % 6 === 0 ? h : ""}</span>)}
-            </div>
-            <p className="text-xs text-stone-500">{bestSlot && bestSlot.n ? <>Pico: <strong className="text-stone-700 dark:text-stone-200">{WEEK[bestSlot.d]} às {bestSlot.h}h</strong>. Pedidos pagos com cupom de creator, pela hora do pagamento.</> : "Sem vendas com creator no período."}</p>
-          </section>
-          <section className="glass flex flex-col gap-3 rounded-3xl p-4">
-            <h2 className={`${ui.h2} flex items-center gap-2`}><TicketPercent className="size-4" /> Cupons fora do sistema</h2>
-            {review.unknownCodes.length === 0 ? (
-              <p className="text-sm text-stone-500">Todos os cupons usados no período estão cadastrados.</p>
-            ) : (
-              <>
-                <ul className="flex flex-col gap-1.5">
-                  {review.unknownCodes.slice(0, 10).map((c) => (
-                    <li key={c.code} className="flex items-center gap-2 text-sm">
-                      <Link href={`/admin/vendas${query(sp, { q: c.code, motivo: "", pagina: "" })}#lista`} className="min-w-0 flex-1 truncate font-mono hover:underline">{c.code}</Link>
-                      <span className="shrink-0 text-xs tabular-nums text-stone-500">{c.orders} ped. · <M>{shortBRL(c.cents)}</M></span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-[11px] text-stone-500">Usados na loja, mas não existem no Creator Club. Se algum é de creator, cadastre em <Link href="/admin/cupons" className="font-semibold text-brand hover:underline dark:text-brand-2">Cupons</Link>; os pedidos passam a contar para ela.</p>
-              </>
-            )}
-          </section>
-          <section className="glass flex flex-col gap-1 rounded-3xl p-4 text-sm">
-            <h2 className={ui.h2}>Ticket médio</h2>
-            <p><strong className="tabular-nums"><M>{formatBRL(review.avgTicketCents)}</M></strong> <span className="text-xs text-stone-500">nos pedidos pagos do período; acima de <M>{formatBRL(review.avgTicketCents * BIG_ORDER_FACTOR)}</M> entra em &quot;Pedidos grandes&quot;.</span></p>
-          </section>
-        </aside>
-      </div>
+      <OverviewCards d={d} health={health} program={products.program} productsWithoutCost={products.productsTotal - products.productsWithCost} topCreators={false} />
+      {ship && <ShippedProductsCard month={ship.month} periodLabel={phrase} />}
     </GlassLight>
-  );
-}
-
-/** Paginação compacta: 10 vendas por página, "1 de 10" com setas; volta para a lista, sem subir a página. */
-function Pager({ sp, page, pages }: { sp: Search; page: number; pages: number }) {
-  const go = (n: number) => `/admin/vendas${query(sp, { pagina: n > 1 ? String(n) : "" })}#lista`;
-  const arrow = "glass grid size-8 place-content-center rounded-full";
-  return (
-    <nav aria-label="Páginas" className="flex items-center gap-2 text-sm">
-      {page > 1 ? <Link href={go(page - 1)} className={arrow} aria-label="Página anterior"><ChevronLeft className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronLeft className="size-4" /></span>}
-      <span className="tabular-nums text-stone-600 dark:text-stone-300">{page} de {pages}</span>
-      {page < pages ? <Link href={go(page + 1)} className={arrow} aria-label="Próxima página"><ChevronRight className="size-4" /></Link> : <span className={`${arrow} opacity-30`}><ChevronRight className="size-4" /></span>}
-    </nav>
   );
 }

@@ -16,13 +16,14 @@ describe("menu da equipe por papel", () => {
     const tabs = (role: "SUPER_ADMIN" | "GESTAO" | "PAGAMENTO", label: string) =>
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
     expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas", "Conteúdo", "TikTok"]);
-    expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Shopify", "Importar", "Claude"]);
-    // M3.4b: quem não é super admin vê em Configurações só a aba Claude (ligar o próprio Claude).
-    expect(tabs("GESTAO", "Configurações")).toEqual(["Claude"]);
+    expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Cupons", "Shopify", "Importar", "Claude"]);
+    // M3.4b: quem não é super admin vê em Configurações a aba Claude; D-SALESRANK: a Gestão vê também Cupons.
+    expect(tabs("GESTAO", "Configurações")).toEqual(["Cupons", "Claude"]);
     // Cada papel só vê as abas que pode usar; o item do menu abre a primeira delas.
     expect(tabs("PAGAMENTO", "Creators")).toEqual(["Creators", "Candidatas", "Campanhas", "Conteúdo"]);
-    expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Produtos"]);
-    expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Produtos", "Cupons", "Desempenho"]);
+    expect(tabs("PAGAMENTO", "Vendas")).toEqual(["Vendas", "Pedidos", "Produtos"]);
+    // D-SALESRANK: Vendas abre no ranking; Pedidos é a lista; Cupons foi para Configurações.
+    expect(tabs("GESTAO", "Vendas")).toEqual(["Vendas", "Pedidos", "Produtos", "Redes e origem"]);
     // D-PAYQUEUE: Abertura e Planilha saíram de Configurações e ficam em Pagamentos → Relatórios.
     expect(tabs("GESTAO", "Pagamentos")).toEqual(["Pagamentos CNPJ", "Pagamentos CPF", "Relatórios"]);
     expect(tabs("PAGAMENTO", "Configurações")).toEqual(["Claude"]);
@@ -36,6 +37,9 @@ describe("menu da equipe por papel", () => {
     expect(activeTab(tabs, "/admin/saques/conferencia")).toBe("/saques/conferencia");
     expect(activeTab(tabs, "/admin/saques/nf/123")).toBe("/saques");
     expect(activeTab(tabs, "/admin/vendas")).toBeNull();
+    const sales = [{ href: "/vendas" }, { href: "/vendas/pedidos" }];
+    expect(activeTab(sales, "/admin/vendas/pedidos")).toBe("/vendas/pedidos");
+    expect(activeTab(sales, "/admin/vendas")).toBe("/vendas");
   });
 
   it("A1: painel da Alliance para super admin ou quem atende mais de uma marca; menu da Alliance", () => {
