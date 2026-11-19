@@ -1,7 +1,9 @@
 import { ArrowDownRight, ArrowUpRight, Minus, Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SalesChart } from "@/components/portal/sales-chart";
 import { HeroStat, M, OverviewCards } from "@/components/staff/dashboard-view";
+import { Card } from "@/components/ui/page";
 import { HideValuesToggle } from "@/components/staff/hide-values";
 import { PeriodPicker } from "@/components/staff/period-picker";
 import { Avatar } from "@/components/ui/avatar";
@@ -109,6 +111,13 @@ export default async function SalesRankingPage({ searchParams }: { searchParams:
           <HeroStat label="Ticket médio" value={<M>{formatBRL(k.units.ticketCents)}</M>} change={null} hint={<>por pedido</>} />
         </div>
       </section>
+
+      {/* D-HOMELINE: o gráfico por dia saiu do Início e fica aqui, embaixo dos números. */}
+      <Card title="Vendas de creators por dia">
+        <div className="money-chart">
+          <SalesChart days={d.days} previous={d.prevDays} bands={d.campaigns} />
+        </div>
+      </Card>
 
       <section className="glass overflow-hidden rounded-3xl !p-0">
         <header className="flex flex-col gap-3 border-b border-stone-200/70 p-4 dark:border-white/10 md:p-5">

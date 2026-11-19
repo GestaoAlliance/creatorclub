@@ -1,28 +1,18 @@
 import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { PeriodPicker } from "@/components/staff/period-picker";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import type { CSSProperties, ReactNode } from "react";
-import { SalesChart } from "@/components/portal/sales-chart";
 import { needsFor } from "@/lib/staff/needs";
 import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { formatBRL } from "@/domain";
+import { formatBRL, periodPhrase, pickPeriod } from "@/domain";
 import type { DashCategory, StaffDashboard } from "@/lib/staff/dashboard";
 import type { StaffHome } from "@/lib/staff/home";
 import type { BaseHealth, Cashflow } from "@/lib/staff/insights";
 import type { ProductReport } from "@/lib/reports/products";
-import { HideValuesToggle } from "./hide-values";
 import { GlassLight } from "@/components/ui/glass-light";
 
-const dmy = (k: string) => `${k.slice(8, 10)}/${k.slice(5, 7)}`;
 const pct = (v: number) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
-const CATS: { id: DashCategory; label: string }[] = [
-  { id: "", label: "Todos os tipos" },
-  { id: "INFLUENCER", label: "Influencer" },
-  { id: "UGC", label: "UGC" },
-  { id: "PRESCRITOR", label: "Prescritor" },
-];
 const CAT_LABEL: Record<string, string> = { INFLUENCER: "Influencer", UGC: "UGC", PRESCRITOR: "Prescritor" };
 
 /** Valor em dinheiro que some quando o "olho" está fechado (classe `money`). */
@@ -380,7 +370,7 @@ export function DashboardView({
   return (
     <GlassLight className="dash @container flex min-w-0 flex-col gap-6">
       <QueueRail h={h} brandName={brandName} />
-      {role === "gestao" && d && <MonthNumbers d={d} category={category} periodKey={periodKey} today={today} />}
+      {role === "gestao" && d && <MonthLine d={d} periodKey={periodKey} today={today} />}
       {role === "pagamento" && cash && (
         <>
           <CashCard c={cash} />
@@ -391,51 +381,22 @@ export function DashboardView({
   );
 }
 
-/** Os números do mês (vendas, comissão, creators vendendo, produtos) e o gráfico por dia. */
-function MonthNumbers({ d, category, periodKey, today }: { d: StaffDashboard; category: DashCategory; periodKey: string; today: string }) {
+/**
+ * D-HOMELINE (responsável, 2026-11-19): os números e o gráfico ficam em Vendas; no Início, uma linha com as vendas do
+ * mês, a variação e quantas creators venderam, com o atalho para o ranking.
+ */
+function MonthLine({ d, periodKey, today }: { d: StaffDashboard; periodKey: string; today: string }) {
   const k = d.kpis;
+  const ch = k.sales.change;
+  const phrase = periodPhrase(pickPeriod(periodKey || null, today));
   return (
-    <>
-      {/* D-LIQUIDHOME: arte da marca atrás (cores do banco) e os números em placas de vidro fosco por cima. */}
-      <section className="relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_26px_60px_-30px_var(--brand)] md:p-6">
-        <div aria-hidden className="brand-art absolute inset-0" />
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_-20%,rgb(255_255_255/0.22),transparent_60%)]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold leading-tight tracking-tight drop-shadow-sm">Números do período</h2>
-            <p className="text-sm text-white/80">
-              {dmy(d.period.from)} a {dmy(d.period.to)}, comparado com {dmy(d.previous.from)} a {dmy(d.previous.to)}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* D-PERIODPICK: o mesmo seletor de tempo de todas as abas. */}
-            <PeriodPicker value={periodKey} today={today} tone="brand" />
-            <form action="/admin/marca" className="flex items-center gap-1">
-              <select name="tipo" defaultValue={category} className="rounded-full border-0 bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur [&>option]:text-stone-900" aria-label="Tipo de creator">
-                {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
-              {periodKey && <input type="hidden" name="p" value={periodKey} />}
-              <button className="rounded-full bg-white/16 px-3 py-1.5 text-xs text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)] backdrop-blur hover:bg-white/25">Aplicar</button>
-            </form>
-            <span className="rounded-full bg-white/90 text-stone-900"><HideValuesToggle /></span>
-          </div>
-        </div>
-        <div className="relative mt-5 grid grid-cols-2 gap-3 @3xl:grid-cols-4">
-          <HeroStat label="Vendas de creators" value={<M>{formatBRL(k.sales.cents)}</M>} change={k.sales.change} hint={<>{pct(k.sales.storeShare)} da loja</>} />
-          <HeroStat label="Comissão gerada" value={<M>{formatBRL(k.commission.cents)}</M>} change={k.commission.change} hint={<>{pct(k.commission.rate)} das vendas</>} />
-          <HeroStat label="Creators vendendo" value={k.creators.sold} change={k.creators.change} hint={<>de {k.creators.active} ativas</>} />
-          <HeroStat label="Produtos vendidos" value={k.units.count} change={k.units.change} hint={<>{k.sales.orders} pedidos</>} />
-        </div>
-      </section>
-
-      {/* Pedido do responsável (2026-10-26): o Início da marca mostra só as vendas de creators (sem a loja inteira). */}
-      <Card title="Vendas de creators por dia">
-        <div className="money-chart">
-          <SalesChart days={d.days} previous={d.prevDays} bands={d.campaigns} />
-        </div>
-      </Card>
-      <Link href={`/admin/vendas${periodKey ? `?p=${encodeURIComponent(periodKey)}` : ""}`} className={`${ui.link} text-sm`}>Ranking de creators e mais números em Vendas →</Link>
-    </>
+    <Link href={`/admin/vendas${periodKey ? `?p=${encodeURIComponent(periodKey)}` : ""}`} className="glass group flex flex-wrap items-center gap-x-3 gap-y-1 rounded-3xl px-5 py-4 text-sm hover:shadow-sm">
+      <span className="text-stone-600 dark:text-stone-300">Vendas de creators {phrase}:</span>
+      <strong className="text-base tabular-nums"><M>{formatBRL(k.sales.cents)}</M></strong>
+      {ch !== null && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${ch > 0 ? "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300" : ch < 0 ? "bg-red-500/12 text-red-700 dark:text-red-300" : "bg-stone-500/10 text-stone-600"}`}>{ch > 0 ? "+" : ""}{ch.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% vs anterior</span>}
+      <span className="text-stone-600 dark:text-stone-300">· {k.creators.sold} de {k.creators.active} creators vendendo</span>
+      <span className="ml-auto inline-flex items-center gap-1 font-semibold text-brand dark:text-brand-2">Ver ranking <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+    </Link>
   );
 }
 

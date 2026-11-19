@@ -174,7 +174,10 @@ export function SalesChart({
           ) : null,
         )}
       </div>
-      <table className="sr-only">
+      {/* A tabela sozinha não respeita o recorte do sr-only (tabela ignora overflow) e esticava a página com uma linha
+          por dia; dentro de um bloco sr-only fica escondida de verdade. */}
+      <div className="sr-only">
+      <table>
         <caption>{metric === "commission" ? "Comissão por dia" : "Vendas por dia"}</caption>
         <thead><tr><th>Dia</th>{metric === "sales" && <th>Vendas</th>}{!noCommission && <th>Comissão</th>}<th>Pedidos</th></tr></thead>
         <tbody>
@@ -183,6 +186,7 @@ export function SalesChart({
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }

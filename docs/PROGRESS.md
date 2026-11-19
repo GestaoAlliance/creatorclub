@@ -317,6 +317,27 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-367 — 2026-11-19 — Início da Gestão com a fila e uma linha de vendas (D-HOMELINE)
+
+- O Início da Gestão fica com "O que fazer hoje" e uma linha: vendas de creators do período, variação, quantas venderam
+  e "Ver ranking". Os 4 números saíram (estão em Vendas) e o gráfico de vendas por dia foi para Vendas, embaixo dos
+  números. O Início do Pagamento (fila + Caixa das comissões) ficou igual.
+- Correção: a tabela escondida do gráfico (para leitor de tela) esticava a página com uma linha por dia (o Início no
+  "Ano" tinha ~8.500px de espaço vazio); vale também para o gráfico do portal da creator.
+- **Próxima:** perguntar ao responsável.
+
+### CP-366 — 2026-11-19 — Comprovantes da VermeFree conferidos (nada a lançar)
+
+- 7 comprovantes Pix da Sintonia Pharma (Sicredi), todos de 19/10/2026, R$ 3.228,35: pagam exatamente a aba
+  "SETEMBRO" da planilha "Pagamentos influencers - Verme Free" (Julia 171,18; Juliana 588,52; Ludimilla 404,89; Renato
+  Russi 32,97; Robson 65,93; Giovanna 87,03; Victoria 1.877,83), com valor e destinatário batendo com a chave Pix.
+- Já estavam descontados: os saldos de abertura de 18/11 (R$ 5.368,65, D-VFCONFIRM) são as abas de julho
+  (R$ 1.953,71) + setembro (R$ 3.414,94). A aba de agosto é cópia da de julho e não entrou.
+- Decisões do responsável: nada a mudar. Flavia Nagliati (R$ 153,62) e Thays Vecchi (R$ 32,97) sem comprovante ficam
+  descontadas; se reclamarem, ajusta. Julho não tem comprovantes (fica pela planilha). Juliana: julho foi pago inteiro
+  (R$ 250,79 em 16/07 + R$ 429,22), o desconto de R$ 680,01 está certo.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-365 — 2026-11-19 — Redes e origem em tabelas (D-IGSIMPLE)
 
 - Instagram: a parede de cartões virou o ranking em tabela (foto, @, seguidores, crescimento no mês, engajamento, venda
