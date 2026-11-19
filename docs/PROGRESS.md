@@ -317,6 +317,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-363 — 2026-11-19 — Produtos mais simples (D-PRODUCTSIMPLE)
+
+- Faixa: Receita, Unidades, Ticket médio e Acabando no estoque (o "Atenção" misturava estoque com produto sem custo; o
+  sem custo virou um aviso pequeno em cima do ranking). O lucro do programa saiu daqui (fica em Vendas → Retorno do
+  programa) e a lista "Não venderam" saiu.
+- Ranking de produtos em tabela com colunas nomeadas (unidades, vs anterior, receita, margem, estoque), como o de
+  creators. No painel do produto, as creators que mais venderam vêm primeiro, com foto.
+- Celular: nos dois rankings (Vendas e Produtos) os números principais vão embaixo do nome; antes a tabela ficava
+  cortada para o lado. Abaixo de telas muito largas, as caixas de Produtos vão para baixo do ranking.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-362 — 2026-11-19 — Foto da creator no ranking de Vendas
 
 - Pedido do responsável depois do merge do CP-361: a foto de cada creator (`Avatar`, a mesma das outras telas; sem

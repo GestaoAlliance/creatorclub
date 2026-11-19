@@ -136,17 +136,17 @@ export default async function SalesRankingPage({ searchParams }: { searchParams:
           <p className="p-10 text-center text-sm text-stone-500">Nenhuma venda de creator {phrase}.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full text-sm md:min-w-[760px]">
               <thead className="text-left text-[11px] uppercase tracking-wide text-stone-500">
                 <tr className="border-b border-stone-200/70 dark:border-white/10">
                   <th className="w-12 px-4 py-2 font-semibold">#</th>
                   <th className="px-3 py-2 font-semibold">Creator</th>
-                  <th className="px-3 py-2 text-right font-semibold">Vendas</th>
-                  <th className="px-3 py-2 text-right font-semibold">Pedidos</th>
-                  <th className="px-3 py-2 text-right font-semibold">Comissão</th>
-                  <th className="px-3 py-2 text-right font-semibold">Ticket</th>
-                  <th className="px-3 py-2 text-right font-semibold">vs anterior</th>
-                  <th className="px-4 py-2 text-right font-semibold">Última venda</th>
+                  <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Vendas</th>
+                  <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Pedidos</th>
+                  <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Comissão</th>
+                  <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Ticket</th>
+                  <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">vs anterior</th>
+                  <th className="hidden px-4 py-2 text-right font-semibold md:table-cell">Última venda</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200/70 dark:divide-white/10">
@@ -165,18 +165,20 @@ export default async function SalesRankingPage({ searchParams }: { searchParams:
                             <span className="block text-[11px] text-stone-500">
                               {r.categories.map((c) => CREATOR_CATEGORY_LABEL[c as CreatorCategoryValue] ?? c).join(" · ") || "—"}{r.instagram ? ` · @${r.instagram}` : ""} · {pct(r.share)} das vendas
                             </span>
+                            {/* No celular, os números principais embaixo do nome (a tabela inteira não cabe). */}
+                            <span className="flex flex-wrap gap-x-2 text-xs md:hidden"><span className="font-semibold tabular-nums"><M>{formatBRL(r.salesCents)}</M></span><span>{r.orders} pedidos</span><span className={r.salesCents >= r.beforeCents ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}>{r.change === null ? "nova" : `${r.change > 0 ? "+" : ""}${r.change.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}</span></span>
                           </span>
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-semibold tabular-nums"><M>{formatBRL(r.salesCents)}</M></td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{r.orders}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums"><M>{formatBRL(r.commissionCents)}</M></td>
-                      <td className="px-3 py-2.5 text-right tabular-nums"><M>{formatBRL(r.ticketCents)}</M></td>
-                      <td className={`px-3 py-2.5 text-right tabular-nums ${diff > 0 ? "text-emerald-700 dark:text-emerald-400" : diff < 0 ? "text-red-700 dark:text-red-400" : "text-stone-500"}`}>
+                      <td className="hidden px-3 py-2.5 text-right md:table-cell font-semibold tabular-nums"><M>{formatBRL(r.salesCents)}</M></td>
+                      <td className="hidden px-3 py-2.5 text-right md:table-cell tabular-nums">{r.orders}</td>
+                      <td className="hidden px-3 py-2.5 text-right md:table-cell tabular-nums"><M>{formatBRL(r.commissionCents)}</M></td>
+                      <td className="hidden px-3 py-2.5 text-right md:table-cell tabular-nums"><M>{formatBRL(r.ticketCents)}</M></td>
+                      <td className={`hidden px-3 py-2.5 text-right md:table-cell tabular-nums ${diff > 0 ? "text-emerald-700 dark:text-emerald-400" : diff < 0 ? "text-red-700 dark:text-red-400" : "text-stone-500"}`}>
                         <span className="inline-flex items-center gap-0.5"><Icon className="size-3.5" />{r.change === null ? "nova" : `${r.change > 0 ? "+" : ""}${r.change.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}</span>
                         <span className="block text-[11px] text-stone-500">antes <M>{shortBRL(r.beforeCents)}</M></span>
                       </td>
-                      <td className="px-4 py-2.5 text-right text-stone-600 dark:text-stone-300">{dm(r.lastSaleDay)}</td>
+                      <td className="hidden px-4 py-2.5 text-right md:table-cell text-stone-600 dark:text-stone-300">{dm(r.lastSaleDay)}</td>
                     </tr>
                   );
                 })}

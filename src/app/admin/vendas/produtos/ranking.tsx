@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles, X } from "lucide-re
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Avatar } from "@/components/ui/avatar";
 import { ProductThumb } from "@/components/ui/product-thumb";
 import { formatBRL, shortBRL, type Trend } from "@/domain";
 import type { DashPeriod } from "@/lib/staff/dashboard";
@@ -78,6 +79,24 @@ function Panel({ k, period, scope, onClose }: { k: string; period: DashPeriod; s
           {d === null && <p className="text-stone-500">Não deu para abrir este produto.</p>}
           {d && (
             <>
+              {/* D-PRODUCTSIMPLE: quem mais vendeu o produto vem primeiro, com a foto. */}
+              <section>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Creators que mais venderam este produto</p>
+                {d.creators.length === 0 ? (
+                  <p className="text-stone-500">Nenhuma creator vendeu este produto no período.</p>
+                ) : (
+                  <ol className="flex flex-col gap-1.5">
+                    {d.creators.map((c, i) => (
+                      <li key={c.id} className="flex items-center gap-2">
+                        <span className="w-4 text-xs tabular-nums text-stone-400">{i + 1}</span>
+                        <Avatar name={c.name} id={c.id} size="sm" />
+                        <Link href={`/admin/creators/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">{c.name}</Link>
+                        <span className="shrink-0 text-xs tabular-nums text-stone-500">{c.units} un. · <M>{shortBRL(c.cents)}</M></span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
               <section className="grid grid-cols-3 gap-2">
                 {[
                   { label: "Preço", value: d.priceCents !== null ? <M>{formatBRL(d.priceCents)}</M> : "—" },
@@ -97,22 +116,6 @@ function Panel({ k, period, scope, onClose }: { k: string; period: DashPeriod; s
                 </span>
                 <Sparkline weeks={d.weeks} className="h-8 w-36" />
               </section>
-              <section>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Creators que mais vendem</p>
-                {d.creators.length === 0 ? (
-                  <p className="text-stone-500">Nenhuma creator vendeu este produto no período.</p>
-                ) : (
-                  <ol className="flex flex-col gap-1.5">
-                    {d.creators.map((c, i) => (
-                      <li key={c.id} className="flex items-center gap-2">
-                        <span className="w-4 text-xs tabular-nums text-stone-400">{i + 1}</span>
-                        <Link href={`/admin/creators/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">{c.name}</Link>
-                        <span className="shrink-0 text-xs tabular-nums text-stone-500">{c.units} un. · <M>{shortBRL(c.cents)}</M></span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </section>
             </>
           )}
         </div>
@@ -125,45 +128,60 @@ function Panel({ k, period, scope, onClose }: { k: string; period: DashPeriod; s
 export function ProductRanking({ rows, period, scope }: { rows: RankRow[]; period: DashPeriod; scope: "creators" | "loja" }) {
   const [open, setOpen] = useState<string | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const list = useRef<HTMLOListElement>(null);
-  const max = Math.max(1, ...rows.map((r) => r.revenueCents));
+  const list = useRef<HTMLTableElement>(null);
   const colors = () => {
     const cs = list.current ? getComputedStyle(list.current) : null;
     return cs ? ({ "--brand": cs.getPropertyValue("--brand"), "--brand-2": cs.getPropertyValue("--brand-2") } as React.CSSProperties) : undefined;
   };
   return (
     <>
-      <ol ref={list} className="flex flex-col divide-y divide-stone-200/70 dark:divide-white/10">
-        {rows.map((r, i) => {
-          const marginPct = r.marginCents !== null && r.revenueCents ? Math.round((r.marginCents / r.revenueCents) * 100) : null;
-          return (
-            <li key={r.key}>
-              <button type="button" onClick={() => setOpen(r.key)} className={`group grid w-full grid-cols-[1.25rem_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 text-left transition-colors @2xl:grid-cols-[1.25rem_auto_minmax(0,1fr)_5.5rem_minmax(8rem,12rem)_4.5rem] md:px-5 ${open === r.key ? "bg-brand/8" : "hover:bg-white/50 dark:hover:bg-white/5"}`}>
-                <span className="text-right text-xs tabular-nums text-stone-400">{i + 1}</span>
-                <ProductThumb src={r.image} title={r.title} />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{r.title}</span>
-                  <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-stone-500">
-                    <span className="@2xl:hidden">{r.units} un.</span>
-                    {r.stockQty !== null && <span className={r.lowStock ? "font-semibold text-red-700 dark:text-red-300" : ""}>estoque {r.stockQty}{r.lowStock && r.coverDays !== null ? ` · ~${r.coverDays} dias` : ""}</span>}
-                    {r.unitCostCents === null && <span className="text-amber-700 dark:text-amber-300">sem custo</span>}
-                  </span>
-                </span>
-                <span className="hidden text-right @2xl:block">
-                  <span className="block text-sm font-semibold tabular-nums">{r.units}</span>
-                  <TrendTag t={r.trend} prev={r.prevUnits} />
-                </span>
-                <span className="flex flex-col items-end gap-1">
-                  <span className="text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"><M>{formatBRL(r.revenueCents)}</M></span>
-                  <span className="hidden h-1.5 w-full overflow-hidden rounded-full bg-stone-500/10 @2xl:block"><span className="block h-full rounded-full bg-emerald-500" style={{ width: `${(r.revenueCents / max) * 100}%` }} /></span>
-                  <span className="@2xl:hidden"><TrendTag t={r.trend} prev={r.prevUnits} /></span>
-                </span>
-                <span className={`hidden text-right text-sm font-semibold tabular-nums @2xl:block ${marginPct !== null ? marginTone(marginPct) : "text-stone-400"}`}>{marginPct !== null ? `${marginPct}%` : "—"}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+      {/* D-PRODUCTSIMPLE: tabela com as colunas nomeadas, como o ranking de creators; clicar abre o painel. */}
+      <div className="overflow-x-auto">
+        <table ref={list} className="w-full text-sm md:min-w-[720px]">
+          <thead className="whitespace-nowrap text-left text-[11px] uppercase tracking-wide text-stone-500">
+            <tr className="border-b border-stone-200/70 dark:border-white/10">
+              <th className="w-12 px-4 py-2 font-semibold">#</th>
+              <th className="px-3 py-2 font-semibold">Produto</th>
+              <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Unidades</th>
+              <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">vs anterior</th>
+              <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Receita</th>
+              <th className="hidden px-3 py-2 text-right font-semibold md:table-cell">Margem</th>
+              <th className="hidden px-4 py-2 text-right font-semibold md:table-cell">Estoque</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-200/70 dark:divide-white/10">
+            {rows.map((r, i) => {
+              const marginPct = r.marginCents !== null && r.revenueCents ? Math.round((r.marginCents / r.revenueCents) * 100) : null;
+              return (
+                <tr key={r.key} onClick={() => setOpen(r.key)} className={`cursor-pointer transition-colors ${open === r.key ? "bg-brand/8" : "hover:bg-stone-500/5"}`}>
+                  <td className="px-4 py-2.5 tabular-nums text-stone-500">{i + 1}</td>
+                  <td className="px-3 py-2.5">
+                    <span className="flex items-center gap-3">
+                      <ProductThumb src={r.image} title={r.title} />
+                      <span className="min-w-0">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(r.key); }} className="block text-left font-medium hover:underline md:max-w-[22rem] md:truncate">{r.title}</button>
+                        <span className="block text-[11px] text-stone-500">{r.orders} {r.orders === 1 ? "pedido" : "pedidos"}{r.unitCostCents === null ? " · " : ""}{r.unitCostCents === null && <span className="text-amber-700 dark:text-amber-300">sem custo</span>}</span>
+                        <span className="flex flex-wrap items-center gap-x-2 text-xs md:hidden"><span className="font-semibold tabular-nums">{r.units} un.</span><span className="tabular-nums"><M>{formatBRL(r.revenueCents)}</M></span><TrendTag t={r.trend} prev={r.prevUnits} />{r.lowStock && <span className="font-semibold text-red-700 dark:text-red-300">estoque {r.stockQty}</span>}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td className="hidden px-3 py-2.5 text-right md:table-cell font-semibold tabular-nums">{r.units}</td>
+                  <td className="hidden px-3 py-2.5 text-right md:table-cell">
+                    <TrendTag t={r.trend} prev={r.prevUnits} />
+                    <span className="block text-[11px] tabular-nums text-stone-500">antes {r.prevUnits} un.</span>
+                  </td>
+                  <td className="hidden px-3 py-2.5 text-right md:table-cell font-semibold tabular-nums"><M>{formatBRL(r.revenueCents)}</M></td>
+                  <td className={`hidden px-3 py-2.5 text-right md:table-cell font-semibold tabular-nums ${marginPct !== null ? marginTone(marginPct) : "text-stone-400"}`}>{marginPct !== null ? `${marginPct}%` : "—"}</td>
+                  <td className={`hidden px-4 py-2.5 text-right md:table-cell tabular-nums ${r.lowStock ? "font-semibold text-red-700 dark:text-red-300" : "text-stone-600 dark:text-stone-300"}`}>
+                    {r.stockQty !== null ? r.stockQty : "—"}
+                    {r.lowStock && r.coverDays !== null && <span className="block text-[11px]">~{r.coverDays} dias</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {open && typeof document !== "undefined" && createPortal(<div className="dash" style={colors()}><Panel k={open} period={period} scope={scope} onClose={close} /></div>, document.body)}
     </>
   );
