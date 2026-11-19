@@ -317,6 +317,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-368 — 2026-11-19 — Conexões do banco esgotadas (pré-carregamento) e envios da VermeFree registrados
+
+- Produção, 19/11 14:10: "max client connections reached (200)" em ~21 fichas de creator no mesmo segundo. Causa: o
+  `<Link>` pré-carrega a página inteira (sem `loading.js`, a rota dinâmica é renderizada); o ranking de Vendas abria
+  ~20 fichas de uma vez. Correção: `prefetch={false}` nos 46 links para `/admin/creators/[id]` (inclui o seletor de mês
+  da ficha). Nada muda para quem usa.
+- Envios cruzados com as planilhas "Envios de pedidos creators - Botanika" e "Envios - Vermefree": os antigos já
+  estavam no sistema como entregues. Registrado em produção (uma transação, AuditLog + nota na ficha): Keizy
+  (o envio "Preparando" de 11/10 → enviado, AP604834029BR), Aline Thaisa, Jutieli Marcon e Lorena Caires (envio novo
+  com o kit de boas-vindas fechado). Data: 19/11 com nota "data exata desconhecida" (responsável).
+- Ficam para Fátima/Vanessa: Anna Luiza Nicácio (planilha "Não" com rastreio), Flávia Macedo de Camargo (não é
+  creator), 6 envios da Botanika aprovados em 05/11 que nunca foram ao Olist, 3 travados por Whey sem custo na Shopify
+  e o kit de boas-vindas de 13/10 das creators antigas da VermeFree.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-367 — 2026-11-19 — Início da Gestão com a fila e uma linha de vendas (D-HOMELINE)
 
 - O Início da Gestão fica com "O que fazer hoje" e uma linha: vendas de creators do período, variação, quantas venderam
