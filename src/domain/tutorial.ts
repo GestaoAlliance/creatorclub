@@ -267,8 +267,8 @@ export const HELP = {
     text: "Instagram (seguidores, engajamento, posts sem cupom), UGC (vídeos do ciclo, quem está atrasada) e Origem (de onde vêm as creators que vendem).",
   },
   "de-cartoes": {
-    title: "Cartões",
-    text: "Toque num cartão para abrir o painel com os detalhes. Marque várias e mande a mensagem de uma vez pelo WhatsApp da marca.",
+    title: "Ranking e detalhes",
+    text: "Toque numa linha (ou num cartão da UGC) para abrir os detalhes. No Instagram, o título da coluna ordena a tabela.",
   },
 } as const satisfies Record<string, HelpTopic>;
 
