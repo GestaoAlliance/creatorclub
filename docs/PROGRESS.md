@@ -317,6 +317,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-367 — 2026-11-19 — Início da Gestão com a fila e uma linha de vendas (D-HOMELINE)
+
+- O Início da Gestão fica com "O que fazer hoje" e uma linha: vendas de creators do período, variação, quantas venderam
+  e "Ver ranking". Os 4 números saíram (estão em Vendas) e o gráfico de vendas por dia foi para Vendas, embaixo dos
+  números. O Início do Pagamento (fila + Caixa das comissões) ficou igual.
+- Correção: a tabela escondida do gráfico (para leitor de tela) esticava a página com uma linha por dia (o Início no
+  "Ano" tinha ~8.500px de espaço vazio); vale também para o gráfico do portal da creator.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-366 — 2026-11-19 — Comprovantes da VermeFree conferidos (nada a lançar)
 
 - 7 comprovantes Pix da Sintonia Pharma (Sicredi), todos de 19/10/2026, R$ 3.228,35: pagam exatamente a aba
