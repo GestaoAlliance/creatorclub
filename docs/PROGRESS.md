@@ -317,6 +317,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-370 — 2026-11-19 — "Sem post" sai da fila de ações (D-NOPOSTQUEUE)
+
+- Produção: a fila tinha 76 "sem post" na Botanika e 46 na VermeFree (Instagram da VermeFree nem está ligado; ninguém
+  registra post à mão; nenhuma ação da fila foi marcada como feita na Botanika e na VermeFree).
+- Decisão do responsável: "Sem post" sai da fila; fica só a lista de Creators → Conteúdo, e ela só aparece com o
+  Instagram da marca ligado e sem quem vendeu nos últimos 30 dias. `queue.ts` sem o bloco; `contentBoard` com
+  `soldSince`. Teste: `test/integration/posts.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-369 — 2026-11-19 — Janela de saque estendida até 22/11 na VermeFree e na Revita Derma
 
 - Pedido do responsável: igual à Botanika. Produção (AuditLog `brand.window_extended`): fim do pedido 15 → 22 só em

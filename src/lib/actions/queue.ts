@@ -4,8 +4,6 @@ import {
   ACTION_OWNER,
   actionRank,
   BIRTHDAY_WARN_DAYS,
-  NO_POST_DAYS,
-  POSTS_SINCE,
   actionDetail,
   actionMessage,
   CONTRACT_WARN_DAYS,
@@ -30,7 +28,6 @@ import { can } from "@/lib/auth/permissions";
 import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/release";
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
-import { lastPostDaysAll } from "@/lib/posts/content";
 import { notify } from "@/lib/notifications/notify";
 
 /**
@@ -155,16 +152,8 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
     if (next.days <= BIRTHDAY_WARN_DAYS) push(c.id, `BIRTHDAY:${c.id}:${next.day}`, { kind: "BIRTHDAY", day: next.day, days: next.days });
   }
 
-  // Sem post registrado há 15 dias (parceiras ativas; desde o último post, a entrada dela ou o início dos registros).
-  // D-CONTENTBOARD: post registrado ou detectado no Instagram (marcou a marca).
-  const lastPost = await lastPostDaysAll(prisma, brandId, partners.map((c) => c.id), tz);
-  for (const c of partners) {
-    const last = lastPost.get(c.id) ?? null;
-    const activated = dayKey(c.createdAt, tz);
-    const from = [last ?? POSTS_SINCE, POSTS_SINCE, activated].sort().at(-1)!;
-    const days = Math.floor((today - Date.parse(`${from}T00:00:00Z`)) / DAY);
-    if (days >= NO_POST_DAYS) push(c.id, `NO_POST:${c.id}:${last ?? "nunca"}`, { kind: "NO_POST", days, never: last === null });
-  }
+  // D-NOPOSTQUEUE (responsável, 2026-11-19): "Sem post" saiu da fila (gerava ruído: 76 na Botanika, 46 na VermeFree sem
+  // Instagram ligado). Fica só a lista "Sem post" em Creators → Conteúdo.
 
   // Pediu o link de acesso pelo site (D-ACCESSREQ).
   for (const c of creators) {
