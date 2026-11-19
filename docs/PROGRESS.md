@@ -317,6 +317,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-372 — 2026-11-19 — Comprovantes de julho da VermeFree conferidos (nada lançado)
+
+- 9 comprovantes novos (26–27/08/2026): julho inteiro bate com a planilha (Julia, Ludimilla, Renato, Flavia Nagliati,
+  Flavia Teles, Joingle, Osvaldo por TED, Orlando por TED, Juliana R$ 429,22 + R$ 250,79 de 16/07 confirmado pelo
+  responsável). Já estava descontado.
+- Atenção: Osvaldo recebeu R$ 289,29 de novo em 15/09 por Pix (a aba "agosto" é cópia da de julho); o CPF do Pix
+  (***.867.584-**) não é o dele. Decisão do responsável: deixar como está até falarem com ele (saldo R$ 370,20).
+- Janela de pedido de saque conferida: as 3 marcas de 5 a 22/11, pagamento de 20 a 25.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-371 — 2026-11-19 — Simulação do fechamento de 01/12 refeita com os dados de 19/11
 
 - Sem gravar nada (regra de `planReleases`, mínimo de R$ 100 de comissão). **Botanika:** 14 liberam (R$ 17.055,78;
