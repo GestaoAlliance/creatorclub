@@ -317,6 +317,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-375 — 2026-11-23 — Pedido de saque reaberto até 24/11 nas 3 marcas
+
+- Pedido do responsável (login fora do ar de 20 a 23/11): fim do pedido 22 → 24 em novembro (AuditLog
+  `brand.window_extended`); pagamento continua de 20 a 25; volta sozinho para o dia 15 em 01/12.
+- Conferido depois da queda: logins voltando, pedidos e comissões gravados durante a queda (176 pedidos desde 20/11),
+  tarefas automáticas sem atraso nem falha.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-374 — 2026-11-23 — Abas de Configurações de volta para o super admin
 
 - Desde o CP-328 o menu da marca usava o acesso recortado para a marca do topo, e as abas globais (Marcas, Equipe,
