@@ -73,18 +73,19 @@ const GROUPS: Group[] = [
   },
 ];
 
-function allowedTab(grants: readonly Grant[], t: Tab): boolean {
+function allowedTab(grants: readonly Grant[], t: Tab, globalGrants: readonly Grant[]): boolean {
   const ok = (p: Permission) => {
-    const b = brandsWith(grants, p);
+    // Aba global (Marcas, Equipe, Contratos…): vale o acesso de verdade, não o recortado para a marca do topo.
+    const b = brandsWith(t.global ? globalGrants : grants, p);
     return t.global ? b === "ALL" : b === "ALL" || b.length > 0;
   };
   return ok(t.needs) || (t.orNeeds !== undefined && ok(t.orNeeds));
 }
 
 /** Menu dentro de uma marca (A1, D-ALLIANCE): o Início da marca e os grupos que o papel pode usar, com as abas. */
-export function staffNav(grants: readonly Grant[]): NavItem[] {
+export function staffNav(grants: readonly Grant[], globalGrants: readonly Grant[] = grants): NavItem[] {
   const groups = GROUPS.flatMap((g): NavItem[] => {
-    const tabs = g.tabs.filter((t) => allowedTab(grants, t)).map(({ href, label }) => ({ href, label }));
+    const tabs = g.tabs.filter((t) => allowedTab(grants, t, globalGrants)).map(({ href, label }) => ({ href, label }));
     // U6: a hunter (sem a aba Hunters) vê o item com o nome da única aba dela, "Prospecção".
     const label = (g.icon === "hunter" || g.icon === "creators") && tabs.length === 1 ? tabs[0]!.label : g.label;
     return tabs.length ? [{ href: tabs[0]!.href, label, icon: g.icon, tabs }] : [];

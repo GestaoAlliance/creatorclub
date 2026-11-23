@@ -317,6 +317,13 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-374 — 2026-11-23 — Abas de Configurações de volta para o super admin
+
+- Desde o CP-328 o menu da marca usava o acesso recortado para a marca do topo, e as abas globais (Marcas, Equipe,
+  Contratos, Termo, Shopify, Importar) sumiram para o super admin: a Equipe ficou sem caminho. `staffNav(grants,
+  globalGrants)`: abas globais pelo acesso inteiro. Teste: `test/staff-nav.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-373 — 2026-11-23 — Supabase bloqueado por tráfego; consumo cortado (D-EGRESS)
 
 - 20 a 23/11: o Supabase restringiu o projeto (`exceed_egress_quota`, 402 no Auth): ninguém entrou de 19/11 22:27 até

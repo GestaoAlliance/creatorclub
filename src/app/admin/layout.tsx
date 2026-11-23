@@ -20,7 +20,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       isCreator={ctx.isCreator}
       alliance={hasAlliancePanel(actor.grants, ctx.brands.length)}
       search={(() => { const b = brandsWith(actor.grants, "creators.view"); return b === "ALL" || b.length > 0; })()}
-      brandItems={staffNav(ctx.brand ? scopeGrants(actor.grants, ctx.brand.id) : actor.grants)}
+      // As abas globais (Marcas, Equipe, Contratos…) usam o acesso inteiro; o resto, o recortado para a marca do topo.
+      brandItems={staffNav(ctx.brand ? scopeGrants(actor.grants, ctx.brand.id) : actor.grants, actor.grants)}
       allianceItems={allianceNav(actor.grants)}
     >
       {children}
