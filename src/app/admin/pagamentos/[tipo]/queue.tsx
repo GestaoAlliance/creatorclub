@@ -39,6 +39,18 @@ const REMIND = {
 };
 
 /** A mensagem para quem acabou de ser conferida e ainda não pediu (WhatsApp). */
+/** O que fazer em cada etapa (pedido do responsável, 2026-11-23: "não está intuitivo o que cada etapa faz"). */
+function stageHelp(f: Filter, doc: string): string {
+  switch (f) {
+    case "conferir": return "Confira se vendas × % batem com o valor no Creator Club e clique em Conferido. Só depois o saque pode ser aprovado.";
+    case "pedir": return `Já conferidas e com saldo, mas ainda não pediram o saque. Nada a aprovar: se quiser, mande um lembrete para pedirem com a ${doc}.`;
+    case "aprovar": return `Pediram o saque e mandaram a ${doc}. Confira a ${doc} e aprove (ou recuse com o motivo).`;
+    case "pagar": return "Aprovados, falta fazer o Pix. Gere a remessa do banco (ou pague um a um) e marque como pago.";
+    case "pago": return "Saques já pagos no período escolhido, com o comprovante.";
+    default: return "Todas as etapas em aberto. Clique numa etapa acima para ver só ela e o que fazer.";
+  }
+}
+
 function releaseMessage(kind: PayKind, month: string, cents: number) {
   const doc = kind === "CNPJ" ? "a nota fiscal, que tem que ser *exatamente*" : "o recibo, que tem que ser *exatamente*";
   return `Oi, {nome}! Tudo bem? 💛\n\nConferimos seu Creator Club e está tudo certo! Agora o pagamento é feito por lá: entre com seu login e senha e peça o saque da sua comissão de *${monthNamePt(month)}*.\n\nNo saque você envia ${doc} de *${formatBRL(cents)}* (a sua comissão de ${monthNamePt(month)}), para o financeiro aprovar.\n\nQualquer dúvida, me chama!`;
@@ -168,6 +180,7 @@ function List({ brandName, kind, tipo, items, filter, month, windowEnd, period, 
         )}
         {csvTab && items.length > 0 && <a href={`/admin/pagamentos/${tipo}/planilha?aba=${csvTab}&p=${encodeURIComponent(period.key)}`} className={ui.ghostSm}><Download className="size-3.5" />Planilha</a>}
       </header>
+      <p className="border-b border-stone-200/70 px-4 py-2.5 text-sm text-stone-600 dark:border-white/10 dark:text-stone-300 md:px-5">{stageHelp(filter, doc)}</p>
 
       {items.length === 0 ? (
         <p className="p-10 text-center text-sm text-stone-500">{filter === "abertos" ? "Nada em aberto. 🎉" : `Ninguém em "${title}".`}</p>

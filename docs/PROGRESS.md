@@ -317,6 +317,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-378 — 2026-11-23 — Uma frase explica cada aba da equipe
+
+- Vanessa e o responsável acharam que não estava claro o que cada aba faz. Toda aba da equipe (Creators, Candidatas,
+  Ações, Campanhas, Conteúdo, TikTok, Hunters, Prospecção, Vendas, Pedidos, Produtos, Redes e origem, Pagamentos CNPJ/CPF,
+  Relatórios e as de Configurações) ganhou uma frase fixa embaixo das abas: "**Nome** · para que serve" (`about` em
+  `src/lib/staff/nav.ts`, mostrado por `SectionTabs`).
+- Pagamentos: cada etapa (Conferir, Saque não solicitado, Aprovar, Pagar, Pagos, em aberto) mostra embaixo do título
+  da lista o que fazer nela (`stageHelp` em `queue.tsx`).
+- Testes: 396 unitários e 377 de integração passando; typecheck e build ok. D-TABHELP.
+
 ### CP-377 — 2026-11-23 — Pagamentos: "Saque não solicitado" no lugar de "Esperando o pedido"
 
 - Pedido da Vanessa: o nome confundia com pedido de produto. Etapa 2 da fila agora é "Saque não solicitado" (conferidas,
