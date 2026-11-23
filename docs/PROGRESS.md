@@ -317,6 +317,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-377 — 2026-11-23 — Pagamentos: "Saque não solicitado" no lugar de "Esperando o pedido"
+
+- Pedido da Vanessa: o nome confundia com pedido de produto. Etapa 2 da fila agora é "Saque não solicitado" (conferidas,
+  com saldo, que ainda não pediram o saque); textos da fila dizem "saque" onde diziam só "pedido".
+- **Próxima:** perguntar ao responsável.
+
 ### CP-376 — 2026-11-23 — Revita: só o Gel Creme Nano Retinal (sem Sérum e sem kit) (D-NOKIT)
 
 - Pedido da Fátima: parcerias só com 1 produto (Gel Creme Nano Retinal); sai o Sérum Pepti Code e o kit; contrato só o

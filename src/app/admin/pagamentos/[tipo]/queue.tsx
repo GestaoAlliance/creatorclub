@@ -23,7 +23,8 @@ const br = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : "�
 
 export type Filter = QueueStage | "abertos";
 
-const LABEL: Record<QueueStage, string> = { conferir: "Conferir", pedir: "Esperando o pedido", aprovar: "Aprovar", pagar: "Pagar", pago: "Pagos" };
+// D-PAYQUEUE + pedido da Vanessa (2026-11-23): "Saque não solicitado" (o nome antigo confundia com pedido de produto).
+const LABEL: Record<QueueStage, string> = { conferir: "Conferir", pedir: "Saque não solicitado", aprovar: "Aprovar", pagar: "Pagar", pago: "Pagos" };
 const CHIP: Record<QueueStage, string> = {
   conferir: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
   pedir: "bg-stone-500/12 text-stone-700 dark:text-stone-300",
@@ -66,8 +67,8 @@ export function PayQueue({ brandName, kind, tipo, items, counts, filter, month, 
   const tiles: QueueStage[] = ["conferir", "pedir", "aprovar", "pagar", "pago"];
   const hint: Record<QueueStage, string> = {
     conferir: "vendas × % = valor no sistema",
-    pedir: `conferidas, sem pedir a ${doc}`,
-    aprovar: `${doc} enviada, falta aprovar`,
+    pedir: "conferidas, ainda não pediram o saque",
+    aprovar: `pediram o saque com ${doc}, falta aprovar`,
     pagar: "aprovados, falta o Pix",
     pago: `Pix em ${period.label.toLowerCase()}`,
   };
@@ -140,7 +141,7 @@ function List({ brandName, kind, tipo, items, filter, month, windowEnd, period, 
       setMsg({ ids: [i.creatorId], names: [i.name], title: "Seu saque está liberado", body: releaseMessage(kind, out.month!, out.amountCents) });
       setRes({ key: i.key, ok: "Conferido. Mande a mensagem para ela pedir o saque." });
     } else {
-      setRes({ key: i.key, ok: out.requested ? "Conferido: o pedido dela já pode ser aprovado." : "Conferido." });
+      setRes({ key: i.key, ok: out.requested ? "Conferido: o saque dela já pode ser aprovado." : "Conferido." });
     }
     router.refresh();
   };
@@ -157,7 +158,7 @@ function List({ brandName, kind, tipo, items, filter, month, windowEnd, period, 
         {filter === "pago" && <PeriodPicker value={period.key} today={period.today} />}
         {(filter === "pedir" || filter === "abertos") && can.message && waiting.length > 1 && (
           <button type="button" className={ui.ghostSm} onClick={() => setMsg({ ids: waiting.map((i) => i.creatorId), names: waiting.map((i) => i.name), title: REMIND.title, body: REMIND.body.replace("{fim}", String(windowEnd)) })}>
-            <MessageCircle className="size-3.5" />Lembrar as {waiting.length} que não pediram
+            <MessageCircle className="size-3.5" />Lembrar as {waiting.length} que não pediram o saque
           </button>
         )}
         {filter === "pagar" && can.pay && payable.length > 1 && (
@@ -231,7 +232,7 @@ function List({ brandName, kind, tipo, items, filter, month, windowEnd, period, 
             </span>
           }
         >
-          {open.stage === "conferir" && <p className="rounded-2xl bg-amber-500/12 px-3 py-2.5 text-sm text-amber-900 dark:text-amber-200">Confira antes (botão Conferido na fila): o pedido só pode ser aprovado depois.</p>}
+          {open.stage === "conferir" && <p className="rounded-2xl bg-amber-500/12 px-3 py-2.5 text-sm text-amber-900 dark:text-amber-200">Confira antes (botão Conferido na fila): o saque só pode ser aprovado depois.</p>}
           <Panel r={open.stage === "conferir" ? { ...open.pay, canApprove: false } : open.pay} doc={doc} month={open.pay.month ?? month} />
         </SidePanel>
       )}
@@ -271,7 +272,7 @@ function Sub({ i, doc }: { i: QueueItem; doc: string }) {
   if (i.stage === "pedir" && c) {
     return (
       <span className={`${small} text-stone-500`}>
-        Conferido{c.check?.by ? ` por ${c.check.by.split(" ")[0]}` : ""} {c.check ? day(c.check.at) : ""} · ainda não pediu
+        Conferido{c.check?.by ? ` por ${c.check.by.split(" ")[0]}` : ""} {c.check ? day(c.check.at) : ""} · ainda não pediu o saque
         {!c.hasPix && <span className="ml-1 font-medium text-amber-800 dark:text-amber-300">· sem chave Pix</span>}
       </span>
     );
@@ -282,7 +283,7 @@ function Sub({ i, doc }: { i: QueueItem; doc: string }) {
     <>
       {i.stage === "aprovar" && (
         <span className={`${small} ${p.nfCheck === "MANUAL" ? "font-medium text-amber-800 dark:text-amber-300" : "text-stone-500"}`}>
-          Pedido em {day(p.requestedAt)} · {p.nfCheck === "OK" ? `${doc} conferida pelo sistema` : p.nfCheck === "MANUAL" ? `conferir a ${doc} na mão` : `${doc} enviada`}
+          Saque pedido em {day(p.requestedAt)} · {p.nfCheck === "OK" ? `${doc} conferida pelo sistema` : p.nfCheck === "MANUAL" ? `conferir a ${doc} na mão` : `${doc} enviada`}
         </span>
       )}
       {i.stage === "pagar" && (
@@ -354,7 +355,7 @@ function Panel({ r, doc, month }: { r: PayRow; doc: string; month: string }) {
         </div>
       )}
       {doc === "recibo" && <a href={`/admin/saques/recibo/${r.withdrawalId}`} target="_blank" rel="noopener noreferrer" className={`${ui.ghostSm} self-start`}><FileText className="size-3.5" />Recibo</a>}
-      <p className="text-xs text-stone-500">Pedido em {day(r.requestedAt)}{r.approvedAt ? ` · aprovado em ${day(r.approvedAt)}` : ""}{r.paidDay ? ` · pago em ${br(r.paidDay)}${r.paidBy ? ` por ${r.paidBy}` : ""}` : ""}</p>
+      <p className="text-xs text-stone-500">Saque pedido em {day(r.requestedAt)}{r.approvedAt ? ` · aprovado em ${day(r.approvedAt)}` : ""}{r.paidDay ? ` · pago em ${br(r.paidDay)}${r.paidBy ? ` por ${r.paidBy}` : ""}` : ""}</p>
       {r.pixReference && <p className="font-mono text-xs text-stone-500">ID do Pix: {r.pixReference}</p>}
       {r.bankRejected && (
         <p role="alert" className="rounded-2xl bg-red-500/10 px-3 py-2.5 text-sm text-red-800 dark:text-red-300">
