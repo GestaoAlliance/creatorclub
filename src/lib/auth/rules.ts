@@ -32,3 +32,17 @@ export function safeNextPath(raw: unknown): string {
     return DEFAULT_AFTER_LOGIN;
   }
 }
+
+/**
+ * D-AUTHDOWN: o erro do login veio do serviço fora do ar (e não da senha)? Sem resposta (rede), erro 5xx ou projeto
+ * bloqueado pela cota (402, como em 19 a 23/11). Senha errada (400) e excesso de tentativas (429) não contam: esses
+ * seguem com a mensagem única, que não revela se a conta existe.
+ */
+export function authServiceDown(error: unknown): boolean {
+  if (!error || typeof error !== "object") return true;
+  const status = (error as { status?: unknown }).status;
+  if (typeof status !== "number" || status === 0) return true;
+  return status === 402 || status >= 500;
+}
+
+export const AUTH_DOWN_MESSAGE = "O sistema está fora do ar agora. Não é a sua senha: tente de novo em alguns minutos.";
