@@ -317,6 +317,37 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-373 — 2026-11-23 — Supabase bloqueado por tráfego; consumo cortado (D-EGRESS)
+
+- 20 a 23/11: o Supabase restringiu o projeto (`exceed_egress_quota`, 402 no Auth): ninguém entrou de 19/11 22:27 até
+  23/11 15:38. O login mostrava "senha incorreta". A Sarah assinou o plano Pro (250 GB de tráfego/mês); voltou.
+- Causa (pg_stat_statements): o worker de cada minuto somava as vendas de todas as creators trazendo pedido por pedido
+  (meta e tabela mensal: ~109 mil e ~57 mil execuções × ~1.300 linhas); comissão por mês trazia o extrato inteiro.
+- Correção (responsável): verificações de produto a cada 15 min (`isKitTick`); `salesByMonth`,
+  `releaseAmountsByMonth` (COMMISSION) e a meta de vendas somadas no banco (`$queryRaw`, uma linha por creator e
+  mês/dia). Conferido em produção: mesmos valores, 144 linhas em vez de ~1.300.
+- Pendente: reabrir o pedido de saque (ninguém entrou de 20 a 22/11) — perguntar ao responsável.
+- **Próxima:** perguntar ao responsável.
+
+### CP-372 — 2026-11-19 — Comprovantes de julho da VermeFree conferidos (nada lançado)
+
+- 9 comprovantes novos (26–27/08/2026): julho inteiro bate com a planilha (Julia, Ludimilla, Renato, Flavia Nagliati,
+  Flavia Teles, Joingle, Osvaldo por TED, Orlando por TED, Juliana R$ 429,22 + R$ 250,79 de 16/07 confirmado pelo
+  responsável). Já estava descontado.
+- Atenção: Osvaldo recebeu R$ 289,29 de novo em 15/09 por Pix (a aba "agosto" é cópia da de julho); o CPF do Pix
+  (***.867.584-**) não é o dele. Decisão do responsável: deixar como está até falarem com ele (saldo R$ 370,20).
+- Janela de pedido de saque conferida: as 3 marcas de 5 a 22/11, pagamento de 20 a 25.
+- **Próxima:** perguntar ao responsável.
+
+### CP-371 — 2026-11-19 — Simulação do fechamento de 01/12 refeita com os dados de 19/11
+
+- Sem gravar nada (regra de `planReleases`, mínimo de R$ 100 de comissão). **Botanika:** 14 liberam (R$ 17.055,78;
+  Victoria R$ 9.279,78). **VermeFree:** 6 liberam (R$ 2.686,25). **Revita:** ninguém chega a R$ 100.
+- Perto do mínimo: Lorena Botanika R$ 99,44, Vanessa Stéfani R$ 89,28, Robson VF R$ 93,15, Andreza R$ 87,59.
+- Cadastro a acertar antes de 05/12 (mensagem para o grupo): Victoria sem acesso; Elaine Cunto PJ sem CNPJ/Pix/acesso;
+  Thays sem acesso e Pix; Flavia Nagliati sem Pix e CNPJ; Vanessa Ludwig sem Pix.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-370 — 2026-11-19 — "Sem post" sai da fila de ações (D-NOPOSTQUEUE)
 
 - Produção: a fila tinha 76 "sem post" na Botanika e 46 na VermeFree (Instagram da VermeFree nem está ligado; ninguém
