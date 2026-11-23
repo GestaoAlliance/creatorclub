@@ -317,6 +317,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-373 — 2026-11-23 — Supabase bloqueado por tráfego; consumo cortado (D-EGRESS)
+
+- 20 a 23/11: o Supabase restringiu o projeto (`exceed_egress_quota`, 402 no Auth): ninguém entrou de 19/11 22:27 até
+  23/11 15:38. O login mostrava "senha incorreta". A Sarah assinou o plano Pro (250 GB de tráfego/mês); voltou.
+- Causa (pg_stat_statements): o worker de cada minuto somava as vendas de todas as creators trazendo pedido por pedido
+  (meta e tabela mensal: ~109 mil e ~57 mil execuções × ~1.300 linhas); comissão por mês trazia o extrato inteiro.
+- Correção (responsável): verificações de produto a cada 15 min (`isKitTick`); `salesByMonth`,
+  `releaseAmountsByMonth` (COMMISSION) e a meta de vendas somadas no banco (`$queryRaw`, uma linha por creator e
+  mês/dia). Conferido em produção: mesmos valores, 144 linhas em vez de ~1.300.
+- Pendente: reabrir o pedido de saque (ninguém entrou de 20 a 22/11) — perguntar ao responsável.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-372 — 2026-11-19 — Comprovantes de julho da VermeFree conferidos (nada lançado)
 
 - 9 comprovantes novos (26–27/08/2026): julho inteiro bate com a planilha (Julia, Ludimilla, Renato, Flavia Nagliati,

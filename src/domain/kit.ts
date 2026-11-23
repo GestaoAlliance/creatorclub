@@ -186,3 +186,9 @@ export function welcomeChoice(answer: string | null | undefined): "one" | "video
   if (t.startsWith("1 produto")) return "one";
   return null;
 }
+
+/** D-EGRESS (responsável, 2026-11-23): as verificações de produto (meta e tabela mensal) rodam a cada 15 min no worker. */
+export const KIT_CHECK_EVERY_MINUTES = 15;
+export function isKitTick(now: Date): boolean {
+  return now.getUTCMinutes() % KIT_CHECK_EVERY_MINUTES === 0;
+}

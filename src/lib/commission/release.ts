@@ -32,19 +32,23 @@ const PAID = ["PAID", "PARTIALLY_REFUNDED"];
 /** Folga depois da meia-noite do dia 1 para chegarem os últimos pedidos do mês (reconciliação a cada 15 min). */
 export const CLOSING_GRACE_MS = 60 * 60 * 1000;
 
-/** Vendas elegíveis por creator e mês do pagamento. */
+/**
+ * Vendas elegíveis por creator e mês do pagamento. D-EGRESS (2026-11-23): somado dentro do banco (uma linha por
+ * creator e mês) em vez de trazer pedido por pedido; o projeto do Supabase foi bloqueado por excesso de tráfego.
+ * Mesmo critério de antes: pedidos pagos (ou parcialmente reembolsados), não cancelados, não teste, subtotal atual
+ * (negativo conta zero), pelo mês do pagamento no fuso da marca.
+ */
 export async function salesByMonth(prisma: Db, creatorIds: string[], timeZone: string): Promise<Map<string, Map<string, number>>> {
   const out = new Map<string, Map<string, number>>(creatorIds.map((id) => [id, new Map()]));
   if (creatorIds.length === 0) return out;
-  const rows = await prisma.orderAttribution.findMany({
-    where: { creatorId: { in: creatorIds }, order: { paidAt: { not: null }, financialStatus: { in: PAID }, cancelledAt: null, test: false } },
-    select: { creatorId: true, order: { select: { paidAt: true, subtotalCents: true } } },
-  });
-  for (const r of rows) {
-    const m = monthKey(r.order.paidAt!, timeZone);
-    const byMonth = out.get(r.creatorId)!;
-    byMonth.set(m, (byMonth.get(m) ?? 0) + Math.max(0, r.order.subtotalCents));
-  }
+  const rows = await prisma.$queryRaw<{ creatorId: string; month: string; cents: bigint }[]>`
+    SELECT oa."creatorId", to_char((o."paidAt" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM') AS month,
+           SUM(GREATEST(o."subtotalCents", 0))::bigint AS cents
+    FROM "OrderAttribution" oa JOIN "Order" o ON o.id = oa."orderId"
+    WHERE oa."creatorId" = ANY(${creatorIds}::text[]) AND o."paidAt" IS NOT NULL AND o."financialStatus"::text = ANY(${PAID}::text[])
+      AND o."cancelledAt" IS NULL AND o.test = false
+    GROUP BY 1, 2`;
+  for (const r of rows) out.get(r.creatorId)?.set(r.month, Number(r.cents));
   return out;
 }
 
@@ -56,11 +60,15 @@ export async function releaseAmountsByMonth(prisma: Db, creatorIds: string[], ti
   if (basis === "SALES") return salesByMonth(prisma, creatorIds, timeZone);
   const out = new Map<string, Map<string, number>>(creatorIds.map((id) => [id, new Map()]));
   if (creatorIds.length === 0) return out;
-  for (const e of await ledgerEntriesWithMonth(prisma, creatorIds, timeZone)) {
-    if ((e.type !== "COMMISSION" && e.type !== "REVERSAL") || !e.month) continue;
-    const byMonth = out.get(e.creatorId)!;
-    byMonth.set(e.month, (byMonth.get(e.month) ?? 0) + e.amountCents);
-  }
+  // D-EGRESS: comissões menos estornos somados no banco, pelo mês do extrato (D-MONTH: pagamento do pedido, senão o
+  // lançamento), em vez de trazer o extrato inteiro.
+  const rows = await prisma.$queryRaw<{ creatorId: string; month: string; cents: bigint }[]>`
+    SELECT l."creatorId", to_char((COALESCE(o."paidAt", l."createdAt") AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM') AS month,
+           SUM(l."amountCents")::bigint AS cents
+    FROM "LedgerEntry" l LEFT JOIN "Order" o ON o.id = l."orderId"
+    WHERE l."creatorId" = ANY(${creatorIds}::text[]) AND l.type::text IN ('COMMISSION', 'REVERSAL')
+    GROUP BY 1, 2`;
+  for (const r of rows) out.get(r.creatorId)?.set(r.month, Number(r.cents));
   return out;
 }
 

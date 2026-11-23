@@ -24,23 +24,21 @@ export async function grantGoalKits(prisma: PrismaClient, now = new Date()): Pro
     });
     if (creators.length === 0) continue;
     const earliest = creators.reduce((m, c) => (c.goalStartAt! < m ? c.goalStartAt! : m), creators[0]!.goalStartAt!);
-    const rows = await prisma.orderAttribution.findMany({
-      where: {
-        creatorId: { in: creators.map((c) => c.id) },
-        order: {
-          // D-TIERKIT: na marca com tabela mensal, a meta só conta as vendas de antes da tabela (Botanika: até outubro).
-          paidAt: { gte: startOfLocalDay(earliest.toISOString().slice(0, 10), brand.timezone), ...(brand.monthlyKitFrom ? { lt: startOfLocalDay(`${brand.monthlyKitFrom}-01`, brand.timezone) } : {}) },
-          financialStatus: { in: PAID },
-          cancelledAt: null,
-          test: false,
-        },
-      },
-      select: { creatorId: true, order: { select: { paidAt: true, subtotalCents: true } } },
-    });
+    // D-EGRESS: vendas somadas por creator e dia dentro do banco (antes vinha pedido por pedido a cada minuto).
+    const from = startOfLocalDay(earliest.toISOString().slice(0, 10), brand.timezone);
+    // D-TIERKIT: na marca com tabela mensal, a meta só conta as vendas de antes da tabela (Botanika: até outubro).
+    const until = brand.monthlyKitFrom ? startOfLocalDay(`${brand.monthlyKitFrom}-01`, brand.timezone) : new Date("9999-12-31T00:00:00Z");
+    const rows = await prisma.$queryRaw<{ creatorId: string; day: string; cents: bigint }[]>`
+      SELECT oa."creatorId", to_char((o."paidAt" AT TIME ZONE 'UTC') AT TIME ZONE ${brand.timezone}, 'YYYY-MM-DD') AS day,
+             SUM(GREATEST(o."subtotalCents", 0))::bigint AS cents
+      FROM "OrderAttribution" oa JOIN "Order" o ON o.id = oa."orderId"
+      WHERE oa."creatorId" = ANY(${creators.map((c) => c.id)}::text[]) AND o."paidAt" >= ${from} AND o."paidAt" < ${until}
+        AND o."financialStatus"::text = ANY(${PAID}::text[]) AND o."cancelledAt" IS NULL AND o.test = false
+      GROUP BY 1, 2`;
     const sales = new Map<string, { day: string; cents: number }[]>();
     for (const r of rows) {
       const list = sales.get(r.creatorId) ?? [];
-      list.push({ day: dayKey(r.order.paidAt!, brand.timezone), cents: Math.max(0, r.order.subtotalCents) });
+      list.push({ day: r.day, cents: Number(r.cents) });
       sales.set(r.creatorId, list);
     }
     for (const c of creators) {

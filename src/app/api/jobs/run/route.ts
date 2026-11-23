@@ -1,5 +1,6 @@
 import { closeDueMonths } from "@/lib/commission/release";
 import { grantGoalKits } from "@/lib/shipments/goal-kits";
+import { isKitTick } from "@/domain";
 import { grantTierKits } from "@/lib/shipments/tier-kits";
 import { db } from "@/lib/db";
 import { configuredSender } from "@/lib/email/sender";
@@ -37,10 +38,12 @@ export async function POST(request: Request): Promise<Response> {
     // D-CALENDAR: janela estendida num mês que passou volta ao fim normal (antes dos avisos do dia).
     const windowsRestored = await revertWindowExtensions(prisma);
     const released = await closeDueMonths(prisma);
-    // D-GOALKIT: produto liberado assim que a creator bate R$ 1.000 na janela da meta.
-    const goalKits = await grantGoalKits(prisma);
-    // D-TIERKIT: na Botanika (desde 2026-11), produtos pela tabela mensal, liberados por faixa.
-    const tierKits = await grantTierKits(prisma);
+    // D-GOALKIT: produto liberado quando a creator bate R$ 1.000 na janela da meta. D-TIERKIT: na Botanika (desde
+    // 2026-11), produtos pela tabela mensal, por faixa. D-EGRESS (responsável, 2026-11-23): a cada 15 min, não a cada
+    // minuto (as duas somam as vendas de todas as creators; rodar todo minuto estourou o tráfego do Supabase).
+    const kitTick = isKitTick(new Date());
+    const goalKits = kitTick ? await grantGoalKits(prisma) : 0;
+    const tierKits = kitTick ? await grantTierKits(prisma) : 0;
     // U5b (D-NOTICES): avisos por data (uma rodada por marca e dia) e e-mail dos avisos recentes, se houver remetente.
     const notices = await runDueNotices(prisma);
     // D-TRACKING: "Seus produtos chegaram?" 10 dias depois do envio sem "Recebi".

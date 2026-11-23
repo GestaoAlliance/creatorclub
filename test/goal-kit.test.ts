@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { goalWindow, goalWindowsUntil } from "@/domain";
+import { isKitTick } from "@/domain";
 
 describe("janelas da meta de vendas (D-GOALKIT)", () => {
   it("primeiros 45 dias, depois janelas fixas de 30", () => {
@@ -9,5 +10,12 @@ describe("janelas da meta de vendas (D-GOALKIT)", () => {
     expect(goalWindowsUntil("2026-10-27", "2026-10-26")).toEqual([]);
     expect(goalWindowsUntil("2026-10-27", "2026-12-10").map((w) => w.index)).toEqual([0]);
     expect(goalWindowsUntil("2026-10-27", "2026-12-11").map((w) => w.index)).toEqual([0, 1]);
+  });
+});
+
+describe("D-EGRESS: verificação de produto a cada 15 min", () => {
+  it("roda nos minutos 0, 15, 30 e 45", () => {
+    expect([0, 15, 30, 45].every((m) => isKitTick(new Date(Date.UTC(2026, 10, 23, 14, m, 3))))).toBe(true);
+    expect([1, 14, 16, 59].some((m) => isKitTick(new Date(Date.UTC(2026, 10, 23, 14, m, 0))))).toBe(false);
   });
 });
