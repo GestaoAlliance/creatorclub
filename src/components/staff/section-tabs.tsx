@@ -28,6 +28,8 @@ export function SectionTabs({ items, base = "/admin" }: { items: NavItem[]; base
     return () => ro.disconnect();
   }, [on, group?.label]);
   if (!group?.tabs || group.tabs.length < 2) return null;
+  const current = group.tabs.find((t) => t.href === on);
+  const about = current?.about;
   return (
     <div className="-mt-2">
       <nav ref={nav} aria-label={group.label} className={`liquid-tabs ${drop ? "is-ready" : ""}`}>
@@ -38,6 +40,8 @@ export function SectionTabs({ items, base = "/admin" }: { items: NavItem[]; base
           </Link>
         ))}
       </nav>
+      {/* O que é a aba aberta (pedido do responsável, 2026-11-23: "não está intuitivo o que cada aba faz"). */}
+      {about && <p className="mt-2 px-1 text-sm text-stone-600 dark:text-stone-300"><strong className="font-semibold text-stone-800 dark:text-stone-100">{current?.label}</strong> · {about}</p>}
     </div>
   );
 }
