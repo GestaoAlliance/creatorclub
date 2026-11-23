@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { normalizeEmail, safeNextPath } from "@/lib/auth/rules";
+import { authServiceDown, normalizeEmail, safeNextPath } from "@/lib/auth/rules";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /**
@@ -23,9 +23,14 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const supabase = await supabaseServer();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return back("senha");
-  } catch {
-    return back("senha");
+    if (error) {
+      if (!authServiceDown(error)) return back("senha");
+      console.error("login: serviço de login fora do ar", error.status, error.code);
+      return back("fora");
+    }
+  } catch (error) {
+    console.error("login: serviço de login fora do ar", error);
+    return back("fora");
   }
   return NextResponse.redirect(new URL(next, request.url), 303);
 }

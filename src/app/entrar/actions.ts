@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { publicOrigin } from "@/lib/site";
-import { normalizeEmail, passwordProblem } from "@/lib/auth/rules";
+import { AUTH_DOWN_MESSAGE, authServiceDown, normalizeEmail, passwordProblem } from "@/lib/auth/rules";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -20,9 +20,11 @@ export async function requestPasswordReset(_prev: FormState, form: FormData): Pr
   if (!email) return { error: "Informe um e-mail válido." };
   const origin = publicOrigin(await headers());
   const supabase = await supabaseServer();
-  await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/entrar/nova-senha`,
   });
+  // D-AUTHDOWN: com o serviço fora do ar nenhum e-mail sai; dizer "enviamos" faria a pessoa esperar à toa.
+  if (error && authServiceDown(error)) return { error: AUTH_DOWN_MESSAGE };
   // Mesma resposta exista ou não a conta.
   return { ok: "Se houver uma conta com esse e-mail, enviamos um link para criar uma nova senha." };
 }
@@ -34,7 +36,7 @@ export async function updatePassword(_prev: FormState, form: FormData): Promise<
   if (password !== form.get("confirm")) return { error: "As duas senhas não são iguais." };
   const supabase = await supabaseServer();
   const { data, error } = await supabase.auth.updateUser({ password: password as string });
-  if (error) return { error: "Não foi possível trocar a senha. Peça um novo link." };
+  if (error) return { error: authServiceDown(error) ? AUTH_DOWN_MESSAGE : "Não foi possível trocar a senha. Peça um novo link." };
   // D-ACCESSFIX: criou a própria senha: some a senha provisória da equipe.
   if (data.user) await db().user.updateMany({ where: { id: data.user.id, mustChangePassword: true }, data: { mustChangePassword: false } });
   redirect("/conta");

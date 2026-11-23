@@ -317,6 +317,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-379 — 2026-11-23 — Login avisa quando o sistema está fora do ar
+
+- No bloqueio do Supabase (19 a 23/11) a tela de entrar dizia "e-mail ou senha incorretos" e todos achavam que
+  tinham errado a senha. Agora, se o serviço de login não responde, dá erro do servidor (5xx) ou está bloqueado pela
+  cota (402), aparece: "O sistema está fora do ar agora. Não é a sua senha: tente de novo em alguns minutos."
+- Senha errada (400) e excesso de tentativas (429) seguem com a mensagem única, que não revela se a conta existe.
+- "Esqueci a senha" e "nova senha" também avisam a queda (antes diziam "enviamos o link" sem enviar nada).
+- `authServiceDown` em `src/lib/auth/rules.ts`; a queda fica registrada nos logs da Vercel ("login: serviço de login
+  fora do ar"). Testes: 399 unitários e 377 de integração passando; typecheck e build ok. D-AUTHDOWN.
+
 ### CP-378 — 2026-11-23 — Uma frase explica cada aba da equipe
 
 - Vanessa e o responsável acharam que não estava claro o que cada aba faz. Toda aba da equipe (Creators, Candidatas,

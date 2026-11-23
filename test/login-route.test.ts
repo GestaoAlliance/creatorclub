@@ -20,7 +20,7 @@ describe("login por formulário comum (D-SAVEPASSWORD)", () => {
   });
 
   it("senha errada: volta para /entrar com a mensagem única e o e-mail preenchido", async () => {
-    signInWithPassword.mockResolvedValueOnce({ error: { message: "Invalid login credentials" } });
+    signInWithPassword.mockResolvedValueOnce({ error: { message: "Invalid login credentials", status: 400, code: "invalid_credentials" } });
     const r = await post({ email: "ana@teste.com", password: "errada", next: "/portal/botanika" });
     const to = new URL(r.headers.get("location")!);
     expect(r.status).toBe(303);
@@ -41,5 +41,14 @@ describe("login por formulário comum (D-SAVEPASSWORD)", () => {
     const r = await post({ email: "", password: "" });
     expect(new URL(r.headers.get("location")!).searchParams.get("erro")).toBe("vazio");
     expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("serviço de login fora do ar (cota estourada ou sem resposta): avisa que não é a senha (D-AUTHDOWN)", async () => {
+    signInWithPassword.mockResolvedValueOnce({ error: { message: "exceed_egress_quota", status: 402 } });
+    const quota = new URL((await post({ email: "ana@teste.com", password: "certa12345" })).headers.get("location")!);
+    expect(quota.searchParams.get("erro")).toBe("fora");
+    signInWithPassword.mockRejectedValueOnce(new TypeError("fetch failed"));
+    const net = new URL((await post({ email: "ana@teste.com", password: "certa12345" })).headers.get("location")!);
+    expect(net.searchParams.get("erro")).toBe("fora");
   });
 });

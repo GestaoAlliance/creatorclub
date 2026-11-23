@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AuthFrame } from "@/components/auth-frame";
 import { ui } from "@/components/ui/styles";
-import { safeNextPath } from "@/lib/auth/rules";
+import { AUTH_DOWN_MESSAGE, safeNextPath } from "@/lib/auth/rules";
 import { loginBrandSlug } from "@/domain";
 import { SignInForm } from "./forms";
 
@@ -15,7 +15,7 @@ export default async function EntrarPage({ searchParams }: { searchParams: Promi
         next={safeNextPath(next)}
         email={typeof email === "string" ? email.slice(0, 200) : ""}
         // Mensagem única: não revela se o e-mail existe.
-        error={erro === "senha" ? "E-mail ou senha incorretos, ou muitas tentativas. Tente de novo em instantes." : erro === "vazio" ? "Informe e-mail e senha." : null}
+        error={erro === "senha" ? "E-mail ou senha incorretos, ou muitas tentativas. Tente de novo em instantes." : erro === "vazio" ? "Informe e-mail e senha." : erro === "fora" ? AUTH_DOWN_MESSAGE : null}
       />
       <Link href="/entrar/esqueci" className={`${ui.link} text-center text-sm`}>Esqueci a senha</Link>
     </AuthFrame>
