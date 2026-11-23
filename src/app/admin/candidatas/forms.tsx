@@ -15,7 +15,7 @@ type Person = { applicationId: string; name: string; phone: string | null; brand
 export type TemplateOption = { id: string; name: string; documentKind: string; key: string };
 /** D-AUTENTIQUE2: valores do contrato assinado no Autentique (a aprovação usa estes, sem editar). */
 /** D-CONTRACTFLOW: marca com Autentique (aprovar envia o contrato) e o que ela escolheu no cadastro. */
-export type ContractChoices = { autentique: boolean; payout: "cpf" | "cnpj" | null; /** D-WELCOMECHOICE: o que ela escolheu no cadastro. */ welcome?: "one" | "videos" | null };
+export type ContractChoices = { autentique: boolean; payout: "cpf" | "cnpj" | null; /** D-WELCOMECHOICE: o que ela escolheu no cadastro. */ welcome?: "one" | "videos" | null; /** D-NOKIT: a marca ainda oferece o kit (2 produtos + 3 vídeos). */ kit?: boolean };
 
 /** Versão de contrato sugerida pelo tipo: a mais nova (pela chave) do mesmo tipo de texto. */
 const defaultTemplate = (templates: readonly TemplateOption[], category: string) =>
@@ -63,7 +63,7 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
   const viaContract = p.choices.autentique;
   const [category, setCategory] = useState<string>(p.category);
   const [template, setTemplate] = useState(() => defaultTemplate(p.templates, p.category));
-  const [welcome, setWelcome] = useState<"one" | "videos">(p.choices.welcome ?? "one");
+  const [welcome, setWelcome] = useState<"one" | "videos">(p.choices.kit === false ? "one" : (p.choices.welcome ?? "one"));
   if (state?.ok) {
     const o = state.ok;
     const pct = (o.discountBps / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -153,14 +153,18 @@ function ApproveForm(p: Person & { hasLogin: boolean; email: string | null; coup
             </select>
           </label>
         )}
-        {/* D-WELCOMEVIDEO: Opção 2 das regras da Botanika. */}
-        <label className={`${ui.label} col-span-full sm:col-span-2`}>
-          Envio inicial
-          <select name="welcome" value={welcome} onChange={(e) => setWelcome(e.target.value as "one" | "videos")} className={ui.inputSm}>
-            <option value="one">1 produto</option>
-            <option value="videos">2 produtos + 3 vídeos para a marca</option>
-          </select>
-        </label>
+        {/* D-WELCOMEVIDEO: Opção 2 das regras da Botanika. D-NOKIT: marca sem o kit não mostra a escolha (vai 1 produto). */}
+        {p.choices.kit === false ? (
+          <input type="hidden" name="welcome" value="one" />
+        ) : (
+          <label className={`${ui.label} col-span-full sm:col-span-2`}>
+            Envio inicial
+            <select name="welcome" value={welcome} onChange={(e) => setWelcome(e.target.value as "one" | "videos")} className={ui.inputSm}>
+              <option value="one">1 produto</option>
+              <option value="videos">2 produtos + 3 vídeos para a marca</option>
+            </select>
+          </label>
+        )}
         <label className={`${ui.label} col-span-full ${!viaContract && p.templates.length > 0 ? "sm:col-span-2" : ""}`}>
           {p.hasLogin ? "E-mail (do login dela)" : "E-mail do convite"}
           <input name="email" type="email" defaultValue={p.email ?? ""} required readOnly={p.hasLogin} className={ui.inputSm} />

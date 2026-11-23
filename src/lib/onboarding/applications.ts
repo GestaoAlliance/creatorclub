@@ -142,6 +142,11 @@ export function couponFromSuggestion(suggestion: string | null): string {
   return normalizeCouponCode(s.normalize("NFD").replace(/[^A-Za-z]/g, "")).slice(0, 20);
 }
 
+/** D-NOKIT: o envio inicial está configurado (1 produto) e não há a opção de 2 produtos (kit). */
+export function welcomeWithoutKit(b: { welcomeOneIds: readonly string[]; welcomeTwoIds: readonly string[] }): boolean {
+  return b.welcomeOneIds.length > 0 && b.welcomeTwoIds.length === 0;
+}
+
 export async function receiveApplication(
   prisma: PrismaClient,
   input: { brandSlug: string; source: string; externalKey: string; submittedAt: Date; answers: Record<string, unknown>; consentAt?: Date; ipHash?: string | null; accountId?: string },
@@ -316,6 +321,8 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
   ]);
   // D-CONTRACTSWITCH: "Aprovar e enviar o contrato" só nas marcas com a chave ligada.
   const locked = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds }, contractLock: true }, select: { id: true } })).map((b) => b.id));
+  // D-NOKIT (Fátima, 2026-11-23): marca com o envio inicial configurado e sem a opção de 2 produtos não oferece o kit.
+  const noKit = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, welcomeOneIds: true, welcomeTwoIds: true } })).filter((b) => welcomeWithoutKit(b)).map((b) => b.id));
   // D-CONTRACTFLOW: aprovada esperando o contrato (portal travado até assinar e ativar).
   const awaiting = new Map(
     (await prisma.creator.findMany({ where: { id: { in: mapped.flatMap((m) => (m.creatorId ? [m.creatorId] : [])) }, awaitingContractAt: { not: null } }, select: { id: true, contractSigned: true } })).map((c) => [c.id, c]),
@@ -328,6 +335,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
     return {
       ...m,
       autentique: locked.has(m.brandId),
+      kit: !noKit.has(m.brandId),
       awaitingContract: m.creatorId ? (awaiting.get(m.creatorId) ? { signed: awaiting.get(m.creatorId)!.contractSigned === true } : null) : null,
       contractError: contractError.get(m.id) ?? null,
       contract: r
@@ -374,6 +382,7 @@ export async function approveApplication(
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
   const { brand } = app;
+  if (input.welcomeWithVideos && welcomeWithoutKit(brand)) throw new ApplicationError("Esta marca não oferece mais o envio de 2 produtos: aprove com 1 produto.");
   // D-CONTRACTFLOW: na marca com Autentique, aprovar não cria o cupom nem o kit: a creator espera o contrato, que sai
   // sozinho; o cupom fica reservado e é criado na Shopify depois da assinatura.
   // D-CONTRACTLOCK (2026-10-29): aprovar sempre trava (com ou sem Autentique); libera na assinatura ou quando a Gestão

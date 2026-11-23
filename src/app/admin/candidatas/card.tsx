@@ -98,6 +98,7 @@ export function ApplicationCard({ a, status, templates }: { a: Row; status: Appl
               autentique: a.autentique, // D-CONTRACTSWITCH: segue a trava da marca
               payout: a.payoutAnswer === PAYOUT_PJ ? "cnpj" : a.payoutAnswer === PAYOUT_PF ? "cpf" : null,
               welcome: welcomeChoice(a.welcomeAnswer),
+              kit: a.kit,
             }}
           />
         </div>

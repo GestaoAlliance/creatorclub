@@ -317,6 +317,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-376 — 2026-11-23 — Revita: só o Gel Creme Nano Retinal (sem Sérum e sem kit) (D-NOKIT)
+
+- Pedido da Fátima: parcerias só com 1 produto (Gel Creme Nano Retinal); sai o Sérum Pepti Code e o kit; contrato só o
+  de 1 produto. Achado: nas opções do portal só o Sérum estava marcado (por isso só chegavam pedidos de Sérum).
+- Produção (AuditLog): envio inicial = só o Gel e sem opção de 2 produtos (o cadastro deixa de perguntar); opção do
+  portal = só o Gel; 20 boas-vindas de 1 produto ainda não escolhidas viraram o Gel; contratos INFLUENCER_PF_1 e PJ_1
+  v3 só com o Gel (os do kit, PF_2/PJ_2, não são mais usados). Ficam como estavam: 4 boas-vindas de kit já combinadas
+  e as 3 aprovadas com contrato do kit esperando assinatura.
+- Código: na marca sem kit, a aprovação não mostra "2 produtos + 3 vídeos" e o servidor recusa (`welcomeWithoutKit`).
+  Teste: `test/no-kit.test.ts`.
+- **Próxima:** perguntar ao responsável.
+
 ### CP-375 — 2026-11-23 — Pedido de saque reaberto até 24/11 nas 3 marcas
 
 - Pedido do responsável (login fora do ar de 20 a 23/11): fim do pedido 22 → 24 em novembro (AuditLog
