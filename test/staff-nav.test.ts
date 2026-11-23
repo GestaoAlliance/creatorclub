@@ -1,3 +1,4 @@
+import { scopeGrants } from "@/lib/auth/permissions";
 import { describe, expect, it } from "vitest";
 import { activeTab, allianceNav, hasAlliancePanel, inAllBrands, staffNav } from "@/lib/staff/nav";
 
@@ -17,6 +18,12 @@ describe("menu da equipe por papel", () => {
       staffNav([{ role, brandId: role === "SUPER_ADMIN" ? null : "b" }]).find((i) => i.label === label)?.tabs?.map((t) => t.label);
     expect(tabs("SUPER_ADMIN", "Creators")).toEqual(["Creators", "Candidatas", "Ações", "Campanhas", "Conteúdo", "TikTok"]);
     expect(tabs("SUPER_ADMIN", "Configurações")).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Cupons", "Shopify", "Importar", "Claude"]);
+    // Dentro de uma marca o menu usa o acesso recortado para ela; as abas globais seguem o acesso inteiro (a Equipe
+    // tinha sumido para o super admin em 19/11).
+    const sa = [{ role: "SUPER_ADMIN" as const, brandId: null }];
+    const inBrand = staffNav(scopeGrants(sa, "b"), sa).find((i) => i.label === "Configurações")?.tabs?.map((t) => t.label);
+    expect(inBrand).toEqual(["Marcas", "Equipe", "Contratos", "Termo", "Cupons", "Shopify", "Importar", "Claude"]);
+    expect(staffNav(scopeGrants([{ role: "GESTAO" as const, brandId: "b" }], "b"), [{ role: "GESTAO" as const, brandId: "b" }]).find((i) => i.label === "Configurações")?.tabs?.map((t) => t.label)).toEqual(["Cupons", "Claude"]);
     // M3.4b: quem não é super admin vê em Configurações a aba Claude; D-SALESRANK: a Gestão vê também Cupons.
     expect(tabs("GESTAO", "Configurações")).toEqual(["Cupons", "Claude"]);
     // Cada papel só vê as abas que pode usar; o item do menu abre a primeira delas.
