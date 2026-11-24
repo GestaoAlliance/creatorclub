@@ -316,6 +316,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-385 — 2026-11-24 — Simulação do fechamento de 01/12 com o que impede cada uma de receber
+
+- Mesma regra do sistema (planReleases, mínimo do contrato, D-ENDRELEASE para desligadas), dados de 24/11:
+  Botanika 30 creators R$ 33.053,70 (Victoria R$ 19.010,98); VermeFree 14 creators R$ 15.444,41 (Victoria
+  R$ 10.969,32); Revita ninguém chega ao mínimo de R$ 100.
+- Bloqueios levantados: sem acesso ao portal (Victoria nas duas marcas, Karynne, Nathalia, Ruy, Anna Machado,
+  Giovanna, Elaine, Thays, Osvaldo, Renato e desligadas), sem CNPJ (Elaine; VermeFree: Flavia Nagliati, Thays,
+  Osvaldo, Renato, Orlando), sem Pix (Lorena, Giovanna, Juliana Esposito, Barbieri, Vanessa Ludwig, Thays, Renato,
+  Orlando), contrato não assinado (Elaine, Angela, Vanessa Ludwig), Julia (NF R$ 528,09) e Osvaldo (pagamento em dobro).
+- Em aberto com o responsável: quem não tem contrato anexado na ficha recebe em dezembro? (Botanika: só Lucca,
+  Clesiane, Fernanda e Ludimilla têm; VermeFree: nenhuma.)
+
 ### CP-384 — 2026-11-24 — Primeira busca dos contratos antigos e filtro de marca
 
 - Primeira busca em produção (D-LEGACYCONTRACT): Botanika leu 30 documentos, VermeFree 50, Revita 40. A conta do
