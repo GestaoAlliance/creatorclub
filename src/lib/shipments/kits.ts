@@ -76,6 +76,7 @@ export async function chooseKit(
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é escolhido em nome da creator.");
   const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true } });
   if (!kit || kit.creatorId !== ctx.creatorId) throw new ShipmentError("Kit não encontrado.");
+  if (kit.status === "EXPIRED") throw new ShipmentError("Este produto expirou com o encerramento da parceria.");
   if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
   if (await requestsPaused(prisma, kit.brandId)) throw new ShipmentError(PAUSED_CREATOR);
   // D-WELCOMECHOICE: kit com produtos fixos vai com eles, seja o que for enviado pelo formulário; com mais opções que

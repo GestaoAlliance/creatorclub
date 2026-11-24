@@ -85,6 +85,15 @@ export function contractLinkMessage(p: { name: string; brand: string; link: stri
   ].join("\n\n");
 }
 
+/** D-DISTRATO: link do termo de distrato (também vai no e-mail pelo Autentique). */
+export function distratoLinkMessage(p: { name: string; brand: string; link: string; endDay: string }): string {
+  return [
+    `Oi, ${firstName(p.name)}! Como combinado, a parceria com a ${p.brand} foi encerrada em ${p.endDay.split("-").reverse().join("/")}. Segue o termo de distrato para você conferir e assinar (também mandamos no seu e-mail, pelo Autentique):`,
+    `🔗 ${p.link}`,
+    "O seu acesso ao Creator Club continua até o acerto final: lá você acompanha a apuração e o pagamento do saldo. Obrigada pela parceria! 💚",
+  ].join("\n\n");
+}
+
 /** D-CONTRACTREMIND: lembrete do contrato sem assinar (dia 3 e dia 7), com o mesmo link. */
 export function contractReminderMessage(p: { name: string; brand: string; link: string }): string {
   return [

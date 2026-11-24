@@ -34,7 +34,7 @@ async function load(prisma: PrismaClient, actor: Actor | null, creatorId: string
 }
 
 /** Encerra (`endsAt` agora) ou reabre (`null`) os cupons dela na Shopify. */
-async function setCouponsEnd(prisma: PrismaClient, brandId: string, coupons: { code: string; shopifyId: string | null }[], endsAt: Date | null, clientFor: ClientFactory) {
+export async function setCouponsEnd(prisma: PrismaClient, brandId: string, coupons: { code: string; shopifyId: string | null }[], endsAt: Date | null, clientFor: ClientFactory) {
   if (coupons.length === 0) return;
   try {
     const client = await clientFor(prisma, brandId);

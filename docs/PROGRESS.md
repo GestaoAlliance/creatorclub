@@ -8,8 +8,8 @@
 - **Fase atual:** as 3 marcas no ar em `creatorclub.app.br`. Botanika pagando pelo Creator Club desde novembro
   (conferência dos saques, D-PAYCHECK; pedidos de produtos pausados, D-PRODUCTPAUSE). Seletor de tempo em todas as
   telas da equipe (D-PERIODPICK).
-- **Próxima tarefa:** distrato da Botanika pelo Autentique (CP-380): "Encerrar parceria" na ficha com a data; na data o
-  distrato sai preenchido pelo Autentique. Liga para valer só com as versões PF e PJ do jurídico.
+- **Próxima tarefa:** perguntar ao responsável. Distrato pronto (CP-382), esperando os textos PF e PJ do jurídico para
+  publicar em Contratos.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -315,6 +315,26 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-382 — 2026-11-24 — Encerrar parceria e distrato pelo Autentique (D-DISTRATO)
+
+- Pedido da Fátima (23/11, termo de distrato do jurídico de 17/11); respostas do responsável: a equipe encerra na ficha,
+  data hoje ou futura, cupom vale o dia todo; no dia seguinte cancela o que não foi enviado; dá para desfazer até a data;
+  o fluxo fica pronto e só liga com os textos PF e PJ do jurídico.
+- Ficha → Cadastro → Situação: **Encerrar parceria** (data). Ao agendar, o fim do cupom vai para a Shopify (23h59 do dia
+  em São Paulo; se a Shopify recusar, nada muda). **Desfazer encerramento** até a data (cupom volta sem fim).
+- No dia seguinte (worker, `processDueTerminations`): Desligada (D-ENDRELEASE libera toda a comissão), cupom inativo,
+  produtos liberados e não escolhidos **expiram** (`KitStatus.EXPIRED`), pedidos esperando aprovação cancelados; os
+  "Preparando" (já no Olist) aparecem na ficha para a Gestão decidir. Tudo com AuditLog.
+- Distrato: textos `DISTRATO_PF`, `DISTRATO_PJ` ou `DISTRATO` em Contratos (campos novos `{{EMAIL}}`, `{{INICIO}}`,
+  `{{ENCERRAMENTO}}`). Sem texto publicado, fica esperando com o motivo na ficha e o botão **Enviar distrato**. Com
+  texto: sai pelo Autentique (e-mail) e o link pelo WhatsApp da marca; a conferência de hora em hora marca assinado.
+- **Nenhum texto de distrato publicado em produção**: espera as versões PF e PJ do jurídico e a resposta da Fátima sobre
+  quem assina pela Botanika e as testemunhas (hoje só a creator assina no Autentique).
+- Banco: `CreatorTermination` (RLS, uma em aberto por creator, travas `CreatorTermination_*`), `KitGrant.expiredAt` com
+  `KitGrant_expired`, `ContractDocument_valid` aceita os tipos de distrato. Testes: 400 unitários, 380 de integração
+  (3 novos), typecheck e build ok.
+- Próxima tarefa: perguntar ao responsável.
 
 ### CP-381 — 2026-11-24 — Contratos novos da Botanika publicados por migração
 

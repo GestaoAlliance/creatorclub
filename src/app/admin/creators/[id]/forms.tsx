@@ -2,7 +2,7 @@
 
 import { Tag as TagIcon, X } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
-import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction, archiveAction } from "./actions";
+import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction, archiveAction, terminationAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
 import { NICHES } from "@/domain";
@@ -452,6 +452,82 @@ export function ArchiveForm({ creatorId, archived }: { creatorId: string; archiv
           </div>
         </>
       )}
+      <Msg state={state} />
+    </form>
+  );
+}
+
+export type TerminationInfo = {
+  id: string; endDay: string; processedAt: Date | null; sentAt: Date | null; signedAt: Date | null; rejectedAt: Date | null;
+  signLink: string | null; signerEmail: string | null; lastError: string | null; sandbox: boolean; preparing: number;
+};
+
+const br = (day: string) => day.split("-").reverse().join("/");
+
+/**
+ * D-DISTRATO: "Encerrar parceria" com a data (hoje ou futura). Agendado: o cupom vale até 23h59 do dia; dá para desfazer
+ * até a data. Depois: Desligada e o distrato pelo Autentique (ou o motivo de ainda não ter saído).
+ */
+export function TerminationForm({ creatorId, today, t }: { creatorId: string; today: string; t: TerminationInfo | null }) {
+  const [state, action, pending] = useActionState(terminationAction, undefined);
+  const [open, setOpen] = useState(false);
+  if (!t)
+    return (
+      <form action={action} className="flex flex-col gap-2">
+        <input type="hidden" name="creatorId" value={creatorId} />
+        {!open ? (
+          <button type="button" className={`${ui.ghostSm} self-start`} onClick={() => setOpen(true)}>Encerrar parceria</button>
+        ) : (
+          <>
+            <label className={ui.label}>Data de encerramento
+              <input className={`${input} max-w-48`} type="date" name="endDay" min={today} defaultValue={today} required />
+            </label>
+            <p className={ui.hint}>
+              O cupom funciona até 23h59 desse dia e as vendas pagas até ali contam. No dia seguinte ela fica Desligada, os produtos
+              liberados e não escolhidos expiram, os pedidos esperando aprovação são cancelados e o termo de distrato sai pelo
+              Autentique. Até a data dá para desfazer.
+            </p>
+            <div className="flex gap-2">
+              <button className={ui.dangerSm} disabled={pending}>{pending ? "Agendando…" : "Encerrar nessa data"}</button>
+              <button type="button" className={ui.ghostSm} onClick={() => setOpen(false)}>Cancelar</button>
+            </div>
+          </>
+        )}
+        <Msg state={state} />
+      </form>
+    );
+  if (!t.processedAt)
+    return (
+      <form action={action} className="flex flex-col gap-2">
+        <input type="hidden" name="creatorId" value={creatorId} />
+        <input type="hidden" name="op" value="cancel" />
+        <p className="text-sm"><strong>Encerramento agendado para {br(t.endDay)}.</strong> O cupom funciona até 23h59 desse dia; no dia seguinte ela fica Desligada e o distrato sai.</p>
+        <button className={`${ui.ghostSm} self-start`} disabled={pending}>{pending ? "Desfazendo…" : "Desfazer encerramento"}</button>
+        <Msg state={state} />
+      </form>
+    );
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <input type="hidden" name="op" value="send" />
+      <input type="hidden" name="terminationId" value={t.id} />
+      <p className="text-sm"><strong>Parceria encerrada em {br(t.endDay)}.</strong></p>
+      {t.signedAt ? (
+        <p className={ui.hint}>Distrato assinado em {t.signedAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.</p>
+      ) : t.rejectedAt ? (
+        <p className={ui.hint}>Ela recusou o distrato no Autentique{t.lastError ? `: ${t.lastError}` : "."}</p>
+      ) : t.sentAt ? (
+        <p className={ui.hint}>
+          Distrato enviado para {t.signerEmail}{t.sandbox ? " (teste)" : ""}, esperando a assinatura.
+          {t.signLink && <> <a className={ui.link} href={t.signLink} target="_blank" rel="noreferrer">Link de assinatura</a></>}
+        </p>
+      ) : (
+        <>
+          <p className={ui.hint}>Distrato ainda não enviado{t.lastError ? `: ${t.lastError}` : "."}</p>
+          <button className={`${ui.ghostSm} self-start`} disabled={pending}>{pending ? "Enviando…" : "Enviar distrato"}</button>
+        </>
+      )}
+      {t.preparing > 0 && <p className={ui.hint}>{t.preparing === 1 ? "1 envio está" : `${t.preparing} envios estão`} em Preparando (já foram para o Olist): decida em Envios.</p>}
       <Msg state={state} />
     </form>
   );

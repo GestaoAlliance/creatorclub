@@ -24,6 +24,10 @@ export const CONTRACT_TEXT_KINDS = [
   "INFLUENCER_PF_2",
   "INFLUENCER_PJ_1",
   "INFLUENCER_PJ_2",
+  // D-DISTRATO: termo de distrato no encerramento da parceria (pessoa física, empresa, ou um só para as duas).
+  "DISTRATO_PF",
+  "DISTRATO_PJ",
+  "DISTRATO",
 ] as const;
 export type ContractTextKind = (typeof CONTRACT_TEXT_KINDS)[number];
 export const CONTRACT_TEXT_LABEL: Record<ContractTextKind, string> = {
@@ -34,7 +38,16 @@ export const CONTRACT_TEXT_LABEL: Record<ContractTextKind, string> = {
   INFLUENCER_PF_2: "Influencer · CPF · 2 produtos + 3 vídeos",
   INFLUENCER_PJ_1: "Influencer · CNPJ · 1 produto",
   INFLUENCER_PJ_2: "Influencer · CNPJ · 2 produtos + 3 vídeos",
+  DISTRATO_PF: "Distrato · pessoa física (CPF)",
+  DISTRATO_PJ: "Distrato · empresa (CNPJ)",
+  DISTRATO: "Distrato · CPF e CNPJ",
 };
+export const isDistratoKind = (k: string) => k.startsWith("DISTRATO");
+
+/** D-DISTRATO: texto do distrato pelo jeito que ela recebe (vale o primeiro publicado). */
+export function distratoTextKinds(receivesAsIndividual: boolean): ContractTextKind[] {
+  return [receivesAsIndividual ? "DISTRATO_PF" : "DISTRATO_PJ", "DISTRATO"];
+}
 export const isContractTextKind = (k: string): k is ContractTextKind => (CONTRACT_TEXT_KINDS as readonly string[]).includes(k);
 
 /**
@@ -69,6 +82,9 @@ export const CONTRACT_FIELDS = {
   VIDEOS: "meta de vídeos da UGC no período",
   DATA: "data da assinatura (ex.: 10 de outubro de 2026)",
   INSTAGRAM: "perfil do Instagram (ex.: @maria)",
+  EMAIL: "e-mail da creator",
+  INICIO: "início do contrato (distrato)",
+  ENCERRAMENTO: "data de encerramento da parceria (distrato)",
 } as const;
 export type ContractField = keyof typeof CONTRACT_FIELDS;
 
@@ -90,6 +106,10 @@ export type ContractData = {
   signedAt: Date;
   /** Perfil do Instagram, sem o @ (contratos da Botanika de 2026-11-17: "titular do perfil"). */
   instagram?: string | null;
+  /** D-DISTRATO: e-mail, início do contrato e data de encerramento (dias "AAAA-MM-DD"). */
+  email?: string | null;
+  contractStartDay?: string | null;
+  endDay?: string | null;
 };
 
 const WORDS = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze"];
@@ -102,6 +122,11 @@ export const formatCnpj = (d: string) => d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4}
 /** Data por extenso no fuso de São Paulo. */
 export function longDate(d: Date): string {
   return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Dia "AAAA-MM-DD" por extenso, sem fuso (ex.: 30 de novembro de 2026). */
+export function longDay(day: string): string {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
 }
 
 /** Faixas do kit em linhas legíveis (D-KIT: vendas do mês; vale a faixa mais alta alcançada). */
@@ -139,6 +164,9 @@ function values(d: ContractData): Record<ContractField, string> {
     MESES: `${spelled(d.months)} meses`,
     VIDEOS: spelled(d.videoGoal),
     DATA: longDate(d.signedAt),
+    EMAIL: d.email?.trim() || "(não informado)",
+    INICIO: d.contractStartDay ? longDay(d.contractStartDay) : "(data do contrato não registrada)",
+    ENCERRAMENTO: d.endDay ? longDay(d.endDay) : "(a definir)",
     INSTAGRAM: d.instagram?.trim() ? `@${d.instagram.trim().replace(/^@+/, "")}` : "(não informado)",
   };
 }
