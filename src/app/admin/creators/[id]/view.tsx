@@ -18,7 +18,7 @@ import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TagsEditor, ProfileForm } from "./forms";
+import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TerminationForm, type TerminationInfo, TagsEditor, ProfileForm } from "./forms";
 import { AccessBox, NewAccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
@@ -124,7 +124,7 @@ function AccessCard({ p }: { p: Profile }) {
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, period = null, initialTab, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null }: { insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; period?: FilePeriod | null; initialTab?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, period = null, initialTab, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null, termination = null }: { termination?: TerminationInfo | null; insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; period?: FilePeriod | null; initialTab?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   const mainCoupon = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until) ?? null;
@@ -528,6 +528,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           {p.canEdit && (
             <Card title="Situação">
               {!p.archivedAt && <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />}
+              {!p.archivedAt && (termination || p.status !== "DEACTIVATED") && <TerminationForm creatorId={p.id} today={today} t={termination} />}
               <ArchiveForm creatorId={p.id} archived={p.archivedAt !== null} />
             </Card>
           )}

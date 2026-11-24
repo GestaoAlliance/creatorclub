@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { terminationView } from "@/lib/creators/termination";
 import { randomUUID } from "node:crypto";
 import { currentActor } from "@/lib/auth/current";
 import { creatorStatement, StatementError } from "@/lib/commission/statement";
@@ -46,6 +47,8 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
     const own = await db().brand.findUniqueOrThrow({ where: { id: p.brandId }, select: { slug: true, name: true } });
     return <OtherBrandNotice title="Creator" brand={own} next={`/admin/creators/${id}`} />;
   }
+  // D-DISTRATO: encerramento agendado ou processado.
+  const termination = p.canEdit ? await terminationView(db(), id) : null;
   let st = null;
   if (p.adjustments) {
     try {
@@ -91,7 +94,7 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   const linkBase = `${publicOrigin(h)}/r/${own.slug}/`;
   return (
     <GlassLight className="dash flex flex-col gap-6">
-      <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} ig={ig} origin={origin} insights={insights} today={dayKey(new Date())}
+      <CreatorProfileView p={p} st={st} terms={terms} contract={contract} requestId={randomUUID()} numbers={numbers} timeline={timeline} linkBase={linkBase} mes={mes} ret={ret} tagSuggestions={tags.map((t) => t.name)} posts={posts} postCampaigns={postCampaigns} ig={ig} origin={origin} insights={insights} termination={termination} today={dayKey(new Date())}
         period={{ key: period.key ?? "", today: dayKey(new Date(), own.timezone), sales: periodSales, orders: sales ? { total: sales.total, rows: sales.rows.map((o) => ({ ...o, createdAt: o.createdAt.toISOString(), paidAt: o.paidAt ? o.paidAt.toISOString() : null })) } : null }}
         initialTab={sp.aba === "vendas" ? "vendas" : undefined} />
     </GlassLight>

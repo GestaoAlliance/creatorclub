@@ -28,6 +28,7 @@ import { assertCanAttach, assertUploadId, attachAndRelease, CONTRACT_BUCKET, Con
 import { ContractSendError } from "@/lib/autentique/applications";
 import { changePixKey, PixError } from "@/lib/creators/pix";
 import { ShipmentError, staffUpdateAddress } from "@/lib/shipments/shipments";
+import { cancelTermination, scheduleTermination, sendDistrato, TerminationError } from "@/lib/creators/termination";
 
 export type State = { error?: string; ok?: string; link?: string } | undefined;
 
@@ -37,7 +38,7 @@ async function run(id: string, fn: () => Promise<State | void>, ok: string): Pro
     revalidatePath(`/admin/creators/${id}`);
     return r ?? { ok };
   } catch (error) {
-    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError || error instanceof ContractSendError || error instanceof PixError || error instanceof ShipmentError) {
+    if (error instanceof ProfileError || error instanceof ReviewError || error instanceof TeamError || error instanceof AdjustError || error instanceof OpeningError || error instanceof RateFixError || error instanceof ContractError || error instanceof CouponCreateError || error instanceof UgcError || error instanceof NoteError || error instanceof DiscountChangeError || error instanceof TagError || error instanceof ArchiveError || error instanceof OriginError || error instanceof ContractFileError || error instanceof ContractSendError || error instanceof PixError || error instanceof ShipmentError || error instanceof TerminationError) {
       return { error: error.message };
     }
     throw error;
@@ -301,4 +302,18 @@ export async function addressAction(_p: State, form: FormData): Promise<State> {
     const r = await staffUpdateAddress(db(), await currentActor(), id, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") }, form.get("alsoPending") === "on");
     return { ok: r.pendingUpdated ? `Endereço salvo e trocado em ${r.pendingUpdated} ${r.pendingUpdated === 1 ? "envio ainda não enviado" : "envios ainda não enviados"}.` : "Endereço salvo." };
   }, "Endereço salvo.");
+}
+
+/** D-DISTRATO: encerrar a parceria (data hoje ou futura), desfazer antes da data, ou mandar o distrato depois. */
+export async function terminationAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId") ?? "");
+  const op = String(form.get("op") ?? "");
+  if (op === "cancel") return run(id, async () => cancelTermination(db(), await currentActor(), id), "Encerramento desfeito: o cupom volta a valer.");
+  if (op === "send") {
+    return run(id, async () => {
+      const r = await sendDistrato(db(), await currentActor(), String(form.get("terminationId") ?? ""));
+      return { ok: `Distrato enviado para ${r?.email ?? "o e-mail dela"} pelo Autentique.` };
+    }, "Distrato enviado.");
+  }
+  return run(id, async () => scheduleTermination(db(), await currentActor(), id, String(form.get("endDay") ?? "")), "Encerramento agendado.");
 }

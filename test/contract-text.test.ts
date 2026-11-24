@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { contractTextKinds, kitText, renderContract, unknownContractFields, welcomeChoice, welcomePreset, type ContractData } from "@/domain";
+import { contractTextKinds, distratoTextKinds, kitText, renderContract, unknownContractFields, welcomeChoice, welcomePreset, type ContractData } from "@/domain";
 
 const base: ContractData = {
   fullName: "Maria Exemplo",
@@ -31,6 +31,10 @@ describe("contrato preenchido (D-SIGNCONTRACT)", () => {
     expect(renderContract("{{INSTAGRAM}}", { ...base, instagram: "@maria.fit" })).toBe("@maria.fit");
     expect(renderContract("{{INSTAGRAM}}", { ...base, instagram: "maria.fit" })).toBe("@maria.fit");
     expect(renderContract("{{INSTAGRAM}}", base)).toBe("(não informado)");
+    // D-DISTRATO: datas sem fuso (o dia escolhido, não o anterior) e o e-mail.
+    expect(renderContract("{{INICIO}} | {{ENCERRAMENTO}} | {{EMAIL}}", { ...base, contractStartDay: "2026-06-01", endDay: "2026-11-30", email: "maria@x.com" })).toBe("1 de junho de 2026 | 30 de novembro de 2026 | maria@x.com");
+    expect(distratoTextKinds(true)).toEqual(["DISTRATO_PF", "DISTRATO"]);
+    expect(distratoTextKinds(false)).toEqual(["DISTRATO_PJ", "DISTRATO"]);
     expect(unknownContractFields("{{NOME}} {{ NOME }} {{CUPON}} {{X}}")).toEqual(["CUPON", "X"]);
   });
 

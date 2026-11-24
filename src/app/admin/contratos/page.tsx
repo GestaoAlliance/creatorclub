@@ -6,7 +6,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/page";
 import { ui } from "@/components/ui/styles";
-import { CONTRACT_FIELDS, CONTRACT_TEXT_LABEL } from "@/domain";
+import { CONTRACT_FIELDS, CONTRACT_TEXT_LABEL, isDistratoKind } from "@/domain";
 import { brandsWith } from "@/lib/auth/permissions";
 import { currentActor } from "@/lib/auth/current";
 import { contractsOverview } from "@/lib/contracts/sign";
@@ -57,7 +57,11 @@ export default async function ContratosPage() {
               </p>
             </>
           ) : (
-            <p className={ui.muted}>Nenhum texto publicado: quem tem este tipo de contrato não é travada até haver um.</p>
+            <p className={ui.muted}>
+              {isDistratoKind(k.kind)
+                ? "Nenhum texto publicado: quem tem a parceria encerrada fica com o distrato esperando (a ficha mostra) até haver um."
+                : "Nenhum texto publicado: quem tem este tipo de contrato não é travada até haver um."}
+            </p>
           )}
           <details>
             <summary className={`${ui.h2} cursor-pointer`}><FilePen className="size-4" /> {k.current ? "Editar e publicar nova versão" : "Publicar o texto"}</summary>
