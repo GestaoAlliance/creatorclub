@@ -316,6 +316,19 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-384 — 2026-11-24 — Primeira busca dos contratos antigos e filtro de marca
+
+- Primeira busca em produção (D-LEGACYCONTRACT): Botanika leu 30 documentos, VermeFree 50, Revita 40. A conta do
+  Autentique ligada à Botanika guarda também contratos da VermeFree: 9 vieram de lá e 3 foram anexados por engano na
+  ficha da Botanika de quem está nas duas marcas (Lorena, Juliana Lima, Cristiane). Desfeito por SQL com AuditLog
+  (`contract.legacy_ignored`, ator Pedro): fichas sem anexo de novo e os 9 marcados como ignorados.
+- Revita: 4 ligados (Isabela, Tamires ×2, Cristina); PDF anexado na Cristina (as outras já tinham contrato anexado).
+- O Autentique não devolve o nome de quem assinou (só o e-mail): ligação pelo nome não pegou ninguém.
+- Os contratos de julho a setembro da Botanika (Julia, Fernanda Esteves, Ludimilla, Ana Luiza, Clesiane) não estão em
+  nenhuma das 3 contas fora de pastas. Pergunta à Vanessa: conta da Botanika e se há pastas.
+- Correção: documento cujo nome cita outra marca (e não a própria) fica de fora da busca (`otherBrandDocument`).
+  Testes: 403 unitários, 382 de integração, typecheck e build ok.
+
 ### CP-383 — 2026-11-24 — Contratos antigos do Autentique na ficha e troca de marca sem 404
 
 - Grupo Creator Club Botanika (24/11): Guilherme não achou nenhum contrato anexado nas fichas; Vanessa: "os contratos
