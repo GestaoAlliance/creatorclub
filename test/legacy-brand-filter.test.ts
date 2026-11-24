@@ -22,3 +22,28 @@ describe("filtro de marca dos contratos antigos (D-LEGACYCONTRACT)", () => {
     expect(matchSigners([{ name: "", email: "z@y.com" }], people).status).toBe("UNMATCHED");
   });
 });
+
+describe("contrato antigo vale com a creator e a marca (D-LEGACYCONTRACT)", () => {
+  it("e-mail da marca: domínio da loja ou a conta do Autentique", async () => {
+    const { brandEmail } = await import("@/lib/autentique/legacy-import");
+    expect(brandEmail("financeiro@botanikabrasil.com.br", "https://botanikabrasil.com.br", null)).toBe(true);
+    expect(brandEmail("creators.botanikabrasil@gmail.com", "https://botanikabrasil.com.br", "creators.botanikabrasil@gmail.com")).toBe(true);
+    expect(brandEmail("contadorguilherme@gmail.com", "https://botanikabrasil.com.br", "creators.botanikabrasil@gmail.com")).toBe(false);
+  });
+
+  it("creator e marca assinaram: vale, mesmo com o contador aguardando e e-mail com falha", async () => {
+    const { legacySigned } = await import("@/lib/autentique/legacy-import");
+    const isCreator = (e: string) => e === "aninha@gmail.com";
+    const isBrand = (e: string) => e.endsWith("@botanikabrasil.com.br");
+    const anna = [
+      { email: "aninha@gmail.com", signedAt: "2026-07-17 15:55:00" },
+      { email: "financeiro@botanikabrasil.com.br", signedAt: "2026-10-23 10:01:00" },
+      { email: "contadorguilherme@gmail.com", signedAt: null },
+      { email: "df16@gtconbtasil.com.br", signedAt: null },
+    ];
+    expect(legacySigned(anna, isCreator, isBrand)).toEqual({ ok: true, signedAt: "2026-10-23 10:01:00" });
+    expect(legacySigned(anna.map((s) => (s.email.includes("financeiro") ? { ...s, signedAt: null } : s)), isCreator, isBrand).ok).toBe(false); // falta a marca
+    expect(legacySigned(anna.map((s) => (s.email.startsWith("aninha") ? { ...s, signedAt: null } : s)), isCreator, isBrand).ok).toBe(false); // falta a creator
+    expect(legacySigned([{ email: "aninha@gmail.com", signedAt: "2026-07-17 15:55:00" }], isCreator, isBrand).ok).toBe(true); // sem ninguém da marca
+  });
+});
