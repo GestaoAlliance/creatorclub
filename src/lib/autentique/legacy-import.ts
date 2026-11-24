@@ -43,6 +43,24 @@ export function foldName(s: string | null | undefined): string {
   return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/** Jeitos de escrever o nome da marca no nome do documento ("Revita Derma", "revitaderma", "revita-derma"). */
+function brandKeys(b: { name: string; slug: string }): string[] {
+  const n = foldName(b.name);
+  return [...new Set([n, n.replace(/\s+/g, ""), foldName(b.slug.replace(/-/g, " ")), b.slug.replace(/-/g, "")])].filter((k) => k.length >= 4);
+}
+
+/**
+ * D-LEGACYCONTRACT (filtro de marca, 2026-11-24): a conta do Autentique da Botanika também guarda contratos da VermeFree.
+ * Documento cujo nome cita outra marca (e não a própria) não é desta marca: fica de fora.
+ */
+export function otherBrandDocument(docName: string, own: { name: string; slug: string }, others: { name: string; slug: string }[]): boolean {
+  const n = foldName(docName);
+  const compact = n.replace(/[^a-z0-9]/g, "");
+  const has = (k: string) => n.includes(k) || compact.includes(k.replace(/[^a-z0-9]/g, ""));
+  if (brandKeys(own).some(has)) return false;
+  return others.some((o) => brandKeys(o).some(has));
+}
+
 /** Data do Autentique ("2026-09-22 15:04:00", horário de Brasília) ou ISO. */
 export function autentiqueDate(s: string): Date {
   const iso = /[zZ]|[+-]\d{2}:?\d{2}$/.test(s) ? s.replace(" ", "T") : `${s.replace(" ", "T")}-03:00`;
@@ -69,10 +87,11 @@ export function matchSigners(signers: Signer[], people: Person[]): { status: "MA
 
 /** Lê a conta do Autentique da marca e grava os documentos assinados que ainda não conhece. */
 export async function scanLegacyContracts(prisma: PrismaClient, brandId: string, deps: Deps = {}) {
-  const out = { read: 0, created: 0, matched: 0 };
+  const out = { read: 0, created: 0, matched: 0, otherBrand: 0 };
   const conn = await loadAutentique(prisma, brandId, deps.encKey);
   if (!conn) return out;
-  const [requests, terminations, known, creators] = await Promise.all([
+  const [brands, requests, terminations, known, creators] = await Promise.all([
+    prisma.brand.findMany({ select: { id: true, name: true, slug: true } }),
     prisma.contractRequest.findMany({ select: { externalId: true } }),
     prisma.creatorTermination.findMany({ where: { externalId: { not: null } }, select: { externalId: true } }),
     prisma.autentiqueLegacyContract.findMany({ select: { externalId: true } }),
@@ -80,6 +99,8 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
   ]);
   const skip = new Set([...requests.map((r) => r.externalId), ...terminations.map((t) => t.externalId!), ...known.map((k) => k.externalId)]);
   const people = creators.map((c) => ({ id: c.id, email: c.account.email, name: c.account.name }));
+  const own = brands.find((b) => b.id === brandId)!;
+  const others = brands.filter((b) => b.id !== brandId);
   for (let page = 1; page <= MAX_PAGES; page++) {
     const data = await autentiqueQuery<{ documents: { total: number; data: RawDoc[] } }>(conn.token, LIST, { limit: PAGE, page }, deps.fetcher);
     const docs = data.documents?.data ?? [];
@@ -87,6 +108,10 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
     for (const d of docs) {
       out.read++;
       if (skip.has(d.id)) continue;
+      if (otherBrandDocument(d.name ?? "", own, others)) {
+        out.otherBrand++;
+        continue;
+      } // contrato de outra marca na mesma conta
       const signers = (d.signatures ?? []).filter((s) => s.action !== null);
       // Só o que todos já assinaram.
       if (signers.length === 0 || signers.some((s) => !s.signed?.created_at)) continue;
