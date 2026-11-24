@@ -61,3 +61,14 @@ describe("menu da equipe por papel", () => {
     expect(staffNav([{ role: "ENVIO", brandId: "a" }])[0]).toEqual({ href: "/marca", label: "Início", icon: "home" });
   });
 });
+
+describe("troca de marca (brandSwitchPath)", () => {
+  it("fica na mesma aba e sai da creator da marca anterior", async () => {
+    const { brandSwitchPath } = await import("@/lib/staff/nav");
+    expect(brandSwitchPath("/admin")).toBe("/admin/marca");
+    expect(brandSwitchPath("/admin/pagamentos/cpf")).toBe("/admin/pagamentos/cpf");
+    expect(brandSwitchPath("/admin/vendas/pedidos")).toBe("/admin/vendas/pedidos");
+    expect(brandSwitchPath("/admin/creators/560cf70b-bd96-4293-908f-30440475516a")).toBe("/admin/creators");
+    expect(brandSwitchPath("/admin/creators/acoes")).toBe("/admin/creators/acoes");
+  });
+});
