@@ -316,6 +316,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-381 — 2026-11-24 — Contratos novos da Botanika publicados por migração
+
+- Os dois textos (CPF e CNPJ, 1 produto, jurídico de 17/11) entram como `INFLUENCER_PF_1` e `INFLUENCER_PJ_1` da
+  Botanika pela migração `20261124090000_botanika_contracts` (mesmo caminho dos contratos da Revita: texto longo,
+  sem risco de digitação no banco), com AuditLog `contract.published`. Aplicada no deploy de produção.
+- Teste `test/botanika-contracts.test.ts`: só campos conhecidos, nenhum XXXX sobrando, perfil e cupom preenchidos.
+- Testes: 400 unitários e 377 de integração; typecheck ok. Próxima tarefa segue: distrato da Botanika.
+
 ### CP-380 — 2026-11-24 — Botanika despausada e campo do Instagram nos contratos
 
 - Pedidos da Fátima (grupo, 23/11), confirmados pelo responsável:
