@@ -116,6 +116,12 @@ export function legacySigned(
   return { ok: true, signedAt: dates.at(-1)! };
 }
 
+/** Algum signatário é do domínio de outra marca e nenhum do domínio desta. */
+export function signerOfOtherBrand(emails: string[], own: { storeUrl: string | null }, others: { storeUrl: string | null }[]): boolean {
+  if (emails.some((e) => brandEmail(e, own.storeUrl, null))) return false;
+  return others.some((o) => emails.some((e) => brandEmail(e, o.storeUrl, null)));
+}
+
 /** Lê a conta do Autentique da marca (raiz e pastas) e grava os contratos assinados que ainda não conhece. */
 export async function scanLegacyContracts(prisma: PrismaClient, brandId: string, deps: Deps = {}) {
   const out = { read: 0, created: 0, matched: 0, otherBrand: 0, notSigned: 0, folders: 0, folderError: null as string | null };
@@ -148,6 +154,12 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
       }
       const signers = (d.signatures ?? []).filter((s) => s.action !== null).map((s) => ({ name: (s.name ?? "").trim(), email: (s.email ?? "").trim().toLowerCase(), signedAt: s.signed?.created_at ?? null }));
       if (signers.length === 0) continue;
+      // Assinado por alguém de outra marca (domínio da loja dela) e por ninguém desta: o contrato é da outra marca
+      // (a conta da VermeFree guarda contratos da Botanika assinados pelo financeiro da Botanika, 2026-11-24).
+      if (signerOfOtherBrand(signers.map((x) => x.email), own, others)) {
+        out.otherBrand++;
+        continue;
+      }
       const people_ = signers.filter((s) => !isBrand(s.email));
       const m = matchSigners(people_, people);
       // Sem creator conhecida: vale a assinatura de qualquer signatário de fora da marca (a Gestão confirma em Ações).
