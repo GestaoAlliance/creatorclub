@@ -101,7 +101,7 @@ export async function sendCreatorContract(
       brand: { select: { name: true, slug: true } },
       contractTemplate: { select: { id: true, documentKind: true, months: true, releaseMinCents: true, kitTiers: true } },
       commissionPolicies: { where: { validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }] }, orderBy: { validFrom: "desc" }, take: 1, select: { rateBps: true } },
-      account: { select: { name: true, email: true, cpf: true, cnpj: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
+      account: { select: { name: true, email: true, cpf: true, cnpj: true, instagram: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
     },
   });
   if (!c) throw new ContractSendError("Creator não encontrada.");
@@ -161,6 +161,7 @@ export async function sendCreatorContract(
     months: c.contractTemplate.months,
     videoGoal: c.ugcVideoGoal ?? UGC_DEFAULT_VIDEO_GOAL,
     signedAt: now,
+    instagram: a.instagram,
   });
   const bodySha256 = createHash("sha256").update(body, "utf8").digest("hex");
   const pdf = await contractPdf(doc.title, body);

@@ -19,6 +19,7 @@ const SAMPLE = {
   kitTiers: [],
   months: 6,
   videoGoal: 3,
+  instagram: "mariaexemplo",
 };
 
 /**
