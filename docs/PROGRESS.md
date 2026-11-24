@@ -8,8 +8,8 @@
 - **Fase atual:** as 3 marcas no ar em `creatorclub.app.br`. Botanika pagando pelo Creator Club desde novembro
   (conferência dos saques, D-PAYCHECK; pedidos de produtos pausados, D-PRODUCTPAUSE). Seletor de tempo em todas as
   telas da equipe (D-PERIODPICK).
-- **Próxima tarefa:** perguntar ao responsável (opções em aberto: regra nova dos pedidos de produtos para religar a
-  pausa, que depende da Vanessa; cupons e taxas da VermeFree para a Ana).
+- **Próxima tarefa:** distrato da Botanika pelo Autentique (CP-380): "Encerrar parceria" na ficha com a data; na data o
+  distrato sai preenchido pelo Autentique. Liga para valer só com as versões PF e PJ do jurídico.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
@@ -20,7 +20,6 @@
 |---|---|---|
 | **Fátima** (Gestão) | Botanika: clicar em Conferido na Karynne e na Anna Machado (Pagamentos CPF); acompanhar os saques de outubro (pedido até o dia 22, Pix de 20 a 25) | Pagamentos |
 | **Lorena, Juliana, Barbieri, Giovanna** (creators) | Cadastrar a chave Pix no pedido de saque (sem ela o saque não sai) | Portal, aba Saque |
-| **Responsável** | Botanika: regra dos produtos confirmada em 18/11 (tabela do mês, D-TIERKIT); falta só dizer quando religar os pedidos (a pausa de 17/11 segue ligada) | Configurações → Marcas |
 | **Ana** (Gestão) | Botanika: 7 donas de cupom a confirmar; "Conferi os números" em 26 ativas | Vendas → Cupons; ficha |
 | **Fátima** | VermeFree: classificar os 8 cupons de campanha sem tipo (BRASIL6, BRASIL9, PRIMEIRA5, ZEROTOXINAS10, CASA5, QUIZ10, RECOVERY1111, FRETE1111) | Vendas → Cupons (VermeFree) |
 | **Ana** | VermeFree: dona dos cupons JULIA (2 pedidos) e DRGIBRAN (1 pedido; o Kalil não está cadastrado na VermeFree) | Vendas → Cupons (VermeFree) |
@@ -316,6 +315,21 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-380 — 2026-11-24 — Botanika despausada e campo do Instagram nos contratos
+
+- Pedidos da Fátima (grupo, 23/11), confirmados pelo responsável:
+  - **Pedidos de produtos da Botanika religados** em produção (SQL, AuditLog `brand.product_pause`, pausa de 17/11 a
+    24/11). As 77 creators com produto liberado (56 boas-vindas, 19 do mês, 2 de meta) já escolhem; a tabela do mês
+    libera os de novembro de quem já bateu a faixa (só aviso no portal). Os 9 envios em preparação seguem como estão.
+  - **Contratos novos da Botanika** (CPF e CNPJ, 1 produto, de 17/11): o texto cita o perfil do Instagram, então os
+    contratos ganham o campo `{{INSTAGRAM}}` (do cadastro da creator, com @). Os dois textos são publicados como
+    `INFLUENCER_PF_1` e `INFLUENCER_PJ_1` da Botanika depois deste merge (até aqui a Botanika usava o texto de
+    influencer de outubro). No de CPF, a linha de assinatura dizia "CNPJ"; ficou "CPF".
+- VermeFree: pagamentos de julho e setembro já estão abatidos (13 creators, R$ 5.368,65, conferidos com os
+  comprovantes); nenhum pagamento de outubro/novembro registrado fora do sistema; 1 saque pedido (R$ 1.163,65).
+- Próxima tarefa: distrato da Botanika pelo Autentique (equipe encerra na ficha com a data; o fluxo fica pronto e só
+  liga com as versões PF e PJ aprovadas pelo jurídico).
 
 ### CP-379 — 2026-11-23 — Login avisa quando o sistema está fora do ar
 

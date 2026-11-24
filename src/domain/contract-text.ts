@@ -68,6 +68,7 @@ export const CONTRACT_FIELDS = {
   MESES: "prazo do contrato (ex.: 6 (seis) meses)",
   VIDEOS: "meta de vídeos da UGC no período",
   DATA: "data da assinatura (ex.: 10 de outubro de 2026)",
+  INSTAGRAM: "perfil do Instagram (ex.: @maria)",
 } as const;
 export type ContractField = keyof typeof CONTRACT_FIELDS;
 
@@ -87,6 +88,8 @@ export type ContractData = {
   months: number;
   videoGoal: number;
   signedAt: Date;
+  /** Perfil do Instagram, sem o @ (contratos da Botanika de 2026-11-17: "titular do perfil"). */
+  instagram?: string | null;
 };
 
 const WORDS = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze"];
@@ -136,6 +139,7 @@ function values(d: ContractData): Record<ContractField, string> {
     MESES: `${spelled(d.months)} meses`,
     VIDEOS: spelled(d.videoGoal),
     DATA: longDate(d.signedAt),
+    INSTAGRAM: d.instagram?.trim() ? `@${d.instagram.trim().replace(/^@+/, "")}` : "(não informado)",
   };
 }
 

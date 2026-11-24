@@ -53,7 +53,7 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
       contractRequiredAt: true,
       ugcVideoGoal: true,
       contractTemplate: { select: { id: true, documentKind: true, releaseMinCents: true, kitTiers: true, months: true } },
-      account: { select: { name: true, cpf: true, cnpj: true, phone: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
+      account: { select: { name: true, cpf: true, cnpj: true, phone: true, instagram: true, addrStreet: true, addrNumber: true, addrComplement: true, addrDistrict: true, addrCity: true, addrState: true, addrZip: true } },
       couponAssignments: {
         where: { validFrom: { lte: now }, OR: [{ validTo: null }, { validTo: { gt: now } }], coupon: { kind: "CREATOR" } },
         orderBy: { validFrom: "desc" },
@@ -92,6 +92,7 @@ export async function contractBase(prisma: PrismaClient, creatorId: string, now:
       brandSlug: c.brand.slug,
       months: c.contractTemplate?.months ?? 6,
       videoGoal: c.ugcVideoGoal ?? UGC_DEFAULT_VIDEO_GOAL,
+      instagram: a.instagram,
     },
   };
 }

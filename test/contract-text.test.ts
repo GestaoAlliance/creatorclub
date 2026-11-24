@@ -27,6 +27,10 @@ describe("contrato preenchido (D-SIGNCONTRACT)", () => {
     const pj = renderContract("{{CONTRATADA}}", { ...base, cnpj: "11222333000181", companyName: "Maria Conteúdo LTDA" });
     expect(pj).toBe("Maria Conteúdo LTDA, inscrita no CNPJ sob o nº 11.222.333/0001-81, com endereço em Rua A, 1, Centro, São Paulo/SP, neste ato representada por Maria Exemplo, inscrita no CPF sob o nº 529.982.247-25");
     expect(renderContract("{{COMISSAO}}", { ...base, rateBps: 1250 })).toBe("12,5%");
+    // Contratos da Botanika de 2026-11-17: "titular do perfil {{INSTAGRAM}}".
+    expect(renderContract("{{INSTAGRAM}}", { ...base, instagram: "@maria.fit" })).toBe("@maria.fit");
+    expect(renderContract("{{INSTAGRAM}}", { ...base, instagram: "maria.fit" })).toBe("@maria.fit");
+    expect(renderContract("{{INSTAGRAM}}", base)).toBe("(não informado)");
     expect(unknownContractFields("{{NOME}} {{ NOME }} {{CUPON}} {{X}}")).toEqual(["CUPON", "X"]);
   });
 
