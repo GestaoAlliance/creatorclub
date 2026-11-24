@@ -142,9 +142,17 @@ export const REVITA_TIERS: readonly KitTier[] = [
   { fromCents: 200_000, products: 2 },
 ];
 
+/**
+ * D-VFRULES (contrato da VermeFree de 2026-11-24, 2.1): 1 produto em cada mês em que ela vender R$ 2.000, sem tabela dos
+ * primeiros meses. Vale das vendas de dezembro de 2026 em diante (`monthlyKitFrom`); antes, a meta de D-GOALKIT.
+ */
+export const VERMEFREE_TIERS: readonly KitTier[] = [{ fromCents: 200_000, products: 1 }];
+
 /** Tabelas da marca: a normal e a dos primeiros meses (vazia = não tem). */
 export function tierTables(brandSlug = "botanika"): { regular: readonly KitTier[]; trial: readonly KitTier[] } {
-  return brandSlug === "revita-derma" ? { regular: REVITA_TIERS, trial: [] } : { regular: TIER_REGULAR, trial: TIER_TRIAL };
+  if (brandSlug === "revita-derma") return { regular: REVITA_TIERS, trial: [] };
+  if (brandSlug === "vermefree") return { regular: VERMEFREE_TIERS, trial: [] };
+  return { regular: TIER_REGULAR, trial: TIER_TRIAL };
 }
 
 /** Total de produtos do mês pela tabela (0 = nenhuma faixa). Nos 3 primeiros meses vale a maior das duas tabelas. */

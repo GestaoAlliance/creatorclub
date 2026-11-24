@@ -316,6 +316,33 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-386 — 2026-11-24 — Contratos novos da VermeFree, distratos publicados e regras da VermeFree (D-VFRULES)
+
+- Fátima mandou (24/11): contratos da VermeFree CPF e CNPJ (1 produto), distrato da VermeFree e da Revita. Respostas
+  do responsável: kit da VermeFree pela regra nova em todas as creators a partir das vendas de dezembro; contrato sem
+  fim e equipe avisada aos 2 meses sem venda; publicar os distratos (inclusive o da Botanika, versão única para CPF e
+  CNPJ); tirar "2 produtos + 3 vídeos" da aprovação da Botanika e da VermeFree; distrato da Revita espera a Fátima
+  (texto fala em cartão Alelo para PF).
+- Migração `20261212090000_vermefree_contracts`: publica VermeFree `INFLUENCER_PF_1`, `INFLUENCER_PJ_1` e `DISTRATO`, e
+  Botanika `DISTRATO` (campos `{{CONTRATADA}}`, `{{EMAIL}}`, `{{INICIO}}`, `{{ENCERRAMENTO}}`; só a creator assina no
+  Autentique); VermeFree `monthlyKitFrom` = 2026-12 com 1 produto a cada R$ 2.000 no mês (`VERMEFREE_TIERS`; a meta
+  de R$ 1.000 vale até 30/11); modelo Influencer da VermeFree com 0 meses = prazo indeterminado (`contractEndDay`);
+  `Brand.welcomeTwoOffered` false na Botanika e na VermeFree. Aviso de 2 meses sem venda em Ações também na
+  VermeFree, apontando para "Encerrar parceria" na ficha.
+- Testes: 406 unitários (3 novos), 382 de integração, typecheck e build ok.
+
+### CP-385 — 2026-11-24 — Simulação do fechamento de 01/12 com o que impede cada uma de receber
+
+- Mesma regra do sistema (planReleases, mínimo do contrato, D-ENDRELEASE para desligadas), dados de 24/11:
+  Botanika 30 creators R$ 33.053,70 (Victoria R$ 19.010,98); VermeFree 14 creators R$ 15.444,41 (Victoria
+  R$ 10.969,32); Revita ninguém chega ao mínimo de R$ 100.
+- Bloqueios levantados: sem acesso ao portal (Victoria nas duas marcas, Karynne, Nathalia, Ruy, Anna Machado,
+  Giovanna, Elaine, Thays, Osvaldo, Renato e desligadas), sem CNPJ (Elaine; VermeFree: Flavia Nagliati, Thays,
+  Osvaldo, Renato, Orlando), sem Pix (Lorena, Giovanna, Juliana Esposito, Barbieri, Vanessa Ludwig, Thays, Renato,
+  Orlando), contrato não assinado (Elaine, Angela, Vanessa Ludwig), Julia (NF R$ 528,09) e Osvaldo (pagamento em dobro).
+- Em aberto com o responsável: quem não tem contrato anexado na ficha recebe em dezembro? (Botanika: só Lucca,
+  Clesiane, Fernanda e Ludimilla têm; VermeFree: nenhuma.)
+
 ### CP-384 — 2026-11-24 — Primeira busca dos contratos antigos e filtro de marca
 
 - Primeira busca em produção (D-LEGACYCONTRACT): Botanika leu 30 documentos, VermeFree 50, Revita 40. A conta do

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   addMonthsToDay,
+  contractEndDay,
   approvalMessage,
   contractLinkMessage,
   contractReminderMessage,
@@ -434,7 +435,7 @@ async function markSigned(prisma: PrismaClient, requestId: string, now: Date): P
           contractSigned: true,
           contractRequiredAt: null,
           contractStart: new Date(`${start}T00:00:00Z`),
-          contractEnd: new Date(`${addMonthsToDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`),
+          ...(contractEndDay(start, c.contractTemplate?.months ?? 6) ? { contractEnd: new Date(`${contractEndDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`) } : {}),
           // D-GOALKIT: as janelas da meta de vendas começam com a parceria valendo.
           goalStartAt: new Date(`${start}T00:00:00Z`),
         },
@@ -585,7 +586,7 @@ export async function confirmSignedOutside(prisma: PrismaClient, actor: Actor | 
           contractSigned: true,
           contractRequiredAt: null,
           contractStart: new Date(`${start}T00:00:00Z`),
-          contractEnd: new Date(`${addMonthsToDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`),
+          ...(contractEndDay(start, c.contractTemplate?.months ?? 6) ? { contractEnd: new Date(`${contractEndDay(start, c.contractTemplate?.months ?? 6)}T00:00:00Z`) } : {}),
           goalStartAt: new Date(`${start}T00:00:00Z`),
         },
       }),

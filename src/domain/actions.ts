@@ -43,7 +43,7 @@ const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "c
 const br = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
 
 export type ActionFacts =
-  | { kind: "IDLE"; days: number; contractEnds?: boolean } // D-REVITARULES: na Revita o contrato se encerra com 2 meses sem venda
+  | { kind: "IDLE"; days: number; contractEnds?: boolean } // D-REVITARULES, D-VFRULES: na Revita e na VermeFree o contrato se encerra com 2 meses sem venda
   | { kind: "CONTRACT"; endDay: string; expired: boolean }
   | { kind: "NEAR_MIN"; missingCents: number; commission?: boolean } // D-MIN100: falta comissão (Botanika), não vendas
   | { kind: "KIT_PENDING"; days: number }
@@ -58,7 +58,7 @@ export type ActionFacts =
 export function actionDetail(f: ActionFacts): string {
   switch (f.kind) {
     case "IDLE":
-      return f.contractEnds ? `${f.days} dias sem vender: pelo contrato, a parceria se encerra com 2 meses sem venda (decida se arquiva)` : `${f.days} dias sem vender`;
+      return f.contractEnds ? `${f.days} dias sem vender: pelo contrato, a parceria se encerra com 2 meses sem venda (encerre na ficha, com o distrato)` : `${f.days} dias sem vender`;
     case "CONTRACT":
       return f.expired ? `contrato venceu em ${br(f.endDay)}` : `contrato vence em ${br(f.endDay)}`;
     case "NEAR_MIN":
