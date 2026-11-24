@@ -128,3 +128,18 @@ export function inAllBrands(path: string, todas: string | null): boolean {
 
 /** D-TIKTOKLIST: quem só tem o acesso do TikTok (ex.: a Mafe) entra direto na lista. */
 export const onlyTikTok = (grants: readonly Grant[]) => grants.length > 0 && grants.every((g) => g.role === "TIKTOK");
+
+/**
+ * Para onde a troca de marca leva (A1): a mesma tela, na outra marca. Fica a aba (ex.: /admin/pagamentos/cpf); sai o
+ * que é de uma creator ou registro da marca anterior (um id), voltando à lista. Em "Todas as marcas", o Início da marca.
+ */
+export function brandSwitchPath(path: string): string {
+  if (path === "/admin") return "/admin/marca";
+  const parts = path.split("/").filter(Boolean);
+  const keep: string[] = [];
+  for (const p of parts) {
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-|^\d+$/i.test(p) || p.startsWith("[")) break;
+    keep.push(p);
+  }
+  return `/${keep.slice(0, 4).join("/")}`;
+}

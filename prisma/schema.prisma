@@ -130,6 +130,7 @@ model Brand {
   contractSignatures ContractSignature[]
   contractRequests   ContractRequest[]
   terminations       CreatorTermination[]
+  legacyContracts    AutentiqueLegacyContract[]
   notifications      Notification[]
   noticeRuns         NoticeRun[]
   actionsDone        ActionDone[]
@@ -418,9 +419,9 @@ model Creator {
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 
-  originHunter       User?                @relation("CreatorOriginHunter", fields: [originHunterId], references: [id], onDelete: Restrict)
-  brand              Brand                @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  account            CreatorAccount       @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  originHunter       User?                      @relation("CreatorOriginHunter", fields: [originHunterId], references: [id], onDelete: Restrict)
+  brand              Brand                      @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  account            CreatorAccount             @relation(fields: [accountId], references: [id], onDelete: Restrict)
   commissionPolicies CommissionPolicy[]
   couponAssignments  CouponAssignment[]
   attributions       OrderAttribution[]
@@ -431,6 +432,7 @@ model Creator {
   contractSignatures ContractSignature[]
   contractRequests   ContractRequest[]
   terminations       CreatorTermination[]
+  legacyContracts    AutentiqueLegacyContract[]
   actionsDone        ActionDone[]
   notifications      Notification[]
   commissionReleases CommissionRelease[]
@@ -438,8 +440,8 @@ model Creator {
   openingPaid        OpeningPaid[]
   kitGrants          KitGrant[]
   ugcVideos          UgcVideo[]
-  contractFile       File?                @relation("CreatorContractFile", fields: [contractFileId], references: [id], onDelete: Restrict)
-  contractTemplate   ContractTemplate?    @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
+  contractFile       File?                      @relation("CreatorContractFile", fields: [contractFileId], references: [id], onDelete: Restrict)
+  contractTemplate   ContractTemplate?          @relation(fields: [contractTemplateId, brandId], references: [id, brandId], onDelete: Restrict)
   creatorNotes       CreatorNote[]
   tagLinks           CreatorTagLink[]
   campaignEntries    CampaignEntry[]
@@ -768,10 +770,11 @@ model File {
   uploadedById String?
   createdAt    DateTime @default(now())
 
-  brand       Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  brand       Brand                      @relation(fields: [brandId], references: [id], onDelete: Restrict)
   withdrawals Withdrawal[]
-  contractOf  Creator[]         @relation("CreatorContractFile")
-  signedOf    ContractRequest[] @relation("ContractRequestSignedFile")
+  contractOf  Creator[]                  @relation("CreatorContractFile")
+  signedOf    ContractRequest[]          @relation("ContractRequestSignedFile")
+  legacyOf    AutentiqueLegacyContract[]
 
   @@unique([bucket, path])
 }
@@ -1958,5 +1961,38 @@ model CreatorTermination {
   contractDocument ContractDocument? @relation(fields: [contractDocumentId], references: [id], onDelete: Restrict)
 
   @@index([brandId, processedAt])
+  @@index([creatorId])
+}
+
+/// D-LEGACYCONTRACT (pedido do Guilherme e da Vanessa, 2026-11-24): contratos assinados no Autentique antes do Creator
+/// Club (mandados à mão pela equipe). O sistema lê a conta da marca, liga cada documento assinado à creator (e-mail de
+/// quem assinou; senão, o nome completo) e anexa o PDF do mais recente na ficha, se ela ainda não tem contrato anexado.
+/// Dúvida (mais de uma creator) ou sem creator: a Gestão confirma em Ações. Nada é apagado.
+model AutentiqueLegacyContract {
+  id           String    @id @default(uuid())
+  brandId      String
+  externalId   String    @unique
+  name         String
+  signerNames  String[]  @default([])
+  signerEmails String[]  @default([])
+  signedAt     DateTime
+  /// MATCHED (ligado a uma creator) | AMBIGUOUS (mais de uma possível) | UNMATCHED (nenhuma) | IGNORED (não é de creator)
+  status       String
+  creatorId    String?
+  /// EMAIL | NAME | TEAM
+  matchedBy    String?
+  candidateIds String[]  @default([])
+  fileId       String?
+  fileError    String?
+  fileAttempts Int       @default(0)
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  brand   Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  creator Creator? @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  file    File?    @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@index([brandId, status])
   @@index([creatorId])
 }

@@ -39,3 +39,26 @@ export async function sendAction(items: { key: string; title: string; text: stri
     throw error;
   }
 }
+
+/** D-LEGACYCONTRACT: ligar um contrato antigo do Autentique a uma creator (ou "não é de creator"), e buscar agora. */
+export async function legacyAction(_prev: DoneState, form: FormData): Promise<DoneState> {
+  const actor = await currentActor();
+  const brand = actor ? (await staffContext(actor)).brand : null;
+  if (!actor || !brand) return { error: "Sem permissão." };
+  const { decideLegacyContract, LegacyContractError, requestLegacyScan } = await import("@/lib/autentique/legacy-import");
+  try {
+    const op = String(form.get("op") ?? "");
+    if (op === "scan") {
+      await requestLegacyScan(db(), actor, brand.id);
+      return { ok: "Buscando no Autentique: em alguns minutos os contratos aparecem nas fichas." };
+    }
+    const creatorId = op === "ignore" ? null : String(form.get("creatorId") ?? "");
+    if (op !== "ignore" && !creatorId) return { error: "Escolha a creator." };
+    await decideLegacyContract(db(), actor, String(form.get("legacyId") ?? ""), creatorId);
+    revalidatePath("/admin/creators/acoes");
+    return { ok: creatorId ? "Ligado: o PDF vai para a ficha em alguns minutos." : "Marcado como não é de creator." };
+  } catch (error) {
+    if (error instanceof LegacyContractError) return { error: error.message };
+    throw error;
+  }
+}

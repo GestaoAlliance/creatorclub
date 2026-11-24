@@ -316,6 +316,23 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-383 — 2026-11-24 — Contratos antigos do Autentique na ficha e troca de marca sem 404
+
+- Grupo Creator Club Botanika (24/11): Guilherme não achou nenhum contrato anexado nas fichas; Vanessa: "os contratos
+  assinados ficam no Autentique". Eles foram mandados à mão antes do Creator Club, então o anexo automático
+  (D-AUTOCONTRACTFILE, só do que o sistema envia) não os via. Respostas do responsável: as 3 marcas; ligar pelo e-mail,
+  senão pelo nome; vale o mais recente.
+- D-LEGACYCONTRACT (`src/lib/autentique/legacy-import.ts`): uma vez por dia (e "Buscar agora" em Creators → Ações), lê
+  a conta do Autentique da marca (`documents`, 60 por página), pula o que o sistema enviou e o que já leu, guarda os
+  documentos assinados por todos em `AutentiqueLegacyContract` ligados à creator (e-mail; senão nome sem acento) e
+  anexa na ficha o PDF do mais recente de quem ainda não tem contrato (o anexado pela equipe vale). Dúvida ou sem
+  creator: cartão "Contratos antigos do Autentique" em Ações ("É dela" / "Não é de creator"). Tudo com AuditLog.
+- Bug (responsável): trocar de marca em Pagamentos dava 404 (`/admin/pagamentos` não existe desde a divisão CNPJ/CPF).
+  A troca agora fica na mesma aba (`brandSwitchPath`, sai só o id de creator) e `/admin/pagamentos` abre o de CNPJ.
+- Julia Colares: conta explicada no grupo (R$ 2.183,70 certo; falta a NF de R$ 528,09 do Pix em duplicidade de 19/09).
+- Testes: 401 unitários, 382 de integração (2 novos), typecheck e build ok. Depois do deploy: conferir a primeira
+  leitura (tarefa `autentique.legacy_scan`) nos dados reais.
+
 ### CP-382 — 2026-11-24 — Encerrar parceria e distrato pelo Autentique (D-DISTRATO)
 
 - Pedido da Fátima (23/11, termo de distrato do jurídico de 17/11); respostas do responsável: a equipe encerra na ficha,

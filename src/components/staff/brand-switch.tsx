@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { chooseBrandAction } from "@/app/admin/actions";
+import { brandSwitchPath } from "@/lib/staff/nav";
 
 /** Troca de marca no topo (A1): continua na mesma tela, agora com a outra marca. */
 export function BrandSwitchOption({ slug, name, color }: { slug: string; name: string; color: string }) {
@@ -10,7 +11,7 @@ export function BrandSwitchOption({ slug, name, color }: { slug: string; name: s
     <form action={chooseBrandAction}>
       <input type="hidden" name="slug" value={slug} />
       {/* Em "Todas as marcas" (/admin), escolher uma marca abre o Início dela. */}
-      <input type="hidden" name="next" value={path === "/admin" ? "/admin/marca" : path.split("/").slice(0, 3).join("/")} />
+      <input type="hidden" name="next" value={brandSwitchPath(path)} />
       <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/60 dark:hover:bg-white/10">
         <span className="size-3 rounded-full" style={{ background: color }} />
         {name}
