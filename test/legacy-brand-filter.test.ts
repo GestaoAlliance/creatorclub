@@ -58,3 +58,15 @@ describe("contrato assinado pelo domínio de outra marca (D-LEGACYCONTRACT)", ()
     expect(signerOfOtherBrand(["x@vermefree.com.br", "financeiro@botanikabrasil.com.br"], vf, others)).toBe(false);
   });
 });
+
+describe("contrato da marca em conta de outra marca (D-LEGACYCROSS)", () => {
+  it("só entra o que é claramente da marca: nome (inclusive 'BT' da Botanika) ou domínio de quem assinou", async () => {
+    const { ownDocument } = await import("@/lib/autentique/legacy-import");
+    const bk = { name: "Botanika", slug: "botanika", storeUrl: "https://botanikabrasil.com.br" };
+    const sig = (email: string) => ({ email, action: { name: "SIGN" } });
+    expect(ownDocument({ name: "Contrato Prescritor BT", signatures: [sig("a@gmail.com")] }, bk)).toBe(true);
+    expect(ownDocument({ name: "Contrato Prescritor Raquel", signatures: [sig("financeiro@botanikabrasil.com.br")] }, bk)).toBe(true);
+    expect(ownDocument({ name: "Contrato UGC - Luli.docx (1)", signatures: [sig("luli@gmail.com")] }, bk)).toBe(false);
+    expect(ownDocument({ name: "Contrato Abtu", signatures: [sig("a@gmail.com")] }, bk)).toBe(false); // "bt" só como palavra
+  });
+});

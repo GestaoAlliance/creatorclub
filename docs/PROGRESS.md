@@ -316,6 +316,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-389 — 2026-11-24 — Busca dos contratos antigos lê também as contas das outras marcas (D-LEGACYCROSS)
+
+- Responsável: a Botanika lê a conta do Autentique da VermeFree (lá estão os "Contrato Prescritor/Creator BT").
+- A busca de cada marca lê a própria conta e as das outras (mesma chave uma vez só). De outra conta, só entra o
+  documento claramente desta marca: o nome cita a marca (na Botanika também "BT" como palavra) ou assinou alguém do
+  domínio dela (`ownDocument`). O PDF é baixado com a chave da conta de origem (`sourceBrandId`). O mesmo documento
+  pode ser lido por duas marcas: único por marca (`brandId` + `externalId`; migração `20261213090000_legacy_cross_brand`).
+- Testes: unitários e de integração novos (`test/integration/legacy-cross.test.ts`), typecheck e build ok.
+
 ### CP-388 — 2026-11-24 — Segunda busca dos contratos antigos e filtro pelo domínio de quem assinou
 
 - Busca rodada depois do PR #339: Botanika leu 64 (16 novos, 6 ligados), VermeFree 96 (32 novos, 9 ligados), Revita
