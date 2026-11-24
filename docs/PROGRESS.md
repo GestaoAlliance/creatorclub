@@ -316,6 +316,17 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-387 — 2026-11-24 — Busca dos contratos antigos: todas as páginas, pastas e "creator e marca assinaram"
+
+- Fátima: os contratos antigos estão na conta do Autentique creators.botanikabrasil@gmail.com (a mesma ligada à
+  Botanika). A primeira busca leu só 30 de ~49 (parava na primeira página e não entrava em pastas) e exigia "todos
+  assinaram", mas os antigos têm o contador aguardando e e-mails com falha (ex.: Anna Machado).
+- Correção (resposta do responsável: vale quando a creator e a marca assinaram): lê todas as páginas da raiz e as
+  pastas (`folders` / `documentsByFolder`; se a API recusar, segue e o motivo fica no histórico); "marca" = e-mail do
+  domínio da loja ou a própria conta do Autentique (`brandEmail`, `legacySigned`). Histórico `contract.legacy_scan`
+  sempre gravado com lidos, novos, não assinados, outra marca e pastas.
+- Testes: 408 unitários, 382 de integração, typecheck e build ok.
+
 ### CP-386 — 2026-11-24 — Contratos novos da VermeFree, distratos publicados e regras da VermeFree (D-VFRULES)
 
 - Fátima mandou (24/11): contratos da VermeFree CPF e CNPJ (1 produto), distrato da VermeFree e da Revita. Respostas

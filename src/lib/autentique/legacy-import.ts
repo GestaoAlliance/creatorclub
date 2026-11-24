@@ -36,7 +36,7 @@ const LIST = `query documents($limit: Int!, $page: Int!) {
   documents(limit: $limit, page: $page) { total data { id name created_at signatures { public_id name email action { name } signed { created_at } } } }
 }`;
 
-type RawDoc = { id: string; name: string | null; created_at: string | null; signatures: { name: string | null; email: string | null; action: { name: string } | null; signed: { created_at: string } | null }[] | null };
+type RawDoc = { id: string; name: string | null; created_at?: string | null; signatures: { name: string | null; email: string | null; action: { name: string } | null; signed: { created_at: string } | null }[] | null };
 
 /** Sem acento, minúsculas, espaços simples: "Júlia  Colares" = "julia colares". */
 export function foldName(s: string | null | undefined): string {
@@ -85,43 +85,83 @@ export function matchSigners(signers: Signer[], people: Person[]): { status: "MA
   return { status: "UNMATCHED", creatorId: null, matchedBy: null, candidates: [] };
 }
 
-/** Lê a conta do Autentique da marca e grava os documentos assinados que ainda não conhece. */
+const FOLDERS = `query folders($limit: Int!, $page: Int!) { folders(limit: $limit, page: $page) { total data { id name } } }`;
+const BY_FOLDER = `query documentsByFolder($folder: UUID!, $limit: Int!, $page: Int!) {
+  documentsByFolder(folder_id: $folder, limit: $limit, page: $page) { total data { id name created_at signatures { public_id name email action { name } signed { created_at } } } }
+}`;
+
+/** E-mails da marca: o domínio da loja (ex.: @botanikabrasil.com.br) e a própria conta do Autentique. */
+export function brandEmail(email: string, storeUrl: string | null, accountEmail: string | null): boolean {
+  const e = email.trim().toLowerCase();
+  if (!e) return false;
+  if (accountEmail && e === accountEmail.trim().toLowerCase()) return true;
+  const host = storeUrl ? storeUrl.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0]!.toLowerCase() : "";
+  return host.length > 3 && e.endsWith(`@${host}`);
+}
+
+/**
+ * D-LEGACYCONTRACT (resposta do responsável, 2026-11-24): o contrato vale quando a creator e a marca assinaram. Contador,
+ * testemunhas e e-mails com falha não contam. Sem ninguém da marca entre os signatários, basta a creator.
+ */
+export function legacySigned(
+  signers: { email: string; signedAt: string | null }[],
+  isCreator: (email: string) => boolean,
+  isBrand: (email: string) => boolean,
+): { ok: boolean; signedAt: string | null } {
+  const creator = signers.filter((s) => isCreator(s.email) && s.signedAt);
+  const brand = signers.filter((s) => isBrand(s.email));
+  if (!creator.length) return { ok: false, signedAt: null };
+  if (brand.length && !brand.some((s) => s.signedAt)) return { ok: false, signedAt: null };
+  const dates = [...creator, ...brand.filter((s) => s.signedAt)].map((s) => s.signedAt!).sort();
+  return { ok: true, signedAt: dates.at(-1)! };
+}
+
+/** Lê a conta do Autentique da marca (raiz e pastas) e grava os contratos assinados que ainda não conhece. */
 export async function scanLegacyContracts(prisma: PrismaClient, brandId: string, deps: Deps = {}) {
-  const out = { read: 0, created: 0, matched: 0, otherBrand: 0 };
+  const out = { read: 0, created: 0, matched: 0, otherBrand: 0, notSigned: 0, folders: 0, folderError: null as string | null };
   const conn = await loadAutentique(prisma, brandId, deps.encKey);
   if (!conn) return out;
-  const [brands, requests, terminations, known, creators] = await Promise.all([
-    prisma.brand.findMany({ select: { id: true, name: true, slug: true } }),
+  const [brands, requests, terminations, known, creators, integration] = await Promise.all([
+    prisma.brand.findMany({ select: { id: true, name: true, slug: true, storeUrl: true } }),
     prisma.contractRequest.findMany({ select: { externalId: true } }),
     prisma.creatorTermination.findMany({ where: { externalId: { not: null } }, select: { externalId: true } }),
     prisma.autentiqueLegacyContract.findMany({ select: { externalId: true } }),
     prisma.creator.findMany({ where: { brandId }, select: { id: true, account: { select: { email: true, name: true } } } }),
+    prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } }, select: { externalId: true } }),
   ]);
   const skip = new Set([...requests.map((r) => r.externalId), ...terminations.map((t) => t.externalId!), ...known.map((k) => k.externalId)]);
   const people = creators.map((c) => ({ id: c.id, email: c.account.email, name: c.account.name }));
+  const emails = new Set(people.map((p) => p.email.trim().toLowerCase()));
+  const names = new Set(people.map((p) => foldName(p.name)).filter((n) => n.includes(" ")));
   const own = brands.find((b) => b.id === brandId)!;
   const others = brands.filter((b) => b.id !== brandId);
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const data = await autentiqueQuery<{ documents: { total: number; data: RawDoc[] } }>(conn.token, LIST, { limit: PAGE, page }, deps.fetcher);
-    const docs = data.documents?.data ?? [];
-    if (docs.length === 0) break;
+  const account = integration?.externalId?.includes("@") ? integration.externalId : conn.account?.includes("@") ? conn.account : null;
+  const isBrand = (e: string) => brandEmail(e, own.storeUrl, account);
+
+  const take = async (docs: RawDoc[]) => {
     for (const d of docs) {
       out.read++;
       if (skip.has(d.id)) continue;
       if (otherBrandDocument(d.name ?? "", own, others)) {
-        out.otherBrand++;
+        out.otherBrand++; // contrato de outra marca na mesma conta
         continue;
-      } // contrato de outra marca na mesma conta
-      const signers = (d.signatures ?? []).filter((s) => s.action !== null);
-      // Só o que todos já assinaram.
-      if (signers.length === 0 || signers.some((s) => !s.signed?.created_at)) continue;
-      const signedAt = new Date(Math.max(...signers.map((s) => autentiqueDate(s.signed!.created_at).getTime())));
-      const list = signers.map((s) => ({ name: (s.name ?? "").trim(), email: (s.email ?? "").trim().toLowerCase() }));
-      const m = matchSigners(list, people);
+      }
+      const signers = (d.signatures ?? []).filter((s) => s.action !== null).map((s) => ({ name: (s.name ?? "").trim(), email: (s.email ?? "").trim().toLowerCase(), signedAt: s.signed?.created_at ?? null }));
+      if (signers.length === 0) continue;
+      const people_ = signers.filter((s) => !isBrand(s.email));
+      const m = matchSigners(people_, people);
+      // Sem creator conhecida: vale a assinatura de qualquer signatário de fora da marca (a Gestão confirma em Ações).
+      const creatorEmails = new Set(signers.filter((x) => emails.has(x.email) || names.has(foldName(x.name))).map((x) => x.email));
+      const known_ = m.status === "MATCHED" ? (e: string) => creatorEmails.has(e) : (e: string) => !isBrand(e);
+      const sig = legacySigned(signers, known_, isBrand);
+      if (!sig.ok) {
+        out.notSigned++;
+        continue;
+      }
       const { count } = await prisma.autentiqueLegacyContract.createMany({
         data: [{
-          brandId, externalId: d.id, name: (d.name ?? "(sem nome)").slice(0, 300), signerNames: list.map((s) => s.name).filter(Boolean), signerEmails: list.map((s) => s.email).filter(Boolean),
-          signedAt, status: m.status, creatorId: m.creatorId, matchedBy: m.matchedBy, candidateIds: m.candidates,
+          brandId, externalId: d.id, name: (d.name ?? "(sem nome)").slice(0, 300), signerNames: signers.map((s) => s.name).filter(Boolean), signerEmails: signers.map((s) => s.email).filter(Boolean),
+          signedAt: autentiqueDate(sig.signedAt!), status: m.status, creatorId: m.creatorId, matchedBy: m.matchedBy, candidateIds: m.candidates,
         }],
         skipDuplicates: true,
       });
@@ -129,11 +169,35 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
       out.created += count;
       if (count && m.status === "MATCHED") out.matched++;
     }
-    if (docs.length < PAGE) break;
+  };
+
+  // Raiz da conta: todas as páginas, até vir uma vazia.
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const data = await autentiqueQuery<{ documents: { total: number; data: RawDoc[] } }>(conn.token, LIST, { limit: PAGE, page }, deps.fetcher);
+    const docs = data.documents?.data ?? [];
+    if (docs.length === 0) break;
+    await take(docs);
   }
-  if (out.created) {
-    await prisma.auditLog.create({ data: { brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "contract.legacy_scan", entity: "Brand", entityId: brandId, after: out } });
+  // Pastas: se a API recusar (conta sem pastas, consulta diferente), segue sem elas e o motivo fica no histórico.
+  try {
+    for (let fp = 1; fp <= MAX_PAGES; fp++) {
+      const f = await autentiqueQuery<{ folders: { data: { id: string; name: string | null }[] } }>(conn.token, FOLDERS, { limit: PAGE, page: fp }, deps.fetcher);
+      const folders = f.folders?.data ?? [];
+      if (folders.length === 0) break;
+      for (const folder of folders) {
+        out.folders++;
+        for (let page = 1; page <= MAX_PAGES; page++) {
+          const data = await autentiqueQuery<{ documentsByFolder: { data: RawDoc[] } }>(conn.token, BY_FOLDER, { folder: folder.id, limit: PAGE, page }, deps.fetcher);
+          const docs = data.documentsByFolder?.data ?? [];
+          if (docs.length === 0) break;
+          await take(docs);
+        }
+      }
+    }
+  } catch (error) {
+    out.folderError = String(error instanceof Error ? error.message : error).slice(0, 200);
   }
+  await prisma.auditLog.create({ data: { brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "contract.legacy_scan", entity: "Brand", entityId: brandId, after: out } });
   return out;
 }
 
