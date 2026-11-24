@@ -29,6 +29,8 @@ model Brand {
   productRequestsPausedAt   DateTime?
   /// D-WELCOMECHOICE: produtos do envio inicial de cada opção (1 produto; 2 produtos + 3 vídeos).
   welcomeOneIds             String[]            @default([])
+  /// D-VFRULES: a aprovação oferece o envio de 2 produtos + 3 vídeos (false na Botanika e na VermeFree, contratos de 1 produto).
+  welcomeTwoOffered         Boolean             @default(true)
   welcomeTwoIds             String[]            @default([])
   name                      String
   enabled                   Boolean             @default(false)

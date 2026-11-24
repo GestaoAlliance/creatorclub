@@ -123,7 +123,7 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   const days = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY);
 
   // Parou de vender (só ativas com contrato de comissão; a regra está em `idleFor`).
-  for (const [id, s] of await idleFor(prisma, creators, tz, now)) if (s?.idle) push(id, `IDLE:${id}:${s.lastSaleDay ?? "nunca"}`, { kind: "IDLE", days: s.days, contractEnds: brand.slug === "revita-derma" });
+  for (const [id, s] of await idleFor(prisma, creators, tz, now)) if (s?.idle) push(id, `IDLE:${id}:${s.lastSaleDay ?? "nunca"}`, { kind: "IDLE", days: s.days, contractEnds: brand.slug === "revita-derma" || brand.slug === "vermefree" });
 
   // Contrato vencendo ou vencido. D-REVITARULES: na Revita o contrato é sem prazo (encerra com 2 meses sem venda).
   for (const c of brand.slug === "revita-derma" ? [] : creators) {

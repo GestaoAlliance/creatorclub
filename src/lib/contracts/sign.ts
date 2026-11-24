@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   addMonthsToDay,
+  contractEndDay,
   CONTRACT_TEXT_KINDS,
   isContractTextKind,
   type ContractTextKind,
@@ -181,7 +182,7 @@ export async function signContract(
   const body = renderContract(pending.body, { ...pending.fixed, fullName, cpf, address, cnpj, companyName: cnpj ? companyName : null, signedAt: now });
   const bodySha256 = createHash("sha256").update(body, "utf8").digest("hex");
   const start = account.contractStart ? account.contractStart.toISOString().slice(0, 10) : dayKey(now);
-  const end = account.contractEnd ? null : addMonthsToDay(start, pending.fixed.months);
+  const end = account.contractEnd ? null : contractEndDay(start, pending.fixed.months);
 
   try {
     await prisma.$transaction(async (tx) => {

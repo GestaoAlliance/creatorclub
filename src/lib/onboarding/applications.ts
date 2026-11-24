@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { addMonthsToDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, WELCOME_VIDEO_PRODUCTS, WELCOME_VIDEOS, welcomePreset, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
+import { addMonthsToDay, contractEndDay, applicationPriority, assertBps, notices, WELCOME_PRODUCTS, WELCOME_VIDEO_PRODUCTS, WELCOME_VIDEOS, welcomePreset, birthdayLabel, dayKey, parseBirthDate, filterApplications, findDuplicates, normalizeCouponCode, parseFollowers, usableHandle, validateNewCouponCode, wantedBrands, type ApplicationFilters, type DupSource } from "@/domain";
 import type { Actor } from "@/lib/auth/actor";
 import { brandsWith, can } from "@/lib/auth/permissions";
 import { normalizeEmail } from "@/lib/auth/rules";
@@ -143,7 +143,9 @@ export function couponFromSuggestion(suggestion: string | null): string {
 }
 
 /** D-NOKIT: o envio inicial está configurado (1 produto) e não há a opção de 2 produtos (kit). */
-export function welcomeWithoutKit(b: { welcomeOneIds: readonly string[]; welcomeTwoIds: readonly string[] }): boolean {
+export function welcomeWithoutKit(b: { welcomeOneIds: readonly string[]; welcomeTwoIds: readonly string[]; welcomeTwoOffered?: boolean }): boolean {
+  // D-VFRULES: Botanika e VermeFree (contratos de 1 produto) não oferecem mais o envio de 2 produtos + 3 vídeos.
+  if (b.welcomeTwoOffered === false) return true;
   return b.welcomeOneIds.length > 0 && b.welcomeTwoIds.length === 0;
 }
 
@@ -322,7 +324,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
   // D-CONTRACTSWITCH: "Aprovar e enviar o contrato" só nas marcas com a chave ligada.
   const locked = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds }, contractLock: true }, select: { id: true } })).map((b) => b.id));
   // D-NOKIT (Fátima, 2026-11-23): marca com o envio inicial configurado e sem a opção de 2 produtos não oferece o kit.
-  const noKit = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, welcomeOneIds: true, welcomeTwoIds: true } })).filter((b) => welcomeWithoutKit(b)).map((b) => b.id));
+  const noKit = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, welcomeOneIds: true, welcomeTwoIds: true, welcomeTwoOffered: true } })).filter((b) => welcomeWithoutKit(b)).map((b) => b.id));
   // D-CONTRACTFLOW: aprovada esperando o contrato (portal travado até assinar e ativar).
   const awaiting = new Map(
     (await prisma.creator.findMany({ where: { id: { in: mapped.flatMap((m) => (m.creatorId ? [m.creatorId] : [])) }, awaitingContractAt: { not: null } }, select: { id: true, contractSigned: true } })).map((c) => [c.id, c]),
@@ -377,7 +379,7 @@ export async function approveApplication(
   clientFor: ClientFactory = defaultClientFactory,
   now = new Date(),
 ): Promise<{ creatorId: string; accountId: string; couponCode: string; awaitingContract: boolean }> {
-  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true, contractLock: true, welcomeOneIds: true, welcomeTwoIds: true } } } });
+  const app = await prisma.creatorApplication.findUnique({ where: { id: input.applicationId }, include: { brand: { select: { slug: true, contractLock: true, welcomeOneIds: true, welcomeTwoIds: true, welcomeTwoOffered: true } } } });
   if (!app) throw new ApplicationError("Candidata não encontrada.");
   if (!actor || !can(actor.grants, "creators.edit", app.brandId)) throw new ApplicationError("Sem permissão.");
   if (app.status !== "NEW") throw new ApplicationError("Esta candidata já foi decidida.");
@@ -493,7 +495,7 @@ export async function approveApplication(
             : {
                 contractSigned: true,
                 contractStart: new Date(`${start}T00:00:00Z`),
-                contractEnd: template ? new Date(`${addMonthsToDay(start, template.months)}T00:00:00Z`) : null,
+                contractEnd: template && contractEndDay(start, template.months) ? new Date(`${contractEndDay(start, template.months)}T00:00:00Z`) : null,
               }),
           // Pedido da Vanessa (2026-10-27): creator CPF saca com recibo; creator CNPJ, com nota fiscal.
           receivesAsIndividual: input.receivesAsIndividual ?? cnpjDigits.length !== 14,

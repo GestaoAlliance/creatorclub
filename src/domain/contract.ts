@@ -8,6 +8,11 @@ import { DEFAULT_TIMEZONE, dayKey } from "./time";
 export const CONTRACT_WARN_DAYS = 30;
 
 /** "AAAA-MM-DD" somando meses; dia que não existe no mês de destino vira o último dia (31/08 + 6 = 28/02). */
+/** D-VFRULES: fim do contrato pelo prazo da versão; 0 meses = prazo indeterminado (sem data de fim). */
+export function contractEndDay(start: string, months: number | null | undefined): string | null {
+  return months && months > 0 ? addMonthsToDay(start, months) : null;
+}
+
 export function addMonthsToDay(day: string, months: number): string {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
   const total = y * 12 + (m - 1) + months;
