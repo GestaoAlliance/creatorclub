@@ -8,8 +8,12 @@
 - **Fase atual:** as 3 marcas no ar em `creatorclub.app.br`. Botanika pagando pelo Creator Club desde novembro
   (conferência dos saques, D-PAYCHECK; pedidos de produtos pausados, D-PRODUCTPAUSE). Seletor de tempo em todas as
   telas da equipe (D-PERIODPICK).
-- **Próxima tarefa:** perguntar ao responsável. Distrato pronto (CP-382), esperando os textos PF e PJ do jurídico para
-  publicar em Contratos.
+- **Próxima tarefa:** em espera (2026-11-25), aguardando respostas:
+  1. **Botanika, contrato com 4 assinaturas** (influencer + Sigismundo pela Botanika + Vanessa e Guilherme testemunhas):
+     confirmar e-mails/CPF, se a parceria começa na assinatura da creator ou só depois dos 4, regra dos produtos
+     ("mês fechado") e o "Saque pago" (Pix cai no dia útil seguinte). Contratos antigos: em aberto. Preparar por marca
+     (lista de signatários), ligado só na Botanika.
+  2. **VermeFree, conferência dos saques** (Pamela): agosto (e jun–ago da Victoria) foi pago? Osvaldo pago em dobro.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
