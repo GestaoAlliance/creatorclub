@@ -8,13 +8,20 @@
 - **Fase atual:** as 3 marcas no ar em `creatorclub.app.br`. Botanika pagando pelo Creator Club desde novembro
   (conferência dos saques, D-PAYCHECK; pedidos de produtos pausados, D-PRODUCTPAUSE). Seletor de tempo em todas as
   telas da equipe (D-PERIODPICK).
-- **Próxima tarefa:** perguntar ao responsável. Distrato pronto (CP-382), esperando os textos PF e PJ do jurídico para
-  publicar em Contratos.
+- **Próxima tarefa:** em espera (2026-11-25), aguardando respostas:
+  1. **Botanika, contrato com 4 assinaturas** (influencer + Sigismundo pela Botanika + Vanessa e Guilherme testemunhas):
+     confirmar e-mails/CPF, se a parceria começa na assinatura da creator ou só depois dos 4, regra dos produtos
+     ("mês fechado") e o "Saque pago" (Pix cai no dia útil seguinte). Contratos antigos: em aberto. Preparar por marca
+     (lista de signatários), ligado só na Botanika.
+  2. **VermeFree, conferência dos saques** (Pamela): agosto (e jun–ago da Victoria) foi pago? Osvaldo pago em dobro.
 - **Como revisar (D-REVIEW):** tela nova só vai ao ar com o OK do responsável sobre as capturas (celular, computador,
   claro/escuro) no PR; site ao vivo: https://creatorclub.app.br (cada merge na `main` vai ao ar).
 - **Repositório:** `GestaoAlliance/creatorclub` (desde 2026-10-09; o antigo `Botanika-HUb/botanika-creator-club` não recebe mais commits)
 
 ### O que depende de quem (conferido em produção em 2026-11-17)
+
+> **D-WHOBRAND (2026-11-25):** só o responsável, Vanessa e Fátima nas 3 marcas; Juci, Guilherme, Álvaro e Sigismundo só
+> Botanika; pagamento da VermeFree e Revita: Pamela. Assunto de uma marca nunca vai para quem não é dela.
 
 | Quem | O que | Onde |
 |---|---|---|
@@ -315,6 +322,28 @@ E9 Corte.
 Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e-97e8-dc11dbe57f52
 
 ## Checkpoints (mais recente primeiro)
+
+### CP-392 — 2026-11-25 — Convite da equipe recusa e-mail que já tem conta (D-INVITEDUP)
+
+- Caso: convite de Hunter da VermeFree para a Fátima (dois e-mails, os dois já com conta) só falhava quando ela abria
+  o link. Pedido do responsável: barrar já no "Gerar convite". `createStaffInvite` recusa e-mail com login no Creator
+  Club: quem é da equipe → "abra a pessoa na lista da Equipe e adicione o papel"; sem papel (ex.: creator) → "use
+  outro e-mail". Janela de saque da VermeFree reaberta até 27/11 (SQL com AuditLog, pedido da Fátima).
+- Testes: integração nova em `test/integration/team.test.ts`; unitários, integração, typecheck e build ok.
+
+### CP-391 — 2026-11-25 — Proteção contra novo bloqueio do Supabase (D-SPENDCAP)
+
+- O Supabase não expõe o consumo de tráfego (egress) pela API; só no painel. Responsável escolheu desligar o Spend
+  Cap do plano Pro (Sarah faz pelo Billing): o sistema não é mais bloqueado e o excedente vai para a fatura.
+  Mensagem para a Sarah com o passo a passo enviada pelo responsável. Nenhum código mudou.
+
+### CP-390 — 2026-11-25 — Busca entre contas: contratos antigos nas fichas
+
+- Busca depois do PR #340 (D-LEGACYCROSS): Botanika 24 novos (22 ligados; vieram da conta da VermeFree: "BT",
+  "… - Botanika.docx", UGC assinados pelo financeiro), VermeFree 27 novos (24 ligados; "… VermeFree.docx" da conta da
+  Botanika), Revita nenhum. PDFs anexados: 7 na Botanika e 21 na VermeFree (o resto já tinha contrato anexado pela
+  equipe ou ficou para a próxima rodada, 20 por vez). A conferir em Ações: Jackelyne e um "Contrato Creator BT"
+  (Botanika); Jutieli, Flávia Macedo e Aline Thaisa (VermeFree).
 
 ### CP-389 — 2026-11-24 — Busca dos contratos antigos lê também as contas das outras marcas (D-LEGACYCROSS)
 
