@@ -323,6 +323,21 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-396 — 2026-11-25 — Simulação do fechamento de 01/12 refeita (dados de 25/11)
+
+- Mesma regra do CP-385 (planReleases, mínimo do contrato, D-ENDRELEASE). Botanika: 28 creators, R$ 33.058,13
+  (Victoria R$ 19.384,92). VermeFree: 13 creators, R$ 13.846,56 (Victoria R$ 10.999,25). Revita: ninguém.
+- Desde 24/11: Victoria (Botanika), Karynne, Giovanna, Ruy e Anna Machado ganharam acesso; Karynne, Giovanna (2
+  marcas), Israel, Ludimilla (VF) e Julia (VF) pediram saque; Flavia Nagliati recebeu R$ 447,86 (agora como PF).
+  A carga do Autentique anexou PDFs: na Botanika 15 das 28 têm contrato anexado; na VermeFree só a Thays.
+- Bloqueios. Botanika: sem acesso Nathalia, Elaine (+ desligados Thiago, Barbieri, Larissa Lessa); Elaine sem CNPJ e
+  sem Pix; sem Pix Lorena, Juliana Esposito e Barbieri (desligados); contrato não assinado Angela e Elaine; Suzana sem
+  marcação de contrato; saque da Julia (R$ 2.183,70, 18/11) parado na NF. VermeFree: sem acesso Thays, Osvaldo,
+  Renato; empresa sem CNPJ Thays, Osvaldo, Renato, Orlando; sem Pix Juliana Esposito, Thays, Renato, Vanessa Ludwig,
+  Orlando; contrato marcado como não assinado Victoria, Juliana Esposito, Vanessa Ludwig (aguardando); sem marcação
+  Robson e Grace; Osvaldo (pagamento em dobro) com a Pamela.
+- O saque não exige o contrato hoje (a marca é só da lista). Em aberto: exigir contrato (ou PDF) para o saque?
+
 ### CP-395 — 2026-11-25 — Trocar o tipo da creator na ficha (D-CATEDIT)
 
 - Caso: a Damaris (Revita) precisou de SQL para virar Influencer + UGC.
