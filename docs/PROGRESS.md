@@ -316,6 +316,12 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-391 — 2026-11-25 — Proteção contra novo bloqueio do Supabase (D-SPENDCAP)
+
+- O Supabase não expõe o consumo de tráfego (egress) pela API; só no painel. Responsável escolheu desligar o Spend
+  Cap do plano Pro (Sarah faz pelo Billing): o sistema não é mais bloqueado e o excedente vai para a fatura.
+  Mensagem para a Sarah com o passo a passo enviada pelo responsável. Nenhum código mudou.
+
 ### CP-390 — 2026-11-25 — Busca entre contas: contratos antigos nas fichas
 
 - Busca depois do PR #340 (D-LEGACYCROSS): Botanika 24 novos (22 ligados; vieram da conta da VermeFree: "BT",
