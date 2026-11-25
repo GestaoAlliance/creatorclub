@@ -16,6 +16,9 @@
 
 ### O que depende de quem (conferido em produção em 2026-11-17)
 
+> **D-WHOBRAND (2026-11-25):** só o responsável, Vanessa e Fátima nas 3 marcas; Juci, Guilherme, Álvaro e Sigismundo só
+> Botanika; pagamento da VermeFree e Revita: Pamela. Assunto de uma marca nunca vai para quem não é dela.
+
 | Quem | O que | Onde |
 |---|---|---|
 | **Fátima** (Gestão) | Botanika: clicar em Conferido na Karynne e na Anna Machado (Pagamentos CPF); acompanhar os saques de outubro (pedido até o dia 22, Pix de 20 a 25) | Pagamentos |
