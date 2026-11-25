@@ -336,7 +336,8 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
   Renato; empresa sem CNPJ Thays, Osvaldo, Renato, Orlando; sem Pix Juliana Esposito, Thays, Renato, Vanessa Ludwig,
   Orlando; contrato marcado como não assinado Victoria, Juliana Esposito, Vanessa Ludwig (aguardando); sem marcação
   Robson e Grace; Osvaldo (pagamento em dobro) com a Pamela.
-- O saque não exige o contrato hoje (a marca é só da lista). Em aberto: exigir contrato (ou PDF) para o saque?
+- O saque não exige o contrato hoje (a marca é só da lista). Decidido (D-SIGNEDOK): basta o contrato assinado; o
+  PDF não trava. Mensagens de cobrança: Botanika para o grupo da Botanika, VermeFree para a Pamela (D-WHOBRAND).
 
 ### CP-395 — 2026-11-25 — Trocar o tipo da creator na ficha (D-CATEDIT)
 
