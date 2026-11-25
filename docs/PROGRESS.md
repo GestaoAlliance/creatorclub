@@ -323,6 +323,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-392 — 2026-11-25 — Convite da equipe recusa e-mail que já tem conta (D-INVITEDUP)
+
+- Caso: convite de Hunter da VermeFree para a Fátima (dois e-mails, os dois já com conta) só falhava quando ela abria
+  o link. Pedido do responsável: barrar já no "Gerar convite". `createStaffInvite` recusa e-mail com login no Creator
+  Club: quem é da equipe → "abra a pessoa na lista da Equipe e adicione o papel"; sem papel (ex.: creator) → "use
+  outro e-mail". Janela de saque da VermeFree reaberta até 27/11 (SQL com AuditLog, pedido da Fátima).
+- Testes: integração nova em `test/integration/team.test.ts`; unitários, integração, typecheck e build ok.
+
 ### CP-391 — 2026-11-25 — Proteção contra novo bloqueio do Supabase (D-SPENDCAP)
 
 - O Supabase não expõe o consumo de tráfego (egress) pela API; só no painel. Responsável escolheu desligar o Spend

@@ -25,6 +25,20 @@ async function superAdmin(): Promise<Actor> {
 const email = () => `pessoa-${randomUUID()}@example.com`;
 
 describe("convite da equipe", () => {
+  it("e-mail que já tem conta no Creator Club não ganha convite (D-INVITEDUP)", async () => {
+    const admin = await superAdmin();
+    const { brand } = await seedBrand(prisma);
+    const creatorEmail = email();
+    await prisma.user.create({ data: { id: randomUUID(), email: creatorEmail, name: "Fátima Creator" } });
+    await expect(createStaffInvite(prisma, admin, { email: creatorEmail.toUpperCase(), name: "Fátima", role: "HUNTER", brandId: brand.id })).rejects.toThrow(
+      /já tem conta no Creator Club \(Fátima Creator\)\. Use outro e-mail/,
+    );
+    const staffEmail = email();
+    await prisma.user.create({ data: { id: randomUUID(), email: staffEmail, name: "Fátima Equipe", roleGrants: { create: { role: "GESTAO", brandId: brand.id } } } });
+    await expect(createStaffInvite(prisma, admin, { email: staffEmail, name: "Fátima", role: "HUNTER", brandId: brand.id })).rejects.toThrow(/na Equipe\. Para dar outro acesso/);
+    expect(await prisma.staffInvite.count({ where: { email: { in: [creatorEmail, staffEmail] } } })).toBe(0);
+  });
+
   it("super admin convida; a pessoa aceita uma vez e ganha o papel na marca", async () => {
     const admin = await superAdmin();
     const { brand } = await seedBrand(prisma);

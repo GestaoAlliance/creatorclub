@@ -43,6 +43,19 @@ export async function createStaffInvite(prisma: PrismaClient, actor: Actor | nul
     throw new TeamError("Marca não encontrada.");
   }
 
+  // D-INVITEDUP (responsável, 2026-11-25): e-mail que já tem login no Creator Club (equipe ou creator) não ganha convite:
+  // a conta nova falharia só quando a pessoa abrisse o link. Quem já é da equipe ganha o papel pela lista da Equipe.
+  if (email) {
+    const existing = await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { name: true, roleGrants: { select: { id: true }, take: 1 } } });
+    if (existing) {
+      throw new TeamError(
+        existing.roleGrants.length
+          ? `Este e-mail já tem conta no Creator Club (${existing.name}), na Equipe. Para dar outro acesso, abra a pessoa na lista da Equipe e adicione o papel.`
+          : `Este e-mail já tem conta no Creator Club (${existing.name}). Use outro e-mail para o acesso da equipe.`,
+      );
+    }
+  }
+
   const { token, tokenHash } = newInviteToken();
   const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
   const invite = await prisma.$transaction(async (tx) => {
