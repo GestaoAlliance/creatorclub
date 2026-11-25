@@ -323,6 +323,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-394 — 2026-11-25 — Convite: atalho "Entrar e aceitar" para quem já tem login (D-INVITELOGIN)
+
+- Caso: a Fátima já tinha login e a página do convite só pedia para criar senha (e falhava).
+- Sem sessão, a página mostra "Já tem login no Creator Club? Entrar e aceitar": vai ao login com o e-mail preenchido
+  e volta ao mesmo convite já logada (`inviteLoginPath`, `src/lib/auth/rules.ts`). Aparece para todos, então não
+  revela se o e-mail tem conta. O erro de "não foi possível criar a conta" aponta para o atalho.
+- Teste em `test/auth-rules.test.ts`.
+- Próxima: trocar o tipo da creator (Influencer/UGC/...) na ficha.
+
 ### CP-393 — 2026-11-25 — Aviso do link de assinatura sem WhatsApp na marca (D-LINKCHANNEL)
 
 - Caso: na VermeFree (sem WhatsApp ligado) o quadro do contrato em Candidatas dizia "link no WhatsApp: na fila", mas o
