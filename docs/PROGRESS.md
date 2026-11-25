@@ -316,6 +316,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-390 — 2026-11-25 — Busca entre contas: contratos antigos nas fichas
+
+- Busca depois do PR #340 (D-LEGACYCROSS): Botanika 24 novos (22 ligados; vieram da conta da VermeFree: "BT",
+  "… - Botanika.docx", UGC assinados pelo financeiro), VermeFree 27 novos (24 ligados; "… VermeFree.docx" da conta da
+  Botanika), Revita nenhum. PDFs anexados: 7 na Botanika e 21 na VermeFree (o resto já tinha contrato anexado pela
+  equipe ou ficou para a próxima rodada, 20 por vez). A conferir em Ações: Jackelyne e um "Contrato Creator BT"
+  (Botanika); Jutieli, Flávia Macedo e Aline Thaisa (VermeFree).
+
 ### CP-389 — 2026-11-24 — Busca dos contratos antigos lê também as contas das outras marcas (D-LEGACYCROSS)
 
 - Responsável: a Botanika lê a conta do Autentique da VermeFree (lá estão os "Contrato Prescritor/Creator BT").
