@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { extractText, getDocumentProxy } from "unpdf";
 import { AUTENTIQUE_URL, AutentiqueError, autentiqueMe, createAutentiqueDocument, deleteAutentiqueDocument, getAutentiqueDocument, type Fetcher } from "@/lib/autentique/client";
 import { nextWhatsAppTime } from "@/lib/autentique/applications";
-import { contractBadge, contractLinkMessage, rejectionMessage } from "@/domain";
+import { contractBadge, contractLinkMessage, contractLinkNote, rejectionMessage } from "@/domain";
 import { contractPdf } from "@/lib/autentique/pdf";
 
 type Call = { url: string; headers: Record<string, string>; body: string | FormData };
@@ -81,6 +81,15 @@ describe("contrato da candidata (D-AUTENTIQUE2)", () => {
     expect(contractBadge(null, "cupom já existe").tone).toBe("red");
     expect(contractBadge({ status: "SENT" }, null)).toEqual({ label: "contrato não assinado", tone: "amber" });
     expect(contractBadge({ status: "SIGNED" }, null)).toEqual({ label: "contrato assinado", tone: "green" });
+  });
+
+  it("D-LINKCHANNEL: sem WhatsApp na marca, o link vai só no e-mail (não fica 'na fila')", () => {
+    const when = () => "25/11 10:00";
+    const sent = { status: "SENT", signLink: "https://assina.ae/x", linkSentAt: null };
+    expect(contractLinkNote(sent, true, when)).toBe(" · link no WhatsApp: na fila (9h às 20h)");
+    expect(contractLinkNote(sent, false, when)).toBe(" · link só no e-mail (a marca não tem WhatsApp ligado)");
+    expect(contractLinkNote({ ...sent, linkSentAt: new Date() }, true, when)).toBe(" · link no WhatsApp em 25/11 10:00");
+    expect(contractLinkNote({ ...sent, status: "SIGNED" }, false, when)).toBe("");
   });
 
   it("mensagens aprovadas: link do contrato e recusa, com o primeiro nome", () => {

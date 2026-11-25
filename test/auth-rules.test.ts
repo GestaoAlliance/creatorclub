@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authServiceDown, DEFAULT_AFTER_LOGIN, normalizeEmail, passwordProblem, safeNextPath } from "@/lib/auth/rules";
+import { authServiceDown, DEFAULT_AFTER_LOGIN, inviteLoginPath, normalizeEmail, passwordProblem, safeNextPath } from "@/lib/auth/rules";
 
 describe("safeNextPath", () => {
   it("aceita caminhos internos", () => {
@@ -45,5 +45,18 @@ describe("authServiceDown (D-AUTHDOWN)", () => {
     expect(authServiceDown({ name: "AuthRetryableFetchError" })).toBe(true);
     expect(authServiceDown(new TypeError("fetch failed"))).toBe(true);
     expect(authServiceDown(undefined)).toBe(true);
+  });
+});
+
+describe("inviteLoginPath (D-INVITELOGIN)", () => {
+  it("leva ao login com o e-mail preenchido e volta para o mesmo convite", () => {
+    const path = inviteLoginPath("abc_123", "fatima@x.com");
+    const url = new URL(path, "http://interno.invalid");
+    expect(url.pathname).toBe("/entrar");
+    expect(url.searchParams.get("email")).toBe("fatima@x.com");
+    expect(safeNextPath(url.searchParams.get("next"))).toBe("/convite/abc_123");
+  });
+  it("convite aberto: sem e-mail", () => {
+    expect(new URL(inviteLoginPath("t", null), "http://interno.invalid").searchParams.has("email")).toBe(false);
   });
 });

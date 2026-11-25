@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AuthFrame } from "@/components/auth-frame";
 import { ui } from "@/components/ui/styles";
+import { inviteLoginPath } from "@/lib/auth/rules";
 import { supabaseServer } from "@/lib/supabase/server";
 import { AcceptForm } from "./accept-form";
 import { resolveInvite } from "./resolve";
@@ -47,6 +48,12 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
         )}
       </p>
       <AcceptForm token={token} needsPassword={!sessionEmail} askEmail={!invite.email && !sessionEmail} email={invite.email} />
+      {!sessionEmail && (
+        <p className={`${ui.muted} text-center text-sm`}>
+          Já tem login no Creator Club?{" "}
+          <Link href={inviteLoginPath(token, invite.email)} className={ui.link}>Entrar e aceitar</Link>
+        </p>
+      )}
     </>,
     `Olá, ${invite.name.split(" ")[0]}`,
   );

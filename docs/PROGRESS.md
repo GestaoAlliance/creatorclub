@@ -323,6 +323,34 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-395 — 2026-11-25 — Trocar o tipo da creator na ficha (D-CATEDIT)
+
+- Caso: a Damaris (Revita) precisou de SQL para virar Influencer + UGC.
+- Ficha → Situação: caixas Influencer / UGC / Prescritor e "Salvar tipo" (`setCreatorCategories`,
+  `src/lib/creators/profile.ts`). Gestão e super admin (`creators.edit`), pelo menos um tipo, creator arquivada não
+  troca, cada troca no AuditLog `creator.categories` (de/para).
+- Regra de liberação que depende do tipo vale a partir do próximo fechamento; a tela avisa.
+- Teste em `test/integration/creator-profile.test.ts`.
+- Próxima: as duas tarefas em espera (4 assinaturas da Botanika; conferência VermeFree com a Pamela).
+
+### CP-394 — 2026-11-25 — Convite: atalho "Entrar e aceitar" para quem já tem login (D-INVITELOGIN)
+
+- Caso: a Fátima já tinha login e a página do convite só pedia para criar senha (e falhava).
+- Sem sessão, a página mostra "Já tem login no Creator Club? Entrar e aceitar": vai ao login com o e-mail preenchido
+  e volta ao mesmo convite já logada (`inviteLoginPath`, `src/lib/auth/rules.ts`). Aparece para todos, então não
+  revela se o e-mail tem conta. O erro de "não foi possível criar a conta" aponta para o atalho.
+- Teste em `test/auth-rules.test.ts`.
+- Próxima: trocar o tipo da creator (Influencer/UGC/...) na ficha.
+
+### CP-393 — 2026-11-25 — Aviso do link de assinatura sem WhatsApp na marca (D-LINKCHANNEL)
+
+- Caso: na VermeFree (sem WhatsApp ligado) o quadro do contrato em Candidatas dizia "link no WhatsApp: na fila", mas o
+  link só vai no e-mail do Autentique.
+- `contractLinkNote` (`src/domain/contract-status.ts`): com WhatsApp, "na fila (9h às 20h)"; sem, "link só no e-mail
+  (a marca não tem WhatsApp ligado)". A lista de candidatas passa `whatsapp` por marca (`whatsappInstance`).
+- Produção hoje: só a Botanika tem WhatsApp. Teste em `test/autentique.test.ts`.
+- Próxima: página de convite para quem já tem conta ("Entrar e aceitar") e depois trocar o tipo da creator na ficha.
+
 ### CP-392 — 2026-11-25 — Convite da equipe recusa e-mail que já tem conta (D-INVITEDUP)
 
 - Caso: convite de Hunter da VermeFree para a Fátima (dois e-mails, os dois já com conta) só falhava quando ela abria

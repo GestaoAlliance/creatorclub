@@ -46,3 +46,13 @@ export function authServiceDown(error: unknown): boolean {
 }
 
 export const AUTH_DOWN_MESSAGE = "O sistema está fora do ar agora. Não é a sua senha: tente de novo em alguns minutos.";
+
+/**
+ * D-INVITELOGIN: quem já tem login abre o convite, entra com a senha de sempre e volta para o mesmo convite já
+ * logada (só falta o "Aceitar"). Não revela se o e-mail tem conta: o atalho aparece para todos.
+ */
+export function inviteLoginPath(token: string, email: string | null): string {
+  const q = new URLSearchParams({ next: `/convite/${encodeURIComponent(token)}` });
+  if (email) q.set("email", email);
+  return `/entrar?${q.toString()}`;
+}

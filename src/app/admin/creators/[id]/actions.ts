@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { currentActor } from "@/lib/auth/current";
 import { db } from "@/lib/db";
 import { percentToBps, ReviewError } from "@/lib/coupons/review";
-import { changeRate, ProfileError, setCreatorStatus, updateContact, updateProfile, type CreatorStatusValue } from "@/lib/creators/profile";
+import { changeRate, ProfileError, setCreatorCategories, setCreatorStatus, updateContact, updateProfile, type CreatorStatusValue } from "@/lib/creators/profile";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { emailCreatorInvite } from "@/lib/team/invite-email";
 import { configuredSender } from "@/lib/email/sender";
@@ -60,6 +60,11 @@ export async function contactAction(_p: State, form: FormData): Promise<State> {
 export async function statusAction(_p: State, form: FormData): Promise<State> {
   const id = String(form.get("creatorId"));
   return run(id, async () => setCreatorStatus(db(), await currentActor(), id, String(form.get("status")) as CreatorStatusValue), "Situação salva.");
+}
+
+export async function categoriesAction(_p: State, form: FormData): Promise<State> {
+  const id = String(form.get("creatorId"));
+  return run(id, async () => setCreatorCategories(db(), await currentActor(), id, form.getAll("category").map(String)), "Tipo salvo. Regra de liberação nova vale a partir do próximo fechamento.");
 }
 
 export async function rateAction(_p: State, form: FormData): Promise<State> {
