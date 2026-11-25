@@ -4,7 +4,7 @@ import { FileSignature, RefreshCw } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Msg } from "@/components/ui/msg";
 import { badge, ui } from "@/components/ui/styles";
-import { contractBadge, rejectionMessage } from "@/domain";
+import { contractBadge, contractLinkNote, rejectionMessage } from "@/domain";
 import { checkContractAction, sendContractAction, signedOutsideAction, undoApprovalAction } from "./actions";
 import { Done, WhatsAppButton } from "./forms";
 
@@ -27,6 +27,8 @@ export type ContractInfo = {
   rateBps: number | null;
   templateName: string;
   category: string;
+  /** A marca tem WhatsApp ligado (D-LINKCHANNEL). */
+  whatsapp: boolean;
 };
 
 /**
@@ -64,7 +66,7 @@ export function ContractBox(p: {
           </p>
           <p className={ui.hint}>
             Enviado em {when(c.sentAt)}
-            {c.linkSentAt ? ` · link no WhatsApp em ${when(c.linkSentAt)}` : c.status === "SENT" && c.signLink ? " · link no WhatsApp: na fila (9h às 20h)" : ""}
+            {contractLinkNote(c, c.whatsapp, when)}
             {c.signedAt && ` · assinado em ${when(c.signedAt)}`}
             {c.rejectedAt && ` · recusado em ${when(c.rejectedAt)}${c.rejectReason ? ` (“${c.rejectReason}”)` : ""}`}
             {c.status === "SENT" && c.lastCheckedAt && ` · conferido em ${when(c.lastCheckedAt)}`}

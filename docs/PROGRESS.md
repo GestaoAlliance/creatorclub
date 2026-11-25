@@ -323,6 +323,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-393 — 2026-11-25 — Aviso do link de assinatura sem WhatsApp na marca (D-LINKCHANNEL)
+
+- Caso: na VermeFree (sem WhatsApp ligado) o quadro do contrato em Candidatas dizia "link no WhatsApp: na fila", mas o
+  link só vai no e-mail do Autentique.
+- `contractLinkNote` (`src/domain/contract-status.ts`): com WhatsApp, "na fila (9h às 20h)"; sem, "link só no e-mail
+  (a marca não tem WhatsApp ligado)". A lista de candidatas passa `whatsapp` por marca (`whatsappInstance`).
+- Produção hoje: só a Botanika tem WhatsApp. Teste em `test/autentique.test.ts`.
+- Próxima: página de convite para quem já tem conta ("Entrar e aceitar") e depois trocar o tipo da creator na ficha.
+
 ### CP-392 — 2026-11-25 — Convite da equipe recusa e-mail que já tem conta (D-INVITEDUP)
 
 - Caso: convite de Hunter da VermeFree para a Fátima (dois e-mails, os dois já com conta) só falhava quando ela abria

@@ -323,6 +323,8 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
   ]);
   // D-CONTRACTSWITCH: "Aprovar e enviar o contrato" só nas marcas com a chave ligada.
   const locked = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds }, contractLock: true }, select: { id: true } })).map((b) => b.id));
+  // D-LINKCHANNEL: marcas com WhatsApp ligado (sem ele, o link de assinatura vai só no e-mail).
+  const whatsapp = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds }, whatsappInstance: { not: null } }, select: { id: true } })).map((b) => b.id));
   // D-NOKIT (Fátima, 2026-11-23): marca com o envio inicial configurado e sem a opção de 2 produtos não oferece o kit.
   const noKit = new Set((await prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, welcomeOneIds: true, welcomeTwoIds: true, welcomeTwoOffered: true } })).filter((b) => welcomeWithoutKit(b)).map((b) => b.id));
   // D-CONTRACTFLOW: aprovada esperando o contrato (portal travado até assinar e ativar).
@@ -344,7 +346,7 @@ export async function listApplications(prisma: PrismaClient, actor: Actor | null
         ? {
             status: r.status, sandbox: r.sandbox, sentAt: r.sentAt, signedAt: r.signedAt, rejectedAt: r.rejectedAt, rejectReason: r.rejectReason, signLink: r.signLink, linkSentAt: r.linkSentAt,
             lastCheckedAt: r.lastCheckedAt, lastError: r.lastError, coupon: r.pendingCouponCode, discountBps: r.pendingDiscountBps, rateBps: r.rateBps,
-            templateName: r.contractTemplate.name, category: r.contractTemplate.documentKind,
+            templateName: r.contractTemplate.name, category: r.contractTemplate.documentKind, whatsapp: whatsapp.has(m.brandId),
           }
         : null,
     };
