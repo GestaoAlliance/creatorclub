@@ -18,7 +18,7 @@ import { STATUS_LABEL, type creatorProfile } from "@/lib/creators/profile";
 import type { creatorTermsStatus } from "@/lib/terms/terms";
 import type { creatorContractSignature } from "@/lib/contracts/sign";
 import { CONTRACT_KIND_LABEL, type ContractKind } from "@/domain";
-import { PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TerminationForm, type TerminationInfo, TagsEditor, ProfileForm } from "./forms";
+import { CategoriesForm, PricingEditor, AdjustForm, ChecklistForm, ContactForm, CouponCreateForm, InviteButton, NoteForm, RateChangeForm, RateFixForm, ReviewedButton, StatusForm, ArchiveForm, TerminationForm, type TerminationInfo, TagsEditor, ProfileForm } from "./forms";
 import { AccessBox, NewAccessBox } from "@/components/staff/access-box";
 import { PostForm, PostList } from "@/components/posts";
 import type { PostWithSales } from "@/lib/posts/posts";
@@ -528,6 +528,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
           {p.canEdit && (
             <Card title="Situação">
               {!p.archivedAt && <StatusForm creatorId={p.id} status={p.status} labels={STATUS_LABEL} />}
+              {!p.archivedAt && <CategoriesForm creatorId={p.id} categories={p.categories} />}
               {!p.archivedAt && (termination || p.status !== "DEACTIVATED") && <TerminationForm creatorId={p.id} today={today} t={termination} />}
               <ArchiveForm creatorId={p.id} archived={p.archivedAt !== null} />
             </Card>

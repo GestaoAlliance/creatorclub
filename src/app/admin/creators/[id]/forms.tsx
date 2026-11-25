@@ -2,10 +2,10 @@
 
 import { Tag as TagIcon, X } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
-import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction, archiveAction, terminationAction } from "./actions";
+import { pricingAction, adjustAction, checklistAction, contactAction, couponCreateAction, inviteAction, categoriesAction, rateAction, rateFixAction, reviewedAction, statusAction, ugcGoalAction, ugcVideoAction, ugcVideoRemoveAction, type State, noteAction, addTagAction, removeTagAction, profileAction, archiveAction, terminationAction } from "./actions";
 
 import { Msg } from "@/components/ui/msg";
-import { NICHES } from "@/domain";
+import { CREATOR_CATEGORIES, CREATOR_CATEGORY_LABEL, NICHES } from "@/domain";
 import { ui } from "@/components/ui/styles";
 
 const input = ui.input;
@@ -43,6 +43,28 @@ export function StatusForm({ creatorId, status, labels }: { creatorId: string; s
         {Object.entries(labels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
       <button className={btn} disabled={pending}>Salvar situação</button>
+      <Msg state={state} />
+    </form>
+  );
+}
+
+/** D-CATEDIT: tipo da creator (pode ter mais de um). */
+export function CategoriesForm({ creatorId, categories }: { creatorId: string; categories: readonly string[] }) {
+  const [state, action, pending] = useActionState(categoriesAction, undefined);
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <input type="hidden" name="creatorId" value={creatorId} />
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className="text-stone-500">Tipo</span>
+        {CREATOR_CATEGORIES.map((c) => (
+          <label key={c} className="inline-flex items-center gap-1.5">
+            <input type="checkbox" name="category" value={c} defaultChecked={categories.includes(c)} />
+            {CREATOR_CATEGORY_LABEL[c]}
+          </label>
+        ))}
+        <button className={btn} disabled={pending}>Salvar tipo</button>
+      </div>
+      <p className={ui.hint}>Se o tipo mudar a regra de liberação (ex.: Prescritor), ela vale a partir do próximo fechamento. O que já foi liberado não muda.</p>
       <Msg state={state} />
     </form>
   );

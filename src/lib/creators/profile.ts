@@ -1,6 +1,6 @@
 import { allowedInAllBrands, OTHER_BRAND_MESSAGE } from "./shared-account";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { addDaysKey, assertBps, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, nextDayKey, startOfLocalDay, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
+import { addDaysKey, assertBps, CREATOR_CATEGORIES, cleanProfile, contractStatus, creatorPendings, dayKey, LIST_WEEKS, nextDayKey, startOfLocalDay, parseBirthDate, socialHandle, weekIndex, type CreatorCategoryValue, type ProfileKey } from "@/domain";
 import { dayOf } from "./contract";
 import { idleFor } from "./idle";
 import { lastOrderFor } from "./last-order";
@@ -387,4 +387,24 @@ export async function changeRate(prisma: PrismaClient, actor: Actor | null, crea
       },
     });
   });
+}
+
+/**
+ * D-CATEDIT: a Gestão (ou super admin) troca o tipo da creator na ficha. Pelo menos um tipo. Regra de dinheiro que
+ * depende do tipo (mínimo de vendas para liberar, ex.: Prescritor) vale a partir do próximo fechamento: o que já foi
+ * liberado não muda. Cada troca vai para o histórico (de qual para qual).
+ */
+export async function setCreatorCategories(prisma: PrismaClient, actor: Actor | null, creatorId: string, raw: readonly string[]) {
+  const creator = await loadCreator(prisma, creatorId);
+  if (!actor || !can(actor.grants, "creators.edit", creator.brandId)) throw new ProfileError("Sem permissão.");
+  if (creator.archivedAt) throw new ProfileError("Creator arquivada: desarquive antes de mudar o tipo.");
+  const categories = CREATOR_CATEGORIES.filter((c) => raw.includes(c));
+  if (raw.some((c) => !(CREATOR_CATEGORIES as string[]).includes(c))) throw new ProfileError("Tipo inválido.");
+  if (categories.length === 0) throw new ProfileError("Escolha pelo menos um tipo.");
+  const before = CREATOR_CATEGORIES.filter((c) => creator.categories.includes(c));
+  if (before.join() === categories.join()) return;
+  await prisma.$transaction([
+    prisma.creator.update({ where: { id: creatorId }, data: { categories } }),
+    audit(prisma, actor, creator.brandId, "creator.categories", "Creator", creatorId, { categories: before }, { categories }),
+  ]);
 }

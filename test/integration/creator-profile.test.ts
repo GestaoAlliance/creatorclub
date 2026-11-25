@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadActor } from "@/lib/auth/actor";
-import { changeRate, creatorProfile, listCreators, setCreatorStatus, updateContact } from "@/lib/creators/profile";
+import { changeRate, creatorProfile, listCreators, setCreatorCategories, setCreatorStatus, updateContact } from "@/lib/creators/profile";
 import { createCreatorInvite } from "@/lib/team/creator-invites";
 import { seedBrand, testClient } from "./fixtures";
 
@@ -53,6 +53,20 @@ describe("ficha da creator (banco real)", () => {
     const back = await prisma.creator.findUniqueOrThrow({ where: { id: creator.id } });
     expect(back).toMatchObject({ status: "ACTIVE", deactivatedAt: null });
     expect((await listCreators(prisma, ana, brand.id))[0]).toMatchObject({ status: "ACTIVE" });
+  });
+
+  it("D-CATEDIT: Gestão troca o tipo (pelo menos um), vai para o histórico; Pagamento não troca", async () => {
+    const { brand, creator } = await seedBrand(prisma);
+    const ana = await userWith("GESTAO", brand.id);
+    await setCreatorCategories(prisma, ana, creator.id, ["UGC", "INFLUENCER"]);
+    expect((await prisma.creator.findUniqueOrThrow({ where: { id: creator.id } })).categories).toEqual(["INFLUENCER", "UGC"]);
+    await setCreatorCategories(prisma, ana, creator.id, ["INFLUENCER", "UGC"]); // igual: não grava de novo
+    expect(await prisma.auditLog.count({ where: { action: "creator.categories", entityId: creator.id } })).toBe(1);
+    await expect(setCreatorCategories(prisma, ana, creator.id, [])).rejects.toThrow(/pelo menos um/);
+    await expect(setCreatorCategories(prisma, ana, creator.id, ["OUTRO"])).rejects.toThrow(/inválido/);
+    await expect(setCreatorCategories(prisma, await userWith("PAGAMENTO", brand.id), creator.id, ["UGC"])).rejects.toThrow(/permissão/);
+    const other = await seedBrand(prisma);
+    await expect(setCreatorCategories(prisma, ana, other.creator.id, ["UGC"])).rejects.toThrow(/permissão/);
   });
 
   it("mudar taxa confirmada fecha a atual e abre a nova a partir de agora; a confirmar é recusada", async () => {

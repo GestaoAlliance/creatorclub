@@ -323,6 +323,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-395 — 2026-11-25 — Trocar o tipo da creator na ficha (D-CATEDIT)
+
+- Caso: a Damaris (Revita) precisou de SQL para virar Influencer + UGC.
+- Ficha → Situação: caixas Influencer / UGC / Prescritor e "Salvar tipo" (`setCreatorCategories`,
+  `src/lib/creators/profile.ts`). Gestão e super admin (`creators.edit`), pelo menos um tipo, creator arquivada não
+  troca, cada troca no AuditLog `creator.categories` (de/para).
+- Regra de liberação que depende do tipo vale a partir do próximo fechamento; a tela avisa.
+- Teste em `test/integration/creator-profile.test.ts`.
+- Próxima: as duas tarefas em espera (4 assinaturas da Botanika; conferência VermeFree com a Pamela).
+
 ### CP-394 — 2026-11-25 — Convite: atalho "Entrar e aceitar" para quem já tem login (D-INVITELOGIN)
 
 - Caso: a Fátima já tinha login e a página do convite só pedia para criar senha (e falhava).
