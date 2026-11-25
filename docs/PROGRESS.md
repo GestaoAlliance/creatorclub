@@ -316,6 +316,27 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-389 — 2026-11-24 — Busca dos contratos antigos lê também as contas das outras marcas (D-LEGACYCROSS)
+
+- Responsável: a Botanika lê a conta do Autentique da VermeFree (lá estão os "Contrato Prescritor/Creator BT").
+- A busca de cada marca lê a própria conta e as das outras (mesma chave uma vez só). De outra conta, só entra o
+  documento claramente desta marca: o nome cita a marca (na Botanika também "BT" como palavra) ou assinou alguém do
+  domínio dela (`ownDocument`). O PDF é baixado com a chave da conta de origem (`sourceBrandId`). O mesmo documento
+  pode ser lido por duas marcas: único por marca (`brandId` + `externalId`; migração `20261213090000_legacy_cross_brand`).
+- Testes: unitários e de integração novos (`test/integration/legacy-cross.test.ts`), typecheck e build ok.
+
+### CP-388 — 2026-11-24 — Segunda busca dos contratos antigos e filtro pelo domínio de quem assinou
+
+- Busca rodada depois do PR #339: Botanika leu 64 (16 novos, 6 ligados), VermeFree 96 (32 novos, 9 ligados), Revita
+  39. Ficaram anexados 8 PDFs (Botanika: Francisca Wanessa, Luli, Osvaldo; VermeFree: Cristiane, Francisca Wanessa,
+  Lorena, Luli; Revita: Cristina). Julia, Ludimilla e Flávia Teles foram ligadas, mas a equipe já tinha anexado.
+- A conta do Autentique da VermeFree guarda contratos da Botanika ("Contrato Prescritor/Creator BT", assinados por
+  financeiro@botanikabrasil.com.br): 5 foram ligados a fichas da VermeFree (Grace, Karynne, Raquel, Robson e Giovanna)
+  e 4 tiveram o PDF anexado. Desfeito por SQL com AuditLog (ator Pedro), e os 14 documentos com signatário
+  @botanikabrasil.com.br na conta da VermeFree ficaram ignorados.
+- Correção: documento assinado por alguém do domínio de outra marca e por ninguém desta fica de fora
+  (`signerOfOtherBrand`). Testes: 409 unitários, 382 de integração e build ok.
+
 ### CP-387 — 2026-11-24 — Busca dos contratos antigos: todas as páginas, pastas e "creator e marca assinaram"
 
 - Fátima: os contratos antigos estão na conta do Autentique creators.botanikabrasil@gmail.com (a mesma ligada à

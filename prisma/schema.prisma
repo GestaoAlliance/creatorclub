@@ -1971,30 +1971,34 @@ model CreatorTermination {
 /// quem assinou; senão, o nome completo) e anexa o PDF do mais recente na ficha, se ela ainda não tem contrato anexado.
 /// Dúvida (mais de uma creator) ou sem creator: a Gestão confirma em Ações. Nada é apagado.
 model AutentiqueLegacyContract {
-  id           String    @id @default(uuid())
-  brandId      String
-  externalId   String    @unique
-  name         String
-  signerNames  String[]  @default([])
-  signerEmails String[]  @default([])
-  signedAt     DateTime
+  id            String    @id @default(uuid())
+  brandId       String
+  externalId    String
+  /// Marca dona da conta do Autentique onde o documento está (null = a própria; D-LEGACYCROSS: a conta da VermeFree
+  /// guarda contratos da Botanika).
+  sourceBrandId String?
+  name          String
+  signerNames   String[]  @default([])
+  signerEmails  String[]  @default([])
+  signedAt      DateTime
   /// MATCHED (ligado a uma creator) | AMBIGUOUS (mais de uma possível) | UNMATCHED (nenhuma) | IGNORED (não é de creator)
-  status       String
-  creatorId    String?
+  status        String
+  creatorId     String?
   /// EMAIL | NAME | TEAM
-  matchedBy    String?
-  candidateIds String[]  @default([])
-  fileId       String?
-  fileError    String?
-  fileAttempts Int       @default(0)
-  decidedById  String?
-  decidedAt    DateTime?
-  createdAt    DateTime  @default(now())
+  matchedBy     String?
+  candidateIds  String[]  @default([])
+  fileId        String?
+  fileError     String?
+  fileAttempts  Int       @default(0)
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
 
   brand   Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator? @relation(fields: [creatorId], references: [id], onDelete: Restrict)
   file    File?    @relation(fields: [fileId], references: [id], onDelete: Restrict)
 
+  @@unique([brandId, externalId])
   @@index([brandId, status])
   @@index([creatorId])
 }

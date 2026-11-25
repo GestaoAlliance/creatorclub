@@ -116,6 +116,22 @@ export function legacySigned(
   return { ok: true, signedAt: dates.at(-1)! };
 }
 
+/** D-LEGACYCROSS: o documento (de outra conta) é claramente desta marca: o nome cita a marca ou assinou alguém do domínio dela. */
+export function ownDocument(d: { name: string | null; signatures: { email: string | null; action: { name: string } | null }[] | null }, own: { name: string; slug: string; storeUrl: string | null }): boolean {
+  const n = foldName(d.name ?? "");
+  const compact = n.replace(/[^a-z0-9]/g, "");
+  const keys = brandKeys(own).concat(own.slug === "botanika" ? ["bt"] : []);
+  const byName = keys.some((k) => (k.length <= 3 ? new RegExp(`(^|[^a-z0-9])${k}([^a-z0-9]|$)`).test(n) : n.includes(k) || compact.includes(k.replace(/[^a-z0-9]/g, ""))));
+  const bySigner = (d.signatures ?? []).some((x) => x.action !== null && brandEmail(x.email ?? "", own.storeUrl, null));
+  return byName || bySigner;
+}
+
+/** Algum signatário é do domínio de outra marca e nenhum do domínio desta. */
+export function signerOfOtherBrand(emails: string[], own: { storeUrl: string | null }, others: { storeUrl: string | null }[]): boolean {
+  if (emails.some((e) => brandEmail(e, own.storeUrl, null))) return false;
+  return others.some((o) => emails.some((e) => brandEmail(e, o.storeUrl, null)));
+}
+
 /** Lê a conta do Autentique da marca (raiz e pastas) e grava os contratos assinados que ainda não conhece. */
 export async function scanLegacyContracts(prisma: PrismaClient, brandId: string, deps: Deps = {}) {
   const out = { read: 0, created: 0, matched: 0, otherBrand: 0, notSigned: 0, folders: 0, folderError: null as string | null };
@@ -125,7 +141,7 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
     prisma.brand.findMany({ select: { id: true, name: true, slug: true, storeUrl: true } }),
     prisma.contractRequest.findMany({ select: { externalId: true } }),
     prisma.creatorTermination.findMany({ where: { externalId: { not: null } }, select: { externalId: true } }),
-    prisma.autentiqueLegacyContract.findMany({ select: { externalId: true } }),
+    prisma.autentiqueLegacyContract.findMany({ where: { brandId }, select: { externalId: true } }),
     prisma.creator.findMany({ where: { brandId }, select: { id: true, account: { select: { email: true, name: true } } } }),
     prisma.brandIntegration.findUnique({ where: { brandId_kind: { brandId, kind: "AUTENTIQUE" } }, select: { externalId: true } }),
   ]);
@@ -138,16 +154,24 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
   const account = integration?.externalId?.includes("@") ? integration.externalId : conn.account?.includes("@") ? conn.account : null;
   const isBrand = (e: string) => brandEmail(e, own.storeUrl, account);
 
-  const take = async (docs: RawDoc[]) => {
+  // D-LEGACYCROSS: documento de conta de outra marca só entra se for claramente desta (nome ou domínio de quem assinou).
+  const take = async (docs: RawDoc[], source: string | null) => {
     for (const d of docs) {
       out.read++;
       if (skip.has(d.id)) continue;
+      if (source && !ownDocument(d, own)) continue;
       if (otherBrandDocument(d.name ?? "", own, others)) {
         out.otherBrand++; // contrato de outra marca na mesma conta
         continue;
       }
       const signers = (d.signatures ?? []).filter((s) => s.action !== null).map((s) => ({ name: (s.name ?? "").trim(), email: (s.email ?? "").trim().toLowerCase(), signedAt: s.signed?.created_at ?? null }));
       if (signers.length === 0) continue;
+      // Assinado por alguém de outra marca (domínio da loja dela) e por ninguém desta: o contrato é da outra marca
+      // (a conta da VermeFree guarda contratos da Botanika assinados pelo financeiro da Botanika, 2026-11-24).
+      if (signerOfOtherBrand(signers.map((x) => x.email), own, others)) {
+        out.otherBrand++;
+        continue;
+      }
       const people_ = signers.filter((s) => !isBrand(s.email));
       const m = matchSigners(people_, people);
       // Sem creator conhecida: vale a assinatura de qualquer signatário de fora da marca (a Gestão confirma em Ações).
@@ -160,7 +184,7 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
       }
       const { count } = await prisma.autentiqueLegacyContract.createMany({
         data: [{
-          brandId, externalId: d.id, name: (d.name ?? "(sem nome)").slice(0, 300), signerNames: signers.map((s) => s.name).filter(Boolean), signerEmails: signers.map((s) => s.email).filter(Boolean),
+          brandId, externalId: d.id, sourceBrandId: source, name: (d.name ?? "(sem nome)").slice(0, 300), signerNames: signers.map((s) => s.name).filter(Boolean), signerEmails: signers.map((s) => s.email).filter(Boolean),
           signedAt: autentiqueDate(sig.signedAt!), status: m.status, creatorId: m.creatorId, matchedBy: m.matchedBy, candidateIds: m.candidates,
         }],
         skipDuplicates: true,
@@ -171,31 +195,39 @@ export async function scanLegacyContracts(prisma: PrismaClient, brandId: string,
     }
   };
 
-  // Raiz da conta: todas as páginas, até vir uma vazia.
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const data = await autentiqueQuery<{ documents: { total: number; data: RawDoc[] } }>(conn.token, LIST, { limit: PAGE, page }, deps.fetcher);
-    const docs = data.documents?.data ?? [];
-    if (docs.length === 0) break;
-    await take(docs);
+  // A conta desta marca e as das outras (mesma chave lida uma vez só).
+  const accounts: { token: string; source: string | null }[] = [{ token: conn.token, source: null }];
+  for (const o of others) {
+    const c = await loadAutentique(prisma, o.id, deps.encKey).catch(() => null);
+    if (c && !accounts.some((a) => a.token === c.token)) accounts.push({ token: c.token, source: o.id });
   }
-  // Pastas: se a API recusar (conta sem pastas, consulta diferente), segue sem elas e o motivo fica no histórico.
-  try {
-    for (let fp = 1; fp <= MAX_PAGES; fp++) {
-      const f = await autentiqueQuery<{ folders: { data: { id: string; name: string | null }[] } }>(conn.token, FOLDERS, { limit: PAGE, page: fp }, deps.fetcher);
-      const folders = f.folders?.data ?? [];
-      if (folders.length === 0) break;
-      for (const folder of folders) {
-        out.folders++;
-        for (let page = 1; page <= MAX_PAGES; page++) {
-          const data = await autentiqueQuery<{ documentsByFolder: { data: RawDoc[] } }>(conn.token, BY_FOLDER, { folder: folder.id, limit: PAGE, page }, deps.fetcher);
-          const docs = data.documentsByFolder?.data ?? [];
-          if (docs.length === 0) break;
-          await take(docs);
+  for (const acc of accounts) {
+    // Raiz da conta: todas as páginas, até vir uma vazia.
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const data = await autentiqueQuery<{ documents: { total: number; data: RawDoc[] } }>(acc.token, LIST, { limit: PAGE, page }, deps.fetcher);
+      const docs = data.documents?.data ?? [];
+      if (docs.length === 0) break;
+      await take(docs, acc.source);
+    }
+    // Pastas: se a API recusar (conta sem pastas, consulta diferente), segue sem elas e o motivo fica no histórico.
+    try {
+      for (let fp = 1; fp <= MAX_PAGES; fp++) {
+        const f = await autentiqueQuery<{ folders: { data: { id: string; name: string | null }[] } }>(acc.token, FOLDERS, { limit: PAGE, page: fp }, deps.fetcher);
+        const folders = f.folders?.data ?? [];
+        if (folders.length === 0) break;
+        for (const folder of folders) {
+          out.folders++;
+          for (let page = 1; page <= MAX_PAGES; page++) {
+            const data = await autentiqueQuery<{ documentsByFolder: { data: RawDoc[] } }>(acc.token, BY_FOLDER, { folder: folder.id, limit: PAGE, page }, deps.fetcher);
+            const docs = data.documentsByFolder?.data ?? [];
+            if (docs.length === 0) break;
+            await take(docs, acc.source);
+          }
         }
       }
+    } catch (error) {
+      out.folderError ??= String(error instanceof Error ? error.message : error).slice(0, 200);
     }
-  } catch (error) {
-    out.folderError = String(error instanceof Error ? error.message : error).slice(0, 200);
   }
   await prisma.auditLog.create({ data: { brandId, actorType: "SYSTEM", actorId: SYSTEM, action: "contract.legacy_scan", entity: "Brand", entityId: brandId, after: out } });
   return out;
@@ -219,16 +251,23 @@ export async function attachLegacyContracts(prisma: PrismaClient, brandId: strin
   const rows = await prisma.autentiqueLegacyContract.findMany({
     where: { brandId, status: "MATCHED", creator: { contractFileId: null } },
     orderBy: { signedAt: "desc" },
-    select: { id: true, externalId: true, creatorId: true, fileId: true, fileAttempts: true },
+    select: { id: true, externalId: true, creatorId: true, fileId: true, fileAttempts: true, sourceBrandId: true },
   });
   // O mais recente de cada creator (os outros ficam guardados na lista).
   const latest = new Map<string, (typeof rows)[number]>();
   for (const r of rows) if (!latest.has(r.creatorId!)) latest.set(r.creatorId!, r);
   const todo = [...latest.values()].filter((r) => !r.fileId && r.fileAttempts < MAX_ATTEMPTS).slice(0, 20);
   if (!todo.length) return out;
-  const conn = await loadAutentique(prisma, brandId, deps.encKey);
-  if (!conn) return out;
+  // D-LEGACYCROSS: o PDF vem da conta onde o documento está (a desta marca ou a de outra).
+  const tokens = new Map<string, string | null>();
+  const tokenFor = async (id: string) => {
+    if (!tokens.has(id)) tokens.set(id, (await loadAutentique(prisma, id, deps.encKey).catch(() => null))?.token ?? null);
+    return tokens.get(id)!;
+  };
   for (const r of todo) {
+    const token = await tokenFor(r.sourceBrandId ?? brandId);
+    if (!token) continue;
+    const conn = { token };
     try {
       const doc = await getAutentiqueDocument(conn.token, r.externalId, deps.fetcher);
       if (!doc.signedFileUrl) throw new Error("O Autentique ainda não tem o PDF assinado.");
