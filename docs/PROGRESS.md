@@ -323,6 +323,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-401 — 2026-11-26 — Contratos sem dono na conta da Botanika: resolvidos (pergunta da Fátima)
+
+- Dos 8 pendentes na Botanika, 5 eram da VermeFree com o mesmo e-mail da ficha (Bianca Bragaglia, Claudia Suzani,
+  Daniela Belo, Jessika Moraes, Tayene Cerutti): ligados às fichas da VermeFree (matchedBy EMAIL, origem Botanika) e
+  as linhas da Botanika IGNORED. Jackelyne Ribeiro (cadastrada como Jackelyne Ribeiro Machado) e o "Contrato Creator
+  BT" (assinado pela Larissa Lessa) ligados na Botanika (TEAM). AuditLog `contract.legacy_linked`/`_ignored`, ator Pedro.
+- Sobra só "Contrato Magno Guilherme" (ninguém cadastrado; perguntado à Pamela).
+
 ### CP-400 — 2026-11-26 — Victoria (Botanika) ficou com 3 dos 6 prêmios, a pedido dela
 
 - Ela pediu só 3 produtos e abriu mão dos outros (pela Fátima). Por SQL, com AuditLog `kit.waived` (ator Pedro):
