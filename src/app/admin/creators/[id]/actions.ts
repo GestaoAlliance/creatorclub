@@ -321,7 +321,7 @@ export async function terminationAction(_p: State, form: FormData): Promise<Stat
     }, "Distrato enviado.");
   }
   return run(id, async () => {
-    const r = await scheduleTermination(db(), await currentActor(), id, String(form.get("endDay") ?? ""));
+    const r = await scheduleTermination(db(), await currentActor(), id, String(form.get("endDay") ?? ""), {}, { sendDistrato: form.get("distrato") === "on" });
     return { ok: r.immediate ? "Parceria encerrada agora: ela já está Desligada." : "Encerramento agendado." };
   }, "Encerramento agendado.");
 }

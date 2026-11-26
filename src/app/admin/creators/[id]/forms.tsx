@@ -480,7 +480,7 @@ export function ArchiveForm({ creatorId, archived }: { creatorId: string; archiv
 }
 
 export type TerminationInfo = {
-  id: string; endDay: string; processedAt: Date | null; sentAt: Date | null; signedAt: Date | null; rejectedAt: Date | null;
+  id: string; endDay: string; processedAt: Date | null; sendDistrato: boolean; sentAt: Date | null; signedAt: Date | null; rejectedAt: Date | null;
   signLink: string | null; signerEmail: string | null; lastError: string | null; sandbox: boolean; preparing: number;
 };
 
@@ -507,9 +507,13 @@ export function TerminationForm({ creatorId, today, t }: { creatorId: string; to
             <p className={ui.hint}>
               Com a data de hoje, a parceria termina na hora. Com data futura, o cupom funciona até 23h59 desse dia e as vendas
               pagas até ali contam; no dia seguinte ela fica Desligada. Ao encerrar, os produtos liberados e não escolhidos expiram,
-              os pedidos esperando aprovação são cancelados e o termo de distrato sai pelo Autentique. Data futura dá para desfazer
-              até o dia.
+              os pedidos esperando aprovação são cancelados e, se marcado abaixo, o termo de distrato sai pelo Autentique. Data
+              futura dá para desfazer até o dia.
             </p>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="distrato" defaultChecked className="mt-0.5 size-4" />
+              <span>Enviar o termo de distrato pelo Autentique para ela assinar (desmarcado, não sai nada; dá para enviar depois aqui na ficha).</span>
+            </label>
             <div className="flex gap-2">
               <button className={ui.dangerSm} disabled={pending}>{pending ? "Agendando…" : "Encerrar nessa data"}</button>
               <button type="button" className={ui.ghostSm} onClick={() => setOpen(false)}>Cancelar</button>
@@ -524,7 +528,7 @@ export function TerminationForm({ creatorId, today, t }: { creatorId: string; to
       <form action={action} className="flex flex-col gap-2">
         <input type="hidden" name="creatorId" value={creatorId} />
         <input type="hidden" name="op" value="cancel" />
-        <p className="text-sm"><strong>Encerramento agendado para {br(t.endDay)}.</strong> O cupom funciona até 23h59 desse dia; no dia seguinte ela fica Desligada e o distrato sai.</p>
+        <p className="text-sm"><strong>Encerramento agendado para {br(t.endDay)}.</strong> O cupom funciona até 23h59 desse dia; no dia seguinte ela fica Desligada{t.sendDistrato ? " e o distrato sai" : " (sem distrato)"}.</p>
         <button className={`${ui.ghostSm} self-start`} disabled={pending}>{pending ? "Desfazendo…" : "Desfazer encerramento"}</button>
         <Msg state={state} />
       </form>
@@ -546,7 +550,7 @@ export function TerminationForm({ creatorId, today, t }: { creatorId: string; to
         </p>
       ) : (
         <>
-          <p className={ui.hint}>Distrato ainda não enviado{t.lastError ? `: ${t.lastError}` : "."}</p>
+          <p className={ui.hint}>{t.sendDistrato ? <>Distrato ainda não enviado{t.lastError ? `: ${t.lastError}` : "."}</> : "Encerrada sem distrato (escolha da equipe). Se precisar, dá para enviar agora."}</p>
           <button className={`${ui.ghostSm} self-start`} disabled={pending}>{pending ? "Enviando…" : "Enviar distrato"}</button>
         </>
       )}
