@@ -323,6 +323,34 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-402 — 2026-11-26 — Encerrar com a data de hoje desliga na hora (D-ENDNOW) + 20 UGCs da Botanika
+
+- A Fátima encerrou 20 UGCs da Botanika com a data de hoje; pela regra (o dia vale inteiro) só sairiam à meia-noite e o
+  distrato iria para as 20. Por decisão do responsável: encerradas na hora por SQL (Desligada, kits expirados; nenhum
+  cupom de creator nem pedido em aprovação), **sem distrato** (nenhuma tarefa `distrato.send`), AuditLog
+  `creator.terminated` (ator Pedro, motivo "encerrar na hora (pedido da Fátima)").
+- Código: `scheduleTermination` com a data de hoje processa na hora (`processTermination`, o cupom acaba agora); data
+  futura continua no dia seguinte. A ação mostra "Parceria encerrada agora". O distrato continua indo para quem for
+  encerrada daqui em diante. Teste em `test/integration/termination.test.ts`.
+- Base da Botanika depois disso: Influencer 53 ativas (1 pausada, 27 desligadas), Prescritor 27 ativas (3 desligadas),
+  UGC nenhuma ativa (23 desligadas).
+
+### CP-401 — 2026-11-26 — Contratos sem dono na conta da Botanika: resolvidos (pergunta da Fátima)
+
+- Dos 8 pendentes na Botanika, 5 eram da VermeFree com o mesmo e-mail da ficha (Bianca Bragaglia, Claudia Suzani,
+  Daniela Belo, Jessika Moraes, Tayene Cerutti): ligados às fichas da VermeFree (matchedBy EMAIL, origem Botanika) e
+  as linhas da Botanika IGNORED. Jackelyne Ribeiro (cadastrada como Jackelyne Ribeiro Machado) e o "Contrato Creator
+  BT" (assinado pela Larissa Lessa) ligados na Botanika (TEAM). AuditLog `contract.legacy_linked`/`_ignored`, ator Pedro.
+- Sobra só "Contrato Magno Guilherme" (ninguém cadastrado; perguntado à Pamela).
+
+### CP-400 — 2026-11-26 — Victoria (Botanika) ficou com 3 dos 6 prêmios, a pedido dela
+
+- Ela pediu só 3 produtos e abriu mão dos outros (pela Fátima). Por SQL, com AuditLog `kit.waived` (ator Pedro):
+  boas-vindas (2026-10), meta de outubro e a faixa 1 de novembro viraram EXPIRED (`expiredAt`). Ficam as faixas 2, 3
+  e 4 de novembro: ela vê "Você ganhou 3 suplementos". Os prêmios continuam contados (não voltam a ser concedidos);
+  dezembro em diante segue normal.
+- Sem recurso no portal para abrir mão de prêmios (decisão do responsável: pontual, só para ela).
+
 ### CP-399 — 2026-11-26 — "Tem saldo e não saca" em Ações e na ficha (D-CANTWITHDRAW)
 
 - O portal já trava sozinho (portões de contrato e termo; aviso de conferência na tela de saque); faltava a equipe

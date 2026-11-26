@@ -108,7 +108,7 @@ describe("encerrar parceria e distrato (D-DISTRATO, banco real)", () => {
   it("no dia seguinte: Desligada, cupom inativo, produtos não escolhidos expiram, pedido esperando é cancelado; distrato espera o texto e sai pelo Autentique", async () => {
     const s = await setup();
     const shop = fakeShopify();
-    await scheduleTermination(prisma, s.actor, s.creator.id, "2026-11-24", { clientFor: shop.clientFor, now: new Date("2026-11-24T15:00:00Z") });
+    await scheduleTermination(prisma, s.actor, s.creator.id, "2026-11-24", { clientFor: shop.clientFor, now: new Date("2026-11-23T15:00:00Z") });
     const pending = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-11", salesCents: 0, products: 1 } });
     const waiting = await shipment(s, "AWAITING_APPROVAL");
     const chosen = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "MONTHLY", month: "2026-10", salesCents: 100_000, products: 1, status: "CHOSEN", shipmentId: waiting.id, chosenAt: new Date() } });
@@ -154,6 +154,23 @@ describe("encerrar parceria e distrato (D-DISTRATO, banco real)", () => {
     expect(await checkDistratos(prisma, s.brand.id, { fetcher: s.aut.fetcher, encKey })).toBe(1);
     expect((await terminationView(prisma, s.creator.id))!.signedAt).not.toBeNull();
     expect(await prisma.auditLog.count({ where: { entityId: s.creator.id, action: { in: ["creator.terminated", "distrato.sent", "distrato.signed"] } } })).toBe(3);
+  });
+
+  it("D-ENDNOW: com a data de hoje encerra na hora (cupom para agora, Desligada, distrato na fila)", async () => {
+    const s = await setup();
+    const shop = fakeShopify();
+    const now = new Date("2026-11-26T19:20:00Z"); // 16h20 em SP
+    const pending = await prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, kind: "WELCOME", month: "2026-11", salesCents: 0, products: 1 } });
+    expect(await scheduleTermination(prisma, s.actor, s.creator.id, "2026-11-26", { clientFor: shop.clientFor, now })).toEqual({ immediate: true });
+    expect(await prisma.creator.findUniqueOrThrow({ where: { id: s.creator.id } })).toMatchObject({ status: "DEACTIVATED", deactivatedAt: now });
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: s.coupon.id } })).active).toBe(false);
+    expect((await prisma.kitGrant.findUniqueOrThrow({ where: { id: pending.id } })).status).toBe("EXPIRED");
+    expect(await prisma.job.count({ where: { type: "distrato.send", brandId: s.brand.id } })).toBe(1);
+    expect(await processDueTerminations(prisma, new Date("2026-11-27T12:00:00Z"))).toBe(0); // já processado
+    // Data futura continua para o dia seguinte.
+    const other = await setup();
+    expect(await scheduleTermination(prisma, other.actor, other.creator.id, "2026-11-27", { clientFor: shop.clientFor, now })).toEqual({ immediate: false });
+    expect((await prisma.creator.findUniqueOrThrow({ where: { id: other.creator.id } })).status).toBe("ACTIVE");
   });
 
   it("travas do banco: distrato só depois de processado, cancelado não é processado, produto expirado tem data", async () => {

@@ -62,7 +62,9 @@ export async function scheduleTermination(prisma: PrismaClient, actor: Actor | n
   if (!isDay(endDay)) throw new TerminationError("Escolha a data de encerramento.");
   if (endDay < dayKey(now, c.brand.timezone)) throw new TerminationError("A data de encerramento não pode ser no passado.");
   if (await openTermination(prisma, creatorId)) throw new TerminationError("Já existe um encerramento para ela. Atualize a página.");
-  const endsAt = startOfLocalDay(addDaysKey(endDay, 1), c.brand.timezone);
+  // D-ENDNOW (Fátima, 2026-11-26): com a data de hoje a parceria termina na hora (o cupom para agora).
+  const immediate = endDay === dayKey(now, c.brand.timezone);
+  const endsAt = immediate ? now : startOfLocalDay(addDaysKey(endDay, 1), c.brand.timezone);
   const coupons = c.couponAssignments.map((a) => a.coupon);
   try {
     await setCouponsEnd(prisma, c.brandId, coupons, endsAt, deps.clientFor ?? defaultClientFactory);
@@ -70,12 +72,15 @@ export async function scheduleTermination(prisma: PrismaClient, actor: Actor | n
     if (error instanceof ArchiveError) throw new TerminationError(error.message);
     throw error;
   }
-  await prisma.$transaction(async (tx) => {
+  const t = await prisma.$transaction(async (tx) => {
     const t = await tx.creatorTermination.create({ data: { brandId: c.brandId, creatorId, endDate: new Date(`${endDay}T00:00:00Z`), scheduledById: actor!.userId, createdAt: now } });
     await tx.auditLog.create({
-      data: { brandId: c.brandId, actorType: "USER", actorId: actor!.userId, action: "creator.termination_scheduled", entity: "Creator", entityId: creatorId, after: { terminationId: t.id, endDay, couponEndsAt: endsAt.toISOString(), coupons: coupons.map((x) => x.code) } },
+      data: { brandId: c.brandId, actorType: "USER", actorId: actor!.userId, action: "creator.termination_scheduled", entity: "Creator", entityId: creatorId, after: { terminationId: t.id, endDay, couponEndsAt: endsAt.toISOString(), coupons: coupons.map((x) => x.code), immediate } },
     });
+    return t;
   });
+  if (immediate) await processTermination(prisma, { id: t.id, brandId: c.brandId, creatorId, endDate: t.endDate }, now);
+  return { immediate };
 }
 
 /** Desfaz o encerramento ainda não processado: o cupom volta a valer sem data de fim. */
@@ -112,35 +117,40 @@ export async function processDueTerminations(prisma: PrismaClient, now = new Dat
   for (const t of due) {
     const endDay = dayOf(t.endDate);
     if (endDay >= dayKey(now, t.brand.timezone)) continue; // ainda é o dia (marca em outro fuso)
-    const done = await prisma.$transaction(async (tx) => {
-      const { count } = await tx.creatorTermination.updateMany({ where: { id: t.id, processedAt: null, cancelledAt: null }, data: { processedAt: now } });
-      if (count === 0) return false;
-      const c = await tx.creator.findUniqueOrThrow({ where: { id: t.creatorId }, select: { status: true, deactivatedAt: true } });
-      await tx.creator.update({ where: { id: t.creatorId }, data: { status: "DEACTIVATED", deactivatedAt: c.deactivatedAt ?? now } });
-      const coupons = await tx.couponAssignment.findMany({ where: { creatorId: t.creatorId, validTo: null, coupon: { kind: "CREATOR" } }, select: { couponId: true } });
-      await tx.coupon.updateMany({ where: { id: { in: coupons.map((x) => x.couponId) } }, data: { active: false } });
-      const waiting = await tx.shipment.findMany({ where: { creatorId: t.creatorId, status: "AWAITING_APPROVAL" }, select: { id: true } });
-      const shipmentIds = waiting.map((s) => s.id);
-      if (shipmentIds.length) {
-        await tx.shipment.updateMany({ where: { id: { in: shipmentIds }, status: "AWAITING_APPROVAL" }, data: { status: "CANCELLED", cancelledAt: now, cancelledById: SYSTEM, rejectReason: ENDED_REASON } });
-      }
-      // Kits dos pedidos cancelados e os ainda não escolhidos: expiram (não viram dinheiro nem outra vantagem).
-      const expired = await tx.kitGrant.updateMany({
-        where: { creatorId: t.creatorId, OR: [{ status: "PENDING" }, ...(shipmentIds.length ? [{ shipmentId: { in: shipmentIds } }] : [])] },
-        data: { status: "EXPIRED", expiredAt: now, shipmentId: null, chosenAt: null },
-      });
-      await tx.auditLog.create({
-        data: {
-          brandId: t.brandId, actorType: "JOB", actorId: SYSTEM, action: "creator.terminated", entity: "Creator", entityId: t.creatorId,
-          before: { status: c.status }, after: { terminationId: t.id, endDay, status: "DEACTIVATED", cancelledShipments: shipmentIds, expiredKits: expired.count },
-        },
-      });
-      await enqueueJob(tx, { type: DISTRATO_SEND_JOB, brandId: t.brandId, payload: { terminationId: t.id }, dedupeKey: `distrato:${t.id}`, runAt: now, maxAttempts: 3 });
-      return true;
-    });
-    if (done) n++;
+    if (await processTermination(prisma, t, now)) n++;
   }
   return n;
+}
+
+/** Encerra uma parceria agora (uma transação): Desligada, cupom inativo, kits expiram, pedidos em aprovação cancelados; distrato na fila. */
+async function processTermination(prisma: PrismaClient, t: { id: string; brandId: string; creatorId: string; endDate: Date }, now: Date): Promise<boolean> {
+  const endDay = dayOf(t.endDate);
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.creatorTermination.updateMany({ where: { id: t.id, processedAt: null, cancelledAt: null }, data: { processedAt: now } });
+    if (count === 0) return false;
+    const c = await tx.creator.findUniqueOrThrow({ where: { id: t.creatorId }, select: { status: true, deactivatedAt: true } });
+    await tx.creator.update({ where: { id: t.creatorId }, data: { status: "DEACTIVATED", deactivatedAt: c.deactivatedAt ?? now } });
+    const coupons = await tx.couponAssignment.findMany({ where: { creatorId: t.creatorId, validTo: null, coupon: { kind: "CREATOR" } }, select: { couponId: true } });
+    await tx.coupon.updateMany({ where: { id: { in: coupons.map((x) => x.couponId) } }, data: { active: false } });
+    const waiting = await tx.shipment.findMany({ where: { creatorId: t.creatorId, status: "AWAITING_APPROVAL" }, select: { id: true } });
+    const shipmentIds = waiting.map((s) => s.id);
+    if (shipmentIds.length) {
+      await tx.shipment.updateMany({ where: { id: { in: shipmentIds }, status: "AWAITING_APPROVAL" }, data: { status: "CANCELLED", cancelledAt: now, cancelledById: SYSTEM, rejectReason: ENDED_REASON } });
+    }
+    // Kits dos pedidos cancelados e os ainda não escolhidos: expiram (não viram dinheiro nem outra vantagem).
+    const expired = await tx.kitGrant.updateMany({
+      where: { creatorId: t.creatorId, OR: [{ status: "PENDING" }, ...(shipmentIds.length ? [{ shipmentId: { in: shipmentIds } }] : [])] },
+      data: { status: "EXPIRED", expiredAt: now, shipmentId: null, chosenAt: null },
+    });
+    await tx.auditLog.create({
+      data: {
+        brandId: t.brandId, actorType: "JOB", actorId: SYSTEM, action: "creator.terminated", entity: "Creator", entityId: t.creatorId,
+        before: { status: c.status }, after: { terminationId: t.id, endDay, status: "DEACTIVATED", cancelledShipments: shipmentIds, expiredKits: expired.count },
+      },
+    });
+    await enqueueJob(tx, { type: DISTRATO_SEND_JOB, brandId: t.brandId, payload: { terminationId: t.id }, dedupeKey: `distrato:${t.id}`, runAt: now, maxAttempts: 3 });
+    return true;
+  });
 }
 
 /**
