@@ -323,6 +323,16 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-404 — 2026-11-26 — E-mail real de quem veio com e-mail provisório
+
+- Só 2 creators ativas com e-mail provisório tinham o e-mail real no contrato assinado do Autentique: Aline Thaisa e
+  Jutieli (VermeFree). E-mail trocado por SQL com AuditLog `creator.contact` (ator Pedro).
+- Flávia Tereza Rulli Landim tinha duas contas (Botanika com dados completos; VermeFree provisória, mesmo telefone e
+  Instagram): a ficha da VermeFree passou para a conta da Botanika (`creator.account_merged`). A conta antiga ficou
+  sem fichas (nada apagado; os dados de Instagram dela continuam lá). Nenhuma das duas tinha login.
+- Sem e-mail em lugar nenhum (VermeFree, ativas): Caroline Alves Matos, Eliza de Freitas, Gabriela Rinco, Ítalo Neves,
+  Josiane Meireles e Priscila Martins. Ficam com a Pamela. As outras provisórias são desligadas (códigos antigos).
+
 ### CP-403 — 2026-11-26 — Encerrar com ou sem distrato (D-NODISTRATO)
 
 - Ficha → Encerrar parceria: caixa "Enviar o termo de distrato pelo Autentique" (marcada por padrão). Desmarcada, o
