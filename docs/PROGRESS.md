@@ -323,6 +323,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-400 — 2026-11-26 — Victoria (Botanika) ficou com 3 dos 6 prêmios, a pedido dela
+
+- Ela pediu só 3 produtos e abriu mão dos outros (pela Fátima). Por SQL, com AuditLog `kit.waived` (ator Pedro):
+  boas-vindas (2026-10), meta de outubro e a faixa 1 de novembro viraram EXPIRED (`expiredAt`). Ficam as faixas 2, 3
+  e 4 de novembro: ela vê "Você ganhou 3 suplementos". Os prêmios continuam contados (não voltam a ser concedidos);
+  dezembro em diante segue normal.
+- Sem recurso no portal para abrir mão de prêmios (decisão do responsável: pontual, só para ela).
+
 ### CP-399 — 2026-11-26 — "Tem saldo e não saca" em Ações e na ficha (D-CANTWITHDRAW)
 
 - O portal já trava sozinho (portões de contrato e termo; aviso de conferência na tela de saque); faltava a equipe
