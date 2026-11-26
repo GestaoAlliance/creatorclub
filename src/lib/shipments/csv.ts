@@ -32,7 +32,7 @@ export async function shipmentsForCsv(
     take: MAX,
     select: {
       createdAt: true, status: true, address: true, freightCents: true, carrier: true, trackingCode: true, shippedAt: true, deliveredAt: true, balanceCents: true,
-      kit: { select: { kind: true } },
+      kits: { select: { kind: true }, orderBy: { kind: "desc" as const } },
       creator: { select: { account: { select: { name: true, instagram: true, cpf: true, cnpj: true, phone: true, email: true } } } },
       items: { orderBy: { title: "asc" }, select: { title: true, quantity: true, product: { select: { costCents: true } } } },
     },
@@ -42,7 +42,7 @@ export async function shipmentsForCsv(
     return {
       createdAt: r.createdAt,
       status: r.status,
-      kind: shipmentKind(r.kit?.kind ?? null, r.balanceCents),
+      kind: shipmentKind(r.kits[0]?.kind ?? null, r.balanceCents),
       creator: a.name,
       instagram: a.instagram,
       doc: a.cnpj ?? a.cpf,

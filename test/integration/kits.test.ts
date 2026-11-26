@@ -125,6 +125,45 @@ describe("produto pela meta de vendas (D-GOALKIT, banco real)", () => {
     expect(await prisma.auditLog.count({ where: { action: { in: ["shipment.approved", "shipment.rejected"] }, entityId: { in: [first, second] } } })).toBe(2);
   });
 
+  it("D-KITCOMBO: prêmios livres viram uma escolha e um pedido; o kit com produto definido fica separado", async () => {
+    const s = await setup(TIERS);
+    const k = (data: { kind: string; month: string; window?: number; products?: number; presetProductIds?: string[] }) =>
+      prisma.kitGrant.create({ data: { brandId: s.brand.id, creatorId: s.creator.id, salesCents: 0, products: 1, ...data } });
+    const welcome = await k({ kind: "WELCOME", month: "2026-10" });
+    const goal = await k({ kind: "GOAL", month: "2026-10" });
+    const nov1 = await k({ kind: "MONTHLY", month: "2026-11", window: 1 });
+    const nov2 = await k({ kind: "MONTHLY", month: "2026-11", window: 2, products: 2 });
+    const fixed = await k({ kind: "WELCOME", month: "2026-09", presetProductIds: [s.whey.id] });
+    await updateMyAddress(prisma, s.ctx, s.userId, ADDRESS);
+
+    const { kits } = await myPendingKits(prisma, s.ctx);
+    expect(kits).toHaveLength(2);
+    expect(kits[0]).toMatchObject({ id: fixed.id, ids: [fixed.id], products: 1 });
+    const combo = kits[1]!;
+    expect(combo).toMatchObject({ kind: "COMBO", products: 5 });
+    expect([...combo.ids].sort()).toEqual([welcome.id, goal.id, nov1.id, nov2.id].sort());
+
+    // Precisa escolher os 5; o kit com produto definido não entra junto.
+    await expect(chooseKit(prisma, s.ctx, s.userId, combo.ids, [{ productId: s.whey.id, quantity: 1 }])).rejects.toThrow(/Escolha 5/);
+    await expect(chooseKit(prisma, s.ctx, s.userId, [...combo.ids, fixed.id], [{ productId: s.whey.id, quantity: 6 }])).rejects.toThrow(/separado/);
+    const other = await setup(TIERS);
+    await expect(chooseKit(prisma, other.ctx, other.userId, combo.ids, [{ productId: s.whey.id, quantity: 5 }])).rejects.toThrow(/Kit não encontrado/);
+
+    const id = await chooseKit(prisma, s.ctx, s.userId, combo.ids, [{ productId: s.whey.id, quantity: 2 }, { productId: s.creatina.id, quantity: 3 }]);
+    const ship = await prisma.shipment.findUniqueOrThrow({ where: { id }, include: { kits: true, items: true } });
+    expect(ship.kits).toHaveLength(4);
+    expect(ship.items.reduce((n, i) => n + i.quantity, 0)).toBe(5);
+    expect(ship.note).toBe("Prêmios juntos: 1 de boas-vindas, 1 da meta de outubro de 2026 e 3 de novembro de 2026 (5 produtos)");
+    expect((await myPendingKits(prisma, s.ctx)).kits.map((x) => x.id)).toEqual([fixed.id]);
+    await expect(chooseKit(prisma, s.ctx, s.userId, combo.ids, [{ productId: s.whey.id, quantity: 5 }])).rejects.toThrow(/já foi escolhido/);
+
+    // Recusado: os 4 voltam juntos para ela escolher de novo.
+    const gid = randomUUID();
+    await prisma.user.create({ data: { id: gid, email: `${gid}@x.com`, name: "G", roleGrants: { create: { role: "GESTAO", brandId: s.brand.id } } } });
+    await rejectShipment(prisma, (await loadActor(prisma, gid))!, id, "Creatina em falta");
+    expect((await myPendingKits(prisma, s.ctx)).kits.find((x) => x.kind === "COMBO")?.products).toBe(5);
+  });
+
   it("travas do banco", async () => {
     const s = await setup(TIERS);
     const base = { brandId: s.brand.id, creatorId: s.creator.id, salesCents: 0, products: 1 };

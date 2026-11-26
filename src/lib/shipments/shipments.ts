@@ -297,7 +297,7 @@ const SHIPMENT_SELECT = {
   items: { select: { title: true, quantity: true }, orderBy: { title: "asc" as const } },
   // D-SHOPTAB: etiqueta "Loja" ou "Prêmio" nos envios da creator.
   balanceCents: true,
-  kit: { select: { kind: true } },
+  kits: { select: { kind: true }, orderBy: { kind: "desc" as const } },
   // D-SHIPREVIEW: a avaliação dela depois do "Recebi".
   review: { select: { rating: true, comment: true } },
 } as const;

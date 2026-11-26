@@ -92,7 +92,7 @@ export default async function EnviosPage({ searchParams }: { searchParams: Promi
       olistOrderNumber: s.olistOrderNumber,
       olistError: s.olistError,
       freightCents: canManage ? s.freightCents : null,
-      kitLabel: s.balanceCents !== null ? "compra com o saldo" : s.kit ? (KIT_LABEL[s.kit.kind] ?? "kit") : null,
+      kitLabel: s.balanceCents !== null ? "compra com o saldo" : s.kits[0] ? (KIT_LABEL[s.kits[0].kind] ?? "kit") : null,
       items: s.items.map((it) => ({ ...it, image: imageOf(it.title) })),
       creator: { id: s.creator.id, name, allergies },
       address,

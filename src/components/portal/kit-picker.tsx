@@ -20,6 +20,7 @@ export function KitPicker({
   marca,
   kit,
   monthLabel,
+  combined = null,
   welcome = false,
   goal = false,
   products,
@@ -28,8 +29,10 @@ export function KitPicker({
   viewOnly,
 }: {
   marca: string;
-  kit: { id: string; products: number; preset?: { id: string; title: string; photo?: string | null; outOfStock?: boolean }[] | null };
+  kit: { id: string; ids?: string[]; products: number; preset?: { id: string; title: string; photo?: string | null; outOfStock?: boolean }[] | null };
   monthLabel: string;
+  /** D-KITCOMBO: vários prêmios juntos numa escolha só ("1 de boas-vindas, ... e 4 de novembro de 2026"). */
+  combined?: string | null;
   welcome?: boolean;
   /** D-GOALKIT: produto da meta de R$ 1.000. */
   goal?: boolean;
@@ -60,15 +63,15 @@ export function KitPicker({
     <section className={`${ui.card} ring-1 ring-brand/30`}>
       <div className="flex flex-col gap-1">
         <h2 className={ui.h2}>
-          <Gift className="size-4 text-brand dark:text-brand-2" /> {welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : goal ? `Meta batida: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
+          <Gift className="size-4 text-brand dark:text-brand-2" /> {combined ? `Você ganhou ${kit.products} ${plural(kit.products)}!` : welcome ? `Boas-vindas: você ganhou ${kit.products} ${plural(kit.products)}!` : goal ? `Meta batida: você ganhou ${kit.products} ${plural(kit.products)}!` : `Você ganhou ${kit.products} ${plural(kit.products)}!`}
         </h2>
         <p className={ui.muted}>
-          {welcome ? "É o kit do início da sua parceria." : goal ? "Você chegou a R$ 1.000 em vendas com o seu cupom." : `Pelas suas vendas de ${monthLabel}.`} {single ? "Confira o endereço e envie o pedido" : "Escolha os produtos"}: a equipe aprova o pedido e prepara o envio para o seu endereço.
+          {combined ? `São ${combined}. Escolha todos de uma vez: vai um pedido só, a equipe aprova e prepara o envio para o seu endereço.` : <>{welcome ? "É o kit do início da sua parceria." : goal ? "Você chegou a R$ 1.000 em vendas com o seu cupom." : `Pelas suas vendas de ${monthLabel}.`} {single ? "Confira o endereço e envie o pedido" : "Escolha os produtos"}: a equipe aprova o pedido e prepara o envio para o seu endereço.</>}
         </p>
       </div>
       <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="marca" value={marca} />
-          <input type="hidden" name="kitId" value={kit.id} />
+          {(kit.ids ?? [kit.id]).map((id) => <input key={id} type="hidden" name="kitId" value={id} />)}
           {/* D-PORTALSHIP: produtos em cartões com foto; toque soma, o "−" tira; sem estoque fica apagado. */}
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {list.map((p) => {
