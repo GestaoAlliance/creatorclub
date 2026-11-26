@@ -323,6 +323,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-403 — 2026-11-26 — Encerrar com ou sem distrato (D-NODISTRATO)
+
+- Ficha → Encerrar parceria: caixa "Enviar o termo de distrato pelo Autentique" (marcada por padrão). Desmarcada, o
+  encerramento não põe a tarefa `distrato.send` na fila; a ficha mostra "Encerrada sem distrato" com o botão para
+  enviar depois. `CreatorTermination.sendDistrato` (migração `20261215090000_termination_send_distrato`), que marca
+  como `false` os encerramentos já processados sem a tarefa (as 20 UGCs da Botanika de 26/11; conferido: só elas).
+- Teste em `test/integration/termination.test.ts`.
+
 ### CP-402 — 2026-11-26 — Encerrar com a data de hoje desliga na hora (D-ENDNOW) + 20 UGCs da Botanika
 
 - A Fátima encerrou 20 UGCs da Botanika com a data de hoje; pela regra (o dia vale inteiro) só sairiam à meia-noite e o

@@ -55,7 +55,8 @@ const openTermination = (prisma: PrismaClient, creatorId: string) =>
   prisma.creatorTermination.findFirst({ where: { creatorId, cancelledAt: null }, orderBy: { createdAt: "desc" } });
 
 /** Agenda o encerramento: o cupom já fica com o fim (23h59 do dia, no fuso da marca) na Shopify. */
-export async function scheduleTermination(prisma: PrismaClient, actor: Actor | null, creatorId: string, endDay: string, deps: Deps = {}) {
+export async function scheduleTermination(prisma: PrismaClient, actor: Actor | null, creatorId: string, endDay: string, deps: Deps = {}, opts: { sendDistrato?: boolean } = {}) {
+  const sendDistrato = opts.sendDistrato ?? true;
   const now = deps.now ?? new Date();
   const c = await loadCreator(prisma, actor, creatorId);
   if (c.archivedAt || c.status === "DEACTIVATED") throw new TerminationError("Creator já desligada.");
@@ -73,13 +74,13 @@ export async function scheduleTermination(prisma: PrismaClient, actor: Actor | n
     throw error;
   }
   const t = await prisma.$transaction(async (tx) => {
-    const t = await tx.creatorTermination.create({ data: { brandId: c.brandId, creatorId, endDate: new Date(`${endDay}T00:00:00Z`), scheduledById: actor!.userId, createdAt: now } });
+    const t = await tx.creatorTermination.create({ data: { brandId: c.brandId, creatorId, endDate: new Date(`${endDay}T00:00:00Z`), scheduledById: actor!.userId, createdAt: now, sendDistrato } });
     await tx.auditLog.create({
-      data: { brandId: c.brandId, actorType: "USER", actorId: actor!.userId, action: "creator.termination_scheduled", entity: "Creator", entityId: creatorId, after: { terminationId: t.id, endDay, couponEndsAt: endsAt.toISOString(), coupons: coupons.map((x) => x.code), immediate } },
+      data: { brandId: c.brandId, actorType: "USER", actorId: actor!.userId, action: "creator.termination_scheduled", entity: "Creator", entityId: creatorId, after: { terminationId: t.id, endDay, couponEndsAt: endsAt.toISOString(), coupons: coupons.map((x) => x.code), immediate, sendDistrato } },
     });
     return t;
   });
-  if (immediate) await processTermination(prisma, { id: t.id, brandId: c.brandId, creatorId, endDate: t.endDate }, now);
+  if (immediate) await processTermination(prisma, { id: t.id, brandId: c.brandId, creatorId, endDate: t.endDate, sendDistrato }, now);
   return { immediate };
 }
 
@@ -110,7 +111,7 @@ export async function cancelTermination(prisma: PrismaClient, actor: Actor | nul
 export async function processDueTerminations(prisma: PrismaClient, now = new Date()): Promise<number> {
   const due = await prisma.creatorTermination.findMany({
     where: { processedAt: null, cancelledAt: null, endDate: { lt: new Date(`${dayKey(now)}T00:00:00Z`) } },
-    select: { id: true, brandId: true, creatorId: true, endDate: true, brand: { select: { timezone: true } } },
+    select: { id: true, brandId: true, creatorId: true, endDate: true, sendDistrato: true, brand: { select: { timezone: true } } },
     take: 50,
   });
   let n = 0;
@@ -123,7 +124,7 @@ export async function processDueTerminations(prisma: PrismaClient, now = new Dat
 }
 
 /** Encerra uma parceria agora (uma transação): Desligada, cupom inativo, kits expiram, pedidos em aprovação cancelados; distrato na fila. */
-async function processTermination(prisma: PrismaClient, t: { id: string; brandId: string; creatorId: string; endDate: Date }, now: Date): Promise<boolean> {
+async function processTermination(prisma: PrismaClient, t: { id: string; brandId: string; creatorId: string; endDate: Date; sendDistrato: boolean }, now: Date): Promise<boolean> {
   const endDay = dayOf(t.endDate);
   return prisma.$transaction(async (tx) => {
     const { count } = await tx.creatorTermination.updateMany({ where: { id: t.id, processedAt: null, cancelledAt: null }, data: { processedAt: now } });
@@ -145,10 +146,11 @@ async function processTermination(prisma: PrismaClient, t: { id: string; brandId
     await tx.auditLog.create({
       data: {
         brandId: t.brandId, actorType: "JOB", actorId: SYSTEM, action: "creator.terminated", entity: "Creator", entityId: t.creatorId,
-        before: { status: c.status }, after: { terminationId: t.id, endDay, status: "DEACTIVATED", cancelledShipments: shipmentIds, expiredKits: expired.count },
+        before: { status: c.status }, after: { terminationId: t.id, endDay, status: "DEACTIVATED", cancelledShipments: shipmentIds, expiredKits: expired.count, sendDistrato: t.sendDistrato },
       },
     });
-    await enqueueJob(tx, { type: DISTRATO_SEND_JOB, brandId: t.brandId, payload: { terminationId: t.id }, dedupeKey: `distrato:${t.id}`, runAt: now, maxAttempts: 3 });
+    // D-NODISTRATO: desmarcado ao encerrar, nada sai sozinho (a Gestão ainda pode mandar pela ficha).
+    if (t.sendDistrato) await enqueueJob(tx, { type: DISTRATO_SEND_JOB, brandId: t.brandId, payload: { terminationId: t.id }, dedupeKey: `distrato:${t.id}`, runAt: now, maxAttempts: 3 });
     return true;
   });
 }
@@ -315,7 +317,7 @@ export async function terminationView(prisma: PrismaClient, creatorId: string) {
   const t = await prisma.creatorTermination.findFirst({
     where: { creatorId, cancelledAt: null },
     orderBy: { createdAt: "desc" },
-    select: { id: true, endDate: true, createdAt: true, processedAt: true, sentAt: true, signedAt: true, rejectedAt: true, signLink: true, signerEmail: true, lastError: true, sandbox: true },
+    select: { id: true, endDate: true, createdAt: true, processedAt: true, sendDistrato: true, sentAt: true, signedAt: true, rejectedAt: true, signLink: true, signerEmail: true, lastError: true, sandbox: true },
   });
   if (!t) return null;
   const preparing = t.processedAt ? await prisma.shipment.count({ where: { creatorId, status: "PREPARING" } }) : 0;

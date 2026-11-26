@@ -1946,6 +1946,8 @@ model CreatorTermination {
   cancelledAt        DateTime?
   cancelledById      String?
   processedAt        DateTime?
+  /// D-NODISTRATO: a Gestão escolhe ao encerrar se o distrato sai pelo Autentique (desmarcado: só pela ficha, depois).
+  sendDistrato       Boolean   @default(true)
   /// Distrato no Autentique (null = ainda não enviado, por exemplo sem texto publicado).
   contractDocumentId String?
   externalId         String?   @unique

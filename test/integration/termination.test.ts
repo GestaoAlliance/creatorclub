@@ -167,6 +167,12 @@ describe("encerrar parceria e distrato (D-DISTRATO, banco real)", () => {
     expect((await prisma.kitGrant.findUniqueOrThrow({ where: { id: pending.id } })).status).toBe("EXPIRED");
     expect(await prisma.job.count({ where: { type: "distrato.send", brandId: s.brand.id } })).toBe(1);
     expect(await processDueTerminations(prisma, new Date("2026-11-27T12:00:00Z"))).toBe(0); // já processado
+    // D-NODISTRATO: desmarcado, encerra sem tarefa do distrato (dá para mandar pela ficha depois).
+    const quiet = await setup();
+    await scheduleTermination(prisma, quiet.actor, quiet.creator.id, "2026-11-26", { clientFor: shop.clientFor, now }, { sendDistrato: false });
+    expect((await prisma.creator.findUniqueOrThrow({ where: { id: quiet.creator.id } })).status).toBe("DEACTIVATED");
+    expect(await prisma.job.count({ where: { type: "distrato.send", brandId: quiet.brand.id } })).toBe(0);
+    expect((await terminationView(prisma, quiet.creator.id))!.sendDistrato).toBe(false);
     // Data futura continua para o dia seguinte.
     const other = await setup();
     expect(await scheduleTermination(prisma, other.actor, other.creator.id, "2026-11-27", { clientFor: shop.clientFor, now })).toEqual({ immediate: false });
