@@ -29,6 +29,7 @@ import { releaseAmountsByMonth, releasedThroughFor } from "@/lib/commission/rele
 import { dayOf } from "@/lib/creators/contract";
 import { IDLE_SELECT, idleFor } from "@/lib/creators/idle";
 import { notify } from "@/lib/notifications/notify";
+import { withdrawBlocks } from "@/lib/payouts/withdraw-blocks";
 
 /**
  * Fila de ações por creator (M2.1, D-ACTIONS). Montada na hora a partir dos dados (nada fica "aberto" no banco):
@@ -167,6 +168,8 @@ export async function actionQueue(prisma: PrismaClient, brandId: string, now = n
   for (const k of kits) push(k.creatorId, `KIT_PENDING:${k.id}`, { kind: "KIT_PENDING", days: days(k.createdAt) });
   for (const u of unsigned) if (u.creatorId) push(u.creatorId, `UNSIGNED:${u.id}`, { kind: "UNSIGNED", days: days(u.sentAt), link: u.signLink });
   for (const s of ships) push(s.creatorId, `SHIP_STUCK:${s.id}`, { kind: "SHIP_STUCK", days: days(s.approvedAt ?? s.createdAt) });
+  // D-CANTWITHDRAW: tem saldo liberado e alguma trava impede o saque (some sozinha quando resolve ou quando saca).
+  for (const [id, b] of await withdrawBlocks(prisma, brandId, now)) push(id, `CANT_WITHDRAW:${id}:${month}:${b.reasons.join("+")}`, { kind: "CANT_WITHDRAW", availableCents: b.availableCents, reasons: b.reasons });
   // D-DATAFIX: pedidos de correção feitos no portal (até "Feito").
   const fixes = await prisma.dataFixRequest.findMany({ where: { brandId, createdAt: { gte: new Date(now.getTime() - 90 * DAY) } }, select: { id: true, creatorId: true, field: true, message: true, createdAt: true } });
   for (const f of fixes) push(f.creatorId, `FIX_DATA:${f.id}`, { kind: "FIX_DATA", day: dayKey(f.createdAt, tz), field: f.field, message: f.message });

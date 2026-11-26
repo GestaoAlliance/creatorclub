@@ -323,6 +323,18 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-399 — 2026-11-26 — "Tem saldo e não saca" em Ações e na ficha (D-CANTWITHDRAW)
+
+- O portal já trava sozinho (portões de contrato e termo; aviso de conferência na tela de saque); faltava a equipe
+  enxergar. `withdrawBlocks` (`src/lib/payouts/withdraw-blocks.ts`): creators não desligadas e com comissão, com alguma
+  trava (sem acesso, contrato do Autentique ou do portal sem assinar, termo não aceito, saldo em conferência) e saldo
+  disponível > 0. Pix e CNPJ não travam. O saldo (`availableBalances`, em lote) só é lido de quem tem trava (D-EGRESS).
+- Ações: tarefa "Tem saldo e não saca" (urgente), com o valor, o motivo e a mensagem pronta do que ela precisa fazer
+  (sem mensagem quando só a conferência da equipe trava). Some sozinha quando resolve. Nenhum aviso automático
+  para as creators (decisão do responsável).
+- Ficha → O que falta: "Tem R$ X para sacar e não consegue: …", primeiro da lista, levando para onde resolve.
+- Testes: `test/actions.test.ts`, `test/creator-list.test.ts`, `test/integration/cant-withdraw.test.ts`.
+
 ### CP-398 — 2026-11-26 — Contratos da VermeFree que estavam na conta do Autentique da Botanika
 
 - A leitura cruzada (D-LEGACYCROSS) já tinha levado a maioria para as fichas da VermeFree. Faltavam 6, ligados por

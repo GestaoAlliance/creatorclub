@@ -123,6 +123,24 @@ export async function openReservations(prisma: Db, where: { creatorId: { in: str
   return [...withdrawals, ...purchases.map((p) => ({ creatorId: p.creatorId, amountCents: p.balanceCents! }))];
 }
 
+/** D-CANTWITHDRAW: saldo disponível de várias creators de uma vez (mesma conta de `creatorBalance`). */
+export async function availableBalances(prisma: Db, creatorIds: string[], timeZone: string, now: Date): Promise<Map<string, number>> {
+  if (creatorIds.length === 0) return new Map();
+  const [entries, open, released] = await Promise.all([
+    ledgerEntriesWithMonth(prisma, creatorIds, timeZone),
+    openReservations(prisma, { creatorId: { in: creatorIds } }),
+    releasedThroughFor(prisma, creatorIds, now),
+  ]);
+  const by = <T extends { creatorId: string }>(rows: T[]) => {
+    const m = new Map<string, T[]>();
+    for (const r of rows) m.set(r.creatorId, [...(m.get(r.creatorId) ?? []), r]);
+    return m;
+  };
+  const e = by(entries);
+  const o = by(open);
+  return new Map(creatorIds.map((id) => [id, computeBalance(e.get(id) ?? [], o.get(id) ?? [], now, { releasedThrough: released.get(id) ?? null }).availableCents]));
+}
+
 /** Saldo de uma creator com a liberação mensal (usado dentro da transação do pedido de saque). */
 export async function creatorBalance(prisma: Db, creator: { id: string; brandId: string }, timeZone: string, now: Date): Promise<Balance> {
   const [entries, open, released] = await Promise.all([

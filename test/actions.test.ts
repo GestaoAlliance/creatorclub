@@ -15,7 +15,7 @@ describe("fila de ações (M2.1, D-ACTIONS)", () => {
   });
 
   it("quem cuida: Gestão; envio parado é de quem envia", () => {
-    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO", NO_POST: "GESTAO", ACCESS: "GESTAO", UNSIGNED: "GESTAO", FIX_DATA: "GESTAO" });
+    expect(ACTION_OWNER).toEqual({ IDLE: "GESTAO", CONTRACT: "GESTAO", NEAR_MIN: "GESTAO", KIT_PENDING: "GESTAO", SHIP_STUCK: "ENVIO", BIRTHDAY: "GESTAO", NO_POST: "GESTAO", ACCESS: "GESTAO", UNSIGNED: "GESTAO", FIX_DATA: "GESTAO", CANT_WITHDRAW: "GESTAO" });
     // D-CONTRACTREMIND: a mensagem leva o link de assinatura.
     expect(actionMessage({ kind: "UNSIGNED", days: 8, link: "https://assina.ae/x" }, "Maria Clara", "Botanika")).toContain("https://assina.ae/x");
   });
@@ -40,5 +40,28 @@ describe("fila por urgência (D-ACTIONSBOARD)", () => {
     const ranked = [...order].sort((a, b) => actionRank(a).rank - actionRank(b).rank).map((f) => f.kind + ("expired" in f ? `:${f.expired}` : ""));
     expect(ranked).toEqual(["CONTRACT:true", "UNSIGNED", "BIRTHDAY", "NEAR_MIN", "CONTRACT:false", "IDLE", "NO_POST"]);
     expect(actionRank({ kind: "IDLE", days: 60, contractEnds: true }).tone).toBe("urgent");
+  });
+});
+
+describe("tem saldo e não saca (D-CANTWITHDRAW)", () => {
+  it("motivos na ordem do portal: acesso, contrato (o termo só depois), conferência", async () => {
+    const { withdrawBlockReasons } = await import("@/domain");
+    const ok = { hasLogin: true, awaitingContract: false, contractPending: false, termsPending: false, unlocked: true };
+    expect(withdrawBlockReasons(ok)).toEqual([]);
+    expect(withdrawBlockReasons({ ...ok, termsPending: true })).toEqual(["TERMS"]);
+    expect(withdrawBlockReasons({ ...ok, contractPending: true, termsPending: true })).toEqual(["CONTRACT"]);
+    expect(withdrawBlockReasons({ ...ok, hasLogin: false, termsPending: true, unlocked: false })).toEqual(["NO_LOGIN", "TERMS", "LOCKED"]);
+    expect(withdrawBlockReasons({ ...ok, awaitingContract: true, contractPending: true })).toEqual(["AWAITING_CONTRACT"]);
+  });
+
+  it("texto da fila e mensagem pronta (sem mensagem quando só a conferência da equipe trava)", () => {
+    const f = { kind: "CANT_WITHDRAW" as const, availableCents: 25_529, reasons: ["TERMS" as const] };
+    expect(ACTION_OWNER.CANT_WITHDRAW).toBe("GESTAO");
+    expect(actionDetail(f).replace(/\u00a0/g, " ")).toBe("tem R$ 255,29 para sacar e não consegue: termo do Creator Club para aceitar no portal");
+    expect(actionMessage(f, "Ruy Brauher", "Botanika")!.replace(/\u00a0/g, " ")).toBe(
+      "Oi, Ruy! Aqui é da Botanika. Você tem R$ 255,29 de comissão liberada para sacar! Para conseguir pedir o saque, falta entrar no portal e aceitar o termo do Creator Club (aparece logo na entrada). Qualquer dúvida, me chama!",
+    );
+    expect(actionMessage({ ...f, reasons: ["NO_LOGIN", "TERMS"] }, "Nathalia", "Botanika")).toContain("falta entrar no portal (me avisa que eu te mando o link de acesso) e aceitar o termo do Creator Club");
+    expect(actionMessage({ ...f, reasons: ["LOCKED"] }, "Ana", "Botanika")).toBeNull();
   });
 });

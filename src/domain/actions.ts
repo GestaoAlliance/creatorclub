@@ -3,7 +3,9 @@
  * mensagem pronta para mandar pelo WhatsApp. Regra pura (testada): quem decide o que entra é `src/lib/actions/queue.ts`.
  */
 
-export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS" | "UNSIGNED" | "FIX_DATA";
+import { WITHDRAW_BLOCK_LABEL, withdrawBlockAsk, type WithdrawBlockReason } from "./withdraw-block";
+
+export type ActionKind = "IDLE" | "CONTRACT" | "NEAR_MIN" | "KIT_PENDING" | "SHIP_STUCK" | "BIRTHDAY" | "NO_POST" | "ACCESS" | "UNSIGNED" | "FIX_DATA" | "CANT_WITHDRAW";
 
 /** Quem cuida de cada tipo (decisão 3 do plano): por enquanto a Gestão (Ana) da marca; envio parado é de quem envia. */
 export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
@@ -17,6 +19,7 @@ export const ACTION_OWNER: Record<ActionKind, "GESTAO" | "ENVIO"> = {
   ACCESS: "GESTAO",
   UNSIGNED: "GESTAO",
   FIX_DATA: "GESTAO",
+  CANT_WITHDRAW: "GESTAO",
 };
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -30,6 +33,7 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   ACCESS: "Pediu acesso",
   UNSIGNED: "Contrato sem assinar",
   FIX_DATA: "Pediu correção",
+  CANT_WITHDRAW: "Tem saldo e não saca",
 };
 
 /** Prazos do kit parado (pedido do responsável em 2026-10-22). */
@@ -52,7 +56,8 @@ export type ActionFacts =
   | { kind: "NO_POST"; days: number; never: boolean }
   | { kind: "ACCESS"; day: string }
   | { kind: "UNSIGNED"; days: number; link: string | null }
-  | { kind: "FIX_DATA"; day: string; field: string; message: string };
+  | { kind: "FIX_DATA"; day: string; field: string; message: string }
+  | { kind: "CANT_WITHDRAW"; availableCents: number; reasons: WithdrawBlockReason[] }; // D-CANTWITHDRAW
 
 /** O motivo curto que a equipe lê na fila. */
 export function actionDetail(f: ActionFacts): string {
@@ -75,6 +80,8 @@ export function actionDetail(f: ActionFacts): string {
       return `pediu em ${br(f.day)} para corrigir ${DATA_FIX_LABEL[f.field as DataFixField] ?? "um dado"}: "${f.message}". Corrija na ficha (Cadastro) e marque Feito`;
     case "ACCESS":
       return `pediu o link de acesso ao portal em ${br(f.day)} (já tinha cadastro): gere o convite na ficha`;
+    case "CANT_WITHDRAW":
+      return `tem ${brl(f.availableCents)} para sacar e não consegue: ${f.reasons.map((x) => WITHDRAW_BLOCK_LABEL[x]).join(", ")}`;
     case "BIRTHDAY":
       return f.days === 0 ? "faz aniversário hoje" : f.days === 1 ? `faz aniversário amanhã (${br(f.day).slice(0, 5)})` : `faz aniversário em ${f.days} dias (${br(f.day).slice(0, 5)})`;
   }
@@ -103,6 +110,11 @@ export function actionMessage(f: ActionFacts, creatorName: string, brandName: st
       return `${oi} Seu contrato de parceria ainda está esperando a sua assinatura${f.link ? `: ${f.link}` : "."} Ficou alguma dúvida? Me conta que eu te ajudo!`;
     case "NO_POST":
       return `${oi} Faz ${f.days} dias que não vemos um post seu registrado no portal. Postou e esqueceu de registrar? É só colar o link em "Meus posts". Se precisar de ideia de conteúdo, me chama!`;
+    case "CANT_WITHDRAW": {
+      const ask = withdrawBlockAsk(f.reasons);
+      if (!ask.length) return null; // só a conferência da equipe trava: nada a pedir para ela
+      return `${oi} Você tem ${brl(f.availableCents)} de comissão liberada para sacar! Para conseguir pedir o saque, falta ${ask.length > 1 ? `${ask.slice(0, -1).join(", ")} e ${ask.at(-1)}` : ask[0]}. Qualquer dúvida, me chama!`;
+    }
     case "BIRTHDAY":
       return `${oi} Feliz aniversário! 🎉 Que seu novo ano seja incrível. Obrigada por fazer parte do nosso time!`;
   }
@@ -123,6 +135,8 @@ export function actionRank(f: ActionFacts): { rank: number; tone: "urgent" | "wa
       return f.expired ? { rank: 0, tone: "urgent" } : { rank: 30, tone: "warn" };
     case "UNSIGNED":
       return { rank: 10, tone: "urgent" };
+    case "CANT_WITHDRAW":
+      return { rank: 12, tone: "urgent" };
     case "NEAR_MIN":
       return { rank: 20, tone: "warn" };
     case "BIRTHDAY":
@@ -154,6 +168,7 @@ export const ACTION_TITLE: Record<ActionKind, string> = {
   ACCESS: "Seu acesso ao portal",
   UNSIGNED: "Contrato esperando sua assinatura",
   FIX_DATA: "Seu cadastro",
+  CANT_WITHDRAW: "Sua comissão está liberada",
 };
 
 /** D-DATAFIX: dados que só a equipe corrige; a creator pede pelo portal. */
