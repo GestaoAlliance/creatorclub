@@ -11,6 +11,7 @@ import { InstagramLink, WhatsappLink } from "@/components/ui/contact-links";
 import { Card, Kpi } from "@/components/ui/page";
 import { ReleaseProgressBar, releaseWhat } from "@/components/ui/release-progress";
 import { badge, ui } from "@/components/ui/styles";
+import type { WithdrawBlock } from "@/lib/payouts/withdraw-blocks";
 import { birthdayLabel, CREATOR_CATEGORY_LABEL, creatorFileNeeds, formatBRL, instagramUrl, isUgcOnly, whatsappChatUrl, type CreatorCategoryValue } from "@/domain";
 import { viewAsAction } from "@/app/portal/actions";
 import { LEDGER_LABEL, type creatorStatement } from "@/lib/commission/statement";
@@ -124,7 +125,7 @@ function AccessCard({ p }: { p: Profile }) {
 }
 
 /** Ficha da creator (E4.4) no visual do sistema (D-DESIGNALL). Só exibe; os dados vêm da página. */
-export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, period = null, initialTab, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null, termination = null }: { termination?: TerminationInfo | null; insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; period?: FilePeriod | null; initialTab?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
+export function CreatorProfileView({ p, st, terms, contract, requestId, numbers, timeline, linkBase, mes, ret = null, period = null, initialTab, tagSuggestions = [], posts = [], postCampaigns = [], today = "", ig = null, origin = null, insights = null, termination = null, withdrawBlock = null }: { withdrawBlock?: WithdrawBlock | null; termination?: TerminationInfo | null; insights?: CreatorInsights | null; origin?: { origin: Origin; hunters: { id: string; name: string }[] } | null; ig?: Parameters<typeof InstagramCard>[0]["ig"] | null; posts?: PostWithSales[]; postCampaigns?: { id: string; name: string }[]; today?: string; tagSuggestions?: string[]; mes?: string | undefined; ret?: CreatorReturn | null; period?: FilePeriod | null; initialTab?: string | undefined; p: Profile; st: Statement | null; terms: Terms; contract: ContractSig; requestId: string; numbers: Numbers | null; timeline: TimelineEvent[]; linkBase: string }) {
   // Só UGC (D-UGCPORTAL): sem comissão nem saque, então saldo, taxa, extrato, ajustes, termo e conferência somem.
   const ugcOnly = isUgcOnly(p.categories);
   const mainCoupon = p.coupons.find((x) => !x.until && x.kind === "CREATOR") ?? p.coupons.find((x) => !x.until) ?? null;
@@ -167,6 +168,7 @@ export function CreatorProfileView({ p, st, terms, contract, requestId, numbers,
     checklist: p.contract,
     opening: opening ? { approved: opening.approved, paidCents: opening.paidCents } : null,
     idleDays: p.idle?.idle ? p.idle.days : null,
+    withdraw: withdrawBlock,
   });
   return (
     <>

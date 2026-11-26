@@ -1,5 +1,6 @@
 import { formatBRL } from "./money";
 import type { Notice } from "./notices";
+import { WITHDRAW_BLOCK_LABEL, type WithdrawBlockReason } from "./withdraw-block";
 
 /**
  * Lista de creators da equipe (D-CREATORLIST, pedido do responsável em 2026-11-11): o que cada linha mostra de cara
@@ -144,9 +145,16 @@ export function creatorFileNeeds(c: {
   checklist: { contractSigned: boolean | null; couponRegistered: boolean | null; followsOnInstagram: boolean | null; inGroup: boolean | null; tagged: boolean | null };
   opening: { approved: boolean; paidCents: number | null } | null;
   idleDays: number | null;
+  /** D-CANTWITHDRAW: saldo liberado que ela não consegue sacar, e por quê. */
+  withdraw?: { availableCents: number; reasons: WithdrawBlockReason[] } | null;
 }): FileNeed[] {
   if (c.status === "DEACTIVATED") return [];
   const out: FileNeed[] = [];
+  if (c.withdraw?.reasons.length) {
+    const r0 = c.withdraw.reasons[0]!;
+    const href = r0 === "NO_LOGIN" ? "#convite" : r0 === "LOCKED" ? "/admin/abertura" : "#contrato";
+    out.push({ label: `Tem ${formatBRL(c.withdraw.availableCents)} para sacar e não consegue: ${c.withdraw.reasons.map((x) => WITHDRAW_BLOCK_LABEL[x]).join(", ")}`, tone: "urgent", href });
+  }
   if (c.opening && !c.opening.approved && !c.ugcOnly)
     out.push({ label: c.opening.paidCents ? `Abertura esperando o Pagamento (já pago ${formatBRL(c.opening.paidCents)})` : "Abertura esperando o Pagamento", tone: "urgent", href: "/admin/abertura" });
   if (c.contract.status === "EXPIRED") out.push({ label: "Contrato vencido", tone: "urgent", href: "#contrato" });
@@ -156,7 +164,7 @@ export function creatorFileNeeds(c: {
   if (c.ratePending && !c.ugcOnly) out.push({ label: "Taxa a confirmar", tone: "warn", href: "#cadastro" });
   // D-CREATORSIMPLE: "Números a conferir" saiu (desde D-OPENINGBYPAY não trava nada; a conferência é em Pagamentos).
   if (c.fakeEmail) out.push({ label: "E-mail a confirmar", tone: "warn", href: "#cadastro" });
-  else if (!c.hasLogin) out.push({ label: "Sem acesso ao portal", tone: "info", href: "#convite" });
+  else if (!c.hasLogin && !c.withdraw?.reasons.includes("NO_LOGIN")) out.push({ label: "Sem acesso ao portal", tone: "info", href: "#convite" });
   if (c.idleDays !== null) out.push({ label: `Sem vender há ${c.idleDays} dias`, tone: "warn", href: "#resumo" });
   const missing = [
     c.checklist.contractSigned === false && "contrato assinado",

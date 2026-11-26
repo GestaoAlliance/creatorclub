@@ -44,6 +44,7 @@ export * from "./cnab240";
 export * from "./instagram";
 export * from "./origin";
 export * from "./contract-status";
+export * from "./withdraw-block";
 export * from "./shipments-csv";
 export * from "./shipping-alert";
 export * from "./tracking";

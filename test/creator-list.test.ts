@@ -70,6 +70,11 @@ describe("ficha da creator: o que falta (D-CREATORFILE)", () => {
     expect(creatorFileNeeds(base)).toEqual([]);
     expect(creatorFileNeeds({ ...base, status: "DEACTIVATED", hasLogin: false })).toEqual([]);
   });
+  it("D-CANTWITHDRAW: saldo travado vem primeiro e substitui o 'Sem acesso ao portal'", () => {
+    const n = creatorFileNeeds({ ...base, hasLogin: false, withdraw: { availableCents: 30_453, reasons: ["NO_LOGIN", "TERMS"] } });
+    expect(n.map((x) => ({ ...x, label: x.label.replace(/\u00a0/g, " ") }))).toEqual([{ label: "Tem R$ 304,53 para sacar e não consegue: sem acesso ao portal, termo do Creator Club para aceitar no portal", tone: "urgent", href: "#convite" }]);
+    expect(creatorFileNeeds({ ...base, withdraw: { availableCents: 100, reasons: ["LOCKED"] } })[0]!.href).toBe("/admin/abertura");
+  });
   it("urgente primeiro, com o link de onde resolve; null no checklist não conta", () => {
     const n = creatorFileNeeds({ ...base, hasLogin: false, reviewed: false, idleDays: 60, opening: { approved: false, paidCents: 2_342_862 }, contract: { status: "EXPIRING", daysLeft: 10, end: "2026-11-21" }, checklist: { ...base.checklist, inGroup: false, tagged: null } });
     expect(n.map((x) => [x.tone, x.href])).toEqual([["urgent", "/admin/abertura"], ["warn", "#contrato"], ["warn", "#resumo"], ["info", "#convite"], ["info", "#contrato"]]);
