@@ -323,6 +323,37 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-397 — 2026-11-26 — Prêmios juntos numa escolha só (D-KITCOMBO) + conferência do dia 01/12
+
+- Caso (Fátima): a Victoria (Botanika) tem 6 produtos (boas-vindas, meta de outubro e 4 de novembro pela faixa
+  mais alta), mas o portal mostrava 6 quadros de "escolha 1" e ela achou que era só um.
+- `myPendingKits` junta os prêmios de escolha livre (`combinePendingKits`): um quadro "Você ganhou N", com o que
+  compõe ("1 de boas-vindas, 1 da meta de outubro de 2026 e 4 de novembro de 2026"). Kit com produto definido na
+  aprovação continua separado. `chooseKit` aceita vários kits: um envio só, todos ligados a ele; recusar devolve
+  todos. Migração `20261214090000_kit_combo`: `KitGrant.shipmentId` deixa de ser único (índice simples);
+  `Shipment.kit` virou `Shipment.kits`.
+- Teste em `test/integration/kits.test.ts`; prévia local: 6 escolhidos → 1 pedido com 6 prêmios.
+- Conferência do dia 01/12: worker com 120 rodadas/2 h sem erro; fechamento de 01/11 rodou no dia 1 nas 3 marcas;
+  as 3 marcas com janela estendida em novembro voltam ao fim normal (dia 15) em 01/12; mínimo R$ 100 de comissão.
+  Pix e CNPJ não travam o saque (a creator informa o Pix no pedido; o CNPJ vem da nota). Travas reais: acesso,
+  saldo em conferência, termo não aceito, contrato pendente no portal. Correção mandada para as equipes.
+
+### CP-396 — 2026-11-25 — Simulação do fechamento de 01/12 refeita (dados de 25/11)
+
+- Mesma regra do CP-385 (planReleases, mínimo do contrato, D-ENDRELEASE). Botanika: 28 creators, R$ 33.058,13
+  (Victoria R$ 19.384,92). VermeFree: 13 creators, R$ 13.846,56 (Victoria R$ 10.999,25). Revita: ninguém.
+- Desde 24/11: Victoria (Botanika), Karynne, Giovanna, Ruy e Anna Machado ganharam acesso; Karynne, Giovanna (2
+  marcas), Israel, Ludimilla (VF) e Julia (VF) pediram saque; Flavia Nagliati recebeu R$ 447,86 (agora como PF).
+  A carga do Autentique anexou PDFs: na Botanika 15 das 28 têm contrato anexado; na VermeFree só a Thays.
+- Bloqueios. Botanika: sem acesso Nathalia, Elaine (+ desligados Thiago, Barbieri, Larissa Lessa); Elaine sem CNPJ e
+  sem Pix; sem Pix Lorena, Juliana Esposito e Barbieri (desligados); contrato não assinado Angela e Elaine; Suzana sem
+  marcação de contrato; saque da Julia (R$ 2.183,70, 18/11) parado na NF. VermeFree: sem acesso Thays, Osvaldo,
+  Renato; empresa sem CNPJ Thays, Osvaldo, Renato, Orlando; sem Pix Juliana Esposito, Thays, Renato, Vanessa Ludwig,
+  Orlando; contrato marcado como não assinado Victoria, Juliana Esposito, Vanessa Ludwig (aguardando); sem marcação
+  Robson e Grace; Osvaldo (pagamento em dobro) com a Pamela.
+- O saque não exige o contrato hoje (a marca é só da lista). Decidido (D-SIGNEDOK): basta o contrato assinado; o
+  PDF não trava. Mensagens de cobrança: Botanika para o grupo da Botanika, VermeFree para a Pamela (D-WHOBRAND).
+
 ### CP-395 — 2026-11-25 — Trocar o tipo da creator na ficha (D-CATEDIT)
 
 - Caso: a Damaris (Revita) precisou de SQL para virar Influencer + UGC.

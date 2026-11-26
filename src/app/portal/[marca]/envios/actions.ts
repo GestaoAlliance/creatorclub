@@ -74,7 +74,7 @@ export async function chooseKitAction(_prev: EnviosState, form: FormData): Promi
         const f = (k: string) => String(form.get(k) ?? "");
         await updateMyAddress(db(), ctx, userId, { zip: f("zip"), street: f("street"), number: f("number"), complement: f("complement"), district: f("district"), city: f("city"), state: f("state") });
       }
-      await chooseKit(db(), ctx, userId, String(form.get("kitId") ?? ""), items);
+      await chooseKit(db(), ctx, userId, form.getAll("kitId").map(String), items);
     },
     "Pedido enviado! A equipe confere, aprova e prepara o envio.",
   );

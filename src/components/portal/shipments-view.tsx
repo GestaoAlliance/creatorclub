@@ -4,7 +4,7 @@ import { ProductThumb } from "@/components/ui/product-thumb";
 import { ReviewForm } from "./review-form";
 import { SHIPMENT_STATUS_LABEL, trackingUrl, type myShipments } from "@/lib/shipments/shipments";
 import type { Address } from "@/lib/shipments/address";
-import { monthLabel, type KitProgress, type myKitHistory, type myPendingKits } from "@/lib/shipments/kits";
+import { kitPartsText, monthLabel, type KitProgress, type myKitHistory, type myPendingKits } from "@/lib/shipments/kits";
 import { AddressCard } from "./address-card";
 import { CopyButton } from "./copy-button";
 import { KitPicker } from "./kit-picker";
@@ -53,8 +53,8 @@ function Steps({ s }: { s: Shipment }) {
 /** D-SHOPTAB: o que é cada envio (prêmio, compra na loja ou envio da equipe). */
 function shipmentTag(s: Shipment): string {
   if (s.balanceCents !== null) return "Loja";
-  if (s.kit?.kind === "WELCOME") return "1º pedido";
-  if (s.kit) return "Prêmio";
+  if (s.kits[0]?.kind === "WELCOME") return "1º pedido";
+  if (s.kits.length) return "Prêmio";
   return "Envio da equipe";
 }
 
@@ -254,7 +254,7 @@ export function ShipmentsView({
             </p>
           )}
           {kits.kits.map((k) => (
-            <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} welcome={k.kind === "WELCOME"} goal={k.kind === "GOAL"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
+            <KitPicker key={k.id} marca={marca} kit={k} monthLabel={monthLabel(k.month)} combined={k.parts.length ? kitPartsText(k.parts) : null} welcome={k.kind === "WELCOME"} goal={k.kind === "GOAL"} products={kits.products} address={address} informed={informedAddress} viewOnly={viewOnly} />
           ))}
         </section>
       )}

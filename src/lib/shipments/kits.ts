@@ -61,31 +61,78 @@ export async function myPendingKits(prisma: PrismaClient, ctx: PortalContext) {
     select: { id: true, kind: true, month: true, products: true, salesCents: true, presetProductIds: true },
   });
   const paused = await requestsPaused(prisma, ctx.brand.id);
-  const kits = await Promise.all(rows.map(async ({ presetProductIds, ...k }) => ({ ...k, preset: await presetProducts(prisma, ctx.brand.id, presetProductIds) })));
-  const products = kits.length ? await kitProducts(prisma, ctx.brand.id) : [];
-  return { kits, products, paused };
+  const all = await Promise.all(rows.map(async ({ presetProductIds, ...k }) => ({ ...k, preset: await presetProducts(prisma, ctx.brand.id, presetProductIds) })));
+  const products = all.length ? await kitProducts(prisma, ctx.brand.id) : [];
+  return { kits: combinePendingKits(all), products, paused };
+}
+
+type PendingKit = { id: string; kind: string; month: string; products: number; salesCents: number; preset: Awaited<ReturnType<typeof presetProducts>> };
+export type KitPart = { kind: string; month: string; products: number };
+
+/**
+ * D-KITCOMBO (Victoria, 2026-11-26): prêmios de escolha livre (meta, meses, boas-vindas sem produto definido) viram uma
+ * escolha só, com a soma dos produtos, e um pedido só. Kit com produtos definidos na aprovação continua separado.
+ */
+export function combinePendingKits(kits: readonly PendingKit[]): (PendingKit & { ids: string[]; parts: KitPart[] })[] {
+  const own = kits.filter((k) => k.preset).map((k) => ({ ...k, ids: [k.id], parts: [] as KitPart[] }));
+  const free = kits.filter((k) => !k.preset);
+  if (free.length <= 1) return [...own, ...free.map((k) => ({ ...k, ids: [k.id], parts: [] as KitPart[] }))];
+  const combo = {
+    id: free[0]!.id,
+    kind: "COMBO",
+    month: free.at(-1)!.month,
+    products: free.reduce((n, k) => n + k.products, 0),
+    salesCents: 0,
+    preset: null,
+    ids: free.map((k) => k.id),
+    parts: free.map(({ kind, month, products }) => ({ kind, month, products })),
+  };
+  return [...own, combo];
+}
+
+/** "1 de boas-vindas, 1 da meta de outubro de 2026 e 4 de novembro de 2026" (texto do pedido e do quadro). */
+export function kitPartsText(parts: readonly KitPart[]): string {
+  const one = (p: KitPart) => `${p.products} ${p.kind === "WELCOME" ? "de boas-vindas" : p.kind === "GOAL" ? `da meta de ${monthLabel(p.month)}` : `de ${monthLabel(p.month)}`}`;
+  // Vários do mesmo mês (faixas do mês) somam numa parte só.
+  const rank = (p: KitPart) => (p.kind === "WELCOME" ? 0 : p.kind === "GOAL" ? 1 : 2);
+  const ordered = [...parts].sort((x, y) => (x.kind === "WELCOME" || y.kind === "WELCOME" ? rank(x) - rank(y) : x.month.localeCompare(y.month) || rank(x) - rank(y)));
+  const merged: KitPart[] = [];
+  for (const p of ordered) {
+    const same = merged.find((m) => m.kind === p.kind && m.month === p.month);
+    if (same) same.products += p.products;
+    else merged.push({ ...p });
+  }
+  const texts = merged.map(one);
+  return texts.length > 1 ? `${texts.slice(0, -1).join(", ")} e ${texts.at(-1)}` : (texts[0] ?? "");
 }
 
 export async function chooseKit(
   prisma: PrismaClient,
   ctx: PortalContext,
   actorUserId: string,
-  kitId: string,
+  kitIds: string | readonly string[],
   items: { productId: string; quantity: number }[],
 ): Promise<string> {
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é escolhido em nome da creator.");
-  const kit = await prisma.kitGrant.findUnique({ where: { id: kitId }, select: { creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true } });
-  if (!kit || kit.creatorId !== ctx.creatorId) throw new ShipmentError("Kit não encontrado.");
-  if (kit.status === "EXPIRED") throw new ShipmentError("Este produto expirou com o encerramento da parceria.");
-  if (kit.status !== "PENDING") throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
+  const ids = [...new Set(typeof kitIds === "string" ? [kitIds] : kitIds)];
+  if (ids.length === 0) throw new ShipmentError("Kit não encontrado.");
+  const kits = await prisma.kitGrant.findMany({ where: { id: { in: ids } }, select: { id: true, creatorId: true, brandId: true, kind: true, month: true, products: true, status: true, presetProductIds: true }, orderBy: [{ kind: "desc" }, { month: "asc" }] });
+  if (kits.length !== ids.length || kits.some((k) => k.creatorId !== ctx.creatorId)) throw new ShipmentError("Kit não encontrado.");
+  if (kits.some((k) => k.status === "EXPIRED")) throw new ShipmentError("Este produto expirou com o encerramento da parceria.");
+  if (kits.some((k) => k.status !== "PENDING")) throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
+  const kit = kits[0]!;
   if (await requestsPaused(prisma, kit.brandId)) throw new ShipmentError(PAUSED_CREATOR);
   // D-WELCOMECHOICE: kit com produtos fixos vai com eles, seja o que for enviado pelo formulário; com mais opções que
-  // produtos (D-WELCOMEPICK), ela escolhe entre elas.
-  const preset = await presetProducts(prisma, kit.brandId, kit.presetProductIds);
-  const fixed = preset && preset.length === kit.products ? preset : null;
+  // produtos (D-WELCOMEPICK), ela escolhe entre elas. D-KITCOMBO: juntos, só os de escolha livre.
+  const preset = kits.length === 1 ? await presetProducts(prisma, kit.brandId, kit.presetProductIds) : null;
+  if (kits.length > 1) {
+    for (const k of kits) if (await presetProducts(prisma, k.brandId, k.presetProductIds)) throw new ShipmentError("Este kit tem produtos definidos: escolha-o separado.");
+  }
+  const total = kits.reduce((n, k) => n + k.products, 0);
+  const fixed = preset && preset.length === total ? preset : null;
   let chosen: { productId: string; quantity: number }[];
   try {
-    chosen = fixed ? fixed.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, kit.products, ctx.brand.slug);
+    chosen = fixed ? fixed.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, total, ctx.brand.slug);
   } catch (e) {
     throw new ShipmentError((e as Error).message);
   }
@@ -99,6 +146,10 @@ export async function chooseKit(
   const empty = allowed.find((p) => p.outOfStock && chosen.some((i) => i.productId === p.id));
   if (empty) throw new ShipmentError(`${empty.title} está sem estoque no momento. Escolha outro produto.`);
   const now = new Date();
+  const note =
+    kits.length > 1
+      ? `Prêmios juntos: ${kitPartsText(kits)} (${total} ${kitNoun(ctx.brand.slug, total)})`
+      : `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : kit.kind === "GOAL" ? "Meta de vendas (R$ 1.000)" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`;
 
   return prisma.$transaction(async (tx) => {
     const shipment = await tx.shipment.create({
@@ -106,17 +157,19 @@ export async function chooseKit(
         brandId: kit.brandId,
         creatorId: ctx.creatorId,
         status: "AWAITING_APPROVAL",
-        note: `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : kit.kind === "GOAL" ? "Meta de vendas (R$ 1.000)" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`,
+        note,
         address,
         createdById: actorUserId,
         items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
       },
     });
-    const { count } = await tx.kitGrant.updateMany({ where: { id: kitId, status: "PENDING" }, data: { status: "CHOSEN", shipmentId: shipment.id, chosenAt: now } });
-    if (count === 0) throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
-    await tx.auditLog.create({
-      data: { brandId: kit.brandId, actorType: "USER", actorId: actorUserId, action: "kit.choose", entity: "KitGrant", entityId: kitId, after: { shipmentId: shipment.id, items: chosen.length } },
-    });
+    const { count } = await tx.kitGrant.updateMany({ where: { id: { in: ids }, status: "PENDING" }, data: { status: "CHOSEN", shipmentId: shipment.id, chosenAt: now } });
+    if (count !== ids.length) throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
+    for (const k of kits) {
+      await tx.auditLog.create({
+        data: { brandId: kit.brandId, actorType: "USER", actorId: actorUserId, action: "kit.choose", entity: "KitGrant", entityId: k.id, after: { shipmentId: shipment.id, items: chosen.length, combined: kits.length } },
+      });
+    }
     return shipment.id;
   });
 }

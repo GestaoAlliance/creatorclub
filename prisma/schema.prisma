@@ -983,7 +983,7 @@ model Shipment {
   brand   Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   creator Creator         @relation(fields: [creatorId, brandId], references: [id, brandId], onDelete: Restrict)
   items   ShipmentItem[]
-  kit     KitGrant?
+  kits    KitGrant[]
   review  ShipmentReview?
 
   @@unique([id, brandId])
@@ -1240,7 +1240,8 @@ model KitGrant {
   /// D-WELCOMECHOICE: 1º pedido já com os produtos da opção dela (vazio = ela escolhe).
   presetProductIds String[]  @default([])
   status           KitStatus @default(PENDING)
-  shipmentId       String?   @unique
+  /// D-KITCOMBO: vários prêmios pendentes podem sair num pedido só (um envio, vários kits).
+  shipmentId       String?
   chosenAt         DateTime?
   /// D-DISTRATO: quando expirou pelo encerramento da parceria.
   expiredAt        DateTime?
@@ -1252,6 +1253,7 @@ model KitGrant {
 
   @@unique([creatorId, kind, month, window])
   @@index([brandId, status])
+  @@index([shipmentId])
 }
 
 // ───────────────────────────── Links dos hunters (D-HUNTERLINK) ─────────────────────────────

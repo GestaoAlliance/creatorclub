@@ -61,7 +61,7 @@ export async function creatorInsights(prisma: PrismaClient, actor: Actor, creato
     prisma.shipment.findFirst({
       where: { creatorId: c.id },
       orderBy: { createdAt: "desc" },
-      select: { status: true, createdAt: true, shippedAt: true, deliveredAt: true, deliveredBy: true, carrier: true, trackingCode: true, kit: { select: { kind: true } }, items: { select: { title: true, quantity: true } }, review: { select: { rating: true, comment: true } } },
+      select: { status: true, createdAt: true, shippedAt: true, deliveredAt: true, deliveredBy: true, carrier: true, trackingCode: true, kits: { select: { kind: true }, orderBy: { kind: "desc" as const } }, items: { select: { title: true, quantity: true } }, review: { select: { rating: true, comment: true } } },
     }),
     prisma.shipment.count({ where: { creatorId: c.id, status: { not: "CANCELLED" } } }),
     money
@@ -124,7 +124,7 @@ export async function creatorInsights(prisma: PrismaClient, actor: Actor, creato
           deliveredBy: ship.deliveredBy,
           carrier: ship.carrier,
           trackingCode: ship.trackingCode,
-          kit: ship.kit ? (KIT_LABEL[ship.kit.kind] ?? null) : null,
+          kit: ship.kits[0] ? (KIT_LABEL[ship.kits[0].kind] ?? null) : null,
           items: ship.items,
           review: ship.review,
         }
