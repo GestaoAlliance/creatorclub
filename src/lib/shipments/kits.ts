@@ -112,6 +112,7 @@ export async function chooseKit(
   actorUserId: string,
   kitIds: string | readonly string[],
   items: { productId: string; quantity: number }[],
+  opts: { waive?: boolean } = {},
 ): Promise<string> {
   if (ctx.viewAs) throw new ShipmentError("Visualização da equipe: nada é escolhido em nome da creator.");
   const ids = [...new Set(typeof kitIds === "string" ? [kitIds] : kitIds)];
@@ -132,7 +133,7 @@ export async function chooseKit(
   const fixed = preset && preset.length === total ? preset : null;
   let chosen: { productId: string; quantity: number }[];
   try {
-    chosen = fixed ? fixed.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, total, ctx.brand.slug);
+    chosen = fixed ? fixed.map((p) => ({ productId: p.id, quantity: 1 })) : validateKitChoice(items, total, ctx.brand.slug, opts.waive === true);
   } catch (e) {
     throw new ShipmentError((e as Error).message);
   }
@@ -146,10 +147,14 @@ export async function chooseKit(
   const empty = allowed.find((p) => p.outOfStock && chosen.some((i) => i.productId === p.id));
   if (empty) throw new ShipmentError(`${empty.title} está sem estoque no momento. Escolha outro produto.`);
   const now = new Date();
+  // D-KITWAIVE: escolheu menos e abriu mão do resto (fica no pedido e no histórico).
+  const waived = total - chosen.reduce((n, i) => n + i.quantity, 0);
+  const waivedText = waived > 0 ? ` — ela abriu mão de ${waived} ${kitNoun(ctx.brand.slug, waived)}` : "";
   const note =
     kits.length > 1
       ? `Prêmios juntos: ${kitPartsText(kits)} (${total} ${kitNoun(ctx.brand.slug, total)})`
       : `${kit.kind === "WELCOME" ? "Kit de boas-vindas" : kit.kind === "GOAL" ? "Meta de vendas (R$ 1.000)" : `Kit mensal — vendas de ${monthLabel(kit.month)}`} (${kit.products} ${kitNoun(ctx.brand.slug, kit.products)})`;
+  const fullNote = note + waivedText;
 
   return prisma.$transaction(async (tx) => {
     const shipment = await tx.shipment.create({
@@ -157,7 +162,7 @@ export async function chooseKit(
         brandId: kit.brandId,
         creatorId: ctx.creatorId,
         status: "AWAITING_APPROVAL",
-        note,
+        note: fullNote,
         address,
         createdById: actorUserId,
         items: { create: chosen.map((i) => ({ productId: i.productId, title: title.get(i.productId)!, quantity: i.quantity })) },
@@ -167,7 +172,7 @@ export async function chooseKit(
     if (count !== ids.length) throw new ShipmentError("Este kit já foi escolhido. Atualize a página.");
     for (const k of kits) {
       await tx.auditLog.create({
-        data: { brandId: kit.brandId, actorType: "USER", actorId: actorUserId, action: "kit.choose", entity: "KitGrant", entityId: k.id, after: { shipmentId: shipment.id, items: chosen.length, combined: kits.length } },
+        data: { brandId: kit.brandId, actorType: "USER", actorId: actorUserId, action: "kit.choose", entity: "KitGrant", entityId: k.id, after: { shipmentId: shipment.id, items: chosen.length, combined: kits.length, waived } },
       });
     }
     return shipment.id;

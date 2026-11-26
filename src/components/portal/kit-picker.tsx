@@ -43,6 +43,8 @@ export function KitPicker({
 }) {
   const [editing, setEditing] = useState(address === null);
   const [addrOk, setAddrOk] = useState(false);
+  // D-KITWAIVE: escolheu menos do que ganhou e quer só esses.
+  const [waive, setWaive] = useState(false);
   const [state, action, pending] = useActionState(chooseKitAction, undefined);
   // Pedido do responsável (2026-10-27): com uma opção só (Revita, VermeFree), o produto já vem escolhido.
   // D-WELCOMECHOICE: kit com produtos definidos (1º pedido pela opção do cadastro) também já vem pronto.
@@ -56,6 +58,7 @@ export function KitPicker({
   );
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
   const left = kit.products - total;
+  const waiving = waive && total > 0 && left > 0;
   const set = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + d) }));
   const plural = (n: number) => kitNoun(marca, n);
 
@@ -122,6 +125,12 @@ export function KitPicker({
               </>
             )}
           </div>
+          {!viewOnly && !single && total > 0 && left > 0 && (
+            <label className="flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-sm">
+              <input type="checkbox" name="waive" checked={waive} onChange={(e) => setWaive(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+              <span>Quero só {total === 1 ? "este" : "estes"}: abro mão de {left} {plural(left)} (não {left === 1 ? "fica guardado" : "ficam guardados"} para depois).</span>
+            </label>
+          )}
           {/* D-PORTALSHIP: "está certo?" antes de confirmar (endereço errado é o problema mais caro do envio). */}
           {!viewOnly && (
             <label className="flex items-start gap-2 text-sm">
@@ -130,9 +139,9 @@ export function KitPicker({
             </label>
           )}
           <div className="sticky bottom-24 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur md:static md:bg-transparent md:p-0 md:shadow-none dark:bg-stone-900/95 md:dark:bg-transparent">
-            <p className={ui.hint}>{single ? "Confira o endereço e envie o pedido." : left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
+            <p className={ui.hint}>{single ? "Confira o endereço e envie o pedido." : waiving ? `Vai ${total} ${plural(total)}; você abre mão de ${left}.` : left > 0 ? `Falta escolher ${left} ${plural(left)}.` : "Tudo escolhido."}</p>
             {!viewOnly && (
-              <button disabled={pending || left !== 0 || !addrOk} className={ui.btn}>
+              <button disabled={pending || (left !== 0 && !waiving) || !addrOk} className={ui.btn}>
                 {pending ? "Enviando…" : "Confirmar pedido"}
               </button>
             )}
