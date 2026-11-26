@@ -37,6 +37,10 @@ describe("kit mensal (D-KIT)", () => {
       { productId: "b", quantity: 1 },
     ]);
     expect(() => validateKitChoice([{ productId: "a", quantity: 2 }], 3)).toThrow("Escolha 3 suplementos (você escolheu 2).");
+    // D-KITWAIVE: abrindo mão, de 1 até o total.
+    expect(validateKitChoice([{ productId: "a", quantity: 2 }], 3, "botanika", true)).toEqual([{ productId: "a", quantity: 2 }]);
+    expect(() => validateKitChoice([], 3, "botanika", true)).toThrow(/Escolha 3/);
+    expect(() => validateKitChoice([{ productId: "a", quantity: 4 }], 3, "botanika", true)).toThrow(/Escolha 3/);
     expect(() => validateKitChoice([{ productId: "a", quantity: 1 }, { productId: "a", quantity: 2 }], 3)).toThrow("repetido");
     expect(() => validateKitChoice([{ productId: "a", quantity: 1.5 }], 1)).toThrow("inválida");
     expect(() => validateKitChoice([{ productId: "a", quantity: -1 }, { productId: "b", quantity: 2 }], 1)).toThrow("inválida");

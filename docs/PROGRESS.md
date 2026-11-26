@@ -323,6 +323,14 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-405 — 2026-11-26 — "Abro mão do restante" na escolha de produtos (D-KITWAIVE)
+
+- Portal → Pedidos: escolhendo menos do que ganhou (pelo menos 1), aparece "Quero só estes: abro mão de N (não fica
+  guardado para depois)"; marcada, o pedido sai com o que ela escolheu. Os prêmios vão todos para o pedido (recusado,
+  voltam todos) e a nota do pedido diz "ela abriu mão de N"; AuditLog `kit.choose` com `waived`.
+- `validateKitChoice(..., waive)` e `chooseKit(..., { waive })`. Testes em `test/kit.test.ts` e
+  `test/integration/kits.test.ts`; prévia local: 3 de 4 → pedido com 3 e a nota.
+
 ### CP-404 — 2026-11-26 — E-mail real de quem veio com e-mail provisório
 
 - Só 2 creators ativas com e-mail provisório tinham o e-mail real no contrato assinado do Autentique: Aline Thaisa e
