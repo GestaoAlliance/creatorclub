@@ -505,9 +505,10 @@ export function TerminationForm({ creatorId, today, t }: { creatorId: string; to
               <input className={`${input} max-w-48`} type="date" name="endDay" min={today} defaultValue={today} required />
             </label>
             <p className={ui.hint}>
-              O cupom funciona até 23h59 desse dia e as vendas pagas até ali contam. No dia seguinte ela fica Desligada, os produtos
-              liberados e não escolhidos expiram, os pedidos esperando aprovação são cancelados e o termo de distrato sai pelo
-              Autentique. Até a data dá para desfazer.
+              Com a data de hoje, a parceria termina na hora. Com data futura, o cupom funciona até 23h59 desse dia e as vendas
+              pagas até ali contam; no dia seguinte ela fica Desligada. Ao encerrar, os produtos liberados e não escolhidos expiram,
+              os pedidos esperando aprovação são cancelados e o termo de distrato sai pelo Autentique. Data futura dá para desfazer
+              até o dia.
             </p>
             <div className="flex gap-2">
               <button className={ui.dangerSm} disabled={pending}>{pending ? "Agendando…" : "Encerrar nessa data"}</button>
