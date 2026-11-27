@@ -323,6 +323,15 @@ Detalhe de cada uma no plano: https://claude.ai/code/artifact/903360ba-744d-409e
 
 ## Checkpoints (mais recente primeiro)
 
+### CP-406 — 2026-11-27 — Produtos não escolhidos na Botanika: levantamento e limpeza
+
+- 51 creators com produto pendente: 31 ativas **sem acesso ao portal** (quase todas boas-vindas de outubro, nunca
+  entraram; só Nathalia de Jesus e Elaine Cunto venderam), 14 **com acesso** (efeito da pausa até 24/11; Leonardo
+  Simões com 4) e 11 **já desligadas** (desligamento manual, antes do encerramento pela ficha). Mensagem para o grupo
+  da Botanika entregue ao responsável.
+- As 11 desligadas: produtos pendentes expirados por SQL (AuditLog `kit.expired`, ator Pedro). Os 4 saques parados da
+  Botanika foram cobrados da Gestão; checagem final do fechamento agendada para 30/11 10h.
+
 ### CP-405 — 2026-11-26 — "Abro mão do restante" na escolha de produtos (D-KITWAIVE)
 
 - Portal → Pedidos: escolhendo menos do que ganhou (pelo menos 1), aparece "Quero só estes: abro mão de N (não fica
